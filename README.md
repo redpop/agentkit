@@ -1,12 +1,13 @@
 # AgentKit
 
-Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) with skills, specialized agents, and domain knowledge bases.
+Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/claude-code)
+with skills, specialized agents, and domain knowledge bases.
 
 ## Plugins
 
 | Plugin | Skills | Agents | Description |
 |--------|--------|--------|-------------|
-| **ak-core** | 1 | 2 | Task completion workflow, refactoring and performance agents, markdown formatting hooks |
+| **ak-core** | 3 | 2 | Task completion workflow, refactoring and performance agents, markdown formatting hooks |
 | **ak-git** | 1 | 2 | Git operations, smart commits, conflict resolution |
 | **ak-meta** | 2 | - | Changelog generation, AI context handoff |
 | **ak-review** | 1 | - | CodeRabbit CLI integration |
@@ -20,7 +21,7 @@ Requires [Claude Code](https://docs.anthropic.com/en/docs/claude-code) v1.0.33 o
 
 Open Claude Code and run:
 
-```
+```text
 /plugin marketplace add redpop/agentkit
 ```
 
@@ -28,7 +29,7 @@ Open Claude Code and run:
 
 Install all plugins:
 
-```
+```text
 /plugin install ak-core@ak-marketplace
 /plugin install ak-git@ak-marketplace
 /plugin install ak-meta@ak-marketplace
@@ -48,7 +49,7 @@ git clone https://github.com/redpop/agentkit.git
 
 Then in Claude Code:
 
-```
+```text
 /plugin marketplace add /path/to/agentkit
 ```
 
@@ -72,6 +73,23 @@ And install plugins as described above.
 # TYPO3 sitepackage
 /ak-typo3:sitepackage my-site
 ```
+
+## Recommended Plugins
+
+Companion plugins from the Claude Code marketplace that work well with AgentKit:
+
+| Plugin | Description | Install |
+|--------|-------------|---------|
+| [Chrome DevTools MCP](https://github.com/ChromeDevTools/chrome-devtools-mcp) | Browser automation, screenshots, and DevTools access | See below |
+
+### Chrome DevTools MCP
+
+```text
+/plugin marketplace add ChromeDevTools/chrome-devtools-mcp
+/plugin install chrome-devtools-mcp
+```
+
+Requires Node.js v20.19+ and Chrome.
 
 ## Previous Version
 

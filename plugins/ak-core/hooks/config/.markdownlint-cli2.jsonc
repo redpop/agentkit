@@ -27,7 +27,9 @@
     // Link fragments should be valid
     "MD051": false,
     // Reference links and images
-    "MD052": false
+    "MD052": false,
+    // Table column style - disable, standard GFM tables are fine
+    "MD060": false
   },
   "fix": true,
   "globs": ["**/*.md"],

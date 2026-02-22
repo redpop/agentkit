@@ -20,7 +20,7 @@
         ]
       },
       {
-        "matcher": "Write|Edit|MultiEdit|Bash",
+        "matcher": "Write|Edit|MultiEdit",
         "hooks": [
           {
             "type": "prompt",

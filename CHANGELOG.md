@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-02-22
+
+### Added
+
+- ✨ README: New "Recommended Plugins" section with Chrome DevTools MCP as first companion plugin
+
+### Fixed
+
+- 🐛 README: Corrected ak-core skill count from 1 to 3 (finalize, validate-all, agents-md)
+- 🐛 README: Added language specifiers to fenced code blocks (MD040)
+- 🐛 markdownlint: Disabled MD060 table column style rule — incompatible with standard Markdown table formatting
+
 ## [1.3.0] - 2026-02-22
 
 ### Added
