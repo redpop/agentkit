@@ -1,7 +1,6 @@
 ---
 name: agents-md
 description: Convert CLAUDE.md files to AGENTS.md with symlinks. Use when the user asks to "convert claude.md", "create agents.md symlinks", "rename claude.md to agents.md", or wants CLAUDE.md files replaced by AGENTS.md with backward-compatible symlinks.
-disable-model-invocation: true
 ---
 
 # agents-md
@@ -22,12 +21,33 @@ find . -name "CLAUDE.md" -not -path "*/node_modules/*" -not -path "*/.git/*" | s
 
 ### 2. Process Each File
 
-For each found `CLAUDE.md`, run the following logic:
+For each found `CLAUDE.md`, apply the following decision logic:
+
+| CLAUDE.md state | AGENTS.md exists? | Action |
+|---|---|---|
+| Already a symlink → AGENTS.md | — | Skip |
+| Regular file | No | Rename → AGENTS.md, create symlink |
+| Regular file | Yes, regular file | **Consolidate**: merge unique content from CLAUDE.md into AGENTS.md, then replace CLAUDE.md with symlink |
+
+### 3. Consolidation (when both files are regular files)
+
+When both CLAUDE.md and AGENTS.md exist as regular files:
+
+1. Read both files and compare their content
+2. Identify the more comprehensive file (larger, more sections)
+3. Check for unique content in the smaller file that is missing from the larger one
+4. If the larger file already covers everything: keep it as AGENTS.md
+5. If the smaller file has unique sections: append them to AGENTS.md under a clear heading
+6. Replace CLAUDE.md with a symlink to AGENTS.md
+7. Report what was consolidated
+
+### 4. Simple Cases (no consolidation needed)
 
 ```bash
 FOUND=0
 CONVERTED=0
 SKIPPED=0
+CONSOLIDATED=0
 
 while IFS= read -r file; do
   [ -z "$file" ] && continue
@@ -38,8 +58,8 @@ while IFS= read -r file; do
     echo "[skipped] $file — already a symlink"
     SKIPPED=$((SKIPPED + 1))
   elif [ -f "$dir/AGENTS.md" ]; then
-    echo "[skipped] $file — AGENTS.md already exists in $dir"
-    SKIPPED=$((SKIPPED + 1))
+    echo "[consolidate] $file — both files exist, needs consolidation"
+    CONSOLIDATED=$((CONSOLIDATED + 1))
   else
     mv "$file" "$dir/AGENTS.md" && ln -s AGENTS.md "$file"
     echo "[converted] $file → AGENTS.md + symlink"
@@ -48,19 +68,30 @@ while IFS= read -r file; do
 done < <(find . -name "CLAUDE.md" -not -path "*/node_modules/*" -not -path "*/.git/*" | sort)
 
 echo ""
-echo "Summary: $CONVERTED converted, $SKIPPED skipped (of $FOUND found)"
+echo "Summary: $CONVERTED converted, $CONSOLIDATED to consolidate, $SKIPPED skipped (of $FOUND found)"
 ```
+
+### 5. Consolidation Execution
+
+For each `[consolidate]` result:
+
+1. Read both files with the Read tool
+2. Compare content — identify the more comprehensive file as the base
+3. Check for unique sections/information in the other file
+4. If unique content exists, merge it into AGENTS.md
+5. Remove CLAUDE.md and create symlink: `rm CLAUDE.md && ln -s AGENTS.md CLAUDE.md`
+6. Report: `[consolidated] path — merged N unique sections into AGENTS.md + symlink`
 
 ## Output Format
 
 ```markdown
 ## agents-md Results
 
-- [converted] /path/to/CLAUDE.md → AGENTS.md + symlink
-- [skipped]   /sub/CLAUDE.md — already a symlink
-- [skipped]   /other/CLAUDE.md — AGENTS.md already exists
+- [converted]    /path/to/CLAUDE.md → AGENTS.md + symlink
+- [consolidated] /path/to/CLAUDE.md — merged into AGENTS.md + symlink
+- [skipped]      /sub/CLAUDE.md — already a symlink
 
-**Summary**: X converted, Y skipped
+**Summary**: X converted, Y consolidated, Z skipped
 ```
 
 If no `CLAUDE.md` files are found, report: "No CLAUDE.md files found in the project."
