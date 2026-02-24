@@ -81,6 +81,7 @@ Companion plugins from the Claude Code marketplace that work well with AgentKit:
 | Plugin | Description | Install |
 |--------|-------------|---------|
 | [Chrome DevTools MCP](https://github.com/ChromeDevTools/chrome-devtools-mcp) | Browser automation, screenshots, and DevTools access | See below |
+| [Superpowers Extended](https://github.com/pcvelz/superpowers) | Agentic skills framework with native task management and structured development methodology | See below |
 
 ### Chrome DevTools MCP
 
@@ -90,6 +91,15 @@ Companion plugins from the Claude Code marketplace that work well with AgentKit:
 ```
 
 Requires Node.js v20.19+ and Chrome.
+
+### Superpowers Extended
+
+```text
+/plugin marketplace add pcvelz/superpowers
+/plugin install superpowers-extended-cc@superpowers-extended-cc-marketplace
+```
+
+Requires Claude Code v2.1.16+.
 
 ## Previous Version
 
