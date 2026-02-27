@@ -17,7 +17,7 @@ Extract operation and options:
 
 - If first argument matches operations (commit, review, resolve, conflict-resolver), use as operation
 - Default: operation="commit"
-- Flags: `--push`
+- Flags: `--push`, `--force-push`
 
 ## Scope Detection
 
@@ -73,3 +73,5 @@ After completing operations, provide:
 ```
 
 If `--push` was used: confirm push success with remote branch info.
+
+If `--force-push` was used: execute `git push --force-with-lease` and confirm push success with remote branch info. Always use `--force-with-lease` instead of `--force` for safety.

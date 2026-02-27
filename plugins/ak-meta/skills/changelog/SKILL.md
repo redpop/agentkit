@@ -13,10 +13,8 @@ Parse arguments: `$ARGUMENTS`
 
 Extract flags:
 
-- `--commit`: Automatically commit the changelog update
-- `--push`: Push commit to remote (requires --commit)
-- `--fast`: Shortcut for --commit --push
-- `--update-version`: Also update version in package files
+- `--no-commit`: Skip automatic commit (default: commits automatically)
+- `--push`: Push commit to remote
 
 ## Execution
 
@@ -51,14 +49,12 @@ Group changes by type with emoji prefixes:
 - Insert categorized entries
 - Preserve existing content
 
-### Step 5: Update Version Files (--update-version)
-
-Detect and update: package.json, pyproject.toml, Cargo.toml, pom.xml, setup.py, **init**.py
-
-### Step 6: Commit (--commit)
+### Step 5: Commit (default)
 
 Commit message: `📝 docs: update changelog for v{version}`
 
-### Step 7: Push (--push with --commit)
+Skip if `--no-commit` was used.
+
+### Step 6: Push (--push)
 
 Push to remote and confirm success.
