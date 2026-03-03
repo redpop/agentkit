@@ -34,6 +34,20 @@ git diff --stat
 | **Medium** | 3-10 files, related changes | Smart commit with detailed analysis |
 | **Large** | 10+ files OR unrelated features | Suggest splitting into atomic commits |
 
+## Ticket Detection
+
+Extract ticket/issue identifier from the current branch name:
+
+```bash
+git branch --show-current
+```
+
+- Match common patterns: `ABC-1234`, `FOO-99`, `fix/ABC-1234`, `feature/FOO-99_description`, etc.
+- Regex: extract first match of `[A-Z][A-Z0-9]+-[0-9]+` from branch name
+- If a ticket is found, **prefix every commit message** with it: `ABC-1234 type(scope): description`
+- If no ticket pattern is found, use standard Conventional Commits without prefix
+- Pass the detected ticket (or "none") to the git-workflow-specialist
+
 ## Execution
 
 Use Task tool with subagent_type="git-workflow-specialist":
@@ -41,10 +55,11 @@ Use Task tool with subagent_type="git-workflow-specialist":
 
 **IMPORTANT**: NEVER include Co-Authored-By lines in commit messages.
 
-1. **Convention Analysis**: Apply standard commit conventions
-2. **Change Analysis**: Analyze changes with full codebase context
-3. **Message Generation**: Create professional commit messages with proper formatting
-4. **Execution**: Create commits, handle conflicts, or perform code review
+1. **Ticket Prefix**: If a ticket was detected from the branch name, prefix ALL commit messages with it (e.g., `ABC-1234 feat(config): add feature`). If no ticket was detected, use standard Conventional Commits format without prefix.
+2. **Convention Analysis**: Apply standard commit conventions
+3. **Change Analysis**: Analyze changes with full codebase context
+4. **Message Generation**: Create professional commit messages with proper formatting
+5. **Execution**: Create commits, handle conflicts, or perform code review
 
 Focus:
 
@@ -62,7 +77,7 @@ After completing operations, provide:
 **Scope**: [Small/Medium/Large] ([X] files changed)
 
 **Commits created:**
-- `abc1234` - feat: description
+- `abc1234` - ABC-123 feat: description (or without prefix if no ticket detected)
 
 **Files affected:**
 - path/to/file (modified/added/deleted)
