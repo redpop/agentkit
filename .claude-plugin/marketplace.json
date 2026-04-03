@@ -51,6 +51,15 @@
       "category": "cms",
       "keywords": ["typo3", "cms", "content-blocks", "fluid", "sitepackage"],
       "license": "MIT"
+    },
+    {
+      "name": "ak-knowledge",
+      "source": "./plugins/ak-knowledge",
+      "description": "Solution documentation and knowledge maintenance with structured docs/solutions/ workflow",
+      "version": "1.5.0",
+      "category": "productivity",
+      "keywords": ["knowledge-management", "documentation", "solutions", "learnings"],
+      "license": "MIT"
     }
   ]
 }
