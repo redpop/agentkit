@@ -37,17 +37,21 @@ Apply the semver increment to the current version:
 - `minor`: 1.1.2 → 1.2.0
 - `major`: 1.1.2 → 2.0.0
 
-### Step 4: Update all 7 files
+### Step 4: Update all 11 files
 
 Use the Edit tool to update the version in each of these files. Update ALL of them — do not skip any:
 
-1. **`.claude-plugin/marketplace.json`** — Update ALL 5 plugin `"version"` entries (ak-core, ak-git, ak-meta, ak-review, ak-typo3)
-2. **`plugins/ak-core/.claude-plugin/plugin.json`** — Update `"version"` field
+1. **`.claude-plugin/marketplace.json`** — Update ALL 9 plugin `"version"` entries
+2. **`plugins/ak-review/.claude-plugin/plugin.json`** — Update `"version"` field
 3. **`plugins/ak-git/.claude-plugin/plugin.json`** — Update `"version"` field
 4. **`plugins/ak-meta/.claude-plugin/plugin.json`** — Update `"version"` field
-5. **`plugins/ak-review/.claude-plugin/plugin.json`** — Update `"version"` field
-6. **`plugins/ak-typo3/.claude-plugin/plugin.json`** — Update `"version"` field
-7. **`AGENTS.md`** — Update the version reference `(currently X.Y.Z)` in the "Commit and PR guidelines" section
+5. **`plugins/ak-improve/.claude-plugin/plugin.json`** — Update `"version"` field
+6. **`plugins/ak-knowledge/.claude-plugin/plugin.json`** — Update `"version"` field
+7. **`plugins/ak-notifications/.claude-plugin/plugin.json`** — Update `"version"` field
+8. **`plugins/ak-react/.claude-plugin/plugin.json`** — Update `"version"` field
+9. **`plugins/ak-security/.claude-plugin/plugin.json`** — Update `"version"` field
+10. **`plugins/ak-typo3/.claude-plugin/plugin.json`** — Update `"version"` field
+11. **`AGENTS.md`** — Update the version reference `(currently X.Y.Z)` in the "Commit and PR guidelines" section
 
 ### Step 5: Output summary
 
@@ -58,11 +62,15 @@ Version bump: X.Y.Z → A.B.C (bump-type)
 Reason: <why this bump type was chosen>
 
 Updated files:
-  - .claude-plugin/marketplace.json (5 entries)
-  - plugins/ak-core/.claude-plugin/plugin.json
+  - .claude-plugin/marketplace.json (9 entries)
+  - plugins/ak-review/.claude-plugin/plugin.json
   - plugins/ak-git/.claude-plugin/plugin.json
   - plugins/ak-meta/.claude-plugin/plugin.json
-  - plugins/ak-review/.claude-plugin/plugin.json
+  - plugins/ak-improve/.claude-plugin/plugin.json
+  - plugins/ak-knowledge/.claude-plugin/plugin.json
+  - plugins/ak-notifications/.claude-plugin/plugin.json
+  - plugins/ak-react/.claude-plugin/plugin.json
+  - plugins/ak-security/.claude-plugin/plugin.json
   - plugins/ak-typo3/.claude-plugin/plugin.json
   - AGENTS.md
 ```
