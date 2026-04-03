@@ -31,6 +31,18 @@ with five maintenance actions: Keep, Update, Consolidate, Replace, Delete.
 /ak-knowledge:refresh mode:autofix [scope]     # Automated + scoped
 ```
 
+### /ak-knowledge:agents-md
+
+Converts `CLAUDE.md` files to `AGENTS.md` with backward-compatible
+symlinks. Handles rename, consolidation (when both files exist), and
+skip (already converted).
+
+**Usage:**
+
+```bash
+/ak-knowledge:agents-md
+```
+
 ## Agents
 
 - **solution-reviewer** — Validates generated documentation for schema conformance, section completeness, and content quality.
