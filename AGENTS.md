@@ -4,7 +4,7 @@ This file provides guidance to AI agents (Claude Code, Warp AI, etc.) when worki
 
 ## Project overview
 
-Claude Code plugin marketplace (`ak-marketplace`) with 7 independently installable plugins, 16 skills, 11 agents, and domain knowledge bases. Built on the official Claude Code Plugin Architecture.
+Claude Code plugin marketplace (`ak-marketplace`) with 9 independently installable plugins, 22 skills, 11 agents, and domain knowledge bases. Built on the official Claude Code Plugin Architecture.
 
 ## Dev environment
 
@@ -62,8 +62,10 @@ plugins/{plugin-name}/
 | `ak-git` | 1 | 2 | |
 | `ak-meta` | 2 | - | |
 | `ak-improve` | - | 2 | |
-| `ak-knowledge` | 3 | 1 | |
+| `ak-knowledge` | 4 | 1 | |
 | `ak-notifications` | - | - | hooks |
+| `ak-react` | 2 | - | knowledge/ (1 file) |
+| `ak-security` | 3 | - | knowledge/ (43 files) |
 | `ak-typo3` | 5 | 5 | knowledge/ (14 files) |
 
 ## Code style guidelines
@@ -129,4 +131,5 @@ Skip steps 2-3 for trivial changes (typo fixes, config updates, single-line chan
 - Knowledge files are referenced explicitly in agents via `${CLAUDE_PLUGIN_ROOT}/knowledge/path`
 - The `$ARGUMENTS` placeholder receives user input in skills
 - Documentation is written in English
+- When adding, removing, or modifying plugins, skills, agents, or hooks, update the corresponding documentation in `docs/` (detail files and index READMEs) and the root `README.md` plugin table
 - The `markdown-format.sh` hook requires `markdownlint-cli2` (Homebrew preferred, npx fallback)
