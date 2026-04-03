@@ -9,8 +9,8 @@ with skills, specialized agents, and domain knowledge bases.
 |--------|--------|--------|-------------|
 | **ak-git** | 1 | 2 | Smart commits, change analysis, conflict resolution |
 | **ak-improve** | — | 2 | Code refactoring and performance optimization agents |
-| **ak-knowledge** | 4 | 1 | Solution docs, knowledge maintenance, AGENTS.md migration |
-| **ak-meta** | 2 | — | Changelog generation, AI context handoff |
+| **ak-knowledge** | 4 | 1 | Solution docs, knowledge maintenance, AGENTS.md tools |
+| **ak-meta** | 3 | — | Ideation, changelog generation, AI context handoff |
 | **ak-notifications** | — | — | macOS sound and banner notifications |
 | **ak-react** | 2 | — | React and Next.js best practices, performance optimization, code scanning |
 | **ak-review** | 2 | — | CodeRabbit review, finalize workflow, validation hooks |
@@ -70,7 +70,13 @@ And install plugins as described above.
 
 ```bash
 # Smart git commit
-/ak-git:operations commit --smart
+/ak-git:operations commit
+
+# Commit, push, and create PR in one step
+/ak-git:operations ship
+
+# Generate improvement ideas
+/ak-meta:discover
 
 # Run task completion workflow
 /ak-review:finalize
@@ -105,7 +111,8 @@ analysis, and conflict resolution.
 
 | Skill | Purpose | Example |
 |-------|---------|---------|
-| `/ak-git:operations` | Smart commits, conflict resolution, change review | `/ak-git:operations commit --smart` |
+| `/ak-git:operations` | Smart commits, PR creation, conflict resolution, change review | `/ak-git:operations commit` |
+| `/ak-git:operations pr` | Commit, push, and create PR/MR with adaptive description | `/ak-git:operations ship` |
 
 #### Agents
 
@@ -146,13 +153,14 @@ and keep them up to date.
 
 ### ak-meta — Project Management Tools
 
-Changelog generation with automatic version detection and AI context
-handoff for cross-session collaboration.
+Ideation, changelog generation with automatic version detection, and AI
+context handoff for cross-session collaboration.
 
 #### Skills
 
 | Skill | Purpose | Example |
 |-------|---------|---------|
+| `/ak-meta:discover` | Generate and evaluate improvement ideas with adversarial filtering | `/ak-meta:discover blog content Q3` |
 | `/ak-meta:changelog` | Update CHANGELOG.md with automatic version detection | `/ak-meta:changelog` |
 | `/ak-meta:handoff` | Create context handoff documents for other AI sessions | `/ak-meta:handoff` |
 

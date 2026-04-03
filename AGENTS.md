@@ -60,7 +60,7 @@ plugins/{plugin-name}/
 |--------|--------|--------|--------|
 | `ak-review` | 2 | - | hooks, markdownlint config |
 | `ak-git` | 1 | 2 | |
-| `ak-meta` | 2 | - | |
+| `ak-meta` | 3 | - | |
 | `ak-improve` | - | 2 | |
 | `ak-knowledge` | 4 | 1 | |
 | `ak-notifications` | - | - | hooks |
