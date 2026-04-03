@@ -1,0 +1,25 @@
+{
+  "description": "macOS notification hooks: sound on permission prompt, banner on idle",
+  "hooks": {
+    "Notification": [
+      {
+        "matcher": "permission_prompt",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "afplay -v 0.5 /System/Library/Sounds/Glass.aiff"
+          }
+        ]
+      },
+      {
+        "matcher": "idle_prompt",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "osascript -e 'display notification \"Claude is waiting for input\" with title \"Claude Code\"'"
+          }
+        ]
+      }
+    ]
+  }
+}

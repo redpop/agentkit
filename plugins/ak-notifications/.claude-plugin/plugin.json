@@ -1,0 +1,11 @@
+{
+  "name": "ak-notifications",
+  "description": "Platform-specific notification hooks for permission prompts and idle alerts (macOS)",
+  "version": "1.6.0",
+  "author": {
+    "name": "redpop",
+    "url": "https://github.com/redpop"
+  },
+  "license": "MIT",
+  "keywords": ["notifications", "sound", "macos", "alerts"]
+}
