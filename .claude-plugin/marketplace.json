@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "ak-marketplace",
-  "description": "AgentKit - 7 modulare Plugins für Review, Git, Projekt-Management, Code-Verbesserung, Knowledge, TYPO3 und Notifications",
+  "description": "AgentKit - 9 modulare Plugins für Review, Git, Projekt-Management, Code-Verbesserung, Knowledge, React, Security, TYPO3 und Notifications",
   "owner": {
     "name": "redpop",
     "url": "https://github.com/redpop"
@@ -68,6 +68,24 @@
       "version": "1.8.0",
       "category": "cms",
       "keywords": ["typo3", "cms", "content-blocks", "fluid", "sitepackage"],
+      "license": "MIT"
+    },
+    {
+      "name": "ak-react",
+      "source": "./plugins/ak-react",
+      "description": "React and Next.js development with best practices, performance optimization, and code quality scanning",
+      "version": "1.8.0",
+      "category": "development",
+      "keywords": ["react", "nextjs", "performance", "best-practices", "code-quality"],
+      "license": "MIT"
+    },
+    {
+      "name": "ak-security",
+      "source": "./plugins/ak-security",
+      "description": "Security guidelines for secure code, LLM applications, and static analysis with Semgrep",
+      "version": "1.8.0",
+      "category": "security",
+      "keywords": ["security", "owasp", "llm-security", "semgrep", "static-analysis", "code-review"],
       "license": "MIT"
     }
   ]

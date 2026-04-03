@@ -1,0 +1,11 @@
+{
+  "name": "ak-security",
+  "description": "Security guidelines for secure code, LLM applications, and static analysis with Semgrep",
+  "version": "1.8.0",
+  "author": {
+    "name": "redpop",
+    "url": "https://github.com/redpop"
+  },
+  "license": "MIT",
+  "keywords": ["security", "owasp", "llm-security", "semgrep", "static-analysis", "code-review"]
+}
