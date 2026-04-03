@@ -1,26 +1,26 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "ak-marketplace",
-  "description": "AgentKit - 6 modulare Plugins für Workflow, Git, Projekt-Management, Review, TYPO3 und Knowledge-Management",
+  "description": "AgentKit - 7 modulare Plugins für Review, Git, Projekt-Management, Code-Verbesserung, Knowledge, TYPO3 und Notifications",
   "owner": {
     "name": "redpop",
     "url": "https://github.com/redpop"
   },
   "plugins": [
     {
-      "name": "ak-core",
-      "source": "./plugins/ak-core",
-      "description": "Core workflow with finalize and validate-all skills, refactoring and performance agents, and file validation hooks with notifications",
-      "version": "1.5.0",
+      "name": "ak-review",
+      "source": "./plugins/ak-review",
+      "description": "Quality assurance with CodeRabbit review, task completion workflow, and file validation hooks",
+      "version": "1.6.0",
       "category": "development",
-      "keywords": ["workflow", "refactoring", "performance", "hooks"],
+      "keywords": ["code-review", "coderabbit", "quality", "validation", "workflow"],
       "license": "MIT"
     },
     {
       "name": "ak-git",
       "source": "./plugins/ak-git",
       "description": "Smart Git operations with intelligent commit messages and conflict resolution",
-      "version": "1.5.0",
+      "version": "1.6.0",
       "category": "productivity",
       "keywords": ["git", "commits", "workflow", "conflict-resolution"],
       "license": "MIT"
@@ -29,36 +29,45 @@
       "name": "ak-meta",
       "source": "./plugins/ak-meta",
       "description": "Project management with changelog generation and AI context handoff",
-      "version": "1.5.0",
+      "version": "1.6.0",
       "category": "productivity",
       "keywords": ["changelog", "handoff", "project-management"],
       "license": "MIT"
     },
     {
-      "name": "ak-review",
-      "source": "./plugins/ak-review",
-      "description": "Automated code review via CodeRabbit CLI with critical evaluation workflow",
-      "version": "1.5.0",
+      "name": "ak-improve",
+      "source": "./plugins/ak-improve",
+      "description": "Code improvement agents for refactoring and performance optimization",
+      "version": "1.6.0",
       "category": "development",
-      "keywords": ["code-review", "coderabbit", "quality"],
+      "keywords": ["refactoring", "performance", "code-quality", "optimization"],
+      "license": "MIT"
+    },
+    {
+      "name": "ak-knowledge",
+      "source": "./plugins/ak-knowledge",
+      "description": "Solution documentation, knowledge maintenance, and project file management",
+      "version": "1.6.0",
+      "category": "productivity",
+      "keywords": ["knowledge-management", "documentation", "solutions", "agents-md"],
+      "license": "MIT"
+    },
+    {
+      "name": "ak-notifications",
+      "source": "./plugins/ak-notifications",
+      "description": "Platform-specific notification hooks for permission prompts and idle alerts (macOS)",
+      "version": "1.6.0",
+      "category": "utilities",
+      "keywords": ["notifications", "sound", "macos", "alerts"],
       "license": "MIT"
     },
     {
       "name": "ak-typo3",
       "source": "./plugins/ak-typo3",
       "description": "TYPO3 CMS development with content blocks, extensions, Fluid templates, and sitepackage skills",
-      "version": "1.5.0",
+      "version": "1.6.0",
       "category": "cms",
       "keywords": ["typo3", "cms", "content-blocks", "fluid", "sitepackage"],
-      "license": "MIT"
-    },
-    {
-      "name": "ak-knowledge",
-      "source": "./plugins/ak-knowledge",
-      "description": "Solution documentation and knowledge maintenance with structured docs/solutions/ workflow",
-      "version": "1.5.0",
-      "category": "productivity",
-      "keywords": ["knowledge-management", "documentation", "solutions", "learnings"],
       "license": "MIT"
     }
   ]
