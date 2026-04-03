@@ -9,10 +9,12 @@ with skills, specialized agents, and domain knowledge bases.
 |--------|--------|--------|-------------|
 | **ak-git** | 1 | 2 | Smart commits, change analysis, conflict resolution |
 | **ak-improve** | — | 2 | Code refactoring and performance optimization agents |
-| **ak-knowledge** | 3 | 1 | Solution docs, knowledge maintenance, AGENTS.md migration |
+| **ak-knowledge** | 4 | 1 | Solution docs, knowledge maintenance, AGENTS.md migration |
 | **ak-meta** | 2 | — | Changelog generation, AI context handoff |
 | **ak-notifications** | — | — | macOS sound and banner notifications |
+| **ak-react** | 2 | — | React and Next.js best practices, performance optimization, code scanning |
 | **ak-review** | 2 | — | CodeRabbit review, finalize workflow, validation hooks |
+| **ak-security** | 3 | — | OWASP security guidelines, LLM security, Semgrep static analysis |
 | **ak-typo3** | 5 | 5 | TYPO3 v13.4 Content Blocks, SitePackage, extensions |
 
 See [Plugin Details](#plugin-details) for a full breakdown of every
@@ -41,6 +43,8 @@ Install all plugins:
 /plugin install ak-improve@ak-marketplace
 /plugin install ak-knowledge@ak-marketplace
 /plugin install ak-notifications@ak-marketplace
+/plugin install ak-react@ak-marketplace
+/plugin install ak-security@ak-marketplace
 /plugin install ak-typo3@ak-marketplace
 ```
 
@@ -79,6 +83,12 @@ And install plugins as described above.
 
 # Document a solved problem
 /ak-knowledge:document
+
+# Security code review
+/ak-security:code-security
+
+# React code health check
+/ak-react:react-doctor
 
 # TYPO3 sitepackage
 /ak-typo3:sitepackage my-site
@@ -157,6 +167,18 @@ Platform-specific notification hooks for Claude Code.
 | Sound alert | Permission prompt | Plays Glass.aiff sound |
 | Desktop banner | Idle prompt | Shows macOS notification |
 
+### ak-react — React & Next.js Development
+
+React and Next.js development with Vercel Engineering best practices
+and automated code quality scanning.
+
+#### Skills
+
+| Skill | Purpose | Example |
+|-------|---------|---------|
+| `/ak-react:react-best-practices` | React/Next.js performance optimization (65 rules from Vercel Engineering) | `/ak-react:react-best-practices` |
+| `/ak-react:react-doctor` | Scan React codebase for security, performance, and architecture issues | `/ak-react:react-doctor` |
+
 ### ak-review — Quality Assurance
 
 Automated code review, task completion workflow, and file validation
@@ -177,6 +199,19 @@ hooks with markdown formatting.
 | json-validate | After Write/Edit | Validates JSON syntax |
 | shellcheck-validate | After Write/Edit | Lints shell scripts via ShellCheck |
 | skill-suggestions | After Write/Edit | Suggests relevant AgentKit skills |
+
+### ak-security — Security Guidelines
+
+Security guidelines for writing secure code, LLM applications, and
+static analysis scanning.
+
+#### Skills
+
+| Skill | Purpose | Example |
+|-------|---------|---------|
+| `/ak-security:code-security` | OWASP Top 10 security guidelines for 15+ languages | `/ak-security:code-security` |
+| `/ak-security:llm-security` | OWASP Top 10 for LLM Applications security rules | `/ak-security:llm-security` |
+| `/ak-security:semgrep` | Semgrep static analysis scanning and custom rule creation | `/ak-security:semgrep` |
 
 ### ak-typo3 — TYPO3 v13.4 Development
 
@@ -202,6 +237,31 @@ scaffolding, and SitePackage generation.
 | typo3-extension-developer | Extension development, Extbase controllers, service configuration |
 | typo3-fluid-expert | Fluid template architecture, ViewHelper development, rendering optimization |
 | typo3-typoscript-expert | TypoScript configuration, Site Sets, data processing chains |
+
+## Recommended Tools
+
+### Semgrep — Security Scanning
+
+The `ak-security` plugin includes three security skills (`code-security`,
+`llm-security`, `semgrep`) that teach AI agents to write and review secure
+code. The `code-security` and `llm-security` skills work without external
+dependencies — the agent uses the included OWASP knowledge directly.
+
+For the `semgrep` skill, we recommend additionally installing **Semgrep CLI**
+and the **Semgrep MCP Server** for automated static analysis scanning:
+
+```bash
+# Install Semgrep CLI
+brew install semgrep          # or: python3 -m pip install semgrep
+```
+
+The [Semgrep MCP Server](https://semgrep.dev/docs/mcp) provides tools like
+`semgrep_scan` and `semgrep_findings` to the AI agent:
+
+- **Claude Code**: Run `/plugin`, search for "Semgrep" in the Discover tab, and install
+
+> **Note:** Semgrep is optional. The security skills work without it — the
+> agent reviews code using the OWASP rules without automated scanning.
 
 ## Recommended Plugins
 
