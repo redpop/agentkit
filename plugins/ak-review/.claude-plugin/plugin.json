@@ -1,11 +1,11 @@
 {
   "name": "ak-review",
-  "description": "Automated code review via CodeRabbit CLI with critical evaluation workflow",
-  "version": "1.5.0",
+  "description": "Quality assurance with CodeRabbit review, task completion workflow, and file validation hooks",
+  "version": "1.6.0",
   "author": {
     "name": "redpop",
     "url": "https://github.com/redpop"
   },
   "license": "MIT",
-  "keywords": ["code-review", "coderabbit", "quality"]
+  "keywords": ["code-review", "coderabbit", "quality", "validation", "workflow", "hooks"]
 }

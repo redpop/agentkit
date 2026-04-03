@@ -15,6 +15,8 @@
     },
     // Consistent list indentation (2 spaces)
     "MD007": { "indent": 2 },
+    // Allow duplicate headings under different parents (e.g. Skills/Agents per plugin)
+    "MD024": { "siblings_only": true },
     // Allow inline HTML for advanced formatting
     "MD033": false,
     // First line doesn't need to be a heading (for CLAUDE.md etc.)
