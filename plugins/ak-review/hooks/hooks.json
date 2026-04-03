@@ -1,0 +1,33 @@
+{
+  "description": "Quality assurance hooks: file validation and skill suggestions",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/markdown-format.sh"
+          },
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/json-validate.sh"
+          },
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/shellcheck-validate.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "After completing this tool use, briefly consider: Would any installed AgentKit skill be a helpful next step? Only suggest if genuinely relevant to what just happened. Do not suggest if the user is mid-workflow or if no skill clearly applies. If suggesting, mention the skill naturally (e.g., '/finalize to run the completion workflow')."
+          }
+        ]
+      }
+    ]
+  }
+}
