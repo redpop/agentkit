@@ -16,6 +16,6 @@ via finalize workflows that reference them.
 
 ## Installation
 
-```
+```text
 /plugin install ak-improve@ak-marketplace
 ```
