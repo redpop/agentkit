@@ -8,7 +8,7 @@ AgentKit provides 9 plugins with specialized skills, agents, and hooks for Claud
 
 | Category | Count | Description |
 |----------|-------|-------------|
-| [Skills](skills/) | 22 | Slash commands invoked by the user |
+| [Skills](skills/) | 20 | Slash commands invoked by the user |
 | [Agents](agents/) | 10 | Specialized sub-agents for autonomous tasks |
 | [Hooks](hooks/) | 2 plugins | Automated actions on tool events |
 
