@@ -1,24 +1,20 @@
 # AgentKit
 
-Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/claude-code)
-with skills, specialized agents, and domain knowledge bases.
+Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) — 9 plugins with 20 skills, 10 agents, and domain knowledge bases for Git workflows, security, React, TYPO3, and more.
 
 ## Plugins
 
 | Plugin | Skills | Agents | Description |
 |--------|--------|--------|-------------|
-| **ak-git** | 1 | 2 | Smart commits, change analysis, conflict resolution |
-| **ak-improve** | — | 2 | Code refactoring and performance optimization agents |
-| **ak-knowledge** | 4 | 1 | Solution docs, knowledge maintenance, AGENTS.md tools |
-| **ak-meta** | 3 | — | Ideation, changelog generation, AI context handoff |
-| **ak-notifications** | — | — | macOS sound and banner notifications |
-| **ak-react** | 2 | — | React and Next.js best practices, performance optimization, code scanning |
-| **ak-review** | 2 | — | CodeRabbit review, finalize workflow, validation hooks |
-| **ak-security** | 3 | — | OWASP security guidelines, LLM security, Semgrep static analysis |
-| **ak-typo3** | 5 | 5 | TYPO3 v13.4 Content Blocks, SitePackage, extensions |
-
-See [Plugin Details](#plugin-details) for a full breakdown of every
-skill and agent.
+| [**ak-git**](#ak-git--smart-git-operations) | 1 | 2 | Smart commits, change analysis, conflict resolution |
+| [**ak-improve**](#ak-improve--code-improvement) | — | 2 | Code refactoring and performance optimization agents |
+| [**ak-knowledge**](#ak-knowledge--solution-documentation) | 4 | 1 | Solution docs, knowledge maintenance, AGENTS.md tools |
+| [**ak-meta**](#ak-meta--project-management-tools) | 3 | — | Ideation, changelog generation, AI context handoff |
+| [**ak-notifications**](#ak-notifications--macos-notifications) | — | — | macOS sound and banner notifications |
+| [**ak-react**](#ak-react--react--nextjs-development) | 2 | — | React and Next.js best practices, performance optimization, code scanning |
+| [**ak-review**](#ak-review--quality-assurance) | 2 | — | CodeRabbit review, finalize workflow, validation hooks |
+| [**ak-security**](#ak-security--security-guidelines) | 3 | — | OWASP security guidelines, LLM security, Semgrep static analysis |
+| [**ak-typo3**](#ak-typo3--typo3-v134-development) | 5 | 5 | TYPO3 v13.4 Content Blocks, SitePackage, extensions |
 
 ## Installation
 
@@ -48,57 +44,15 @@ Install all plugins:
 /plugin install ak-typo3@ak-marketplace
 ```
 
-Or browse available plugins interactively with `/plugin` and go to the **Discover** tab.
+Or browse available plugins interactively with `/plugin` and go to the **Marketplaces** tab.
 
-### Install from a local clone
+## Documentation
 
-If you prefer to work from a local copy:
+Detailed documentation for all components is available in the [`docs/`](docs/) directory:
 
-```bash
-git clone https://github.com/redpop/agentkit.git
-```
-
-Then in Claude Code:
-
-```text
-/plugin marketplace add /path/to/agentkit
-```
-
-And install plugins as described above.
-
-## Quick Start
-
-```bash
-# Smart git commit
-/ak-git:operations --commit
-
-# Commit, push, and create PR in one step
-/ak-git:operations --ship
-
-# Generate improvement ideas
-/ak-meta:discover
-
-# Run task completion workflow
-/ak-review:finalize
-
-# Code review
-/ak-review:coderabbit
-
-# Generate changelog
-/ak-meta:changelog
-
-# Document a solved problem
-/ak-knowledge:document
-
-# Security code review
-/ak-security:code-security
-
-# React code health check
-/ak-react:react-doctor
-
-# TYPO3 sitepackage
-/ak-typo3:sitepackage my-site
-```
+- [Skills](docs/skills/) — All slash commands with usage examples
+- [Agents](docs/agents/) — Specialized sub-agents and their capabilities
+- [Hooks](docs/hooks/) — Automated actions on tool events
 
 ## Plugin Details
 

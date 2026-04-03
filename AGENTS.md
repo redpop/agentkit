@@ -4,7 +4,7 @@ This file provides guidance to AI agents (Claude Code, Warp AI, etc.) when worki
 
 ## Project overview
 
-Claude Code plugin marketplace (`ak-marketplace`) with 9 independently installable plugins, 22 skills, 11 agents, and domain knowledge bases. Built on the official Claude Code Plugin Architecture.
+Claude Code plugin marketplace (`ak-marketplace`) with 9 independently installable plugins, 20 skills, 10 agents, and domain knowledge bases. Built on the official Claude Code Plugin Architecture.
 
 ## Dev environment
 
@@ -102,6 +102,10 @@ Required: `name`, `description`, `version`. Optional: `hooks` (path to hooks.jso
 
 Each plugin entry needs `name`, `source` (relative path), `version`, `category`.
 
+### Skill arguments
+
+All skill arguments use `--` prefix for consistency: `--commit`, `--push`, `--ship`. The `$ARGUMENTS` placeholder receives the raw user input; the skill parses flags from it.
+
 ### Hooks (hooks.json)
 
 Wrapper format: `{"description": "...", "hooks": {...}}`. The `${CLAUDE_PLUGIN_ROOT}` variable resolves to the plugin's absolute directory at runtime. Hook scripts must always `exit 0`.
@@ -122,6 +126,7 @@ After implementing changes:
 3. **Review** — Run CodeRabbit review on uncommitted changes, then fix reported issues
    - Claude Code: invoke `/ak-review:coderabbit`
    - Other tools: run `coderabbit review --prompt-only --type uncommitted`
+4. **Docs** — If plugins, skills, agents, or hooks changed, update `docs/` (detail files and index READMEs) and the root `README.md` plugin table
 
 Skip steps 2-3 for trivial changes (typo fixes, config updates, single-line changes).
 
