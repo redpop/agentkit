@@ -70,10 +70,10 @@ And install plugins as described above.
 
 ```bash
 # Smart git commit
-/ak-git:operations commit
+/ak-git:operations --commit
 
 # Commit, push, and create PR in one step
-/ak-git:operations ship
+/ak-git:operations --ship
 
 # Generate improvement ideas
 /ak-meta:discover
@@ -111,8 +111,7 @@ analysis, and conflict resolution.
 
 | Skill | Purpose | Example |
 |-------|---------|---------|
-| [`/ak-git:operations`](docs/skills/ak-git/operations.md) | Smart commits, PR creation, conflict resolution, change review | `/ak-git:operations commit` |
-| `/ak-git:operations pr` | Commit, push, and create PR/MR with adaptive description | `/ak-git:operations ship` |
+| [`/ak-git:operations`](docs/skills/ak-git/operations.md) | Smart commits, PR/MR creation, conflict resolution, change review | `/ak-git:operations --ship` |
 
 #### Agents
 

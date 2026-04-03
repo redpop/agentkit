@@ -13,12 +13,16 @@ Smart Git operations with intelligent commit messages, change analysis, and PR c
 
 Parse arguments: `$ARGUMENTS`
 
-Extract operation and options:
+All arguments use `--` prefix:
 
-- If first argument matches operations (commit, review, resolve, conflict-resolver, pr, ship), use as operation
-- `pr` or `ship`: Commit → Push → Create PR in one flow
-- Default: operation="commit"
-- Flags: `--push`, `--force-push`
+| Argument | Operation |
+|----------|-----------|
+| `--commit` | Smart commit with scope-based messaging (default if no argument given) |
+| `--review` | Pre-commit code review of staged changes |
+| `--resolve` | Merge conflict resolution with context |
+| `--pr` or `--ship` | Commit → Push → Create PR/MR in one flow |
+| `--push` | Push after commit |
+| `--force-push` | Force push with lease after commit |
 
 ## Scope Detection
 
@@ -49,7 +53,7 @@ git branch --show-current
 - If no ticket pattern is found, use standard Conventional Commits without prefix
 - Pass the detected ticket (or "none") to the git-workflow-specialist
 
-## Execution: commit, review, resolve
+## Execution: --commit, --review, --resolve
 
 Use Task tool with subagent_type="git-workflow-specialist":
 "Execute Git '$operation':
@@ -68,7 +72,7 @@ Focus:
 - **review**: Pre-commit code review of staged changes
 - **resolve/conflict-resolver**: Merge conflict resolution with context"
 
-## Execution: pr / ship
+## Execution: --pr / --ship
 
 Full flow from working tree to open PR/MR in one step.
 
