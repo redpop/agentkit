@@ -4,7 +4,7 @@ This file provides guidance to AI agents (Claude Code, Warp AI, etc.) when worki
 
 ## Project overview
 
-Claude Code plugin marketplace (`ak-marketplace`) with 6 independently installable plugins, 14 skills, 10 agents, and domain knowledge bases. Built on the official Claude Code Plugin Architecture.
+Claude Code plugin marketplace (`ak-marketplace`) with 7 independently installable plugins, 16 skills, 11 agents, and domain knowledge bases. Built on the official Claude Code Plugin Architecture.
 
 ## Dev environment
 
@@ -13,7 +13,7 @@ No build step required — the codebase is pure Markdown, JSON, and shell script
 **Test a plugin locally:**
 
 ```bash
-claude --plugin-dir ./plugins/ak-core
+claude --plugin-dir ./plugins/ak-review
 ```
 
 **Test full marketplace:**
@@ -32,13 +32,13 @@ markdownlint-cli2 "plugins/**/*.md"
 
 ```bash
 python3 -m json.tool .claude-plugin/marketplace.json > /dev/null
-python3 -m json.tool plugins/ak-core/.claude-plugin/plugin.json > /dev/null
+python3 -m json.tool plugins/ak-review/.claude-plugin/plugin.json > /dev/null
 ```
 
 **Validate shell scripts:**
 
 ```bash
-shellcheck plugins/ak-core/hooks/markdown-format.sh
+shellcheck plugins/ak-review/hooks/markdown-format.sh
 ```
 
 ## Monorepo structure
@@ -58,12 +58,13 @@ plugins/{plugin-name}/
 
 | Plugin | Skills | Agents | Extras |
 |--------|--------|--------|--------|
-| `ak-core` | agents-md, finalize, validate-all | 2 | hooks, markdownlint config |
-| `ak-git` | operations | 2 | |
-| `ak-meta` | changelog, handoff | - | |
-| `ak-review` | coderabbit | - | |
-| `ak-typo3` | 5 TYPO3 skills | 5 | knowledge/ (14 files) |
-| `ak-knowledge` | document, refresh | 1 | |
+| `ak-review` | 2 | - | hooks, markdownlint config |
+| `ak-git` | 1 | 2 | |
+| `ak-meta` | 2 | - | |
+| `ak-improve` | - | 2 | |
+| `ak-knowledge` | 3 | 1 | |
+| `ak-notifications` | - | - | hooks |
+| `ak-typo3` | 5 | 5 | knowledge/ (14 files) |
 
 ## Code style guidelines
 
@@ -107,7 +108,7 @@ Wrapper format: `{"description": "...", "hooks": {...}}`. The `${CLAUDE_PLUGIN_R
 
 - Use conventional commits: `feat:`, `fix:`, `docs:`, `refactor:`
 - Scope by plugin when applicable: `feat(ak-typo3): add content block field type`
-- Keep versions synchronized across `marketplace.json` and all `plugin.json` files (currently `1.5.0`)
+- Keep versions synchronized across `marketplace.json` and all `plugin.json` files (currently `1.6.0`)
 
 ## Task completion workflow
 
