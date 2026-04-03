@@ -1,0 +1,11 @@
+{
+  "name": "ak-knowledge",
+  "description": "Solution documentation and knowledge maintenance with structured docs/solutions/ workflow",
+  "version": "1.5.0",
+  "author": {
+    "name": "redpop",
+    "url": "https://github.com/redpop"
+  },
+  "license": "MIT",
+  "keywords": ["knowledge-management", "documentation", "solutions", "learnings"]
+}

@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "ak-marketplace",
-  "description": "AgentKit - 5 modulare Plugins für Workflow, Git, Projekt-Management, Review und TYPO3",
+  "description": "AgentKit - 6 modulare Plugins für Workflow, Git, Projekt-Management, Review, TYPO3 und Knowledge-Management",
   "owner": {
     "name": "redpop",
     "url": "https://github.com/redpop"
@@ -50,6 +50,15 @@
       "version": "1.5.0",
       "category": "cms",
       "keywords": ["typo3", "cms", "content-blocks", "fluid", "sitepackage"],
+      "license": "MIT"
+    },
+    {
+      "name": "ak-knowledge",
+      "source": "./plugins/ak-knowledge",
+      "description": "Solution documentation and knowledge maintenance with structured docs/solutions/ workflow",
+      "version": "1.5.0",
+      "category": "productivity",
+      "keywords": ["knowledge-management", "documentation", "solutions", "learnings"],
       "license": "MIT"
     }
   ]
