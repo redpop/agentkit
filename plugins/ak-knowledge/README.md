@@ -6,7 +6,8 @@ Solution documentation and knowledge maintenance for AgentKit.
 
 ### /ak-knowledge:document
 
-Captures verified solutions in `docs/solutions/` with structured YAML frontmatter. Uses parallel subagents for research and assembly, with a compact-safe single-pass alternative.
+Captures verified solutions in `docs/solutions/` with structured YAML frontmatter. Uses parallel
+subagents for research and assembly, with a compact-safe single-pass alternative.
 
 **Usage:**
 
@@ -18,7 +19,8 @@ Captures verified solutions in `docs/solutions/` with structured YAML frontmatte
 
 ### /ak-knowledge:refresh
 
-Maintains `docs/solutions/` quality over time. Reviews existing docs against the current codebase with five maintenance actions: Keep, Update, Consolidate, Replace, Delete.
+Maintains `docs/solutions/` quality over time. Reviews existing docs against the current codebase
+with five maintenance actions: Keep, Update, Consolidate, Replace, Delete.
 
 **Usage:**
 
@@ -61,4 +63,5 @@ docs/solutions/
 └── documentation-gaps/
 ```
 
-Each file has YAML frontmatter with `module`, `problem_type`, `component`, `severity`, `tags` and more — enabling structured search across solutions.
+Each file has YAML frontmatter with `module`, `problem_type`, `component`, `severity`, `tags` and
+more — enabling structured search across solutions.

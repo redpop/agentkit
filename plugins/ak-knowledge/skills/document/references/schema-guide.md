@@ -16,14 +16,20 @@ The `problem_type` field determines which **track** applies:
 - **module**: Module or area affected
 - **date**: ISO date `YYYY-MM-DD`
 - **problem_type**: See Tracks table
-- **component**: One of `model`, `controller`, `view`, `service`, `api`, `database`, `frontend`, `backend`, `cli`, `config`, `testing`, `docs`, `tooling`, `middleware`, `infrastructure`, `plugin`
+- **component**: One of `model`, `controller`, `view`, `service`, `api`, `database`, `frontend`,
+  `backend`, `cli`, `config`, `testing`, `docs`, `tooling`, `middleware`, `infrastructure`, `plugin`
 - **severity**: One of `critical`, `high`, `medium`, `low`
 
 ## Bug Track — Additional Required Fields
 
 - **symptoms**: Array (1-5 items) of observable symptoms
-- **root_cause**: One of `missing_association`, `missing_include`, `missing_index`, `wrong_api`, `scope_issue`, `thread_violation`, `async_timing`, `memory_leak`, `config_error`, `logic_error`, `test_isolation`, `missing_validation`, `missing_permission`, `missing_workflow_step`, `inadequate_documentation`, `missing_tooling`, `incomplete_setup`
-- **resolution_type**: One of `code_fix`, `migration`, `config_change`, `test_fix`, `dependency_update`, `environment_setup`, `workflow_improvement`, `documentation_update`, `tooling_addition`, `seed_data_update`
+- **root_cause**: One of `missing_association`, `missing_include`, `missing_index`, `wrong_api`,
+  `scope_issue`, `thread_violation`, `async_timing`, `memory_leak`, `config_error`, `logic_error`,
+  `test_isolation`, `missing_validation`, `missing_permission`, `missing_workflow_step`,
+  `inadequate_documentation`, `missing_tooling`, `incomplete_setup`
+- **resolution_type**: One of `code_fix`, `migration`, `config_change`, `test_fix`,
+  `dependency_update`, `environment_setup`, `workflow_improvement`, `documentation_update`,
+  `tooling_addition`, `seed_data_update`
 
 ## Knowledge Track — Optional Fields
 

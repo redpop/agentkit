@@ -1,11 +1,16 @@
 ---
 name: document
-description: Document a recently solved problem to build searchable team knowledge. Use when a fix is verified, after debugging sessions, or when trigger phrases like "it's fixed" or "working now" appear.
+description: >
+  Document a recently solved problem to build searchable team knowledge. Use when a fix is verified,
+  after debugging sessions, or when trigger phrases like "it's fixed" or "working now" appear.
 ---
 
 # Document Solution
 
-Capture a verified solution as a structured Markdown file in `docs/solutions/`, with YAML frontmatter that enables fast searching and filtering. Every documented fix becomes a reusable asset — the next time a similar problem surfaces, the answer is already written and discoverable. Over time, these documents compound into a knowledge base that accelerates every debugging session.
+Capture a verified solution as a structured Markdown file in `docs/solutions/`, with YAML
+frontmatter that enables fast searching and filtering. Every documented fix becomes a reusable
+asset — the next time a similar problem surfaces, the answer is already written and discoverable.
+Over time, these documents compound into a knowledge base that accelerates every debugging session.
 
 ## Usage
 
@@ -14,7 +19,10 @@ Capture a verified solution as a structured Markdown file in `docs/solutions/`, 
 /ak-knowledge:document [context hint]
 ```
 
-When called without arguments, the skill examines the current conversation to identify the solved problem. An optional context hint narrows the focus — for example, `/ak-knowledge:document the CORS header fix` tells the skill which resolution to capture when a session covered multiple topics.
+When called without arguments, the skill examines the current conversation to identify the solved
+problem. An optional context hint narrows the focus — for example,
+`/ak-knowledge:document the CORS header fix` tells the skill which resolution to capture when a
+session covered multiple topics.
 
 ## Arguments
 
@@ -27,7 +35,8 @@ Extract flags:
 
 ## Support Files
 
-Three reference files define the schema and structure. Read them on-demand as each phase needs them — do not bulk-load all files at the start of execution.
+Three reference files define the schema and structure. Read them on-demand as each phase needs
+them — do not bulk-load all files at the start of execution.
 
 | File | Purpose | Path |
 |------|---------|------|
@@ -35,11 +44,15 @@ Three reference files define the schema and structure. Read them on-demand as ea
 | **Schema Guide** | Category-to-directory mapping and quick validation reference | `${CLAUDE_PLUGIN_ROOT}/skills/document/references/schema-guide.md` |
 | **Template** | Section structure for bug-track and knowledge-track documents | `${CLAUDE_PLUGIN_ROOT}/skills/document/assets/template.md` |
 
-When spawning subagents, pass the relevant file contents directly into the task prompt rather than instructing agents to read files themselves. This avoids redundant file reads and ensures each agent operates on the same version of the schema.
+When spawning subagents, pass the relevant file contents directly into the task prompt rather than
+instructing agents to read files themselves. This avoids redundant file reads and ensures each agent
+operates on the same version of the schema.
 
 ## Execution Strategy
 
-By default, the skill runs in **full mode** — a multi-phase pipeline that uses parallel subagents for thorough research before assembling the document. For lightweight documentation of straightforward fixes, pass `--compact` to run in compact-safe mode (described below).
+By default, the skill runs in **full mode** — a multi-phase pipeline that uses parallel subagents
+for thorough research before assembling the document. For lightweight documentation of
+straightforward fixes, pass `--compact` to run in compact-safe mode (described below).
 
 ---
 
@@ -47,33 +60,45 @@ By default, the skill runs in **full mode** — a multi-phase pipeline that uses
 
 ### Critical Requirement: Single File Output
 
-The primary deliverable is **one Markdown file** written to `docs/solutions/[category]/[filename].md`. Phase 1 subagents exist purely to gather and analyze information — they return text data only and must **never** use Write or Edit tools. Only the orchestrator (this skill) writes files. This constraint prevents race conditions, conflicting writes, and partial documents.
+The primary deliverable is **one Markdown file** written to
+`docs/solutions/[category]/[filename].md`. Phase 1 subagents exist purely to gather and analyze
+information — they return text data only and must **never** use Write or Edit tools. Only the
+orchestrator (this skill) writes files. This constraint prevents race conditions, conflicting
+writes, and partial documents.
 
 ### Phase 0.5: Memory Scan
 
 Before launching research, check for relevant context in the user's auto memory.
 
-1. Read `MEMORY.md` from the Claude auto memory directory (typically `~/.claude/` or the project-specific memory path)
-2. Scan entries for keywords related to the solved problem — error messages, component names, recurring patterns
+1. Read `MEMORY.md` from the Claude auto memory directory (typically `~/.claude/` or the
+   project-specific memory path)
+2. Scan entries for keywords related to the solved problem — error messages, component names,
+   recurring patterns
 3. If relevant entries exist, prepare a labeled excerpt to pass into Phase 1 task prompts
-4. Tag any content sourced from memory with `(auto memory)` so the final document distinguishes recalled context from conversation-derived facts
+4. Tag any content sourced from memory with `(auto memory)` so the final document distinguishes
+   recalled context from conversation-derived facts
 
 If no relevant memory entries are found, proceed to Phase 1 without a memory excerpt.
 
 ### Phase 1: Parallel Research
 
-Launch three subagents **in parallel** using the Task tool. Each receives the conversation history, any memory excerpt from Phase 0.5, and the context hint (if provided). Each agent returns structured text — never files.
+Launch three subagents **in parallel** using the Task tool. Each receives the conversation history,
+any memory excerpt from Phase 0.5, and the context hint (if provided). Each agent returns structured
+text — never files.
 
 #### 1. Context Analyzer
 
 **Goal**: Classify the problem and determine where the document belongs.
 
-Task prompt must include the full contents of `references/schema.yaml` and `references/schema-guide.md`.
+Task prompt must include the full contents of `references/schema.yaml` and
+`references/schema-guide.md`.
 
 Responsibilities:
 
-- Identify whether this is a **bug track** or **knowledge track** problem by matching the situation against track definitions in the schema
-- Select the appropriate `problem_type` enum value — must be an exact match from the schema, never an invented value
+- Identify whether this is a **bug track** or **knowledge track** problem by matching the situation
+  against track definitions in the schema
+- Select the appropriate `problem_type` enum value — must be an exact match from the schema, never
+  an invented value
 - Determine `component`, `severity`, and `module` fields
 - Map `problem_type` to the correct `docs/solutions/` subdirectory using the category mapping table in the schema guide
 - Propose a filename following the pattern `[descriptive-slug]-[YYYY-MM-DD].md`
@@ -85,7 +110,8 @@ Returns: YAML frontmatter skeleton, category directory path, proposed filename, 
 
 **Goal**: Pull the essential narrative from the conversation.
 
-Task prompt must include the full contents of `references/schema.yaml` so the agent can determine which track governs the section structure.
+Task prompt must include the full contents of `references/schema.yaml` so the agent can determine
+which track governs the section structure.
 
 The output structure depends on the track:
 
@@ -114,19 +140,24 @@ Returns: Section content as structured text, organized by heading.
 
 Responsibilities:
 
-- Extract 3-5 keywords from the problem and solution (component names, error messages, affected modules)
+- Extract 3-5 keywords from the problem and solution (component names, error messages, affected
+  modules)
 - Search `docs/solutions/` using a grep-first approach:
   1. Run Grep with extracted keywords to find candidate files
   2. Read frontmatter of matched files to check `problem_type`, `component`, `module`, and `tags`
-  3. Score each candidate on five overlap dimensions: problem statement, root cause, solution approach, referenced files, prevention strategy
+  3. Score each candidate on five overlap dimensions: problem statement, root cause, solution
+     approach, referenced files, prevention strategy
 - Classify overlap level:
   - **High** (4-5 dimensions match) — likely a duplicate or superseding document
   - **Moderate** (2-3 dimensions match) — related but distinct; worth cross-linking
   - **Low** (0-1 dimensions match) — no meaningful connection
-- Search GitHub issues via the `gh` CLI for related reports: `gh issue list --search "[keywords]" --limit 5`
-- Identify any existing docs that may need refreshing based on this new solution (e.g., an older doc that describes a workaround now replaced by a proper fix)
+- Search GitHub issues via the `gh` CLI for related reports:
+  `gh issue list --search "[keywords]" --limit 5`
+- Identify any existing docs that may need refreshing based on this new solution (e.g., an older
+  doc that describes a workaround now replaced by a proper fix)
 
-Returns: List of related document links, refresh candidates, overlap assessment per candidate, relevant GitHub issue links.
+Returns: List of related document links, refresh candidates, overlap assessment per candidate,
+relevant GitHub issue links.
 
 ### Phase 2: Assembly and Write
 
@@ -136,13 +167,17 @@ Wait for all three Phase 1 subagents to complete, then assemble the document.
 
 Review the Related Docs Finder results:
 
-- **High overlap** — Instead of creating a new file, update the existing document with the new information. Preserve the original document's filename and location. Note the update in the document body.
-- **Moderate overlap** — Create a new document but add cross-references in the Related section. Flag the overlap to the user in the output summary.
+- **High overlap** — Instead of creating a new file, update the existing document with the new
+  information. Preserve the original document's filename and location. Note the update in the
+  document body.
+- **Moderate overlap** — Create a new document but add cross-references in the Related section.
+  Flag the overlap to the user in the output summary.
 - **Low overlap or no related docs** — Create a new document without special handling.
 
 #### Step 2: Build the Document
 
-1. Read `${CLAUDE_PLUGIN_ROOT}/skills/document/assets/template.md` to get the section structure for the identified track
+1. Read `${CLAUDE_PLUGIN_ROOT}/skills/document/assets/template.md` to get the section structure for
+   the identified track
 2. Merge the Context Analyzer's frontmatter skeleton with the Solution Extractor's narrative content
 3. Populate the Related section with links from the Related Docs Finder
 4. Include any GitHub issue links discovered during search
@@ -170,7 +205,8 @@ Write to `docs/solutions/[category]/[filename].md`.
 
 ### Phase 2.5: Selective Refresh Recommendation
 
-After writing, evaluate whether existing documents need updating based on the Related Docs Finder results.
+After writing, evaluate whether existing documents need updating based on the Related Docs Finder
+results.
 
 **Recommend** running `/ak-knowledge:refresh` when:
 
@@ -185,7 +221,10 @@ After writing, evaluate whether existing documents need updating based on the Re
 - Related documents are still consistent with the new solution
 - The overlap is purely topical without any conflicting content
 
-When recommending, include a narrow scope hint so the refresh targets only the affected documents — for example: "Consider running `/ak-knowledge:refresh docs/solutions/build-errors/webpack-config-2024-11-15.md` to update the superseded workaround."
+When recommending, include a narrow scope hint so the refresh targets only the affected documents —
+for example: "Consider running
+`/ak-knowledge:refresh docs/solutions/build-errors/webpack-config-2024-11-15.md` to update the
+superseded workaround."
 
 ### Phase 3: Documentation Review
 
@@ -197,9 +236,11 @@ Evaluate:
 
 1. **Completeness** — Are all required sections present and substantive?
 2. **Schema conformance** — Does the YAML frontmatter satisfy all validation rules?
-3. **Clarity** — Can a developer unfamiliar with this codebase understand the problem and apply the fix?
+3. **Clarity** — Can a developer unfamiliar with this codebase understand the problem and apply the
+   fix?
 4. **Code quality** — Are code snippets syntactically correct and appropriately scoped?
-5. **Actionable prevention** — Does the Prevention section (bug track) or When to Apply section (knowledge track) give concrete, implementable guidance?
+5. **Actionable prevention** — Does the Prevention section (bug track) or When to Apply section
+   (knowledge track) give concrete, implementable guidance?
 
 Return a list of findings with severity (error, warning, suggestion) and specific fix instructions."
 
@@ -207,28 +248,36 @@ Apply any error-level findings automatically. Present warnings and suggestions t
 
 ### Discoverability Check
 
-After the document is written, verify that the project's instruction files surface the `docs/solutions/` directory so future AI sessions can find it.
+After the document is written, verify that the project's instruction files surface the
+`docs/solutions/` directory so future AI sessions can find it.
 
 1. Read `AGENTS.md` and/or `CLAUDE.md` in the project root
-2. Assess whether the content semantically references `docs/solutions/` as a knowledge source — look for mentions of the directory, solution documentation, or knowledge base lookup instructions
+2. Assess whether the content semantically references `docs/solutions/` as a knowledge source —
+   look for mentions of the directory, solution documentation, or knowledge base lookup instructions
 3. If the directory is not referenced:
    - Identify a suitable insertion point (typically near project structure or knowledge sections)
-   - Draft a minimal addition, such as: `Check docs/solutions/ for previously documented fixes before debugging from scratch.`
+   - Draft a minimal addition, such as:
+     `Check docs/solutions/ for previously documented fixes before debugging from scratch.`
    - Present the proposed addition to the user via AskUserQuestion and apply it only with approval
 
 ---
 
 ## Compact-Safe Mode
 
-Activated with the `--compact` flag. Designed for quick capture of straightforward solutions where full parallel research would be disproportionate to the complexity of the fix.
+Activated with the `--compact` flag. Designed for quick capture of straightforward solutions where
+full parallel research would be disproportionate to the complexity of the fix.
 
 ### Behavior
 
 Single-pass execution with no subagents:
 
 1. **Extract** — Read the conversation to identify the problem, solution, and relevant context
-2. **Classify** — Read `references/schema.yaml` and `references/schema-guide.md` to determine track, `problem_type`, and category directory
-3. **Build** — Read `assets/template.md` and construct a minimal document with frontmatter and core sections. Bug track: Problem, Solution, Prevention. Knowledge track: Context, Guidance, When to Apply. Optional sections (What Didn't Work, Examples, etc.) are omitted unless the conversation provides clear material for them.
+2. **Classify** — Read `references/schema.yaml` and `references/schema-guide.md` to determine
+   track, `problem_type`, and category directory
+3. **Build** — Read `assets/template.md` and construct a minimal document with frontmatter and core
+   sections. Bug track: Problem, Solution, Prevention. Knowledge track: Context, Guidance, When to
+   Apply. Optional sections (What Didn't Work, Examples, etc.) are omitted unless the conversation
+   provides clear material for them.
 4. **Validate** — Check frontmatter against schema rules
 5. **Write** — Save to `docs/solutions/[category]/[filename].md`
 
@@ -243,7 +292,7 @@ Single-pass execution with no subagents:
 
 Include this notice in the output summary:
 
-```
+```text
 This document was created in compact-safe mode with abbreviated research.
 For thorough coverage, re-run: /ak-knowledge:document [context]
 ```
@@ -296,7 +345,8 @@ Then present options to the user via AskUserQuestion:
 
 ## Auto-Invoke
 
-This skill may be triggered automatically when the conversation contains phrases indicating a problem has been resolved. Watch for:
+This skill may be triggered automatically when the conversation contains phrases indicating a
+problem has been resolved. Watch for:
 
 - "that worked"
 - "it's fixed"
@@ -305,14 +355,20 @@ This skill may be triggered automatically when the conversation contains phrases
 - "that did the trick"
 - "all green"
 
-When detected, confirm with the user before proceeding: "It sounds like that resolved the issue. Would you like to document this solution for future reference?"
+When detected, confirm with the user before proceeding: "It sounds like that resolved the issue.
+Would you like to document this solution for future reference?"
 
 ---
 
 ## Preconditions
 
-These are advisory, not enforced — the skill will still run if conditions are not perfectly met, but the output quality depends on them:
+These are advisory, not enforced — the skill will still run if conditions are not perfectly met,
+but the output quality depends on them:
 
-- **Problem is solved** — The fix should be identified and applied. Documenting an unsolved problem produces speculative content.
-- **Solution is verified** — The fix has been tested or confirmed working. Unverified solutions risk documenting incorrect approaches.
-- **Non-trivial resolution** — Trivial fixes (typos, missing semicolons) generally do not warrant full documentation. Use `--compact` for borderline cases, or skip documentation entirely for one-character fixes.
+- **Problem is solved** — The fix should be identified and applied. Documenting an unsolved problem
+  produces speculative content.
+- **Solution is verified** — The fix has been tested or confirmed working. Unverified solutions
+  risk documenting incorrect approaches.
+- **Non-trivial resolution** — Trivial fixes (typos, missing semicolons) generally do not warrant
+  full documentation. Use `--compact` for borderline cases, or skip documentation entirely for
+  one-character fixes.
