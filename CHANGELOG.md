@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.0] - 2026-04-03
+
+### Added
+
+- New plugin `ak-security` with 3 skills (code-security, llm-security, semgrep) and 43 knowledge files covering OWASP Top 10, LLM security, and Semgrep static analysis
+- New plugin `ak-react` with 2 skills (react-best-practices, react-doctor) and Vercel Engineering performance guide
+- New skill `discover` in ak-meta for divergent idea generation with adversarial filtering
+- New skill `agents-md-improver` in ak-knowledge for auditing and improving AGENTS.md files
+- New operation `pr` / `ship` in ak-git:operations for commit-push-PR in one step with adaptive PR descriptions
+- Git provider auto-detection (GitHub `gh` / GitLab `glab`) in PR creation workflow
+- Commit classification (feature vs fix-up) for cleaner PR descriptions
+
+### Changed
+
+- ak-git:operations now supports 5 operations: commit, review, resolve, pr, ship
+- ak-meta now has 3 skills (added discover alongside changelog and handoff)
+- ak-knowledge now has 4 skills (added agents-md-improver)
+- Marketplace expanded from 7 to 9 plugins
+- bump-version command updated from 7 to 11 files
+
 ## [1.8.0] - 2026-04-03
 
 ### Changed
