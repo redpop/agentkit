@@ -111,15 +111,15 @@ analysis, and conflict resolution.
 
 | Skill | Purpose | Example |
 |-------|---------|---------|
-| `/ak-git:operations` | Smart commits, PR creation, conflict resolution, change review | `/ak-git:operations commit` |
+| [`/ak-git:operations`](docs/skills/ak-git/operations.md) | Smart commits, PR creation, conflict resolution, change review | `/ak-git:operations commit` |
 | `/ak-git:operations pr` | Commit, push, and create PR/MR with adaptive description | `/ak-git:operations ship` |
 
 #### Agents
 
 | Agent | Purpose |
 |-------|---------|
-| git-conflict-specialist | Merge conflict analysis, resolution strategies, rebase issues |
-| git-workflow-specialist | Commit message generation, branch management, atomic commit strategies |
+| [git-conflict-specialist](docs/agents/ak-git/git-conflict-specialist.md) | Merge conflict analysis, resolution strategies, rebase issues |
+| [git-workflow-specialist](docs/agents/ak-git/git-workflow-specialist.md) | Commit message generation, branch management, atomic commit strategies |
 
 ### ak-improve — Code Improvement
 
@@ -129,8 +129,8 @@ Code improvement agents for refactoring and performance optimization.
 
 | Agent | Purpose |
 |-------|---------|
-| performance-optimizer | Bottleneck identification, memory leak analysis, algorithmic optimization |
-| refactoring-expert | Code refactoring with clean code principles and design patterns |
+| [performance-optimizer](docs/agents/ak-improve/performance-optimizer.md) | Bottleneck identification, memory leak analysis, algorithmic optimization |
+| [refactoring-expert](docs/agents/ak-improve/refactoring-expert.md) | Code refactoring with clean code principles and design patterns |
 
 ### ak-knowledge — Solution Documentation
 
@@ -141,15 +141,16 @@ and keep them up to date.
 
 | Skill | Purpose | Example |
 |-------|---------|---------|
-| `/ak-knowledge:agents-md` | Convert CLAUDE.md files to AGENTS.md with symlinks | `/ak-knowledge:agents-md` |
-| `/ak-knowledge:document` | Document a recently solved problem for team knowledge | `/ak-knowledge:document` |
-| `/ak-knowledge:refresh` | Review and maintain solution docs against current codebase | `/ak-knowledge:refresh` |
+| [`/ak-knowledge:agents-md`](docs/skills/ak-knowledge/agents-md.md) | Convert CLAUDE.md files to AGENTS.md with symlinks | `/ak-knowledge:agents-md` |
+| [`/ak-knowledge:agents-md-improver`](docs/skills/ak-knowledge/agents-md-improver.md) | Audit and improve AGENTS.md files with quality scoring | `/ak-knowledge:agents-md-improver` |
+| [`/ak-knowledge:document`](docs/skills/ak-knowledge/document.md) | Document a recently solved problem for team knowledge | `/ak-knowledge:document` |
+| [`/ak-knowledge:refresh`](docs/skills/ak-knowledge/refresh.md) | Review and maintain solution docs against current codebase | `/ak-knowledge:refresh` |
 
 #### Agents
 
 | Agent | Purpose |
 |-------|---------|
-| solution-reviewer | Validate generated solution docs for completeness and clarity |
+| [solution-reviewer](docs/agents/ak-knowledge/solution-reviewer.md) | Validate generated solution docs for completeness and clarity |
 
 ### ak-meta — Project Management Tools
 
@@ -160,9 +161,9 @@ context handoff for cross-session collaboration.
 
 | Skill | Purpose | Example |
 |-------|---------|---------|
-| `/ak-meta:discover` | Generate and evaluate improvement ideas with adversarial filtering | `/ak-meta:discover blog content Q3` |
-| `/ak-meta:changelog` | Update CHANGELOG.md with automatic version detection | `/ak-meta:changelog` |
-| `/ak-meta:handoff` | Create context handoff documents for other AI sessions | `/ak-meta:handoff` |
+| [`/ak-meta:discover`](docs/skills/ak-meta/discover.md) | Generate and evaluate improvement ideas with adversarial filtering | `/ak-meta:discover blog content Q3` |
+| [`/ak-meta:changelog`](docs/skills/ak-meta/changelog.md) | Update CHANGELOG.md with automatic version detection | `/ak-meta:changelog` |
+| [`/ak-meta:handoff`](docs/skills/ak-meta/handoff.md) | Create context handoff documents for other AI sessions | `/ak-meta:handoff` |
 
 ### ak-notifications — macOS Notifications
 
@@ -172,8 +173,8 @@ Platform-specific notification hooks for Claude Code.
 
 | Hook | Trigger | Action |
 |------|---------|--------|
-| Sound alert | Permission prompt | Plays Glass.aiff sound |
-| Desktop banner | Idle prompt | Shows macOS notification |
+| [Sound alert](docs/hooks/ak-notifications/notification-hooks.md) | Permission prompt | Plays Glass.aiff sound |
+| [Desktop banner](docs/hooks/ak-notifications/notification-hooks.md) | Idle prompt | Shows macOS notification |
 
 ### ak-react — React & Next.js Development
 
@@ -184,8 +185,8 @@ and automated code quality scanning.
 
 | Skill | Purpose | Example |
 |-------|---------|---------|
-| `/ak-react:react-best-practices` | React/Next.js performance optimization (65 rules from Vercel Engineering) | `/ak-react:react-best-practices` |
-| `/ak-react:react-doctor` | Scan React codebase for security, performance, and architecture issues | `/ak-react:react-doctor` |
+| [`/ak-react:react-best-practices`](docs/skills/ak-react/react-best-practices.md) | React/Next.js performance optimization (65 rules from Vercel Engineering) | `/ak-react:react-best-practices` |
+| [`/ak-react:react-doctor`](docs/skills/ak-react/react-doctor.md) | Scan React codebase for security, performance, and architecture issues | `/ak-react:react-doctor` |
 
 ### ak-review — Quality Assurance
 
@@ -196,17 +197,17 @@ hooks with markdown formatting.
 
 | Skill | Purpose | Example |
 |-------|---------|---------|
-| `/ak-review:coderabbit` | Run CodeRabbit review on uncommitted or staged changes | `/ak-review:coderabbit` |
-| `/ak-review:finalize` | Run the task completion workflow (format, simplify, review) | `/ak-review:finalize` |
+| [`/ak-review:coderabbit`](docs/skills/ak-review/coderabbit.md) | Run CodeRabbit review on uncommitted or staged changes | `/ak-review:coderabbit` |
+| [`/ak-review:finalize`](docs/skills/ak-review/finalize.md) | Run the task completion workflow (format, simplify, review) | `/ak-review:finalize` |
 
 #### Hooks
 
 | Hook | Trigger | Action |
 |------|---------|--------|
-| markdown-format | After Write/Edit | Auto-formats .md files via markdownlint-cli2 |
-| json-validate | After Write/Edit | Validates JSON syntax |
-| shellcheck-validate | After Write/Edit | Lints shell scripts via ShellCheck |
-| skill-suggestions | After Write/Edit | Suggests relevant AgentKit skills |
+| [markdown-format](docs/hooks/ak-review/validation-hooks.md) | After Write/Edit | Auto-formats .md files via markdownlint-cli2 |
+| [json-validate](docs/hooks/ak-review/validation-hooks.md) | After Write/Edit | Validates JSON syntax |
+| [shellcheck-validate](docs/hooks/ak-review/validation-hooks.md) | After Write/Edit | Lints shell scripts via ShellCheck |
+| [skill-suggestions](docs/hooks/ak-review/validation-hooks.md) | After Write/Edit | Suggests relevant AgentKit skills |
 
 ### ak-security — Security Guidelines
 
@@ -217,9 +218,9 @@ static analysis scanning.
 
 | Skill | Purpose | Example |
 |-------|---------|---------|
-| `/ak-security:code-security` | OWASP Top 10 security guidelines for 15+ languages | `/ak-security:code-security` |
-| `/ak-security:llm-security` | OWASP Top 10 for LLM Applications security rules | `/ak-security:llm-security` |
-| `/ak-security:semgrep` | Semgrep static analysis scanning and custom rule creation | `/ak-security:semgrep` |
+| [`/ak-security:code-security`](docs/skills/ak-security/code-security.md) | OWASP Top 10 security guidelines for 15+ languages | `/ak-security:code-security` |
+| [`/ak-security:llm-security`](docs/skills/ak-security/llm-security.md) | OWASP Top 10 for LLM Applications security rules | `/ak-security:llm-security` |
+| [`/ak-security:semgrep`](docs/skills/ak-security/semgrep.md) | Semgrep static analysis scanning and custom rule creation | `/ak-security:semgrep` |
 
 ### ak-typo3 — TYPO3 v13.4 Development
 
@@ -230,21 +231,21 @@ scaffolding, and SitePackage generation.
 
 | Skill | Purpose | Example |
 |-------|---------|---------|
-| `/ak-typo3:content-blocks` | Generate Content Blocks v1.3 with modern field configs | `/ak-typo3:content-blocks Hero` |
-| `/ak-typo3:extension-kickstarter` | Create extensions via ext-kickstarter or manual scaffolding | `/ak-typo3:extension-kickstarter` |
-| `/ak-typo3:fluid-components` | Generate Fluid v4 Components with Atomic Design patterns | `/ak-typo3:fluid-components Button` |
-| `/ak-typo3:make-content-block` | Wrapper for `make:content-block` with smart defaults | `/ak-typo3:make-content-block` |
-| `/ak-typo3:sitepackage` | Create a TYPO3 v13.4 SitePackage with Site Sets | `/ak-typo3:sitepackage my-site` |
+| [`/ak-typo3:content-blocks`](docs/skills/ak-typo3/content-blocks.md) | Generate Content Blocks v1.3 with modern field configs | `/ak-typo3:content-blocks Hero` |
+| [`/ak-typo3:extension-kickstarter`](docs/skills/ak-typo3/extension-kickstarter.md) | Create extensions via ext-kickstarter or manual scaffolding | `/ak-typo3:extension-kickstarter` |
+| [`/ak-typo3:fluid-components`](docs/skills/ak-typo3/fluid-components.md) | Generate Fluid v4 Components with Atomic Design patterns | `/ak-typo3:fluid-components Button` |
+| [`/ak-typo3:make-content-block`](docs/skills/ak-typo3/make-content-block.md) | Wrapper for `make:content-block` with smart defaults | `/ak-typo3:make-content-block` |
+| [`/ak-typo3:sitepackage`](docs/skills/ak-typo3/sitepackage.md) | Create a TYPO3 v13.4 SitePackage with Site Sets | `/ak-typo3:sitepackage my-site` |
 
 #### Agents
 
 | Agent | Purpose |
 |-------|---------|
-| typo3-architect | Enterprise CMS architecture, extension design, performance optimization |
-| typo3-content-blocks-specialist | Content Block creation, field configuration, backend previews |
-| typo3-extension-developer | Extension development, Extbase controllers, service configuration |
-| typo3-fluid-expert | Fluid template architecture, ViewHelper development, rendering optimization |
-| typo3-typoscript-expert | TypoScript configuration, Site Sets, data processing chains |
+| [typo3-architect](docs/agents/ak-typo3/typo3-architect.md) | Enterprise CMS architecture, extension design, performance optimization |
+| [typo3-content-blocks-specialist](docs/agents/ak-typo3/typo3-content-blocks-specialist.md) | Content Block creation, field configuration, backend previews |
+| [typo3-extension-developer](docs/agents/ak-typo3/typo3-extension-developer.md) | Extension development, Extbase controllers, service configuration |
+| [typo3-fluid-expert](docs/agents/ak-typo3/typo3-fluid-expert.md) | Fluid template architecture, ViewHelper development, rendering optimization |
+| [typo3-typoscript-expert](docs/agents/ak-typo3/typo3-typoscript-expert.md) | TypoScript configuration, Site Sets, data processing chains |
 
 ## Recommended Tools
 
