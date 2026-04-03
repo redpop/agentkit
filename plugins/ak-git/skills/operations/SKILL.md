@@ -89,4 +89,4 @@ After completing operations, provide:
 
 If `--push` was used: confirm push success with remote branch info.
 
-If `--force-push` was used: execute `git push --force-with-lease` and confirm push success with remote branch info. Always use `--force-with-lease` instead of `--force` for safety.
+If `--force-push` was used: execute `git push --force-with-lease` and confirm push success with remote branch info.
