@@ -6,7 +6,8 @@ Select the template matching the problem_type track (see `references/schema.yaml
 
 ## Bug Track
 
-Use for: `build_error`, `test_failure`, `runtime_error`, `performance_issue`, `database_issue`, `security_issue`, `ui_bug`, `integration_issue`, `logic_error`
+Use for: `build_error`, `test_failure`, `runtime_error`, `performance_issue`, `database_issue`,
+`security_issue`, `ui_bug`, `integration_issue`, `logic_error`
 
 ````markdown
 ---
