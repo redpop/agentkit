@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.0] - 2026-04-03
+
+### Changed
+
+- **BREAKING**: Dissolved `ak-core` plugin — components redistributed to focused plugins
+- `ak-review` now includes `finalize` skill and file validation hooks (from ak-core)
+- `ak-knowledge` now includes `agents-md` skill (from ak-core)
+- Consolidated `validate-all` into `finalize` workflow
+
+### Added
+
+- New plugin `ak-improve` with refactoring-expert and performance-optimizer agents
+- New plugin `ak-notifications` with macOS sound and banner notification hooks
+
+### Removed
+
+- Plugin `ak-core` (replaced by ak-review, ak-improve, ak-notifications)
+- Standalone `validate-all` skill (consolidated into finalize)
+
+### Migration
+
+Users with ak-core installed should:
+
+1. Uninstall ak-core
+2. Install ak-review, ak-improve, ak-notifications
+
 ## [1.7.0] - 2026-03-03
 
 ### Added
@@ -20,9 +46,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - 🔄 ak-meta: Changelog skill now commits by default — replaced `--commit` with `--no-commit` opt-out, removed `--fast` and `--update-version` flags
-
-### Docs
-
 - 📝 README: Added Superpowers Extended to recommended plugins
 
 ## [1.5.0] - 2026-02-24
