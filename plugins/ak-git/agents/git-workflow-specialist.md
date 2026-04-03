@@ -1,8 +1,8 @@
 ---
 name: git-workflow-specialist
 description: |
-  Git workflow expert specializing in intelligent commit creation, change analysis, and atomic commit strategies.
-  Use this agent for commit message generation, branch management, and Git best practices.
+  Git workflow expert specializing in intelligent commit creation, change analysis, atomic commit strategies, and PR/MR creation with adaptive descriptions.
+  Use this agent for commit message generation, branch management, PR creation, and Git best practices.
 
   <example>
   Context: User wants to commit their changes
