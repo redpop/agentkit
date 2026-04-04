@@ -9,7 +9,7 @@ Skills are slash commands that users invoke directly in Claude Code via `/plugin
 | [operations](ak-git/operations.md) | ak-git | Smart commits, PR creation, conflict resolution, change review |
 | [agents-md](ak-knowledge/agents-md.md) | ak-knowledge | Convert CLAUDE.md to AGENTS.md with symlinks |
 | [agents-md-improver](ak-knowledge/agents-md-improver.md) | ak-knowledge | Audit and improve AGENTS.md files |
-| [document](ak-knowledge/document.md) | ak-knowledge | Document solved problems as searchable knowledge |
+| [log](ak-knowledge/log.md) | ak-knowledge | Log solved problems as searchable knowledge |
 | [refresh](ak-knowledge/refresh.md) | ak-knowledge | Review and maintain solution docs |
 | [discover](ak-meta/discover.md) | ak-meta | Generate improvement ideas with adversarial filtering |
 | [changelog](ak-meta/changelog.md) | ak-meta | Update CHANGELOG.md with version detection |

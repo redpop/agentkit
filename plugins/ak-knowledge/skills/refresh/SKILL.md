@@ -40,15 +40,15 @@ Extract flags:
 
 ## Support Files
 
-Three reference files define the schema and document structure. They live in the sibling `document`
+Three reference files define the schema and document structure. They live in the sibling `log`
 skill directory. Read them on-demand when a phase requires them -- do not load all three at the
 start.
 
 | File | Purpose | Path |
 |------|---------|------|
-| **Schema** | Canonical frontmatter contract with track definitions and enum values | `${CLAUDE_PLUGIN_ROOT}/skills/document/references/schema.yaml` |
-| **Schema Guide** | Category-to-directory mapping and quick validation reference | `${CLAUDE_PLUGIN_ROOT}/skills/document/references/schema-guide.md` |
-| **Template** | Section structure for bug-track and knowledge-track documents | `${CLAUDE_PLUGIN_ROOT}/skills/document/assets/template.md` |
+| **Schema** | Canonical frontmatter contract with track definitions and enum values | `${CLAUDE_PLUGIN_ROOT}/skills/log/references/schema.yaml` |
+| **Schema Guide** | Category-to-directory mapping and quick validation reference | `${CLAUDE_PLUGIN_ROOT}/skills/log/references/schema-guide.md` |
+| **Template** | Section structure for bug-track and knowledge-track documents | `${CLAUDE_PLUGIN_ROOT}/skills/log/assets/template.md` |
 
 When spawning subagents that need schema context, pass the relevant file contents into the task
 prompt directly. This prevents redundant reads and guarantees every agent works from the same
@@ -164,7 +164,7 @@ These ten rules govern every decision throughout the refresh process.
 7. **Replace only with real evidence.** You must have verified at least one of: the codebase
    contradicts the documented solution, a successor approach is confirmed in code, or a documented
    workaround was resolved by a proper fix. If you cannot verify, mark stale and recommend
-   `/ak-knowledge:document` on next encounter.
+   `/ak-knowledge:log` on next encounter.
 8. **Delete when code AND domain are gone.** Both conditions must hold. A deleted React Native doc
    is appropriate after migrating to Flutter. A deleted database indexing doc is not appropriate
    just because one index was removed.
@@ -393,9 +393,9 @@ codebase, and return findings as structured text. They never write, edit, or del
 run in parallel because they produce no side effects.
 
 **Replacement subagents** -- write exactly one new document. They receive the contents of
-`${CLAUDE_PLUGIN_ROOT}/skills/document/references/schema.yaml`,
-`${CLAUDE_PLUGIN_ROOT}/skills/document/references/schema-guide.md`, and
-`${CLAUDE_PLUGIN_ROOT}/skills/document/assets/template.md`, along with the old document's content
+`${CLAUDE_PLUGIN_ROOT}/skills/log/references/schema.yaml`,
+`${CLAUDE_PLUGIN_ROOT}/skills/log/references/schema-guide.md`, and
+`${CLAUDE_PLUGIN_ROOT}/skills/log/assets/template.md`, along with the old document's content
 and investigation findings. They return a complete replacement document. Run these sequentially to
 avoid write conflicts.
 
@@ -456,7 +456,7 @@ stale_reason: "Description of what appears to have changed and why verification 
 stale_date: YYYY-MM-DD
 ```
 
-In the output, recommend that the user investigate with `/ak-knowledge:document` the next time they
+In the output, recommend that the user investigate with `/ak-knowledge:log` the next time they
 encounter this problem, so the replacement can be written with full context.
 
 ### Delete
@@ -642,19 +642,19 @@ resolve."
 
 ---
 
-## Relationship to /ak-knowledge:document
+## Relationship to /ak-knowledge:log
 
 These two skills form a lifecycle pair:
 
-- **document** captures new solutions when problems are freshly solved and context is rich
+- **log** captures new solutions when problems are freshly solved and context is rich
 - **refresh** maintains those solutions as the codebase evolves
 
 The boundary between them matters most at the Replace action. Refresh should only write a
 replacement document when the evidence gathered during investigation is strong enough to produce an
 accurate successor. When evidence falls short -- the code clearly changed but the correct current
 approach is not obvious from investigation alone -- mark the document as stale and recommend
-`/ak-knowledge:document` for the next time a developer encounters the problem. At that point, the
-full debugging context will be available, and the document skill can capture the solution properly.
+`/ak-knowledge:log` for the next time a developer encounters the problem. At that point, the
+full debugging context will be available, and the log skill can capture the solution properly.
 
 This division keeps refresh focused on what it can verify through codebase analysis, and delegates
 deep problem-solving context to the skill designed to capture it.

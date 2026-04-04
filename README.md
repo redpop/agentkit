@@ -96,7 +96,7 @@ and keep them up to date.
 |-------|---------|---------|
 | [`/ak-knowledge:agents-md`](docs/skills/ak-knowledge/agents-md.md) | Convert CLAUDE.md files to AGENTS.md with symlinks | `/ak-knowledge:agents-md` |
 | [`/ak-knowledge:agents-md-improver`](docs/skills/ak-knowledge/agents-md-improver.md) | Audit and improve AGENTS.md files with quality scoring | `/ak-knowledge:agents-md-improver` |
-| [`/ak-knowledge:document`](docs/skills/ak-knowledge/document.md) | Document a recently solved problem for team knowledge | `/ak-knowledge:document` |
+| [`/ak-knowledge:log`](docs/skills/ak-knowledge/log.md) | Log a recently solved problem for team knowledge | `/ak-knowledge:log` |
 | [`/ak-knowledge:refresh`](docs/skills/ak-knowledge/refresh.md) | Review and maintain solution docs against current codebase | `/ak-knowledge:refresh` |
 
 #### Agents

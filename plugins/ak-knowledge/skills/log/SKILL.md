@@ -1,11 +1,11 @@
 ---
-name: document
+name: log
 description: >
-  Document a recently solved problem to build searchable team knowledge. Use when a fix is verified,
+  Log a recently solved problem to build searchable team knowledge. Use when a fix is verified,
   after debugging sessions, or when trigger phrases like "it's fixed" or "working now" appear.
 ---
 
-# Document Solution
+# Log Solution
 
 Capture a verified solution as a structured Markdown file in `docs/solutions/`, with YAML
 frontmatter that enables fast searching and filtering. Every documented fix becomes a reusable
@@ -15,23 +15,20 @@ Over time, these documents compound into a knowledge base that accelerates every
 ## Usage
 
 ```text
-/ak-knowledge:document
-/ak-knowledge:document [context hint]
+/ak-knowledge:log
+/ak-knowledge:log [context hint]
 ```
 
 When called without arguments, the skill examines the current conversation to identify the solved
 problem. An optional context hint narrows the focus — for example,
-`/ak-knowledge:document the CORS header fix` tells the skill which resolution to capture when a
+`/ak-knowledge:log the CORS header fix` tells the skill which resolution to capture when a
 session covered multiple topics.
 
 ## Arguments
 
 Parse arguments: `$ARGUMENTS`
 
-Extract flags:
-
-- `--compact`: Run in compact-safe mode (single-pass, no subagents)
-- Remaining text after flags is the context hint
+All text is treated as the context hint.
 
 ## Support Files
 
@@ -40,9 +37,9 @@ them — do not bulk-load all files at the start of execution.
 
 | File | Purpose | Path |
 |------|---------|------|
-| **Schema** | Canonical frontmatter contract with track definitions and enum values | `${CLAUDE_PLUGIN_ROOT}/skills/document/references/schema.yaml` |
-| **Schema Guide** | Category-to-directory mapping and quick validation reference | `${CLAUDE_PLUGIN_ROOT}/skills/document/references/schema-guide.md` |
-| **Template** | Section structure for bug-track and knowledge-track documents | `${CLAUDE_PLUGIN_ROOT}/skills/document/assets/template.md` |
+| **Schema** | Canonical frontmatter contract with track definitions and enum values | `${CLAUDE_PLUGIN_ROOT}/skills/log/references/schema.yaml` |
+| **Schema Guide** | Category-to-directory mapping and quick validation reference | `${CLAUDE_PLUGIN_ROOT}/skills/log/references/schema-guide.md` |
+| **Template** | Section structure for bug-track and knowledge-track documents | `${CLAUDE_PLUGIN_ROOT}/skills/log/assets/template.md` |
 
 When spawning subagents, pass the relevant file contents directly into the task prompt rather than
 instructing agents to read files themselves. This avoids redundant file reads and ensures each agent
@@ -50,13 +47,10 @@ operates on the same version of the schema.
 
 ## Execution Strategy
 
-By default, the skill runs in **full mode** — a multi-phase pipeline that uses parallel subagents
-for thorough research before assembling the document. For lightweight documentation of
-straightforward fixes, pass `--compact` to run in compact-safe mode (described below).
+The skill runs a multi-phase pipeline that uses parallel subagents for thorough research before
+assembling the document.
 
 ---
-
-## Full Mode
 
 ### Critical Requirement: Single File Output
 
@@ -176,7 +170,7 @@ Review the Related Docs Finder results:
 
 #### Step 2: Build the Document
 
-1. Read `${CLAUDE_PLUGIN_ROOT}/skills/document/assets/template.md` to get the section structure for
+1. Read `${CLAUDE_PLUGIN_ROOT}/skills/log/assets/template.md` to get the section structure for
    the identified track
 2. Merge the Context Analyzer's frontmatter skeleton with the Solution Extractor's narrative content
 3. Populate the Related section with links from the Related Docs Finder
@@ -262,43 +256,6 @@ After the document is written, verify that the project's instruction files surfa
 
 ---
 
-## Compact-Safe Mode
-
-Activated with the `--compact` flag. Designed for quick capture of straightforward solutions where
-full parallel research would be disproportionate to the complexity of the fix.
-
-### Behavior
-
-Single-pass execution with no subagents:
-
-1. **Extract** — Read the conversation to identify the problem, solution, and relevant context
-2. **Classify** — Read `references/schema.yaml` and `references/schema-guide.md` to determine
-   track, `problem_type`, and category directory
-3. **Build** — Read `assets/template.md` and construct a minimal document with frontmatter and core
-   sections. Bug track: Problem, Solution, Prevention. Knowledge track: Context, Guidance, When to
-   Apply. Optional sections (What Didn't Work, Examples, etc.) are omitted unless the conversation
-   provides clear material for them.
-4. **Validate** — Check frontmatter against schema rules
-5. **Write** — Save to `docs/solutions/[category]/[filename].md`
-
-### Limitations
-
-- No related-docs search, so duplicates or overlaps may go undetected
-- No memory scan, so previously noted patterns are not incorporated
-- No documentation review phase
-- Sections may be thinner due to single-pass extraction
-
-### Output Note
-
-Include this notice in the output summary:
-
-```text
-This document was created in compact-safe mode with abbreviated research.
-For thorough coverage, re-run: /ak-knowledge:document [context]
-```
-
----
-
 ## Common Mistakes
 
 | Mistake | Why It Matters | Correct Approach |
@@ -370,5 +327,4 @@ but the output quality depends on them:
 - **Solution is verified** — The fix has been tested or confirmed working. Unverified solutions
   risk documenting incorrect approaches.
 - **Non-trivial resolution** — Trivial fixes (typos, missing semicolons) generally do not warrant
-  full documentation. Use `--compact` for borderline cases, or skip documentation entirely for
-  one-character fixes.
+  full documentation. Skip documentation entirely for one-character fixes.
