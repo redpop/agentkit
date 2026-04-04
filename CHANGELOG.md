@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.1] - 2026-04-04
+
+### 🔄 Changed
+
+- Rewrote `discover` skill (ak-meta) with fresh terminology and unique phrasing
+- Rephrased `performance-optimizer` and `refactoring-expert` agents (ak-improve) with distinct wording
+- Simplified root README and expanded AGENTS.md conventions
+- Updated ak-git:operations skill documentation for `--` prefixed arguments
+- Added hyperlinks to skills, agents, and hooks in README plugin tables
+- Aligned discover skill documentation with new terminology
+
 ## [1.9.0] - 2026-04-03
 
 ### Added

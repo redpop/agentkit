@@ -1,7 +1,7 @@
 {
   "name": "ak-review",
   "description": "Quality assurance with CodeRabbit review, task completion workflow, and file validation hooks",
-  "version": "1.9.0",
+  "version": "1.9.1",
   "author": {
     "name": "redpop",
     "url": "https://github.com/redpop"
