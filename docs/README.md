@@ -8,7 +8,7 @@ AgentKit provides 9 plugins with specialized skills, agents, and hooks for Claud
 
 | Category | Count | Description |
 |----------|-------|-------------|
-| [Skills](skills/) | 20 | Slash commands invoked by the user |
+| [Skills](skills/) | 21 | Slash commands invoked by the user |
 | [Agents](agents/) | 10 | Specialized sub-agents for autonomous tasks |
 | [Hooks](hooks/) | 2 plugins | Automated actions on tool events |
 
@@ -22,6 +22,6 @@ AgentKit provides 9 plugins with specialized skills, agents, and hooks for Claud
 | ak-meta | Discovery & release management | 3 | — | — |
 | ak-notifications | macOS notifications | — | — | yes |
 | ak-react | React/Next.js development | 2 | — | — |
-| ak-review | Code quality assurance | 2 | — | yes |
+| ak-review | Code quality assurance | 3 | — | yes |
 | ak-security | Security guidelines | 3 | — | — |
 | ak-typo3 | TYPO3 CMS development | 5 | 5 | — |

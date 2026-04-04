@@ -58,7 +58,7 @@ plugins/{plugin-name}/
 
 | Plugin | Skills | Agents | Extras |
 |--------|--------|--------|--------|
-| `ak-review` | 2 | - | hooks, markdownlint config |
+| `ak-review` | 3 | - | hooks, markdownlint config |
 | `ak-git` | 1 | 2 | |
 | `ak-meta` | 3 | - | |
 | `ak-improve` | - | 2 | |
