@@ -1,197 +1,197 @@
 ---
 name: discover
 description: >
-  Generate and critically evaluate improvement ideas for any project. Use when asking what to improve,
-  requesting idea generation, exploring content ideas, or wanting proactive suggestions before
-  brainstorming one idea in depth. Works for code, content, product, or any creative direction.
+  Surface and stress-test improvement opportunities across any project. Use when the user wants
+  to find what to work on next, explore directions, uncover blind spots, or generate a prioritized
+  set of ideas before diving into brainstorming. Applies to code, content, product, or strategy.
 ---
 
 # Discover
 
-Generate grounded, critically evaluated ideas through divergent thinking and adversarial filtering. Works for any domain: code improvements, content strategy, product features, architecture decisions.
+Systematically uncover high-value opportunities by casting a wide net, then ruthlessly filtering for signal. Works across domains — technical debt, feature gaps, content strategy, architecture, DX.
 
-`discover` precedes brainstorming:
+`discover` sits upstream of brainstorming and planning:
 
-- **discover** answers: "What are the strongest ideas worth exploring?"
-- **brainstorming** answers: "What exactly should one chosen idea become?"
-- **planning** answers: "How should it be built?"
+- **discover** — "Where should we focus? What opportunities exist?"
+- **brainstorming** — "How do we shape a specific opportunity into something concrete?"
+- **planning** — "What are the steps to build it?"
 
-This workflow produces a ranked ideation artifact in `docs/ideation/`. It does **not** produce requirements, plans, or code.
+The output is a prioritized discovery document saved to `docs/discover/`. No requirements, no plans, no code.
 
 ## Arguments
 
-Parse `$ARGUMENTS` as optional context:
+Parse `$ARGUMENTS` for optional scope or direction:
 
-- A concept: `DX improvements`, `blog content for Q3`
-- A path: `plugins/ak-security/`
+- A topic: `DX improvements`, `blog content for Q3`
+- A file path: `plugins/ak-security/`
 - A constraint: `low-complexity quick wins`
-- A volume hint: `top 3`, `100 ideas`, `raise the bar`
-- No argument: open-ended ideation
+- A quantity hint: `top 3`, `100 ideas`, `raise the bar`
+- Empty: unconstrained exploration
 
-## Core Principles
+## Guiding Principles
 
-1. **Ground before ideating** — Scan the actual project first. No abstract advice detached from reality.
-2. **Diverge before judging** — Generate the full idea set before evaluating any individual idea.
-3. **Use adversarial filtering** — Quality comes from explicit rejection with reasons, not optimistic ranking.
-4. **Preserve the artifact early** — Write the ideation document before presenting results so work survives interruptions.
+1. **Context first** — Understand the project before proposing anything. Abstract suggestions without grounding are noise.
+2. **Breadth before depth** — Produce the full candidate set before evaluating individual entries.
+3. **Earn the shortlist** — Every survivor must withstand adversarial scrutiny. Optimistic ranking is not filtering.
+4. **Write early** — Persist the discovery document before presenting results so nothing is lost to interruptions.
 
-## Phase 0: Resume Check
+## Phase 0: Check for Prior Work
 
-Check `docs/ideation/` for ideation documents created within the last 30 days.
+Look in `docs/discover/` for documents from the past 30 days.
 
-If a relevant doc exists (topic/path overlaps with the current focus), ask:
+If a matching document exists (overlapping topic or scope), offer:
 
-1. Continue from it
-2. Start fresh
+1. Pick up where it left off
+2. Start from scratch
 
-If continuing: read the document, summarize what was explored, preserve previous statuses and session log.
+When resuming: load the document, recap prior findings, carry forward status markers and the session log.
 
-## Phase 1: Project Context Scan
+## Phase 1: Gather Project Context
 
-Before generating ideas, gather project context. Dispatch in parallel:
+Before generating anything, build situational awareness. Launch in parallel:
 
-1. **Context scan** — A general-purpose sub-agent that reads project instructions (AGENTS.md, CLAUDE.md, README.md) and scans the top-level directory layout. Returns a concise summary (under 30 lines):
-   - Project shape (language, framework, structure, content type)
-   - Notable patterns or conventions
-   - Obvious pain points or gaps
-   - Likely leverage points for improvement
+1. **Project survey** — A sub-agent reads project instructions (AGENTS.md, CLAUDE.md, README.md) and examines the top-level structure. Returns a compact profile (under 30 lines):
+   - Tech stack and project shape
+   - Conventions and patterns in use
+   - Visible friction points or gaps
+   - High-leverage areas
 
-2. **Existing knowledge search** — A sub-agent that searches for relevant past solutions, docs, or existing content in the project (e.g., `docs/solutions/`, `docs/`, blog posts, content archives — whatever exists).
+2. **Prior art search** — A sub-agent scans for related documentation, past solutions, or existing content in the project (`docs/solutions/`, `docs/`, content archives, etc.).
 
-Consolidate results into a short grounding summary.
+Combine both into a concise grounding brief.
 
-## Phase 2: Divergent Ideation
+## Phase 2: Wide-Angle Exploration
 
-Dispatch 4-6 parallel sub-agents, each with a different ideation frame as a **starting bias, not a constraint**. Each agent begins from its assigned perspective but follows any promising thread wherever it leads.
+Launch 4-6 parallel sub-agents, each approaching the project from a distinct angle. The angle is a **starting lens, not a boundary** — agents follow promising threads wherever they lead.
 
-**Default frames:**
+**Default lenses:**
 
-| Frame | Starting Bias |
+| Lens | Entry Question |
 |---|---|
-| Pain & Friction | What causes the most frustration or wasted time? |
-| Unmet Needs | What capability is missing or underserved? |
-| Inversion & Removal | What painful step could be automated, simplified, or eliminated entirely? |
-| Assumption-Breaking | What "obvious truth" about this project might be wrong? |
-| Leverage & Compounding | What small change would multiply the value of everything else? |
-| Edge Cases & Power Users | What would the most demanding user need that we don't serve? |
+| Friction & Pain | Where do users or developers lose the most time? |
+| Missing Capabilities | What obvious need is unaddressed? |
+| Simplification | What complex step could be automated, shortened, or removed? |
+| Challenged Assumptions | Which accepted constraint might actually be wrong? |
+| Multiplier Effects | What single change amplifies everything else? |
+| Demanding Users | What would a power user expect that we currently lack? |
 
 Each sub-agent:
 
-- Receives the grounding summary + focus hint
-- Generates ~7-8 ideas (30-40 raw across all agents)
-- Returns structured output per idea: title, summary, why_it_matters, evidence/grounding hooks
-- Pushes past the safe obvious layer — first ideas tend to be generic
+- Gets the grounding brief plus any focus hint
+- Produces ~7-8 candidates (targeting 30-40 raw ideas total)
+- Returns per idea: title, one-liner, why it matters, evidence from the project
+- Pushes beyond the obvious — early ideas tend to be surface-level
 
-After all agents return:
+Once all agents report back:
 
-1. **Merge and deduplicate** into one master candidate list (~20-30 unique candidates)
-2. **Synthesize cross-cutting combinations** — Scan for ideas from different frames that together are stronger than either alone. Add 3-5 combined ideas at most.
+1. **Consolidate and deduplicate** into a unified candidate pool (~20-30 distinct entries)
+2. **Spot combinations** — Look for ideas from different lenses that reinforce each other. Add up to 3-5 hybrid candidates.
 
-## Phase 3: Adversarial Filtering
+## Phase 3: Critical Evaluation
 
-Review every candidate critically. Prefer a two-layer critique:
+Subject every candidate to rigorous scrutiny. Two-layer approach preferred:
 
-1. **Skeptical sub-agents** attack the merged list from distinct angles
-2. **Orchestrator** synthesizes critiques, applies the rubric, scores survivors, decides final ranking
+1. **Challenger sub-agents** stress-test the pool from different critical angles
+2. **Orchestrator** weighs the critiques, applies the scoring rubric, ranks survivors
 
-**Rejection criteria:**
+**Cut criteria:**
 
-- Too vague or not actionable
-- Duplicates a stronger idea
-- Not grounded in the actual project
-- Too expensive relative to likely value
-- Already covered by existing workflows or docs
+- Too abstract to act on
+- Weaker duplicate of another candidate
+- Disconnected from the actual project
+- Cost outweighs realistic benefit
+- Already solved by existing tools or workflows
 
-**Survivor rubric (all factors weighted):**
+**Scoring dimensions (equally weighted):**
 
-- Groundedness in the actual project
-- Expected value
-- Novelty
-- Pragmatism
-- Leverage on future work
-- Implementation burden
+- Connection to real project state
+- Expected impact
+- Originality
+- Feasibility
+- Compounding value
+- Effort required
 
-**Target:** 5-7 survivors. If too many survive, run a second stricter pass. If fewer than 5 survive, report that honestly rather than lowering the bar.
+**Target outcome:** 5-7 finalists. Too many? Apply a stricter pass. Fewer than 5? Report honestly — don't dilute the bar.
 
-For each rejected idea, write a one-line reason.
+Record a one-line cut reason for every rejected candidate.
 
-## Phase 4: Present Survivors
+## Phase 4: Present Finalists
 
-Present surviving ideas in structured form:
+Show the surviving ideas in a consistent structure:
 
 ```markdown
-### 1. <Idea Title>
-**Description:** Concrete explanation
-**Rationale:** Why this improves the project
-**Downsides:** Tradeoffs or costs
+### 1. <Title>
+**What:** Concrete description
+**Why:** How this moves the project forward
+**Trade-offs:** Known costs or risks
 **Confidence:** 0-100%
-**Complexity:** Low / Medium / High
+**Effort:** Low / Medium / High
 ```
 
-Then include a brief rejection summary so the user can see what was considered and cut.
+Follow with a compact rejection table so the user sees the full picture of what was weighed.
 
-Allow brief follow-up questions before writing the artifact.
+Pause for questions before writing the artifact.
 
-## Phase 5: Write the Ideation Artifact
+## Phase 5: Persist the Discovery Document
 
-1. Ensure `docs/ideation/` exists
-2. File path: `docs/ideation/YYYY-MM-DD-<topic>-ideation.md` (or `-open-ideation.md` if no focus)
+1. Create `docs/discover/` if it does not exist
+2. Filename: `docs/discover/YYYY-MM-DD-<topic>-discover.md` (or `-open-discover.md` without a topic)
 3. Write the document:
 
 ```markdown
 ---
 date: YYYY-MM-DD
 topic: <kebab-case-topic>
-focus: <optional focus hint>
+focus: <optional scope or constraint>
 ---
 
-# Ideation: <Title>
+# Discover: <Title>
 
 ## Project Context
-[Grounding summary from Phase 1]
+[Grounding brief from Phase 1]
 
-## Ranked Ideas
+## Ranked Opportunities
 
-### 1. <Idea Title>
-**Description:** [Concrete explanation]
-**Rationale:** [Why this improves the project]
-**Downsides:** [Tradeoffs or costs]
+### 1. <Title>
+**What:** [Concrete description]
+**Why:** [How this moves the project forward]
+**Trade-offs:** [Known costs or risks]
 **Confidence:** [0-100%]
-**Complexity:** [Low / Medium / High]
+**Effort:** [Low / Medium / High]
 **Status:** [Unexplored / Explored]
 
-## Rejection Summary
+## Rejected Candidates
 
-| # | Idea | Reason Rejected |
-|---|------|-----------------|
-| 1 | <Idea> | <Reason> |
+| # | Candidate | Reason |
+|---|-----------|--------|
+| 1 | <Title> | <One-line reason> |
 
 ## Session Log
-- YYYY-MM-DD: Initial ideation — X candidates generated, Y survivors
+- YYYY-MM-DD: Initial run — X candidates evaluated, Y finalists
 ```
 
-If resuming: update in place, append to session log, preserve explored markers.
+When resuming: update the existing file, append to the session log, keep explored markers intact.
 
-## Phase 6: Next Steps
+## Phase 6: What Comes Next
 
-After presenting results, ask:
+After presenting results, offer three paths:
 
-1. **Brainstorm a selected idea** — Mark idea as `Explored`, note in session log, hand off to brainstorming workflow
-2. **Refine the ideation** — Route by intent:
-   - "Add more ideas" / "explore new angles" → return to Phase 2
-   - "Re-evaluate" / "raise the bar" → return to Phase 3
-   - "Dig deeper on idea #N" → expand that idea's analysis
-3. **End the session** — Offer to commit the ideation doc (no branch, no push)
+1. **Brainstorm a finalist** — Mark the idea as `Explored`, log it in the session, hand off to the brainstorming workflow
+2. **Iterate on the discovery** — Route based on intent:
+   - "More ideas" / "new angles" → back to Phase 2
+   - "Tighter filter" / "raise the bar" → back to Phase 3
+   - "Expand idea #N" → deeper analysis on that specific entry
+3. **Wrap up** — Offer to commit the discovery document (no branch, no push)
 
-**Always** write/update the artifact before any handoff or session end.
+**Always** save or update the artifact before any handoff or session close.
 
-## Quality Bar
+## Quality Checklist
 
-Before finishing, verify:
+Before finishing, confirm:
 
-- The idea set is grounded in the actual project
-- The candidate list was generated before filtering (diverge-first)
-- Every rejected idea has a reason
-- Survivors are materially better than a naive "give me ideas" list
-- The artifact was written before any handoff or session end
-- Acting on an idea routes to brainstorming, not directly to implementation
+- Candidates are rooted in actual project state, not generic advice
+- The full pool was generated before any filtering took place
+- Every rejected candidate has a stated reason
+- Finalists are meaningfully stronger than a naive "suggest improvements" prompt
+- The artifact is written and saved before handoff or session end
+- Progressing on an idea routes to brainstorming, never straight to implementation
