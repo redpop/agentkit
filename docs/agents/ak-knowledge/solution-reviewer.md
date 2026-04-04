@@ -18,7 +18,7 @@ Part of the **ak-knowledge** plugin. Uses Read, Grep, and Glob tools.
 
 ## When to Use
 
-- After `/ak-knowledge:document` writes a solution doc
+- After `/ak-knowledge:log` writes a solution doc
 - Validating frontmatter fields against the solution schema
 - Checking that all required sections are present for a given track
 - Ensuring code examples are properly formatted and solutions are self-contained
@@ -37,4 +37,4 @@ instructions, and a final verdict (PASS or NEEDS FIXES).
 
 ## Related
 
-- [ak-knowledge:document skill](../../../plugins/ak-knowledge/skills/document/SKILL.md) -- Solution documentation skill
+- [ak-knowledge:log skill](../../../plugins/ak-knowledge/skills/log/SKILL.md) -- Solution documentation skill

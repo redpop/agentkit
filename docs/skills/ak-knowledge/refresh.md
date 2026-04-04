@@ -28,9 +28,9 @@ Without arguments, targets all documents under `docs/solutions/`. A scope hint n
 - Scope hints keep large knowledge bases manageable (e.g., `refresh build-errors`)
 - Trust the tiered approach: focused (1-2 docs), batch (3-8), broad (9+)
 - Do not treat age alone as a staleness signal -- evaluate against current code
-- Combine with `/ak-knowledge:document` for a complete documentation lifecycle
+- Combine with `/ak-knowledge:log` for a complete documentation lifecycle
 
 ## Related
 
-- [document](./document.md) -- capture new solutions (the creation counterpart)
+- [log](./log.md) -- capture new solutions (the creation counterpart)
 - [agents-md-improver](./agents-md-improver.md) -- maintain project instruction files

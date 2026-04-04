@@ -2,7 +2,7 @@
 name: solution-reviewer
 description: |
   Reviews generated solution documentation for completeness, schema conformance, and clarity.
-  Use after /ak-knowledge:document writes a solution doc to validate quality.
+  Use after /ak-knowledge:log writes a solution doc to validate quality.
 
   <example>
   Context: A solution doc was just generated
@@ -25,7 +25,7 @@ You receive the path to a solution document that was just written or updated.
 
 ### 1. Schema Validation
 
-Read `${CLAUDE_PLUGIN_ROOT}/skills/document/references/schema.yaml` and the target document.
+Read `${CLAUDE_PLUGIN_ROOT}/skills/log/references/schema.yaml` and the target document.
 
 - Determine the track (bug vs knowledge) from `problem_type`
 - Verify all required fields are present for the track
@@ -35,7 +35,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/skills/document/references/schema.yaml` and the targ
 
 ### 2. Section Completeness
 
-Read `${CLAUDE_PLUGIN_ROOT}/skills/document/assets/template.md` for expected sections.
+Read `${CLAUDE_PLUGIN_ROOT}/skills/log/assets/template.md` for expected sections.
 
 - Bug track: Problem, Symptoms, What Didn't Work, Solution, Why This Works, Prevention
 - Knowledge track: Context, Guidance, Why This Matters, When to Apply, Examples

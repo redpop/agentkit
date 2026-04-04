@@ -4,17 +4,16 @@ Solution documentation and knowledge maintenance for AgentKit.
 
 ## Skills
 
-### /ak-knowledge:document
+### /ak-knowledge:log
 
 Captures verified solutions in `docs/solutions/` with structured YAML frontmatter. Uses parallel
-subagents for research and assembly, with a compact-safe single-pass alternative.
+subagents for research and assembly.
 
 **Usage:**
 
 ```bash
-/ak-knowledge:document                  # Document the most recent fix
-/ak-knowledge:document [context hint]   # Provide additional context
-/ak-knowledge:document --compact        # Lightweight single-pass mode
+/ak-knowledge:log                  # Log the most recent fix
+/ak-knowledge:log [context hint]   # Provide additional context
 ```
 
 ### /ak-knowledge:refresh
@@ -52,7 +51,7 @@ skip (already converted).
 Each documented solution compounds your team's knowledge:
 
 1. Solve a problem — research and debugging time
-2. Run `/ak-knowledge:document` — structured doc in `docs/solutions/`
+2. Run `/ak-knowledge:log` — structured doc in `docs/solutions/`
 3. Next occurrence — quick lookup instead of re-research
 4. Run `/ak-knowledge:refresh` periodically — keep docs accurate as code evolves
 

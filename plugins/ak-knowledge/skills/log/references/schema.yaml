@@ -1,5 +1,5 @@
 # Frontmatter schema for docs/solutions/ documentation
-# Canonical contract for YAML frontmatter written by /ak-knowledge:document.
+# Canonical contract for YAML frontmatter written by /ak-knowledge:log.
 #
 # Two tracks based on problem_type:
 #   Bug track  — defects and failures that were diagnosed and fixed

@@ -9,17 +9,6 @@ Document current problem context for handoff to another AI assistant.
 
 **SAFETY**: This is a READ-ONLY command. NEVER modify code — only create the handoff document.
 
-## Arguments
-
-Parse arguments: `$ARGUMENTS`
-
-- **filename**: First `.md` argument (default: "handoff.md")
-- `--compact`, `-c`: Generate compact handoff (max 10 sentences)
-- `--technical`, `-t`: Force technical details in compact mode
-- `--focus <topic>`: Emphasize specific area
-- `--skip <topic>`: Exclude specific topics
-- Remaining text: additional instructions
-
 ## Execution
 
 1. **Analyze conversation history** (Read only)
@@ -54,19 +43,4 @@ Parse arguments: `$ARGUMENTS`
 
 ## Suggested Next Steps
 [Approaches to try, areas to investigate]
-```
-
-## Compact Mode (--compact)
-
-Maximum 10 sentences total:
-
-```markdown
-# Compact Handoff
-
-## Requirement (2 sentences)
-## Current State (2 sentences)
-## Main Blocker (2 sentences)
-## Failed Attempts (1 sentence each, max 3)
-## Solution Paths (2 sentences)
-## Technical Context (with --technical only)
 ```
