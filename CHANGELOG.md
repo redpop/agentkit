@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.0] - 2026-04-04
+
+### ✨ Added
+
+- New skill `workflow` in ak-review for generating and auditing Task Completion Workflows
+  - Default mode: scans project tooling and generates a tailored 6-step workflow for AGENTS.md
+  - Audit mode (`--audit`): verifies existing workflow against current project state
+  - Detects build tools, test runners, linters, formatters, type checkers, and review tools
+  - Falls back to self-review when CodeRabbit CLI is not available
+
 ## [1.9.1] - 2026-04-04
 
 ### 🔄 Changed

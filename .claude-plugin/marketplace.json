@@ -11,7 +11,7 @@
       "name": "ak-review",
       "source": "./plugins/ak-review",
       "description": "Quality assurance with CodeRabbit review, task completion workflow, and file validation hooks",
-      "version": "1.9.1",
+      "version": "1.10.0",
       "category": "development",
       "keywords": ["code-review", "coderabbit", "quality", "validation", "workflow"],
       "license": "MIT"
@@ -20,7 +20,7 @@
       "name": "ak-git",
       "source": "./plugins/ak-git",
       "description": "Smart Git operations with intelligent commit messages and conflict resolution",
-      "version": "1.9.1",
+      "version": "1.10.0",
       "category": "productivity",
       "keywords": ["git", "commits", "workflow", "conflict-resolution"],
       "license": "MIT"
@@ -29,7 +29,7 @@
       "name": "ak-meta",
       "source": "./plugins/ak-meta",
       "description": "Project management with changelog generation and AI context handoff",
-      "version": "1.9.1",
+      "version": "1.10.0",
       "category": "productivity",
       "keywords": ["changelog", "handoff", "project-management"],
       "license": "MIT"
@@ -38,7 +38,7 @@
       "name": "ak-improve",
       "source": "./plugins/ak-improve",
       "description": "Code improvement agents for refactoring and performance optimization",
-      "version": "1.9.1",
+      "version": "1.10.0",
       "category": "development",
       "keywords": ["refactoring", "performance", "code-quality", "optimization"],
       "license": "MIT"
@@ -47,7 +47,7 @@
       "name": "ak-knowledge",
       "source": "./plugins/ak-knowledge",
       "description": "Solution documentation, knowledge maintenance, and project file management",
-      "version": "1.9.1",
+      "version": "1.10.0",
       "category": "productivity",
       "keywords": ["knowledge-management", "documentation", "solutions", "agents-md"],
       "license": "MIT"
@@ -56,7 +56,7 @@
       "name": "ak-notifications",
       "source": "./plugins/ak-notifications",
       "description": "Platform-specific notification hooks for permission prompts and idle alerts (macOS)",
-      "version": "1.9.1",
+      "version": "1.10.0",
       "category": "utilities",
       "keywords": ["notifications", "sound", "macos", "alerts"],
       "license": "MIT"
@@ -65,7 +65,7 @@
       "name": "ak-typo3",
       "source": "./plugins/ak-typo3",
       "description": "TYPO3 CMS development with content blocks, extensions, Fluid templates, and sitepackage skills",
-      "version": "1.9.1",
+      "version": "1.10.0",
       "category": "cms",
       "keywords": ["typo3", "cms", "content-blocks", "fluid", "sitepackage"],
       "license": "MIT"
@@ -74,7 +74,7 @@
       "name": "ak-react",
       "source": "./plugins/ak-react",
       "description": "React and Next.js development with best practices, performance optimization, and code quality scanning",
-      "version": "1.9.1",
+      "version": "1.10.0",
       "category": "development",
       "keywords": ["react", "nextjs", "performance", "best-practices", "code-quality"],
       "license": "MIT"
@@ -83,7 +83,7 @@
       "name": "ak-security",
       "source": "./plugins/ak-security",
       "description": "Security guidelines for secure code, LLM applications, and static analysis with Semgrep",
-      "version": "1.9.1",
+      "version": "1.10.0",
       "category": "security",
       "keywords": ["security", "owasp", "llm-security", "semgrep", "static-analysis", "code-review"],
       "license": "MIT"
