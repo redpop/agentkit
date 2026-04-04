@@ -9,7 +9,7 @@ Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/
 | [**ak-git**](#ak-git--smart-git-operations) | 1 | 2 | Smart commits, change analysis, conflict resolution |
 | [**ak-improve**](#ak-improve--code-improvement) | — | 2 | Code refactoring and performance optimization agents |
 | [**ak-knowledge**](#ak-knowledge--solution-documentation) | 4 | 1 | Solution docs, knowledge maintenance, AGENTS.md tools |
-| [**ak-meta**](#ak-meta--project-management-tools) | 3 | — | Ideation, changelog generation, AI context handoff |
+| [**ak-meta**](#ak-meta--project-management-tools) | 3 | — | Discovery, changelog generation, AI context handoff |
 | [**ak-notifications**](#ak-notifications--macos-notifications) | — | — | macOS sound and banner notifications |
 | [**ak-react**](#ak-react--react--nextjs-development) | 2 | — | React and Next.js best practices, performance optimization, code scanning |
 | [**ak-review**](#ak-review--quality-assurance) | 2 | — | CodeRabbit review, finalize workflow, validation hooks |
@@ -107,7 +107,7 @@ and keep them up to date.
 
 ### ak-meta — Project Management Tools
 
-Ideation, changelog generation with automatic version detection, and AI
+Discovery, changelog generation with automatic version detection, and AI
 context handoff for cross-session collaboration.
 
 #### Skills

@@ -7,17 +7,17 @@
 
 ## Purpose
 
-Generate and critically evaluate improvement ideas for any project through divergent thinking and adversarial filtering. Works for code, content, product, or any creative direction.
+Surface and stress-test improvement opportunities across any project. Applies to code, content, product, or strategy — uncovers blind spots and produces a prioritized set of ideas before brainstorming.
 
 ## Workflow
 
-1. **Resume check** — Look for recent ideation docs in `docs/ideation/`
-2. **Project context scan** — Parallel sub-agents gather project shape, patterns, pain points
-3. **Divergent ideation** — 4-6 parallel sub-agents with different frames (Pain, Unmet Needs, Inversion, Assumption-Breaking, Leverage, Edge Cases)
-4. **Adversarial filtering** — Skeptical sub-agents attack candidates; orchestrator scores survivors
-5. **Present survivors** — Ranked ideas with description, rationale, downsides, confidence, complexity
-6. **Write artifact** — Durable ideation doc in `docs/ideation/YYYY-MM-DD-<topic>-ideation.md`
-7. **Next steps** — Brainstorm a selected idea, refine, or end session
+1. **Check for prior work** — Look for recent discovery docs in `docs/discover/`
+2. **Gather project context** — Parallel sub-agents survey project shape, conventions, friction points
+3. **Wide-angle exploration** — 4-6 parallel sub-agents with different lenses (Friction, Missing Capabilities, Simplification, Challenged Assumptions, Multiplier Effects, Demanding Users)
+4. **Critical evaluation** — Challenger sub-agents stress-test candidates; orchestrator scores and ranks finalists
+5. **Present finalists** — Ranked opportunities with description, rationale, trade-offs, confidence, effort
+6. **Persist artifact** — Discovery document in `docs/discover/YYYY-MM-DD-<topic>-discover.md`
+7. **Next steps** — Brainstorm a finalist, iterate on the discovery, or wrap up
 
 ## Examples
 

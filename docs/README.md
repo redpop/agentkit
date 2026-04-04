@@ -19,7 +19,7 @@ AgentKit provides 9 plugins with specialized skills, agents, and hooks for Claud
 | ak-git | Git workflow automation | 1 | 2 | — |
 | ak-improve | Code optimization | — | 2 | — |
 | ak-knowledge | Solution documentation | 4 | 1 | — |
-| ak-meta | Ideation & release management | 3 | — | — |
+| ak-meta | Discovery & release management | 3 | — | — |
 | ak-notifications | macOS notifications | — | — | yes |
 | ak-react | React/Next.js development | 2 | — | — |
 | ak-review | Code quality assurance | 2 | — | yes |
