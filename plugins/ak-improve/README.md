@@ -1,18 +1,18 @@
 # ak-improve
 
-Code improvement agents for refactoring and performance optimization.
+Agents for systematic code improvement — structural refactoring and performance tuning.
 
 ## Agents
 
 | Agent | Description |
 |-------|-------------|
-| `refactoring-expert` | Code refactoring with clean code principles and design patterns |
-| `performance-optimizer` | Performance analysis, bottleneck identification, and optimization |
+| `refactoring-expert` | Structural improvement using clean code techniques and design patterns |
+| `performance-optimizer` | Bottleneck diagnosis, root cause analysis, and targeted optimization |
 
 ## Usage
 
-These agents are invoked automatically by Claude when relevant, or
-via finalize workflows that reference them.
+These agents are triggered automatically by Claude when applicable, or
+through finalize workflows that reference them.
 
 ## Installation
 

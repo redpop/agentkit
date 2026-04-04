@@ -1,12 +1,12 @@
 # Refactoring Expert
 
-> Clean code principles, design patterns, and systematic code improvement.
+> Structural code improvement through clean code techniques and proven design patterns.
 
 ## Overview
 
-Detects code smells (long methods, deep nesting, duplication, god classes), plans refactoring
-strategies, and implements safe, incremental improvements. Preserves existing behavior while
-improving structure, then reports changes and suggests follow-ups.
+Identifies structural weaknesses (oversized functions, excessive nesting, duplication, bloated
+classes), devises a safe improvement path, and applies changes incrementally. Preserves existing
+behavior throughout and reports on each modification with follow-up recommendations.
 
 ## Usage
 
@@ -18,25 +18,25 @@ Part of the **ak-improve** plugin. Uses Read, Grep, Glob, Edit, and Write tools.
 
 ## When to Use
 
-- Modules or classes that have grown too complex
-- Duplicated code or copy-paste patterns across files
-- Long parameter lists or deeply nested conditionals
-- God classes with too many responsibilities
-- Pre-commit quality improvement (referenced in AGENTS.md task completion workflow)
+- Modules or classes that have become unwieldy
+- Copy-paste duplication spread across files
+- Long argument lists or deeply nested control flow
+- Monolithic classes carrying too many concerns
+- Pre-commit quality pass (referenced in AGENTS.md task completion workflow)
 
 ## Methodology
 
-1. **Code Smell Detection** -- Long methods (>30 lines), deep nesting (>3 levels), duplication, feature envy
-2. **Refactoring Strategy** -- Extract Method/Class, Introduce Parameter Object, Replace Conditional with Polymorphism
-3. **Implementation** -- Start with highest-severity issues, one refactoring at a time, preserve behavior
-4. **Report** -- List changes and reasons, flag items needing manual review, suggest follow-ups
+1. **Structural Analysis** -- Oversized methods (>30 lines), deep nesting (>3 levels), duplication, misplaced logic
+2. **Improvement Plan** -- Extract Method/Class, Introduce Parameter Object, Replace branching with Polymorphism
+3. **Execution** -- Address most severe issues first, one change at a time, maintain existing behavior
+4. **Summary** -- Document modifications and reasoning, flag items for manual review, suggest future work
 
 ## Output
 
-Produces a table of changes made (file, change, reason), items requiring manual review, and
-follow-up suggestions for out-of-scope improvements.
+Produces a table of modifications (file, change, motivation), items that need human judgment,
+and suggestions for improvements outside the current scope.
 
 ## Related
 
-- [performance-optimizer](performance-optimizer.md) -- Performance-focused improvements
+- [performance-optimizer](performance-optimizer.md) -- Performance-focused optimization
 - [ak-core:finalize skill](../../../plugins/ak-core/skills/finalize/SKILL.md) -- Task completion workflow
