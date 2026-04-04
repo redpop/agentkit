@@ -18,6 +18,7 @@ Skills are slash commands that users invoke directly in Claude Code via `/plugin
 | [react-doctor](ak-react/react-doctor.md) | ak-react | Scan React codebase for issues |
 | [coderabbit](ak-review/coderabbit.md) | ak-review | Automated code review with CodeRabbit |
 | [finalize](ak-review/finalize.md) | ak-review | Task completion workflow |
+| [workflow](ak-review/workflow.md) | ak-review | Generate or audit task completion workflows |
 | [code-security](ak-security/code-security.md) | ak-security | OWASP security guidelines for 15+ languages |
 | [llm-security](ak-security/llm-security.md) | ak-security | OWASP Top 10 for LLM Applications |
 | [semgrep](ak-security/semgrep.md) | ak-security | Semgrep static analysis scanning |
