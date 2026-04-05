@@ -4,7 +4,7 @@ This file provides guidance to AI agents (Claude Code, Warp AI, etc.) when worki
 
 ## Project overview
 
-Claude Code plugin marketplace (`ak-marketplace`) with 9 independently installable plugins, 20 skills, 10 agents, and domain knowledge bases. Built on the official Claude Code Plugin Architecture.
+Claude Code plugin marketplace (`ak-marketplace`) with 9 independently installable plugins, 22 skills, 12 agents, and domain knowledge bases. Built on the official Claude Code Plugin Architecture.
 
 ## Dev environment
 
@@ -58,10 +58,10 @@ plugins/{plugin-name}/
 
 | Plugin | Skills | Agents | Extras |
 |--------|--------|--------|--------|
-| `ak-review` | 3 | - | hooks, markdownlint config |
+| `ak-review` | 3 | - | hooks, markdownlint config, knowledge/ (2 files) |
 | `ak-git` | 1 | 2 | |
-| `ak-meta` | 3 | - | |
-| `ak-improve` | - | 2 | |
+| `ak-meta` | 4 | 2 | |
+| `ak-improve` | - | 2 | knowledge/ (1 file) |
 | `ak-knowledge` | 4 | 1 | |
 | `ak-notifications` | - | - | hooks |
 | `ak-react` | 2 | - | knowledge/ (1 file) |

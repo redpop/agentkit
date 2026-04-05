@@ -9,6 +9,12 @@ Agents for systematic code improvement — structural refactoring and performanc
 | `refactoring-expert` | Structural improvement using clean code techniques and design patterns |
 | `performance-optimizer` | Bottleneck diagnosis, root cause analysis, and targeted optimization |
 
+## Knowledge
+
+| File | Content |
+|------|---------|
+| `hypothesis-debugging.md` | Structured root cause analysis with competing hypotheses, evidence standards, and arbitration |
+
 ## Usage
 
 These agents are triggered automatically by Claude when applicable, or

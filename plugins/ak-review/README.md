@@ -10,6 +10,13 @@ task completion workflow, and file validation hooks.
 | `coderabbit` | CodeRabbit CLI integration for automated code review |
 | `finalize` | Project-specific task completion workflow |
 
+## Knowledge
+
+| File | Content |
+|------|---------|
+| `review-dimensions.md` | 5 review dimensions (Security, Performance, Architecture, Testing, Accessibility) with checklists |
+| `wcag-audit-patterns.md` | Comprehensive WCAG 2.2 audit checklist with 60+ criteria, remediation patterns, and automated testing |
+
 ## Hooks
 
 | Hook | Trigger | Action |
