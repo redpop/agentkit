@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.11.0] - 2026-04-05
+
+### ✨ Added
+
+- New skill `quality` in ak-meta for assessing plugin component quality across 8 weighted dimensions
+  - Two-layer assessment: instant structural review (Layer 1) + expert agent scoring (Layer 2)
+  - `--quick` mode for fast structural feedback during development
+  - `--compare` mode for side-by-side component comparison with delta analysis
+  - Tier ratings: Platinum (90+), Gold (80+), Silver (70+), Bronze (60+)
+  - Detects 7 quality issues (RIGID_LANGUAGE, WEAK_DESCRIPTION, MISSING_ACTIVATION, etc.)
+- New agent `quality-assessor` in ak-meta for expert scoring on 4 dimensions with anchored rubrics
+- New agent `diagram-creator` in ak-meta for Mermaid diagram generation (flowcharts, sequences, ERDs, state diagrams, C4, and more)
+- New knowledge file `hypothesis-debugging.md` in ak-improve with structured root cause analysis framework (6 failure mode categories, evidence standards, arbitration protocol)
+- New knowledge file `review-dimensions.md` in ak-review with 5 structured review dimensions (Security, Performance, Architecture, Testing, Accessibility) and 58 checklist items
+- New knowledge file `wcag-audit-patterns.md` in ak-review with comprehensive WCAG 2.2 coverage across all 4 POUR principles (60+ criteria, remediation patterns, automated testing)
+
 ## [1.10.1] - 2026-04-04
 
 ### 🔄 Changed
