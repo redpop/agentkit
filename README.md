@@ -1,6 +1,6 @@
 # AgentKit
 
-Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) — 9 plugins with 21 skills, 10 agents, and domain knowledge bases for Git workflows, security, React, TYPO3, and more.
+Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) — 9 plugins with 22 skills, 12 agents, and domain knowledge bases for Git workflows, security, React, TYPO3, and more.
 
 ## Plugins
 
@@ -9,7 +9,7 @@ Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/
 | [**ak-git**](#ak-git--smart-git-operations) | 1 | 2 | Smart commits, change analysis, conflict resolution |
 | [**ak-improve**](#ak-improve--code-improvement) | — | 2 | Code refactoring and performance optimization agents |
 | [**ak-knowledge**](#ak-knowledge--solution-documentation) | 4 | 1 | Solution docs, knowledge maintenance, AGENTS.md tools |
-| [**ak-meta**](#ak-meta--project-management-tools) | 3 | — | Discovery, changelog generation, AI context handoff |
+| [**ak-meta**](#ak-meta--project-management-tools) | 4 | 2 | Discovery, changelog generation, AI context handoff, quality assessment, diagrams |
 | [**ak-notifications**](#ak-notifications--macos-notifications) | — | — | macOS sound and banner notifications |
 | [**ak-react**](#ak-react--react--nextjs-development) | 2 | — | React and Next.js best practices, performance optimization, code scanning |
 | [**ak-review**](#ak-review--quality-assurance) | 3 | — | CodeRabbit review, finalize workflow, workflow management, validation hooks |
@@ -76,7 +76,8 @@ analysis, and conflict resolution.
 
 ### ak-improve — Code Improvement
 
-Code improvement agents for refactoring and performance optimization.
+Code improvement agents for refactoring and performance optimization, with
+a hypothesis-driven debugging framework for systematic root cause analysis.
 
 #### Agents
 
@@ -84,6 +85,12 @@ Code improvement agents for refactoring and performance optimization.
 |-------|---------|
 | [performance-optimizer](docs/agents/ak-improve/performance-optimizer.md) | Bottleneck identification, memory leak analysis, algorithmic optimization |
 | [refactoring-expert](docs/agents/ak-improve/refactoring-expert.md) | Code refactoring with clean code principles and design patterns |
+
+#### Knowledge
+
+| File | Content |
+|------|---------|
+| hypothesis-debugging.md | Structured debugging with competing hypotheses, evidence standards, and arbitration |
 
 ### ak-knowledge — Solution Documentation
 
@@ -107,8 +114,8 @@ and keep them up to date.
 
 ### ak-meta — Project Management Tools
 
-Discovery, changelog generation with automatic version detection, and AI
-context handoff for cross-session collaboration.
+Discovery, changelog generation with automatic version detection, plugin quality
+assessment, and AI context handoff for cross-session collaboration.
 
 #### Skills
 
@@ -117,6 +124,14 @@ context handoff for cross-session collaboration.
 | [`/ak-meta:discover`](docs/skills/ak-meta/discover.md) | Generate and evaluate improvement ideas with adversarial filtering | `/ak-meta:discover blog content Q3` |
 | [`/ak-meta:changelog`](docs/skills/ak-meta/changelog.md) | Update CHANGELOG.md with automatic version detection | `/ak-meta:changelog` |
 | [`/ak-meta:handoff`](docs/skills/ak-meta/handoff.md) | Create context handoff documents for other AI sessions | `/ak-meta:handoff` |
+| [`/ak-meta:quality`](docs/skills/ak-meta/quality.md) | Assess plugin component quality with 8-dimension scoring | `/ak-meta:quality plugins/ak-git/` |
+
+#### Agents
+
+| Agent | Purpose |
+|-------|---------|
+| [quality-assessor](docs/agents/ak-meta/quality-assessor.md) | Expert quality scoring for skills and agents on 4 dimensions |
+| [diagram-creator](docs/agents/ak-meta/diagram-creator.md) | Creates Mermaid diagrams for architecture, flows, ERDs, and interactions |
 
 ### ak-notifications — macOS Notifications
 
@@ -143,8 +158,8 @@ and automated code quality scanning.
 
 ### ak-review — Quality Assurance
 
-Automated code review, task completion workflow, and file validation
-hooks with markdown formatting.
+Automated code review, task completion workflow, structured review
+dimensions, and file validation hooks with markdown formatting.
 
 #### Skills
 
@@ -162,6 +177,13 @@ hooks with markdown formatting.
 | [json-validate](docs/hooks/ak-review/validation-hooks.md) | After Write/Edit | Validates JSON syntax |
 | [shellcheck-validate](docs/hooks/ak-review/validation-hooks.md) | After Write/Edit | Lints shell scripts via ShellCheck |
 | [skill-suggestions](docs/hooks/ak-review/validation-hooks.md) | After Write/Edit | Suggests relevant AgentKit skills |
+
+#### Knowledge
+
+| File | Content |
+|------|---------|
+| review-dimensions.md | 5 review dimensions with checklists — Security, Performance, Architecture, Testing, Accessibility |
+| wcag-audit-patterns.md | Comprehensive WCAG 2.2 audit — 60+ criteria, remediation patterns, automated testing |
 
 ### ak-security — Security Guidelines
 

@@ -10,6 +10,8 @@ Agents are specialized sub-agents that handle complex, autonomous tasks. They ar
 | [git-workflow-specialist](ak-git/git-workflow-specialist.md) | ak-git | Intelligent commit creation and branch management |
 | [performance-optimizer](ak-improve/performance-optimizer.md) | ak-improve | Bottleneck identification and optimization |
 | [refactoring-expert](ak-improve/refactoring-expert.md) | ak-improve | Code refactoring with clean code principles |
+| [diagram-creator](ak-meta/diagram-creator.md) | ak-meta | Mermaid diagram generation for architecture and flows |
+| [quality-assessor](ak-meta/quality-assessor.md) | ak-meta | Expert quality scoring for skills and agents |
 | [solution-reviewer](ak-knowledge/solution-reviewer.md) | ak-knowledge | Solution documentation quality validation |
 | [typo3-architect](ak-typo3/typo3-architect.md) | ak-typo3 | Enterprise TYPO3 architecture |
 | [typo3-content-blocks-specialist](ak-typo3/typo3-content-blocks-specialist.md) | ak-typo3 | Content Block creation and configuration |
