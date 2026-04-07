@@ -114,21 +114,31 @@ Wrapper format: `{"description": "...", "hooks": {...}}`. The `${CLAUDE_PLUGIN_R
 
 - Use conventional commits: `feat:`, `fix:`, `docs:`, `refactor:`
 - Scope by plugin when applicable: `feat(ak-typo3): add content block field type`
-- Keep versions synchronized across `marketplace.json` and all `plugin.json` files (currently `1.11.0`)
+- Keep versions synchronized across `marketplace.json` and all `plugin.json` files (currently `1.12.0`)
 
 ## Task completion workflow
 
 After implementing changes:
 
-1. **Format** — Verify markdown formatting (auto-handled by markdown-format hook)
+1. **Validate** — Verify modified files are well-formed
+   - JSON files: `python3 -m json.tool {file} > /dev/null`
+   - Shell scripts: `shellcheck {file}`
+   - Markdown: handled automatically by the `markdown-format` hook
 2. **Simplify** — Simplify changed code for clarity and maintainability
-   - Claude Code: invoke the `refactoring-expert` agent on modified files
+   - Claude Code: invoke `/simplify` (preferred — Claude Code skill, install via plugin management if not available)
+   - Fallback: invoke the `refactoring-expert` agent on modified files
 3. **Review** — Run CodeRabbit review on uncommitted changes, then fix reported issues
    - Claude Code: invoke `/ak-review:coderabbit`
    - Other tools: run `coderabbit review --prompt-only --type uncommitted`
+   - **Critically evaluate CodeRabbit results** — not all suggestions are correct or relevant. Accept only changes that genuinely improve the code; dismiss false positives and overly pedantic findings.
 4. **Docs** — If plugins, skills, agents, or hooks changed, update `docs/` (detail files and index READMEs) and the root `README.md` plugin table
+5. **Re-validate** — Re-run JSON/shellcheck validation if those files were modified during steps 2-4
+6. **Version & Changelog** — When changes warrant a release, bump version and update `CHANGELOG.md`
+   - Claude Code: invoke `/bump-version` (preferred — fully automated end-to-end: auto-detects bump type from commits, updates all 11 files, runs `/ak-meta:changelog`, runs `/ak-git:operations`, and creates the git tag)
+   - Manual fallback: invoke `/ak-meta:changelog` directly (handles CHANGELOG only — version sync across the 11 files and tagging remain manual; see "Commit and PR guidelines" below)
 
 Skip steps 2-3 for trivial changes (typo fixes, config updates, single-line changes).
+Skip step 6 for docs-only or internal config changes that have no user-visible plugin impact.
 
 ## Important conventions
 
