@@ -1,6 +1,6 @@
 # AgentKit
 
-Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) — 9 plugins with 22 skills, 12 agents, and domain knowledge bases for Git workflows, security, React, TYPO3, and more.
+Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) — 10 plugins with 23 skills, 13 agents, and domain knowledge bases for Git workflows, security, React, TYPO3, and more.
 
 ## Plugins
 
@@ -8,6 +8,7 @@ Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/
 |--------|--------|--------|-------------|
 | [**ak-git**](#ak-git--smart-git-operations) | 1 | 2 | Smart commits, change analysis, conflict resolution |
 | [**ak-improve**](#ak-improve--code-improvement) | — | 2 | Code refactoring and performance optimization agents |
+| [**ak-js**](#ak-js--javascript-config-doctor) | 1 | 1 | JS config validation, 11 cross-file rules, monorepo-aware |
 | [**ak-knowledge**](#ak-knowledge--solution-documentation) | 4 | 1 | Solution docs, knowledge maintenance, AGENTS.md tools |
 | [**ak-meta**](#ak-meta--project-management-tools) | 4 | 2 | Discovery, changelog generation, AI context handoff, quality assessment, diagrams |
 | [**ak-notifications**](#ak-notifications--macos-notifications) | — | — | macOS sound and banner notifications |
@@ -37,6 +38,7 @@ Install all plugins:
 /plugin install ak-git@ak-marketplace
 /plugin install ak-meta@ak-marketplace
 /plugin install ak-improve@ak-marketplace
+/plugin install ak-js@ak-marketplace
 /plugin install ak-knowledge@ak-marketplace
 /plugin install ak-notifications@ak-marketplace
 /plugin install ak-react@ak-marketplace
@@ -91,6 +93,24 @@ a hypothesis-driven debugging framework for systematic root cause analysis.
 | File | Content |
 |------|---------|
 | hypothesis-debugging.md | Structured debugging with competing hypotheses, evidence standards, and arbitration |
+
+### ak-js — JavaScript Config Doctor
+
+JavaScript project configuration doctor: validates `package.json`, `tsconfig.json`,
+framework configs, and enforces cross-file best practices with 11 custom rules.
+Monorepo-aware from day 1.
+
+#### Skills
+
+| Skill | Purpose | Example |
+|-------|---------|---------|
+| [`/ak-js:config-doctor`](docs/skills/ak-js/config-doctor.md) | Scan project configs and produce a scored report | `/ak-js:config-doctor` |
+
+#### Agents
+
+| Agent | Purpose |
+|-------|---------|
+| [framework-config-analyzer](docs/agents/ak-js/framework-config-analyzer.md) | Phase-2 worker for JS/TS framework config analysis |
 
 ### ak-knowledge — Solution Documentation
 

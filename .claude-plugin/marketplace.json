@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "ak-marketplace",
-  "description": "AgentKit - 9 modulare Plugins für Review, Git, Projekt-Management, Code-Verbesserung, Knowledge, React, Security, TYPO3 und Notifications",
+  "description": "AgentKit - 10 modulare Plugins für Review, Git, Projekt-Management, Code-Verbesserung, Knowledge, React, Security, TYPO3, Notifications und JavaScript",
   "owner": {
     "name": "redpop",
     "url": "https://github.com/redpop"
