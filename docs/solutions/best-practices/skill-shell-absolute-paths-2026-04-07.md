@@ -137,6 +137,34 @@ test -f nx.json && echo "nx"
 true
 ```
 
+**Rule 7: Always run at least one zsh live test before the first release.** Static
+subagent tracing (paper-tests that simulate phases against fixtures) catches logic bugs
+but **cannot** catch shell-portability bugs — the LLM doing the trace has no shell,
+just Python. A skill that passes static validation can still fail catastrophically on
+the user's actual shell if you only tested it in your head.
+
+The critical observation: **zsh is the default shell on macOS**, not bash. macOS users
+— including most Claude Code users — run zsh. Any skill author who only mentally
+imagines bash semantics will ship skills that crash on zsh due to `nomatch` (Rule 5)
+and other zsh defaults that diverge from bash.
+
+Mandatory pre-release validation steps:
+
+1. **Static subagent trace** (paper-test) against 2-3 fixtures covering the main
+   code paths. Catches logic bugs. Example: `config-doctor` static validation caught
+   3 blocking logic bugs before v1.13.0 shipped.
+2. **Live zsh run** against a real project, ideally a monorepo with edge cases.
+   Catches shell-portability bugs that static tracing cannot see. Example:
+   `config-doctor` needed 2 patch releases (1.13.1, 1.13.2) after the live zsh runs
+   because each run surfaced bugs that static tracing missed — cd stacking, shell
+   glob `nomatch`, brace-expansion rejection, exit-code propagation.
+3. **Re-run after each fix.** Don't assume the first fix is complete; the second and
+   third runs in the `config-doctor` series each found new bugs. Rule of thumb: keep
+   live-testing until you get a clean run with **zero Bash-tool error markers** and
+   **consistent high-severity findings across two consecutive runs**.
+
+Neither step alone is sufficient; both are cheap compared to a patch-release cycle.
+
 ## Why This Matters
 
 Skills are executed by an LLM interpreting bash instructions. Unlike a real shell script
@@ -220,6 +248,10 @@ monorepo.
   exit-code propagation` — added Rules 5-6 (no shell globs/brace expansion, `true`
   terminators for conditional detection blocks) after the second live test on zsh
   surfaced two more bugs the first fix didn't anticipate.
+- Rule 7 was added after the third consecutive live-test run of v1.13.2 came back
+  clean (0 Bash-tool errors, consistent high-severity findings) — formalizing the
+  "static trace + mandatory zsh live test + re-run until clean" pre-release gate
+  that the v1.13.x patch series itself demonstrated was necessary.
 
 ## Related
 
