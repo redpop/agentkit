@@ -148,3 +148,4 @@ Skip step 6 for docs-only or internal config changes that have no user-visible p
 - Documentation is written in English
 - When adding, removing, or modifying plugins, skills, agents, or hooks, update the corresponding documentation in `docs/` (detail files and index READMEs) and the root `README.md` plugin table
 - The `markdown-format.sh` hook requires `markdownlint-cli2` (Homebrew preferred, npx fallback)
+- Before debugging from scratch, check `docs/solutions/` for previously documented fixes and reusable patterns — the project knowledge base grows via `/ak-knowledge:log` and is organized by track (bug fixes and knowledge/best-practices)
