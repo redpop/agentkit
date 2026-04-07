@@ -85,12 +85,20 @@ After the changelog is updated, invoke the `/ak-git:operations` skill to create 
 
 ### Step 8: Create git tag
 
-After the commit is created, tag it with the new version:
+After the commit is created, tag HEAD (the release commit) with an **annotated** tag:
 
 ```bash
-git tag v<new-version>
+git tag -a v<new-version> -m "Release v<new-version>"
 ```
 
-For example: `git tag v1.1.3`
+For example: `git tag -a v1.1.3 -m "Release v1.1.3"`
+
+Use annotated tags (`-a -m`), not lightweight tags — they carry tagger, date, and message metadata, which GitLab/GitHub release UIs and `git show <tag>` rely on.
 
 Confirm the tag was created by showing the output of `git tag --sort=-v:refname | head -3`.
+
+Finally, push the commit and tag together:
+
+```bash
+git push --follow-tags
+```
