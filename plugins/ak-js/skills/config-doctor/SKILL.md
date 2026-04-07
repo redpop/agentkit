@@ -67,27 +67,67 @@ Read support files on-demand as each phase needs them, not all at once.
    finding. Phases 1c and beyond should skip any package whose `package.json` could not be
    parsed.
 
-3. Build a file inventory. If single-package:
+3. Build a file inventory. **Always use absolute paths.** Capture the project root once
+   with `PROJECT_ROOT=$(pwd)` and use it for all subsequent file lookups. For workspace
+   packages, build each package's absolute path (e.g., `$PROJECT_ROOT/packages/web`) and
+   pass paths to `ls`/`find` directly — **never** use a bare `cd packages/foo` between scans,
+   because successive `cd` calls stack on top of the current shell state and produce broken
+   paths like `packages/web/packages/web`.
+
+   For a single-package project (paths relative to `$PROJECT_ROOT`):
 
    ```bash
-   # Find all relevant config files in the root
-   ls -1 package.json tsconfig.json biome.json biome.jsonc .prettierrc .prettierrc.json \
-         vercel.json turbo.json nx.json pnpm-workspace.yaml manifest.json web-app-manifest.json \
-         .eslintrc.json .npmrc 2>/dev/null
+   PROJECT_ROOT=$(pwd)
+
+   # JSON + config files in the root (pass explicit paths, not bare names)
+   ls -1 "$PROJECT_ROOT"/package.json "$PROJECT_ROOT"/tsconfig.json \
+         "$PROJECT_ROOT"/biome.json "$PROJECT_ROOT"/biome.jsonc \
+         "$PROJECT_ROOT"/.prettierrc "$PROJECT_ROOT"/.prettierrc.json \
+         "$PROJECT_ROOT"/vercel.json "$PROJECT_ROOT"/turbo.json \
+         "$PROJECT_ROOT"/nx.json "$PROJECT_ROOT"/pnpm-workspace.yaml \
+         "$PROJECT_ROOT"/manifest.json "$PROJECT_ROOT"/web-app-manifest.json \
+         "$PROJECT_ROOT"/.eslintrc.json "$PROJECT_ROOT"/.npmrc \
+         2>/dev/null
+
+   # tsconfig variants (tsconfig.base.json, tsconfig.app.json, etc.)
+   ls -1 "$PROJECT_ROOT"/tsconfig.*.json 2>/dev/null
 
    # Framework configs
-   ls -1 next.config.js next.config.mjs next.config.ts \
-         vite.config.js vite.config.ts \
-         astro.config.mjs astro.config.ts \
-         nuxt.config.js nuxt.config.ts \
-         svelte.config.js \
-         tailwind.config.js tailwind.config.ts tailwind.config.mjs \
-         eslint.config.js eslint.config.mjs \
-         postcss.config.js postcss.config.cjs postcss.config.mjs 2>/dev/null
+   ls -1 "$PROJECT_ROOT"/next.config.{js,mjs,ts} \
+         "$PROJECT_ROOT"/vite.config.{js,ts} \
+         "$PROJECT_ROOT"/astro.config.{mjs,ts} \
+         "$PROJECT_ROOT"/nuxt.config.{js,ts} \
+         "$PROJECT_ROOT"/svelte.config.js \
+         "$PROJECT_ROOT"/tailwind.config.{js,ts,mjs} \
+         "$PROJECT_ROOT"/eslint.config.{js,mjs} \
+         "$PROJECT_ROOT"/postcss.config.{js,cjs,mjs} \
+         2>/dev/null
    ```
 
-   If monorepo: resolve workspace globs (from `package.json.workspaces` or
-   `pnpm-workspace.yaml`) and repeat the scan in each workspace package directory.
+   **For a monorepo**, resolve the workspace globs (from `package.json.workspaces` or
+   `pnpm-workspace.yaml`) into absolute paths, then scan each workspace package using the
+   **same pattern** with its absolute path. Do this in a **subshell** (`(cd "$PKG_PATH" && ...)`)
+   or by passing the absolute path to `ls`/`find` directly. **Never** let `cd` calls leak
+   across scans — always return to `$PROJECT_ROOT` between packages, or use subshells so
+   the parent shell's `pwd` is never mutated.
+
+   Example monorepo scan:
+
+   ```bash
+   PROJECT_ROOT=$(pwd)
+
+   # For each workspace package (resolved from workspaces globs)
+   for PKG_PATH in "$PROJECT_ROOT"/packages/web "$PROJECT_ROOT"/packages/admin; do
+     # Run each package scan in a subshell — no state leakage
+     (
+       cd "$PKG_PATH"
+       ls -1 package.json tsconfig.json biome.json biome.jsonc \
+             .prettierrc .prettierrc.json .npmrc \
+             next.config.{js,mjs,ts} vite.config.{js,ts} \
+             2>/dev/null
+     )
+   done
+   ```
 
 4. Internally maintain the file inventory as structured data per-package:
 
@@ -126,14 +166,84 @@ For each JSON file in the inventory, validate against a schema:
    | `.eslintrc.json` | `${CLAUDE_PLUGIN_ROOT}/knowledge/schemas/eslintrc.schema.json` |
    | `pnpm-workspace.yaml` | `${CLAUDE_PLUGIN_ROOT}/knowledge/schemas/pnpm-workspace.schema.json` |
 
-2. **Parse check first** — before schema validation, ensure the file parses:
+2. **Parse check first** — before schema validation, ensure the file parses.
+
+   **JSONC-aware parsing is required** because several common config files officially
+   allow comments and/or trailing commas:
+
+   | Pattern | Format |
+   |---------|--------|
+   | `tsconfig.json`, `tsconfig.*.json` | JSONC (TypeScript officially supports `//` and `/* */` comments) |
+   | `biome.jsonc` | JSONC (by extension) |
+   | `*.jsonc` | JSONC (by extension) |
+   | `.vscode/settings.json`, `.vscode/launch.json` | JSONC |
+   | Everything else | strict JSON |
+
+   For **strict JSON** files use the fast path:
 
    ```bash
-   python3 -m json.tool <file> > /dev/null 2>&1
+   python3 -m json.tool "$ABSOLUTE_PATH" > /dev/null 2>&1
    ```
 
-   If parse fails: emit a 🔴 Critical finding (`"Broken JSON — file cannot be parsed"`) and
-   skip schema validation for that file. Continue with other files.
+   For **JSONC** files (matched by the table above), strip `//` line comments, `/* ... */`
+   block comments, and trailing commas before parsing. Do NOT touch comment-like strings
+   inside string literals — use a regex that skips over quoted content:
+
+   ```bash
+   python3 -c '
+   import json, re, sys
+
+   src = open(sys.argv[1]).read()
+
+   # Remove /* ... */ block comments and // line comments, while preserving
+   # comment-like substrings that appear inside string literals.
+   def strip_jsonc(text):
+       out, i, n = [], 0, len(text)
+       while i < n:
+           c = text[i]
+           if c == "\"":
+               # copy string literal verbatim (handle escaped quotes)
+               out.append(c); i += 1
+               while i < n:
+                   ch = text[i]
+                   out.append(ch); i += 1
+                   if ch == "\\" and i < n:
+                       out.append(text[i]); i += 1
+                   elif ch == "\"":
+                       break
+               continue
+           if c == "/" and i + 1 < n and text[i+1] == "/":
+               while i < n and text[i] != "\n":
+                   i += 1
+               continue
+           if c == "/" and i + 1 < n and text[i+1] == "*":
+               i += 2
+               while i + 1 < n and not (text[i] == "*" and text[i+1] == "/"):
+                   i += 1
+               i += 2
+               continue
+           out.append(c); i += 1
+       return "".join(out)
+
+   cleaned = strip_jsonc(src)
+   cleaned = re.sub(r",(\s*[}\]])", r"\1", cleaned)  # trailing commas
+
+   try:
+       json.loads(cleaned)
+       print("OK")
+   except json.JSONDecodeError as e:
+       print(f"BROKEN: {e}")
+   ' "$ABSOLUTE_PATH"
+   ```
+
+   If parse fails (for either strict JSON or JSONC after cleaning): emit a 🔴 Critical
+   finding (`"Broken JSON — file cannot be parsed"`) and skip schema validation for that
+   file. Continue with other files.
+
+   **Important:** When running schema validation in Step 3 below against a JSONC file, pass
+   the **cleaned JSON string** (comments/trailing commas stripped) to `jsonschema.validate`,
+   not the raw file content — otherwise `json.load` inside the validator will re-raise the
+   parse error.
 
 3. **Schema validation** — use `python3` with `jsonschema` (widely available):
 
