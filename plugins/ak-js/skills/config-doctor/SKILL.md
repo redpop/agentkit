@@ -46,7 +46,14 @@ Read support files on-demand as each phase needs them, not all at once.
 
    ```bash
    # workspaces field in root package.json
-   python3 -c "import json; d = json.load(open('package.json')); print('has_workspaces' if 'workspaces' in d else 'single')"
+   python3 -c "
+   import json
+   try:
+       d = json.load(open('package.json'))
+       print('has_workspaces' if 'workspaces' in d else 'single')
+   except json.JSONDecodeError:
+       print('broken')
+   "
 
    # separate workspace config files
    test -f pnpm-workspace.yaml && echo "pnpm_workspace"
@@ -54,6 +61,11 @@ Read support files on-demand as each phase needs them, not all at once.
    test -f turbo.json && echo "turbo"
    test -f nx.json && echo "nx"
    ```
+
+   **If the result is `broken`:** skip monorepo detection for the root and mark the root
+   `package.json` as unparseable. Phase 1a's parse check will emit the Critical "Broken JSON"
+   finding. Phases 1c and beyond should skip any package whose `package.json` could not be
+   parsed.
 
 3. Build a file inventory. If single-package:
 
@@ -183,20 +195,20 @@ For each `.npmrc` in the inventory (there may be one per package in monorepos):
 1. **Parse the file** — simple key=value line parser:
 
    ```bash
-   python3 -c "
-   import re
-   lines = open('<file>').readlines()
+   python3 -c '
+   import re, sys
+   lines = open(sys.argv[1]).readlines()
    for i, line in enumerate(lines, start=1):
        stripped = line.strip()
-       if not stripped or stripped.startswith('#') or stripped.startswith(';'):
+       if not stripped or stripped.startswith("#") or stripped.startswith(";"):
            continue
-       m = re.match(r'^([^=]+?)\s*=\s*(.*)\$', stripped)
+       m = re.match(r"^([^=]+?)\s*=\s*(.*)$", stripped)
        if not m:
-           print(f'{i}: MALFORMED: {stripped}')
+           print(f"{i}: MALFORMED: {stripped}")
            continue
        key, value = m.group(1).strip(), m.group(2).strip()
-       print(f'{i}: {key}={value}')
-   "
+       print(f"{i}: {key}={value}")
+   ' <file>
    ```
 
 2. **Check each key:**
@@ -221,6 +233,12 @@ For each `.npmrc` in the inventory (there may be one per package in monorepos):
      `"Custom registry declared in .npmrc but package.json lacks publishConfig.registry"`.
 
 ### Phase 1c: Cross-File Custom Rules
+
+**Precondition:** For each package in the inventory, if its `package.json` failed to parse
+(Phase 1a emitted a Critical "Broken JSON" finding), **skip all cross-file rules** for that
+package. The rules below assume a parseable `package.json`. Rules that reference other
+files (e.g., lockfiles for Rule 10) can still run if `package.json` is broken — use your
+judgment per rule.
 
 Load the full documentation from `${CLAUDE_PLUGIN_ROOT}/knowledge/cross-file-rules.md` and
 apply each rule to the file inventory. Rules 1-10 run per package; rule 11 runs across
