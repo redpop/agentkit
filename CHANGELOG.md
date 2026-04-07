@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.13.0] - 2026-04-07
+
+### ✨ Added
+
+- New plugin `ak-js` — JavaScript project configuration doctor
+  - New skill `/ak-js:config-doctor` — zero-config audit of JS/Node project configuration files
+    with a 0-100 scored report, A-F grade, and severity-grouped findings (Critical / High /
+    Medium / Suggestion)
+  - New agent `framework-config-analyzer` — Phase-2 worker for JS/TS framework config
+    analysis (Next.js, Vite, Astro, Nuxt, SvelteKit, Tailwind, ESLint Flat Config, PostCSS)
+  - 10 bundled JSON Schemas from SchemaStore / canonical upstreams (package.json,
+    tsconfig.json, biome.json, vercel.json, turbo.json, nx.json, prettierrc, web-manifest,
+    eslintrc, pnpm-workspace) with SchemaStore fallback for extended coverage
+  - `.npmrc` INI-format validator with 145-entry npm config keys whitelist and plaintext
+    credential detection (flags `_authToken`, `_password`, etc. as Critical)
+  - 11 custom cross-file rules catching mismatches no single-file tool sees: missing script
+    deps, incompatible `engines.node` vs `tsconfig.target`, `packageManager` lockfile drift,
+    publishable-field checks, `type: module` consistency, workspace glob validity, multiple
+    lockfile detection, and workspace dependency version drift for singleton libs
+    (react/react-dom/vue/svelte/solid-js/rxjs/zustand)
+  - Monorepo-aware from day 1 — auto-detects npm/pnpm/yarn/bun/lerna/turbo/nx workspaces
+    and reports per-package + workspace-wide findings
+  - Read-only by design — never modifies files; fixes are applied by Claude in the
+    surrounding conversation
+- Marketplace now lists 10 plugins (was 9); top-level description updated to reflect the
+  new JavaScript plugin
+
 ## [1.12.0] - 2026-04-07
 
 ### 🔄 Changed
