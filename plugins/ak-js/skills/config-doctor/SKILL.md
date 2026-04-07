@@ -364,3 +364,92 @@ findings.
 
 **If no framework configs exist, skip Phase 2 entirely.** The report will show
 "Phase 2: skipped (no framework configs detected)".
+
+### Phase 3: Merge, Score, Render
+
+1. **Merge findings** — combine Phase 1a, 1b, 1c, and Phase 2 findings into one list. Tag each
+   finding with its source phase (for debugging in verbose mode).
+
+2. **Calculate score:**
+
+   ```python
+   score_impact = {"critical": 10, "high": 5, "medium": 2, "suggestion": 0.5}
+   penalty = sum(score_impact[f.severity] for f in findings)
+   score = max(0, round(100 - penalty))
+   ```
+
+3. **Assign grade:**
+
+   ```python
+   grade = "A" if score >= 90 else "B" if score >= 75 else "C" if score >= 60 else "D" if score >= 40 else "F"
+   ```
+
+4. **Render report in this exact format:**
+
+   ```markdown
+   ## Config Doctor Report
+
+   **Project**: <directory name>
+   **Type**: Single package (<package_manager>) | <PM> workspace (<N> packages)
+   **Score**: <score>/100 (Grade: <grade>)
+   **Files scanned**: <count> (<comma-separated file list, max 10>)
+
+   ---
+
+   ### 🔴 Critical (<count>)
+
+   **1. <file>[:<line>] — <title>**
+   - Found: <quoted value>
+   - Why: <explanation>
+   - Fix: <actionable step>
+
+   ### 🟠 High (<count>)
+   ... (same format, numbered continuously)
+
+   ### 🟡 Medium (<count>)
+   ... (same format)
+
+   ### 🔵 Suggestions (<count>)
+   ... (same format)
+
+   ### Phase 2 (Framework Configs)
+
+   ✓ <file> — No issues detected (<framework_name>)
+
+   ---
+
+   ### Summary
+
+   - <count> files validated • <C> critical, <H> high, <M> medium, <S> suggestion
+   - **Action required**: <1-liner based on highest severity>
+   - **Recommended**: <1-liner for second-most-severe batch>
+   - Score: <score>/100 (<grade> — <short meaning>)
+   ```
+
+5. **Monorepo report variant** — if `project.type === "monorepo"`:
+
+   - Start with `**Overall Score**: <score>/100 (<grade>)`
+   - Section: `### Workspace-wide Findings (<count>)` — rule 11 findings go here
+   - Section: `### Per-Package Reports` with `#### <package_path> — Score <N> (<grade>)`
+     subsections
+
+6. **Empty state** — if there are no findings at all:
+
+   ```markdown
+   ## Config Doctor Report
+
+   **Project**: <name>
+   **Score**: 100/100 (Grade: A)
+   **Files scanned**: <count>
+
+   ✓ No issues detected. Configuration looks healthy.
+   ```
+
+7. **Footer notes** — append any phase-level notes (e.g.,
+   `"Extended schema validation skipped: SchemaStore unreachable"`) under `---` at the bottom
+   of the report.
+
+## Output to User
+
+Print the rendered report as the final message of the skill's execution. Do not wrap it in
+additional commentary — the report is self-contained.
