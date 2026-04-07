@@ -95,4 +95,80 @@ Read support files on-demand as each phase needs them, not all at once.
    }
    ```
 
-(Phase 1a, 1b, 1c, 2, and 3 are added in subsequent tasks.)
+### Phase 1a: JSON Schema Validation
+
+For each JSON file in the inventory, validate against a schema:
+
+1. **Lookup strategy:**
+
+   | File name | Schema |
+   |-----------|--------|
+   | `package.json` | `${CLAUDE_PLUGIN_ROOT}/knowledge/schemas/package.schema.json` |
+   | `tsconfig.json`, `tsconfig.*.json` | `${CLAUDE_PLUGIN_ROOT}/knowledge/schemas/tsconfig.schema.json` |
+   | `biome.json`, `biome.jsonc` | `${CLAUDE_PLUGIN_ROOT}/knowledge/schemas/biome.schema.json` |
+   | `.prettierrc`, `.prettierrc.json` | `${CLAUDE_PLUGIN_ROOT}/knowledge/schemas/prettierrc.schema.json` |
+   | `vercel.json` | `${CLAUDE_PLUGIN_ROOT}/knowledge/schemas/vercel.schema.json` |
+   | `turbo.json` | `${CLAUDE_PLUGIN_ROOT}/knowledge/schemas/turbo.schema.json` |
+   | `nx.json` | `${CLAUDE_PLUGIN_ROOT}/knowledge/schemas/nx.schema.json` |
+   | `manifest.json`, `web-app-manifest.json` | `${CLAUDE_PLUGIN_ROOT}/knowledge/schemas/manifest.schema.json` |
+   | `.eslintrc.json` | `${CLAUDE_PLUGIN_ROOT}/knowledge/schemas/eslintrc.schema.json` |
+   | `pnpm-workspace.yaml` | `${CLAUDE_PLUGIN_ROOT}/knowledge/schemas/pnpm-workspace.schema.json` |
+
+2. **Parse check first** — before schema validation, ensure the file parses:
+
+   ```bash
+   python3 -m json.tool <file> > /dev/null 2>&1
+   ```
+
+   If parse fails: emit a 🔴 Critical finding (`"Broken JSON — file cannot be parsed"`) and
+   skip schema validation for that file. Continue with other files.
+
+3. **Schema validation** — use `python3` with `jsonschema` (widely available):
+
+   ```bash
+   python3 -c "
+   import json, sys
+   try:
+       import jsonschema
+   except ImportError:
+       sys.exit(0)  # jsonschema not available — skip validation gracefully
+
+   instance = json.load(open('<file>'))
+   schema = json.load(open('<schema_path>'))
+   try:
+       jsonschema.validate(instance=instance, schema=schema)
+       print('VALID')
+   except jsonschema.ValidationError as e:
+       print(f'INVALID: {e.message} (at {list(e.absolute_path)})')
+   "
+   ```
+
+   If `jsonschema` is not available: emit a one-line notice in the report footer
+   (`"Schema validation requires python3 -m pip install jsonschema"`) and skip this phase
+   entirely. Do NOT fail the whole skill — continue to Phase 1b.
+
+4. **Extended lookup (SchemaStore fallback)** — for JSON files not in the local table (e.g.,
+   `commitlint.config.json`), try fetching from SchemaStore with a 3-second timeout:
+
+   ```bash
+   curl -sSL --max-time 3 \
+     https://json.schemastore.org/<filename-stem>.json \
+     -o /tmp/config-doctor-schema-$$
+   ```
+
+   If curl exits non-zero or the response is not valid JSON: skip the file, add note to the
+   report footer: `"Extended schema validation skipped: SchemaStore unreachable or no schema
+   for <file>"`.
+
+5. **Convert validation errors to findings** — map `jsonschema.ValidationError` → one finding
+   per error:
+
+   ```text
+   severity: High (for type mismatches, required-field-missing)
+   severity: Medium (for other violations)
+   file: <relative path>
+   title: Schema violation
+   found: <error message>
+   why: Schema validation failed
+   fix: Correct the value to match the schema
+   ```
