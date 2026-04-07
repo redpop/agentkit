@@ -219,3 +219,108 @@ For each `.npmrc` in the inventory (there may be one per package in monorepos):
    - If `.npmrc` declares a custom registry (`registry=` or `@scope:registry=`), check whether
      `package.json` has a corresponding `publishConfig.registry`. If not, emit a 🔵 Suggestion:
      `"Custom registry declared in .npmrc but package.json lacks publishConfig.registry"`.
+
+### Phase 1c: Cross-File Custom Rules
+
+Load the full documentation from `${CLAUDE_PLUGIN_ROOT}/knowledge/cross-file-rules.md` and
+apply each rule to the file inventory. Rules 1-10 run per package; rule 11 runs across
+packages in monorepos only.
+
+For each package in the inventory, run rules 1-10 in order. Each rule has the same output
+shape:
+
+```text
+{
+  rule_id: 1-11,
+  rule_name: "scripts.lint requires linter dep",
+  severity: "critical" | "high" | "medium" | "suggestion",
+  file: "package.json" | ...,
+  found: "...",
+  why: "...",
+  fix: "..."
+}
+```
+
+**Rule 1 — scripts.lint requires linter dep:**
+
+```bash
+python3 -c "
+import json
+pkg = json.load(open('package.json'))
+scripts = pkg.get('scripts', {})
+lint_script = scripts.get('lint', '')
+if 'eslint' in lint_script:
+    deps = {**pkg.get('devDependencies', {}), **pkg.get('dependencies', {})}
+    if 'eslint' not in deps:
+        print('VIOLATION')
+elif 'biome' in lint_script:
+    deps = {**pkg.get('devDependencies', {}), **pkg.get('dependencies', {})}
+    if '@biomejs/biome' not in deps:
+        print('VIOLATION')
+"
+```
+
+**Rule 2 — scripts.format requires formatter dep:** analogous to Rule 1 with `format` /
+`prettier` / `biome`.
+
+**Rule 3 — scripts.test requires test runner dep:** check for any of `vitest`, `jest`,
+`mocha`, `playwright`, `@playwright/test`, `cypress` in deps when `scripts.test` exists.
+Special case: if the script is `node --test`, no extra dep is required.
+
+**Rule 4 — tsconfig.json requires TypeScript dep:** if any `tsconfig.json` exists in the
+package, `typescript` must be in deps.
+
+**Rule 5 — packageManager field consistency:** parse `pkg.packageManager` (e.g.,
+`"pnpm@9.0.0"`). Scan for lockfiles. If mismatch, emit Medium.
+
+**Rule 6 — engines.node vs tsconfig.target:** parse both, use the lookup table in
+cross-file-rules.md, flag incompatibilities as High.
+
+**Rule 7 — Publishable check:** if `pkg.private` is `false` or missing, verify `name`,
+`version`, `description`, `license`, `repository` all present.
+
+**Rule 8 — type: module consistency:** if `pkg.type === "module"`, scan `pkg.bin` and
+`pkg.scripts` for `.js` files. The heuristic is simple — warn only, since determining
+whether a file actually uses CommonJS would require reading each file.
+
+**Rule 9 — Workspace globs must match packages:** if `pkg.workspaces` is set, expand the
+globs via Bash (`ls packages/*/package.json 2>/dev/null`) and ensure at least one match.
+
+**Rule 10 — Single package manager:** count lockfiles in the project root:
+
+```bash
+count=0
+for f in package-lock.json pnpm-lock.yaml yarn.lock bun.lockb bun.lock; do
+  [ -f "$f" ] && count=$((count + 1))
+done
+echo "$count"
+```
+
+If `count > 1`, emit Medium with the full list of found lockfiles.
+
+**Rule 11 — Workspace dependency consistency (monorepo only):** only runs when
+`project.type === "monorepo"`. Build a map:
+
+```python
+# pseudocode
+drift_map = {}
+for package in packages:
+    for dep_type in ("dependencies", "devDependencies", "peerDependencies"):
+        for name, version in package.package_json.get(dep_type, {}).items():
+            drift_map.setdefault(name, {}).setdefault(version, []).append(package.path)
+
+for name, versions in drift_map.items():
+    if len(versions) > 1:
+        severity = "high" if name in SINGLETON_LIBS else "medium"
+        emit_finding(
+            rule_id=11,
+            severity=severity,
+            file="<workspace>",
+            found=f"{name} has {len(versions)} distinct versions",
+            why="...",
+            fix="Align versions or hoist to root"
+        )
+```
+
+`SINGLETON_LIBS = {"react", "react-dom", "vue", "@vue/runtime-core", "svelte", "solid-js",
+"rxjs", "zustand"}`.
