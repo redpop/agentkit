@@ -172,3 +172,50 @@ For each JSON file in the inventory, validate against a schema:
    why: Schema validation failed
    fix: Correct the value to match the schema
    ```
+
+### Phase 1b: `.npmrc` Validation
+
+`.npmrc` uses INI format (`key=value` per line), not JSON. Load the keys whitelist from
+`${CLAUDE_PLUGIN_ROOT}/knowledge/npmrc-keys.json`.
+
+For each `.npmrc` in the inventory (there may be one per package in monorepos):
+
+1. **Parse the file** — simple key=value line parser:
+
+   ```bash
+   python3 -c "
+   import re
+   lines = open('<file>').readlines()
+   for i, line in enumerate(lines, start=1):
+       stripped = line.strip()
+       if not stripped or stripped.startswith('#') or stripped.startswith(';'):
+           continue
+       m = re.match(r'^([^=]+?)\s*=\s*(.*)\$', stripped)
+       if not m:
+           print(f'{i}: MALFORMED: {stripped}')
+           continue
+       key, value = m.group(1).strip(), m.group(2).strip()
+       print(f'{i}: {key}={value}')
+   "
+   ```
+
+2. **Check each key:**
+
+   - **Malformed line** → 🟡 Medium finding: `"Line <N>: malformed .npmrc entry"`
+   - **Key not in whitelist AND not matching scoped registry pattern (`@scope:registry`)** →
+     🔵 Suggestion: `"Line <N>: unknown npm config key '<key>' — may be tool-specific"`
+   - **Key matches `sensitive_key_patterns` AND value is NOT `${...}` env reference** →
+     🔴 Critical finding: `"Line <N>: plaintext credential detected in .npmrc"`
+     - Example trigger: `_authToken=npm_xxxxxxxxxxxx`
+     - Example OK: `_authToken=${NPM_TOKEN}`
+
+3. **Check `registry=` value is a valid URL**:
+
+   - If present and does NOT match `^https?://` → 🟠 High:
+     `"Invalid registry URL: <value>"`
+
+4. **Cross-reference with package.json**:
+
+   - If `.npmrc` declares a custom registry (`registry=` or `@scope:registry=`), check whether
+     `package.json` has a corresponding `publishConfig.registry`. If not, emit a 🔵 Suggestion:
+     `"Custom registry declared in .npmrc but package.json lacks publishConfig.registry"`.
