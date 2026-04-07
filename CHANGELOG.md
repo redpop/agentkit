@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.13.2] - 2026-04-07
+
+### 🐛 Fixed
+
+- `ak-js:config-doctor` Phase 0 Step 2 — **exit-code propagation**. The workspace-type
+  detection block ended with a chain of `test -f` commands (`lerna.json`, `turbo.json`,
+  `nx.json`). When the last-checked file did not exist, the whole Bash tool call
+  returned a non-zero exit status and was reported as a failure — even though the
+  detection correctly printed the detected workspace kind. Each test is now wrapped in
+  `|| true` and the block ends with a `true` terminator. Added an "exit-code
+  discipline" note describing the rule for all future bash blocks.
+- `ak-js:config-doctor` Phase 0 Step 3 — **shell glob / brace expansion rejected by
+  zsh**. Patterns like `tsconfig.*.json` and `next.config.{js,mjs,ts}` are aborted by
+  zsh (the macOS default) with `no matches found` **before** the command runs, because
+  the `nomatch` option is on by default — which means `2>/dev/null` cannot suppress
+  the error. Replaced all glob/brace patterns in Phase 0 Step 3 with `find -name … -o
+  -name …` chains, which are POSIX-portable and treat "no match" as an empty result.
+  Explicit path lists (fixed filenames) remain safe and are kept as-is.
+- `ak-js:config-doctor` Phase 0 Step 3 monorepo scan — added `vitest.config.{js,ts}`
+  to the framework config scan (discovered during the same live test).
+- `docs/solutions/best-practices/skill-shell-absolute-paths-2026-04-07.md` — extended
+  to 6 rules with the two new shell-portability lessons (Rule 5: use `find`, not shell
+  globs; Rule 6: end conditional-detection blocks with `true`).
+
 ## [1.13.1] - 2026-04-07
 
 ### 🐛 Fixed
