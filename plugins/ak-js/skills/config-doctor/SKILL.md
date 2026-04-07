@@ -55,12 +55,21 @@ Read support files on-demand as each phase needs them, not all at once.
        print('broken')
    "
 
-   # separate workspace config files
-   test -f pnpm-workspace.yaml && echo "pnpm_workspace"
-   test -f lerna.json && echo "lerna"
-   test -f turbo.json && echo "turbo"
-   test -f nx.json && echo "nx"
+   # separate workspace config files — each test is isolated with `|| true` so a
+   # missing file does not propagate non-zero exit status to the Bash tool, and the
+   # final `true` guarantees the whole block exits 0 regardless of which files exist.
+   { test -f pnpm-workspace.yaml && echo "pnpm_workspace"; } || true
+   { test -f lerna.json && echo "lerna"; } || true
+   { test -f turbo.json && echo "turbo"; } || true
+   { test -f nx.json && echo "nx"; } || true
+   true
    ```
+
+   **Exit-code discipline:** every bash block in this skill must end with a `true`
+   terminator (or explicitly succeed) if it contains conditional detection commands
+   like `test -f`, `grep -q`, or other predicates that may legitimately return
+   non-zero when a file or pattern is absent. Otherwise the Bash tool will report
+   the whole block as a failure even though the detection itself worked correctly.
 
    **If the result is `broken`:** skip monorepo detection for the root and mark the root
    `package.json` as unparseable. Phase 1a's parse check will emit the Critical "Broken JSON"
@@ -74,60 +83,102 @@ Read support files on-demand as each phase needs them, not all at once.
    because successive `cd` calls stack on top of the current shell state and produce broken
    paths like `packages/web/packages/web`.
 
+   **Shell portability:** do NOT use shell glob patterns like `tsconfig.*.json` or
+   brace expansions like `next.config.{js,mjs,ts}`. These are **rejected by zsh**
+   (the default macOS shell) with a `no matches found` error when nothing matches,
+   **before** the command even runs — so `2>/dev/null` cannot suppress it. Use
+   `find` for pattern-based discovery; it is POSIX-portable and handles "no match"
+   as an empty result instead of an error. Use explicit paths (with quotes) for
+   known filenames.
+
    For a single-package project (paths relative to `$PROJECT_ROOT`):
 
    ```bash
    PROJECT_ROOT=$(pwd)
 
-   # JSON + config files in the root (pass explicit paths, not bare names)
-   ls -1 "$PROJECT_ROOT"/package.json "$PROJECT_ROOT"/tsconfig.json \
-         "$PROJECT_ROOT"/biome.json "$PROJECT_ROOT"/biome.jsonc \
-         "$PROJECT_ROOT"/.prettierrc "$PROJECT_ROOT"/.prettierrc.json \
-         "$PROJECT_ROOT"/vercel.json "$PROJECT_ROOT"/turbo.json \
-         "$PROJECT_ROOT"/nx.json "$PROJECT_ROOT"/pnpm-workspace.yaml \
-         "$PROJECT_ROOT"/manifest.json "$PROJECT_ROOT"/web-app-manifest.json \
-         "$PROJECT_ROOT"/.eslintrc.json "$PROJECT_ROOT"/.npmrc \
+   # Known fixed filenames — explicit paths, no globs
+   ls -1 "$PROJECT_ROOT/package.json" \
+         "$PROJECT_ROOT/tsconfig.json" \
+         "$PROJECT_ROOT/biome.json" \
+         "$PROJECT_ROOT/biome.jsonc" \
+         "$PROJECT_ROOT/.prettierrc" \
+         "$PROJECT_ROOT/.prettierrc.json" \
+         "$PROJECT_ROOT/vercel.json" \
+         "$PROJECT_ROOT/turbo.json" \
+         "$PROJECT_ROOT/nx.json" \
+         "$PROJECT_ROOT/pnpm-workspace.yaml" \
+         "$PROJECT_ROOT/manifest.json" \
+         "$PROJECT_ROOT/web-app-manifest.json" \
+         "$PROJECT_ROOT/.eslintrc.json" \
+         "$PROJECT_ROOT/.npmrc" \
          2>/dev/null
+   true
 
-   # tsconfig variants (tsconfig.base.json, tsconfig.app.json, etc.)
-   ls -1 "$PROJECT_ROOT"/tsconfig.*.json 2>/dev/null
+   # tsconfig variants (tsconfig.base.json, tsconfig.app.json, etc.) — use find,
+   # not a shell glob, because zsh rejects unmatched globs.
+   find "$PROJECT_ROOT" -maxdepth 1 -type f -name "tsconfig.*.json" 2>/dev/null
 
-   # Framework configs
-   ls -1 "$PROJECT_ROOT"/next.config.{js,mjs,ts} \
-         "$PROJECT_ROOT"/vite.config.{js,ts} \
-         "$PROJECT_ROOT"/astro.config.{mjs,ts} \
-         "$PROJECT_ROOT"/nuxt.config.{js,ts} \
-         "$PROJECT_ROOT"/svelte.config.js \
-         "$PROJECT_ROOT"/tailwind.config.{js,ts,mjs} \
-         "$PROJECT_ROOT"/eslint.config.{js,mjs} \
-         "$PROJECT_ROOT"/postcss.config.{js,cjs,mjs} \
-         2>/dev/null
+   # Framework configs — use find with an `-o` chain instead of brace expansion,
+   # for the same zsh-portability reason.
+   find "$PROJECT_ROOT" -maxdepth 1 -type f \
+     \( -name "next.config.js" -o -name "next.config.mjs" -o -name "next.config.ts" \
+        -o -name "vite.config.js" -o -name "vite.config.ts" \
+        -o -name "astro.config.mjs" -o -name "astro.config.ts" \
+        -o -name "nuxt.config.js" -o -name "nuxt.config.ts" \
+        -o -name "svelte.config.js" \
+        -o -name "tailwind.config.js" -o -name "tailwind.config.ts" -o -name "tailwind.config.mjs" \
+        -o -name "eslint.config.js" -o -name "eslint.config.mjs" \
+        -o -name "postcss.config.js" -o -name "postcss.config.cjs" -o -name "postcss.config.mjs" \
+     \) 2>/dev/null
    ```
+
+   `ls -1` on a list of explicit paths is safe: it will print the files that exist and
+   emit a stderr warning (silenced by `2>/dev/null`) for missing ones. The exit code
+   may be non-zero if ANY path is missing, which is why the block ends with `true`.
 
    **For a monorepo**, resolve the workspace globs (from `package.json.workspaces` or
    `pnpm-workspace.yaml`) into absolute paths, then scan each workspace package using the
-   **same pattern** with its absolute path. Do this in a **subshell** (`(cd "$PKG_PATH" && ...)`)
-   or by passing the absolute path to `ls`/`find` directly. **Never** let `cd` calls leak
-   across scans — always return to `$PROJECT_ROOT` between packages, or use subshells so
-   the parent shell's `pwd` is never mutated.
+   **same find-based pattern** with its absolute path. Run each package's scan inside a
+   **subshell** `(cd "$PKG_PATH" && ...)` so `cd` state is scoped to the subshell and
+   cannot leak across iterations.
 
    Example monorepo scan:
 
    ```bash
    PROJECT_ROOT=$(pwd)
 
-   # For each workspace package (resolved from workspaces globs)
-   for PKG_PATH in "$PROJECT_ROOT"/packages/web "$PROJECT_ROOT"/packages/admin; do
-     # Run each package scan in a subshell — no state leakage
-     (
-       cd "$PKG_PATH"
-       ls -1 package.json tsconfig.json biome.json biome.jsonc \
-             .prettierrc .prettierrc.json .npmrc \
-             next.config.{js,mjs,ts} vite.config.{js,ts} \
-             2>/dev/null
-     )
+   # Resolve workspace globs first. For a simple "packages/*" glob:
+   WORKSPACE_PATHS=$(find "$PROJECT_ROOT/packages" -maxdepth 1 -mindepth 1 -type d 2>/dev/null)
+
+   # For each workspace package, scan its configs using find (zsh-portable)
+   for PKG_PATH in $WORKSPACE_PATHS; do
+     [ -f "$PKG_PATH/package.json" ] || continue   # only directories with a package.json
+     echo "=== $PKG_PATH ==="
+     ls -1 "$PKG_PATH/package.json" \
+           "$PKG_PATH/tsconfig.json" \
+           "$PKG_PATH/biome.json" \
+           "$PKG_PATH/biome.jsonc" \
+           "$PKG_PATH/.prettierrc" \
+           "$PKG_PATH/.prettierrc.json" \
+           "$PKG_PATH/.npmrc" \
+           2>/dev/null
+     find "$PKG_PATH" -maxdepth 1 -type f -name "tsconfig.*.json" 2>/dev/null
+     find "$PKG_PATH" -maxdepth 1 -type f \
+       \( -name "next.config.js" -o -name "next.config.mjs" -o -name "next.config.ts" \
+          -o -name "vite.config.js" -o -name "vite.config.ts" \
+          -o -name "vitest.config.js" -o -name "vitest.config.ts" \
+          -o -name "astro.config.mjs" -o -name "astro.config.ts" \
+          -o -name "tailwind.config.js" -o -name "tailwind.config.ts" -o -name "tailwind.config.mjs" \
+          -o -name "eslint.config.js" -o -name "eslint.config.mjs" \
+          -o -name "postcss.config.js" -o -name "postcss.config.cjs" -o -name "postcss.config.mjs" \
+       \) 2>/dev/null
    done
+   true
    ```
+
+   Note the `continue` guard: skip any directory that doesn't contain a
+   `package.json`, so non-package siblings (e.g., `packages/README.md`) don't
+   pollute the inventory.
 
 4. Internally maintain the file inventory as structured data per-package:
 
