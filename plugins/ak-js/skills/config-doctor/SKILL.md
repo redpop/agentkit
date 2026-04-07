@@ -324,3 +324,43 @@ for name, versions in drift_map.items():
 
 `SINGLETON_LIBS = {"react", "react-dom", "vue", "@vue/runtime-core", "svelte", "solid-js",
 "rxjs", "zustand"}`.
+
+### Phase 2: Framework Config Analysis (Agent Dispatch)
+
+If the file inventory contains **any** framework config files (`next.config.*`,
+`vite.config.*`, `astro.config.*`, `nuxt.config.*`, `svelte.config.*`, `tailwind.config.*`,
+`eslint.config.*`, `postcss.config.*`), dispatch the analyzer agent.
+
+Use the Task tool with `subagent_type="framework-config-analyzer"`. Pass the following in
+the prompt:
+
+1. The list of framework config file paths (absolute)
+2. The contents of each package's `package.json` (so the agent can cross-reference deps)
+3. The monorepo structure info (empty for single-package)
+
+**Example dispatch:**
+
+```text
+Analyze the following framework configs for misconfigurations:
+
+Files:
+- /abs/path/next.config.ts
+- /abs/path/tailwind.config.ts
+
+Package.json content:
+<paste package.json body>
+
+Monorepo: false
+
+Return findings as JSON matching the schema in your agent definition.
+```
+
+Parse the agent's JSON response. Extract `findings[]` and merge into the main finding list.
+Extract `frameworks_detected[]` for the report summary.
+
+If the agent fails or returns malformed JSON: emit a one-line note in the report footer
+(`"Phase 2 analysis failed: <reason>"`) and continue to Phase 3 with only the Phase-1
+findings.
+
+**If no framework configs exist, skip Phase 2 entirely.** The report will show
+"Phase 2: skipped (no framework configs detected)".
