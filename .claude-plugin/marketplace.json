@@ -87,6 +87,15 @@
       "category": "security",
       "keywords": ["security", "owasp", "llm-security", "semgrep", "static-analysis", "code-review"],
       "license": "MIT"
+    },
+    {
+      "name": "ak-js",
+      "source": "./plugins/ak-js",
+      "description": "JavaScript project configuration doctor — validates package.json, tsconfig, framework configs, and enforces cross-file best practices",
+      "version": "1.12.0",
+      "category": "development",
+      "keywords": ["javascript", "nodejs", "package-json", "tsconfig", "config-validation", "monorepo"],
+      "license": "MIT"
     }
   ]
 }
