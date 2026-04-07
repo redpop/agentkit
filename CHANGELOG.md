@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.13.1] - 2026-04-07
+
+### 🐛 Fixed
+
+- `ak-js:config-doctor` Phase 0 Step 3 — **shell `cd` stacking bug** that produced broken
+  paths like `packages/web/packages/web` on real-world monorepos. The inventory scanner
+  now captures `PROJECT_ROOT` once and always uses absolute paths; monorepo package scans
+  run inside subshells so `cd` state never leaks between packages.
+- `ak-js:config-doctor` Phase 1a Parse Check — **JSONC false-positives** on
+  `tsconfig.json`, `tsconfig.*.json`, `biome.jsonc`, and `*.jsonc` files. TypeScript
+  officially allows `//` and `/* */` comments in tsconfig files, and several configs use
+  the `.jsonc` extension by convention. Added a string-aware JSONC stripper that removes
+  comments and trailing commas while preserving comment-like substrings inside string
+  literals, and documented the list of JSONC-by-convention file patterns.
+- `ak-js:config-doctor` inventory scanner now picks up `tsconfig.*.json` variants
+  (`tsconfig.base.json`, `tsconfig.app.json`, etc.) via an explicit glob.
+
 ## [1.13.0] - 2026-04-07
 
 ### ✨ Added
