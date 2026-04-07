@@ -7,6 +7,7 @@ Skills are slash commands that users invoke directly in Claude Code via `/plugin
 | Skill | Plugin | Description |
 |-------|--------|-------------|
 | [operations](ak-git/operations.md) | ak-git | Smart commits, PR creation, conflict resolution, change review |
+| [config-doctor](ak-js/config-doctor.md) | ak-js | Validate JS project config files with scored report |
 | [agents-md](ak-knowledge/agents-md.md) | ak-knowledge | Convert CLAUDE.md to AGENTS.md with symlinks |
 | [agents-md-improver](ak-knowledge/agents-md-improver.md) | ak-knowledge | Audit and improve AGENTS.md files |
 | [log](ak-knowledge/log.md) | ak-knowledge | Log solved problems as searchable knowledge |
