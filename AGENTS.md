@@ -133,9 +133,9 @@ After implementing changes:
    - **Critically evaluate CodeRabbit results** — not all suggestions are correct or relevant. Accept only changes that genuinely improve the code; dismiss false positives and overly pedantic findings.
 4. **Docs** — If plugins, skills, agents, or hooks changed, update `docs/` (detail files and index READMEs) and the root `README.md` plugin table
 5. **Re-validate** — Re-run JSON/shellcheck validation if those files were modified during steps 2-4
-6. **Version & Changelog** — When changes warrant a release, bump version and update `CHANGELOG.md`
-   - Claude Code: invoke `/bump-version` (preferred — fully automated end-to-end: auto-detects bump type from commits, updates all 11 files, runs `/ak-meta:changelog`, runs `/ak-git:operations`, and creates the git tag)
-   - Manual fallback: invoke `/ak-meta:changelog` directly (handles CHANGELOG only — version sync across the 11 files and tagging remain manual; see "Commit and PR guidelines" below)
+6. **Version & Changelog** — When changes warrant a release, bump version and update `CHANGELOG.md`. **The release commit MUST be the final commit of the release cycle** — if earlier finalize steps (simplify, review, docs, re-validate) revealed additional fixes, commit those **first** and only then run the release step. This guarantees `git checkout v<version>` matches the exact state you released and keeps changelog diffs (`git log vA..vB`) accurate.
+   - Claude Code: invoke `/bump-version` (preferred — fully automated end-to-end: auto-detects bump type from commits, updates all 11 files, runs `/ak-meta:changelog`, runs `/ak-git:operations`, and creates an annotated git tag via `git tag -a v<version> -m "Release v<version>"`)
+   - Manual fallback: invoke `/ak-meta:changelog` directly (handles CHANGELOG only — version sync across the 11 files and tagging remain manual; see "Commit and PR guidelines" below). Always create annotated tags (`git tag -a v<version> -m "Release v<version>"`), never lightweight tags.
 
 Skip steps 2-3 for trivial changes (typo fixes, config updates, single-line changes).
 Skip step 6 for docs-only or internal config changes that have no user-visible plugin impact.
