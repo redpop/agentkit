@@ -43,6 +43,21 @@ For each file found, evaluate against these criteria:
 - Confirm architecture descriptions match the current directory structure
 - Look for TODO items that were never completed
 
+### Task Completion Workflow Check
+
+**Always verify the file contains a "Task completion workflow" section** (typically near the end). Every project benefits from documented post-implementation steps so coding agents know what to run after changes.
+
+**If the section is missing:** flag as a high-priority gap. The fix is to invoke `/ak-review:workflow`, which analyzes project tooling (build, test, lint, format, review, changelog) and generates an appropriate workflow tailored to the detected stack.
+
+**If the section exists, audit it:**
+
+- Are all referenced commands/scripts still present (e.g., `pnpm test`, `cargo build`, `composer test`)?
+- Are referenced skills/agents still installed (e.g., `/ak-review:coderabbit`, `/simplify`, `refactoring-expert`)?
+- Have tools been renamed or replaced (e.g., `prettier` → `biome`, `eslint` → `oxlint`)?
+- Have new tools been added that should be incorporated (e.g., a type checker, new formatter, additional review skill)?
+- Are any steps redundant, duplicated, or no longer applicable to the current project?
+- For systematic verification, invoke `/ak-review:workflow --audit` — it compares the current workflow against detected tooling and reports drift.
+
 **Quality grades:**
 
 - **A (90-100)**: Comprehensive, current, actionable
@@ -103,6 +118,15 @@ After presenting the report, ask the user for confirmation before making changes
 - One-off fixes unlikely to recur
 - Verbose explanations — prefer one-liners over paragraphs
 
+### Task completion workflow updates
+
+The "Task completion workflow" section gets special handling because the `/ak-review:workflow` skill can generate or audit it intelligently:
+
+- **Missing section** → recommend `/ak-review:workflow` (generate mode) and offer to invoke it as a follow-up
+- **Stale section** (broken commands, removed skills, renamed tools) → recommend `/ak-review:workflow --audit` and offer to invoke it
+
+For both cases, prefer delegating to that skill rather than manually patching the workflow section, so detection logic stays in one place. Do not invent workflow steps inside this skill — let `/ak-review:workflow` analyze the project tooling and propose the structure.
+
 ### Update format
 
 For each proposed change, show:
@@ -139,3 +163,4 @@ After user approval, apply changes. Preserve existing content structure.
 5. **Broken file references** — paths to files that no longer exist
 6. **Undocumented gotchas** — non-obvious patterns not captured
 7. **Duplicate CLAUDE.md + AGENTS.md** — should be consolidated
+8. **Missing or outdated task completion workflow** — section absent entirely, or references commands/skills/agents that no longer exist (delegate to `/ak-review:workflow` or `/ak-review:workflow --audit`)

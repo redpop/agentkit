@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.12.0] - 2026-04-07
+
+### 🔄 Changed
+
+- Extended `agents-md-improver` skill (ak-knowledge) with Task Completion Workflow check
+  - Phase 2: audits existing workflow sections for stale commands, removed skills, renamed tools, and redundant steps
+  - Phase 4: delegates missing or stale workflow generation/audit to `/ak-review:workflow` (or `--audit` mode) instead of duplicating detection logic
+  - Common Issues: new entry #8 for missing or outdated task completion workflow
+- Overhauled Task completion workflow in `AGENTS.md` with explicit Validate, Re-validate, and Version & Changelog steps
+  - Step 1 Validate: documents JSON/shellcheck/markdown validation explicitly
+  - Step 2 Simplify: prefers `/simplify` skill over `refactoring-expert` agent fallback
+  - Step 3 Review: adds critical CodeRabbit evaluation reminder
+  - Step 6 Version & Changelog: delegates to `/bump-version` (full automation: 11 files + changelog + commit + tag) with `/ak-meta:changelog` as manual fallback
+
 ## [1.11.0] - 2026-04-05
 
 ### ✨ Added
