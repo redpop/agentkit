@@ -1,5 +1,5 @@
 ---
-title: Use absolute paths in skill bash commands to avoid cd stacking
+title: Shell portability rules for skill bash commands
 date: 2026-04-07
 category: best-practices
 module: skill-development
@@ -10,16 +10,19 @@ applies_when:
   - Writing a skill that scans or operates on multiple directories
   - Writing a skill that walks monorepo workspace packages
   - Writing a skill that chains several bash commands across different paths
+  - Writing a skill that uses glob patterns or brace expansion for file discovery
+  - Writing a skill with conditional detection commands (test -f, grep -q, etc.)
 tags:
   - skill-development
   - plugin-development
   - monorepo
   - bash
+  - zsh
   - subshell
-  - cd-stacking
+  - shell-portability
 ---
 
-# Use absolute paths in skill bash commands to avoid cd stacking
+# Shell portability rules for skill bash commands
 
 ## Context
 
@@ -83,6 +86,56 @@ cwd between iterations.
 **Rule 4: Never assume cwd between tool calls.** The LLM runtime between Bash-tool
 invocations may or may not preserve working directory depending on the harness. Absolute
 paths are the only reliable way to address files.
+
+**Rule 5: Don't use shell globs or brace expansion for discovery — use `find`.** The
+default shell on macOS is zsh, and zsh has the `nomatch` option enabled by default. If a
+glob like `tsconfig.*.json` or a brace expansion like `next.config.{js,mjs,ts}` matches
+no files, zsh aborts the command **before it runs**, with a `no matches found` error
+that `2>/dev/null` cannot suppress because the error happens at shell-expansion time,
+not at command-execution time. Use POSIX-portable `find` instead:
+
+```bash
+# ❌ WRONG — breaks on zsh when no tsconfig variants exist
+ls -1 "$PROJECT_ROOT"/tsconfig.*.json 2>/dev/null
+
+# ❌ WRONG — same problem with brace expansion
+ls -1 "$PROJECT_ROOT"/next.config.{js,mjs,ts} 2>/dev/null
+
+# ✅ RIGHT — find handles "no match" as an empty result
+find "$PROJECT_ROOT" -maxdepth 1 -type f -name "tsconfig.*.json" 2>/dev/null
+
+# ✅ RIGHT — find with -o chain replaces brace expansion
+find "$PROJECT_ROOT" -maxdepth 1 -type f \
+  \( -name "next.config.js" -o -name "next.config.mjs" -o -name "next.config.ts" \) \
+  2>/dev/null
+```
+
+Explicit path lists (`ls -1 "$PROJECT_ROOT/package.json" "$PROJECT_ROOT/tsconfig.json"`)
+remain safe because zsh only expands globs, not literal paths — but you must still end
+the block with `true` (see Rule 6) because `ls` returns non-zero when any listed file
+is missing.
+
+**Rule 6: End any block with conditional detection in a `true` terminator.** Commands
+like `test -f`, `grep -q`, and `ls` on missing files return non-zero exit codes by
+design. If such a command is the last in a block, the whole block's exit code is
+non-zero — and the Bash tool reports the step as failed even though the detection
+itself worked correctly. Close every conditional-detection block with `true` (or wrap
+each test in `{ test -f foo && echo hit; } || true`):
+
+```bash
+# ❌ WRONG — returns exit 1 when nx.json is absent, Bash tool reports FAILURE
+test -f pnpm-workspace.yaml && echo "pnpm_workspace"
+test -f lerna.json && echo "lerna"
+test -f turbo.json && echo "turbo"
+test -f nx.json && echo "nx"
+
+# ✅ RIGHT — each test is isolated AND a final `true` guarantees exit 0
+{ test -f pnpm-workspace.yaml && echo "pnpm_workspace"; } || true
+{ test -f lerna.json && echo "lerna"; } || true
+{ test -f turbo.json && echo "turbo"; } || true
+{ test -f nx.json && echo "nx"; } || true
+true
+```
 
 ## Why This Matters
 
@@ -158,11 +211,15 @@ done
 Result: works on arbitrary nesting depth, safe against cwd drift, testable on any
 monorepo.
 
-### The git commit that introduced the fix
+### The git commits that introduced the fixes
 
-`0409ba2` on `main` (2026-04-07): `fix(ak-js): use absolute paths and support JSONC in
-config-doctor` — rewrote Phase 0 Step 3 of
-`plugins/ak-js/skills/config-doctor/SKILL.md` and shipped as v1.13.1.
+- `v1.13.1` (2026-04-07): `fix(ak-js): use absolute paths and support JSONC in
+  config-doctor` — introduced Rules 1-4 (absolute paths, `PROJECT_ROOT`, subshells,
+  cwd discipline) in `plugins/ak-js/skills/config-doctor/SKILL.md`.
+- `v1.13.2` (2026-04-07): `fix(ak-js): use find instead of shell globs and fix
+  exit-code propagation` — added Rules 5-6 (no shell globs/brace expansion, `true`
+  terminators for conditional detection blocks) after the second live test on zsh
+  surfaced two more bugs the first fix didn't anticipate.
 
 ## Related
 
