@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.13.3] - 2026-05-02
+
+### 🔄 Changed
+
+- `ak-review:workflow` — Significantly expanded optional-step detection: the skill now
+  scans for a `docs/` directory (activates a Docs step) and for `CHANGELOG.md` /
+  multi-file `version` field patterns (activates a Version & Changelog step with
+  "release commit MUST be final" note). Template updated with `/bump-version` and
+  `/ak-meta:changelog` as preferred/fallback invocations. Adaptation rules extended with
+  `{typecheck_cmd}`, `{project_specific_validations}`, and step-number skip-clause
+  guidance. Audit-mode checklist updated to verify optional steps and correct skill
+  references (`/simplify` instead of `code-simplifier:code-simplifier`).
+- `ak-review:finalize` — Removed the duplicated inline workflow template; the skill now
+  delegates directly to `/ak-review:workflow` when a new workflow needs to be created,
+  keeping the single source of truth in one place.
+- `ak-knowledge:agents-md-improver` — Added a dogfooding-check reminder: when auditing
+  a project that ships workflow templates to others (e.g., AgentKit itself), verify that
+  the project's own `AGENTS.md` workflow reflects its latest published template.
+- `docs/solutions/best-practices/skill-shell-absolute-paths-2026-04-07.md` — Added
+  Rule 7: always run a live `zsh` test in the target shell before marking a skill as
+  released, to catch shell-portability regressions that unit-style reviews miss.
+
 ## [1.13.2] - 2026-04-07
 
 ### 🐛 Fixed

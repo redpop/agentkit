@@ -36,47 +36,9 @@ If no workflow found: proceed to Phase 2b.
 
 When no workflow section exists, offer to create one. Present the user with a brief explanation and ask if they want you to generate a `## Task completion workflow` section for their project.
 
-If the user agrees:
-
-1. Analyze the project to detect available tooling:
-   - Package manager and scripts (`package.json`, `composer.json`, `Makefile`, etc.)
-   - Build commands (`build`, `compile`, `tsc`)
-   - Test commands (`test`, `spec`, `check`)
-   - Lint/format commands (`lint`, `format`, `fix`, `prettier`, `eslint`, `biome`)
-   - Type checking (`typecheck`, `tsc --noEmit`)
-2. Generate a project-specific workflow based on the template below, adapting commands to the detected tooling
-3. Write the section into the project's `AGENTS.md` (or `CLAUDE.md` if that is what the project uses)
-4. Then execute the newly created workflow (continue with Phase 3)
+If the user agrees: invoke `/ak-review:workflow` — it will scan the project tooling, generate a tailored workflow, confirm with the user, and write it to the instruction file. Once it completes, continue with Phase 3 to execute the newly created workflow.
 
 If the user declines: exit.
-
-### Workflow Template
-
-Use this as a starting point — adapt commands, tools, and steps to match the project:
-
-```markdown
-## Task completion workflow
-
-After implementing changes:
-
-1. **Validate** — Run build and tests to confirm nothing is broken
-2. **Format** — Run linter/formatter in fix mode
-3. **Simplify** — Simplify changed code for clarity and maintainability
-   - Claude Code: invoke the `code-simplifier:code-simplifier` agent on modified files
-4. **Review** — Run CodeRabbit review on uncommitted changes, then fix reported issues
-   - Claude Code: invoke `/ak-review:coderabbit`
-   - Other tools: run `coderabbit review --prompt-only --type uncommitted`
-5. **Re-validate** — Run build, tests, and linter again after review fixes
-
-Skip steps 3-5 for trivial changes (typo fixes, config updates, single-line changes).
-```
-
-Adaptation rules:
-
-- Replace generic "build and tests" with actual project commands (e.g., `pnpm build && pnpm test`)
-- Remove steps that don't apply (e.g., no build step for pure Python scripts)
-- Add project-specific steps if detected (e.g., type checking for TypeScript projects)
-- Keep the structure: validate first, format, simplify, review, re-validate last
 
 ## Phase 3: Parse Steps
 
