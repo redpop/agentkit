@@ -84,43 +84,79 @@ Scan the project root for tooling signals. Run detection in parallel where possi
 | `coderabbit` in global npm (`npm ls -g coderabbit`) | CodeRabbit CLI available |
 | `.coderabbit.yaml` in project root | CodeRabbit configured (CLI may still be missing) |
 
+**Optional step signals:**
+
+| Signal | Activates |
+|--------|-----------|
+| `docs/` directory exists in project root | Docs step |
+| `CHANGELOG.md` exists | Version & Changelog step |
+| Multiple `*.json` files contain a `"version"` field (monorepo / plugin marketplace) | Version & Changelog step with "release commit MUST be final" note |
+| `/bump-version` skill available in installed plugins | Preferred invocation in release step |
+| `/ak-meta:changelog` skill available | Fallback invocation in release step |
+
 **CI as hints (lower priority):**
 
 Check `.github/workflows/*.yml`, `.gitlab-ci.yml`, or `Jenkinsfile` for commands that confirm which tools the project actually runs.
 
-Produce a **tooling summary**: which build, test, lint, format, typecheck, and review commands are available.
+Produce a **tooling summary**: which build, test, lint, format, typecheck, and review commands are available, plus which optional steps apply.
 
 ### Step 4: Build the Workflow
 
-Using the tooling summary, construct a 6-step workflow. Each step is included only if the project has matching tools.
+Using the tooling summary, construct the workflow. Each step is included only if the project has matching tools.
 
-**Template:**
+**Base template (always included):**
 
 ```markdown
 ## Task completion workflow
 
 After implementing changes:
 
-1. **Validate** — {build_cmd} {test_cmd}
+1. **Validate** — {build_cmd} {typecheck_cmd} {test_cmd}
+   {project_specific_validations}
 2. **Tests** — Check whether new or updated tests are needed for the changes
    - Look at modified/added files and verify matching test files exist
    - If test gaps are found, write the missing tests before continuing
 3. **Format** — {format_cmd}
-4. **Simplify** — Review changed code for unnecessary complexity
-   - Claude Code: invoke the `code-simplifier:code-simplifier` agent on modified files
+4. **Simplify** — Simplify changed code for clarity and maintainability
+   - Claude Code: invoke `/simplify` (preferred — Claude Code skill, install via plugin management if not available)
+   - Fallback: invoke the `refactoring-expert` agent on modified files
 5. **Review** — {review_step}
-6. **Re-validate** — {build_cmd} {test_cmd}
+6. **Re-validate** — {build_cmd} {typecheck_cmd} {test_cmd}
 
 Skip steps 4-5 for trivial changes (typo fixes, config updates, single-line changes).
 ```
 
+**Optional step: Docs** — include between steps 5 and 6 (renumber Re-validate accordingly) when a `docs/` directory exists in the project root:
+
+```
+N. **Docs** — {docs_instructions}
+```
+
+Replace `{docs_instructions}` with a project-specific description of what to update (e.g., "If plugins, skills, agents, or hooks changed, update `docs/` (detail files and index READMEs) and the root `README.md` plugin table").
+
+**Optional step: Version & Changelog** — include as the final step when a `CHANGELOG.md` exists and multiple files share a `version` field (monorepo / plugin marketplace pattern):
+
+```
+N. **Version & Changelog** — When changes warrant a release, bump version and update `CHANGELOG.md`. **The release commit MUST be the final commit of the release cycle** — if earlier finalize steps revealed additional fixes, commit those **first** and only then run the release step.
+   - {release_invocation}
+```
+
+Replace `{release_invocation}` based on detected skills:
+
+- `/bump-version` available → `Claude Code: invoke \`/bump-version\``
+- `/ak-meta:changelog` available → `Claude Code: invoke \`/ak-meta:changelog\` directly (CHANGELOG only — version sync and tagging remain manual)`
+- Neither → describe the manual steps found in contributing docs
+
+Add a skip clause for this step: `Skip step N for docs-only or internal config changes that have no user-visible impact.`
+
 **Adaptation rules:**
 
 - Replace `{build_cmd}` with the actual build command (e.g., `pnpm build`, `cargo build`, `go build ./...`). Omit if no build step exists.
+- Replace `{typecheck_cmd}` with the type-check command if detected (e.g., `pnpm typecheck`). Omit if no type checker is found.
 - Replace `{test_cmd}` with the actual test command (e.g., `pnpm test`, `pytest`, `cargo test`). Omit if no tests exist.
-- Replace `{format_cmd}` with the detected formatter (e.g., `pnpm biome check --write`, `cargo fmt`, `ruff format .`). Omit Step 3 entirely if no formatter is detected.
-- If a type checker is detected, add it to Step 1 and Step 6 (e.g., `pnpm typecheck`).
-- If linting is separate from formatting, combine in Step 3 (e.g., `pnpm lint --fix && pnpm format`).
+- Replace `{project_specific_validations}` with file-type validations if the project has non-standard artifacts (e.g., JSON config files → `python3 -m json.tool {file} > /dev/null`, shell scripts → `shellcheck {file}`). Omit the sub-bullet block if no project-specific validations apply.
+- Replace `{format_cmd}` with the detected formatter (e.g., `pnpm biome check --write`, `cargo fmt`, `ruff format .`). Omit Step 3 entirely if no formatter is detected. If linting is separate from formatting, combine (e.g., `pnpm lint --fix && pnpm format`).
+- Omit Step 2 (Tests) for projects with no test infrastructure.
 - Replace `{review_step}` based on CodeRabbit availability:
   - **CodeRabbit available**: Use the CodeRabbit variant:
 
@@ -128,6 +164,7 @@ Skip steps 4-5 for trivial changes (typo fixes, config updates, single-line chan
     5. **Review** — Run CodeRabbit review on uncommitted changes, then fix reported issues
        - Claude Code: invoke `/ak-review:coderabbit`
        - Other tools: run `coderabbit review --prompt-only --type uncommitted`
+       - **Critically evaluate CodeRabbit results** — not all suggestions are correct or relevant. Accept only changes that genuinely improve the code; dismiss false positives and overly pedantic findings.
     ```
 
   - **CodeRabbit not available**: Use the self-review variant:
@@ -140,6 +177,7 @@ Skip steps 4-5 for trivial changes (typo fixes, config updates, single-line chan
     ```
 
 - For projects without build/test tooling (e.g., pure Markdown repos), reduce to the applicable steps only.
+- After including optional steps, update the skip-clause step numbers to match the actual step positions in the generated workflow.
 
 ### Step 5: Present and Confirm
 
@@ -181,10 +219,12 @@ For each step in the existing workflow, check:
 
 Also verify structural completeness:
 
-- Are the 6 standard steps present (validate, tests, format, simplify, review, re-validate)?
-- Is the skip-clause present for trivial changes?
-- Are tool invocation hints accurate (correct agent/skill names)?
+- Are the core steps present (validate, tests, format, simplify, review, re-validate)?
+- Are optional steps present when they should be (docs/ dir → Docs step; CHANGELOG.md → Version & Changelog step)?
+- Is the skip-clause present for trivial changes, with correct step numbers?
+- Are tool invocation hints accurate (correct agent/skill names, e.g., `/simplify` not `code-simplifier:code-simplifier`)?
 - Does the review step match what's actually available (CodeRabbit vs self-review)?
+- Does the release step reference the correct skill (`/bump-version`, `/ak-meta:changelog`, or manual)?
 
 ### Step 4: Report Findings
 
