@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.13.4] - 2026-05-10
+
+### 🗑️ Removed
+
+- `ak-review` validation hooks — removed the **Skill Suggestion prompt hook** (`PostToolUse`
+  on `Write|Edit|MultiEdit`) that asked Claude after every file edit whether an AgentKit
+  skill would be a helpful next step. The hook interrupted mid-workflow executions, causing
+  Claude to stop continuation instead of proceeding. The three command-based validation
+  hooks (Markdown, JSON, ShellCheck) are unaffected.
+
 ## [1.13.3] - 2026-05-02
 
 ### 🔄 Changed
