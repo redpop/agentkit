@@ -7,4 +7,4 @@ Hooks are automated actions triggered by Claude Code tool events. They run shell
 | Hook Group | Plugin | Trigger | Description |
 |------------|--------|---------|-------------|
 | [Notification Hooks](ak-notifications/notification-hooks.md) | ak-notifications | Permission/Idle prompts | Sound alerts and desktop notifications |
-| [Validation Hooks](ak-review/validation-hooks.md) | ak-review | After Write/Edit | Markdown, JSON, shell validation + skill suggestions |
+| [Validation Hooks](ak-review/validation-hooks.md) | ak-review | After Write/Edit | Markdown, JSON, shell validation |

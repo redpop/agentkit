@@ -1,12 +1,11 @@
 # Validation Hooks
 
-> Quality assurance hooks: file validation and skill suggestions after edits.
+> Quality assurance hooks: file validation after edits.
 
 ## Overview
 
 Runs automatic validation on files after every Write, Edit, or MultiEdit tool use. Checks
-Markdown formatting, JSON syntax, and shell script quality. Also prompts Claude to consider
-whether any installed AgentKit skill would be a helpful next step.
+Markdown formatting, JSON syntax, and shell script quality.
 
 ## Hooks
 
@@ -28,12 +27,6 @@ whether any installed AgentKit skill would be a helpful next step.
 - **Action:** Runs `shellcheck-validate.sh` to lint shell scripts for common issues
 - **Requirements:** `shellcheck` (install via Homebrew or package manager)
 
-### Skill Suggestion Prompt
-
-- **Trigger:** `PostToolUse` on `Write|Edit|MultiEdit`
-- **Action:** Prompts Claude to consider if any installed AgentKit skill is a natural next step
-- **Requirements:** None (prompt-based hook, no external tools)
-
 ## Configuration
 
 Defined in `plugins/ak-review/hooks/hooks.json`. All command hooks reference scripts via
@@ -44,4 +37,3 @@ Defined in `plugins/ak-review/hooks/hooks.json`. All command hooks reference scr
 - Install `markdownlint-cli2` and `shellcheck` before using this plugin for full validation
 - All hook scripts exit 0 to avoid blocking Claude Code even on validation failures
 - Validation output appears in Claude's context so it can self-correct issues
-- The skill suggestion prompt is lightweight and only triggers when genuinely relevant
