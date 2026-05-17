@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.14.0] - 2026-05-17
+
+### ✨ Added
+
+- `ak-git:operations` — Auto-detects the commit-prefix style already used on the current
+  branch and continues it consistently. If any prior commit on the branch matches
+  `^\[<ticket-id>\]` (e.g., `[FOO-1] feat: ...`), new commits use bracket style
+  (`[ABC-1234] type(scope): description`); otherwise plain style is used
+  (`ABC-1234 type(scope): description`). Style detection uses `git merge-base` against
+  `origin/HEAD`, `origin/main`, or `origin/master` — with a graceful fallback to the
+  last 10 commits when no common ancestor is resolvable.
+
+### 🔄 Changed
+
+- `ak-git:operations` — Branch-name pattern matching now explicitly covers bare
+  ticket refs with a description suffix (e.g., `FOO-123_description`) in addition to
+  the existing `fix/ABC-1234` and `feature/FOO-99_description` patterns.
+- `docs/skills/ak-git/operations.md` — Updated overview and best-practices to document
+  the new bracket-vs-plain style auto-detection behavior.
+
 ## [1.13.4] - 2026-05-10
 
 ### 🗑️ Removed

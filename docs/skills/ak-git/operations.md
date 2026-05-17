@@ -1,10 +1,14 @@
 # Git Operations
 
-> Smart Git operations with intelligent commit messages, scope detection, and ticket extraction.
+> Smart Git operations with intelligent commit messages, scope detection, ticket extraction, and commit-style detection.
 
 ## Overview
 
-Analyzes your changes, detects scope (small/medium/large), extracts ticket identifiers from branch names, and generates professional commit messages using Conventional Commits. Delegates execution to the `git-workflow-specialist` agent for commit creation, conflict resolution, and code review.
+Analyzes your changes, detects scope (small/medium/large), extracts ticket identifiers from branch
+names, and generates professional commit messages using Conventional Commits. Automatically detects
+the commit-prefix style already used on the branch — bracket (`[ABC-1234] feat: ...`) or plain
+(`ABC-1234 feat: ...`) — and continues it consistently. Delegates execution to the
+`git-workflow-specialist` agent for commit creation, conflict resolution, and code review.
 
 ## Usage
 
@@ -26,7 +30,8 @@ Analyzes your changes, detects scope (small/medium/large), extracts ticket ident
 ## Best Practices
 
 - Let the skill detect scope automatically -- it adjusts messaging based on change size
-- Use ticket-prefixed branches (`ABC-1234/description`) for automatic ticket extraction
+- Use ticket-prefixed branches (e.g., `feature/ABC-1234`, `ABC-1234_description`) for automatic ticket extraction
+- Commit-prefix style is auto-detected from branch history: bracket (`[ABC-1234]`) or plain (`ABC-1234`)
 - For 10+ file changes, consider splitting into atomic commits as suggested
 - Use `--force-push` only when necessary -- it uses `--force-with-lease` for safety
 - Never include Co-Authored-By lines in commit messages
