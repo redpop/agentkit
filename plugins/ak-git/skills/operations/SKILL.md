@@ -47,11 +47,29 @@ Extract ticket/issue identifier from the current branch name:
 git branch --show-current
 ```
 
-- Match common patterns: `ABC-1234`, `FOO-99`, `fix/ABC-1234`, `feature/FOO-99_description`, etc.
+- Match common patterns: `ABC-1234`, `fix/ABC-1234`, `feature/FOO-99_description`, `FOO-123_description`, etc.
 - Regex: extract first match of `[A-Z][A-Z0-9]+-[0-9]+` from branch name
-- If a ticket is found, **prefix every commit message** with it: `ABC-1234 type(scope): description`
 - If no ticket pattern is found, use standard Conventional Commits without prefix
-- Pass the detected ticket (or "none") to the git-workflow-specialist
+
+**If a ticket is found**, detect the commit style already used on this branch:
+
+```bash
+MERGE_BASE=$(git merge-base origin/HEAD HEAD 2>/dev/null \
+  || git merge-base origin/main HEAD 2>/dev/null \
+  || git merge-base origin/master HEAD 2>/dev/null)
+if [ -n "$MERGE_BASE" ]; then
+  git log --format="%s" "${MERGE_BASE}..HEAD"
+else
+  git log --format="%s" -10
+fi
+```
+
+- If any subject matches `^\[<ticket-id>\]` (e.g., `[FOO-1] feat: ...`) →
+  use **bracket style**: `[ABC-1234] type(scope): description`
+- Otherwise or if no prior commits found →
+  use **plain style**: `ABC-1234 type(scope): description`
+
+Pass the detected ticket and style to the git-workflow-specialist.
 
 ## Execution: --commit, --review, --resolve
 
@@ -60,7 +78,10 @@ Use Task tool with subagent_type="git-workflow-specialist":
 
 **IMPORTANT**: NEVER include Co-Authored-By lines in commit messages.
 
-1. **Ticket Prefix**: If a ticket was detected from the branch name, prefix ALL commit messages with it (e.g., `ABC-1234 feat(config): add feature`). If no ticket was detected, use standard Conventional Commits format without prefix.
+1. **Ticket Prefix**: Apply the style detected above:
+   - Bracket: `[ABC-1234] feat(config): add feature`
+   - Plain: `ABC-1234 feat(config): add feature`
+   - No ticket detected: standard Conventional Commits without prefix
 2. **Convention Analysis**: Apply standard commit conventions
 3. **Change Analysis**: Analyze changes with full codebase context
 4. **Message Generation**: Create professional commit messages with proper formatting
@@ -159,7 +180,7 @@ After completing operations, provide:
 **Scope**: [Small/Medium/Large] ([X] files changed)
 
 **Commits created:**
-- `abc1234` - ABC-123 feat: description (or without prefix if no ticket detected)
+- `abc1234` - ABC-1234 feat: description (or `[ABC-1234]` bracket style if detected)
 
 **Files affected:**
 - path/to/file (modified/added/deleted)
