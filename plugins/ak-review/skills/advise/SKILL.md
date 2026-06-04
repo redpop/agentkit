@@ -19,11 +19,15 @@ Parse `$ARGUMENTS`:
 
 ### Phase 1: Parse Findings
 
-Prefer the JSON block (schema: `findings[]` with `id, title, severity, category, file, start_line, end_line, claim, evidence, suggested_fix`). If only Markdown is present, parse the structured fields. If neither parses, ask the user to paste the findings and stop.
+Prefer the JSON block (schema: `findings[]` with `id, title, severity, category, file, start_line, end_line, claim,
+evidence, suggested_fix`). If only Markdown is present, parse the structured fields. If neither parses, ask the user to
+paste the findings and stop.
 
 ### Phase 2: Validate Each Finding
 
-For each finding, read the cited `file` around `start_line..end_line` and check the `claim` against the actual code. For long lists, validate in internal groups (≈8 at a time) to avoid cross-issue context mixing. Do not modify code. Do not add findings that were not in the input.
+For each finding, read the cited `file` around `start_line..end_line` and check the `claim` against the actual code. For
+long lists, validate in internal groups (≈8 at a time) to avoid cross-issue context mixing. Do not modify code. Do not
+add findings that were not in the input.
 
 Assign a verdict:
 
@@ -34,7 +38,8 @@ Assign a verdict:
 
 ### Phase 3: Emit Results
 
-Output a Markdown summary (grouped by verdict) AND a JSON `results[]` block. Report `confidence` and `fix_recommended`, but do NOT apply any fix threshold — that decision belongs to the consumer.
+Output a Markdown summary (grouped by verdict) AND a JSON `results[]` block. Report `confidence` and `fix_recommended`,
+but do NOT apply any fix threshold — that decision belongs to the consumer.
 
 ## Output Format
 
