@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.2] - 2026-06-04
+
+### 🐛 Fixed
+
+- `ak-knowledge:agents-md-improver` — workflow audit is now mandatory: agents must always
+  invoke `/ak-review:workflow --audit` when a workflow section exists, rather than relying
+  on manual command checks that miss template drift (e.g., new optional steps, changed
+  bullet structure). Both the skill and its docs were updated to enforce this.
+
+### 🔄 Changed
+
+- `README.md` — Semgrep MCP Server link updated to point to the GitHub source repository.
+
 ## [1.15.1] - 2026-06-04
 
 ### 🔄 Changed
