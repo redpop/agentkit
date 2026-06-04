@@ -50,6 +50,7 @@ Each: `**F-NNN**` / verdict / confidence / reason / fix recommended? / fix hint.
 
 ### JSON (append verbatim, fenced as ```json)
 
+```json
 {
   "results": [
     {
@@ -62,5 +63,6 @@ Each: `**F-NNN**` / verdict / confidence / reason / fix recommended? / fix hint.
     }
   ]
 }
+```
 
 `id` must match the input finding's id. Output one result per input finding.
