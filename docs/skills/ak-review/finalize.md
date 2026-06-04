@@ -14,6 +14,22 @@ Discovers the project's task completion workflow from `AGENTS.md` or `CLAUDE.md`
 
 No arguments required. Reads the workflow from the project's instruction files.
 
+## Examples
+
+```text
+/ak-review:finalize
+```
+
+Discovers the `## Task completion workflow` section in `AGENTS.md` / `CLAUDE.md` and runs each step in order against
+your current working-tree changes — the standard post-implementation pass.
+
+```text
+/ak-review:finalize
+```
+
+When no workflow section exists, the same invocation offers to generate one (via `/ak-review:workflow`) from your
+detected tooling, then executes the newly created workflow.
+
 ## When to Use
 
 - After finishing a feature or bug fix implementation

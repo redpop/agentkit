@@ -9,10 +9,35 @@ Analyzes repository state -- commits since the last tag, staged and unstaged cha
 ## Usage
 
 ```text
-/ak-meta:changelog [flags]
+/ak-meta:changelog [--no-commit] [--push]
 ```
 
-**Flags:** `--no-commit` (skip auto-commit), `--push` (push after commit)
+**Flags:**
+
+- `--no-commit` — skip the automatic commit (default: the skill commits the changelog automatically)
+- `--push` — push the commit to the remote after committing
+
+## Examples
+
+```text
+/ak-meta:changelog
+```
+
+Analyzes commits since the last tag, updates CHANGELOG.md with categorized entries, and commits the change
+automatically (the default behavior with no flags).
+
+```text
+/ak-meta:changelog --no-commit
+```
+
+Updates CHANGELOG.md but leaves the change unstaged so you can review or edit it before committing yourself
+(`--no-commit`).
+
+```text
+/ak-meta:changelog --push
+```
+
+Updates CHANGELOG.md, commits it, and pushes the commit to the remote in one step (`--push`).
 
 ## When to Use
 

@@ -12,7 +12,18 @@ Performs a multi-phase quality assessment of `AGENTS.md` (or `CLAUDE.md`) files,
 /ak-knowledge:agents-md-improver
 ```
 
-No arguments required. Discovers all instruction files automatically.
+No arguments required. The skill discovers all instruction files automatically -- `AGENTS.md`, `CLAUDE.md`, and
+`.claude/CLAUDE.md`, including package-specific files in monorepos (e.g., `packages/*/AGENTS.md`) -- relative to
+the current working directory.
+
+## Examples
+
+```text
+/ak-knowledge:agents-md-improver
+```
+
+Run from a project root to audit every instruction file in the repo, print a graded quality report, and propose
+targeted improvements; there are no arguments, so discovery is automatic and scoped to the working directory.
 
 ## When to Use
 

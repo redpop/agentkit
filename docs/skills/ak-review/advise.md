@@ -17,6 +17,22 @@ it never modifies code and never invents new findings.
 
 **Flags:** `--in <path>` (findings file; if omitted, paste the findings as arguments)
 
+## Examples
+
+```text
+/ak-review:advise --in findings.json
+```
+
+Validates the findings stored in `findings.json` (the JSON block produced by `/ak-review:delegate`) against the real
+code; `--in` points to the file.
+
+```text
+/ak-review:advise <paste the findings report here>
+```
+
+Validates findings pasted directly as arguments when there is no file — omit `--in` and include the Markdown/JSON
+content inline.
+
 ## When to Use
 
 - A foreign agent returned review findings and you want a second opinion

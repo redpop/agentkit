@@ -14,6 +14,34 @@ Executes a CodeRabbit CLI review against uncommitted, committed, or all changes.
 
 **Flags:** `--type uncommitted|committed|all` (default: uncommitted), `--base <branch>`
 
+## Examples
+
+```text
+/ak-review:coderabbit
+```
+
+Reviews your current uncommitted work (staged + unstaged) using the default `--type uncommitted` — the typical
+pre-commit check.
+
+```text
+/ak-review:coderabbit --type committed
+```
+
+Reviews everything committed on the current branch against the auto-detected base branch — useful before opening a PR.
+
+```text
+/ak-review:coderabbit --type committed --base develop
+```
+
+Reviews all commits made since `develop`; `--base` pins the comparison branch when auto-detection would pick the wrong
+one.
+
+```text
+/ak-review:coderabbit --type all
+```
+
+Reviews both committed and uncommitted changes in one pass for a full sweep of everything not yet on the base branch.
+
 ## When to Use
 
 - After implementing changes, before committing
