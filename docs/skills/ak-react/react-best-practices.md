@@ -12,7 +12,17 @@ Provides 65 performance rules across 8 categories, prioritized by impact from cr
 /ak-react:react-best-practices
 ```
 
-No arguments required. The skill loads the full guide from the plugin's knowledge base and applies rules contextually during code writing or review.
+No arguments. The skill loads the full guide from the plugin's knowledge base and applies the rules contextually
+to the React/Next.js code you are currently writing, reviewing, or refactoring.
+
+## Examples
+
+```text
+/ak-react:react-best-practices
+```
+
+Loads the 65-rule performance guide and applies it to the code in the current conversation — no argument needed
+because the skill operates on whatever React/Next.js work is in context.
 
 ## When to Use
 

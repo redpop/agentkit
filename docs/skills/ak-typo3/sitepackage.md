@@ -16,6 +16,33 @@ Generates a full SitePackage based on the official TYPO3 template from get.typo3
 
 If arguments are missing, the skill asks interactively for vendor, package name, title, and author details.
 
+## Examples
+
+```text
+/ak-typo3:sitepackage mycompany corporate-site
+```
+
+Creates a SitePackage for vendor `mycompany` and package `corporate-site` (the two positional arguments) with the full
+v13.4 structure.
+
+```text
+/ak-typo3:sitepackage mycompany corporate-site --include-ddev
+```
+
+Adds DDEV configuration (`--include-ddev`) for local development with PHP 8.2 and MariaDB 10.11.
+
+```text
+/ak-typo3:sitepackage mycompany corporate-site --include-docker
+```
+
+Adds Docker configuration (`--include-docker`) instead of DDEV for the local development environment.
+
+```text
+/ak-typo3:sitepackage mycompany corporate-site --author="Jane Doe" --email=jane@example.com
+```
+
+Pre-fills the extension author metadata via `--author` and `--email` instead of prompting for them.
+
 ## When to Use
 
 - Starting a new TYPO3 v13.4 project from scratch

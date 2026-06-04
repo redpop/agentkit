@@ -13,18 +13,59 @@ the commit-prefix style already used on the branch — bracket (`[ABC-1234] feat
 ## Usage
 
 ```text
-/ak-git:operations [operation] [flags]
+/ak-git:operations [flags]
 ```
 
-**Operations:** `commit` (default), `review`, `resolve`, `conflict-resolver`
+All arguments are `--`-prefixed flags. With no flag, the skill runs `--commit`.
 
-**Flags:** `--push`, `--force-push`
+| Flag | What it does |
+|------|--------------|
+| `--commit` | Smart commit with scope-based, ticket-aware messaging (default if no flag is given) |
+| `--review` | Pre-commit code review of staged changes (no commit is created) |
+| `--resolve` | Merge conflict resolution using full codebase context |
+| `--push` | Commit, then push the branch to the remote |
+| `--force-push` | Commit, then push with `git push --force-with-lease` |
+| `--pr` | Commit → push → create a PR/MR with an adaptive description |
+| `--ship` | Alias for `--pr` — the full commit-to-PR flow in one step |
+
+## Examples
+
+```text
+/ak-git:operations
+```
+
+Generates an intelligent commit message for the current changes and commits them (defaults to `--commit`).
+
+```text
+/ak-git:operations --review
+```
+
+Runs a pre-commit code review of the staged changes without creating a commit (`--review`).
+
+```text
+/ak-git:operations --push
+```
+
+Commits the changes and pushes the branch to the remote in one step (`--push`).
+
+```text
+/ak-git:operations --ship
+```
+
+Commits, pushes, and opens a PR/MR with an auto-written description — the full ship flow (`--ship`, alias of `--pr`).
+
+```text
+/ak-git:operations --resolve
+```
+
+Resolves the current merge conflicts using surrounding codebase context (`--resolve`).
 
 ## When to Use
 
 - Committing changes with auto-generated, context-aware messages
 - Reviewing staged changes before committing
 - Resolving merge conflicts with codebase context
+- Creating a PR/MR with an adaptive description in one step (`--pr` / `--ship`)
 - Working on branches with ticket identifiers (e.g., `feature/ABC-1234`)
 
 ## Best Practices

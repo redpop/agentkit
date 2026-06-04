@@ -14,6 +14,40 @@ Wraps the TYPO3 `make:content-block` CLI command with automatic vendor/extension
 
 **Flags:** `--vendor=...`, `--type=content-element|page-type|record-type`, `--skeleton-path=...`, `--config-path=...`, `--create-skeleton`, `--batch=file.yaml`, `--migrate-from=mask|dce`
 
+## Examples
+
+```text
+/ak-typo3:make-content-block --vendor=acme --type=content-element
+```
+
+Runs the native command to create a Content Element (`--type=content-element`) using the given vendor prefix
+(`--vendor`).
+
+```text
+/ak-typo3:make-content-block --type=page-type --skeleton-path=./skeletons/landing-page
+```
+
+Creates a Page Type (`--type=page-type`) scaffolded from a custom skeleton directory (`--skeleton-path`).
+
+```text
+/ak-typo3:make-content-block --create-skeleton
+```
+
+Launches interactive skeleton creation (`--create-skeleton`) and saves the result for reuse across projects.
+
+```text
+/ak-typo3:make-content-block --batch=blocks.yaml --config-path=./packages/sitepackage/content-blocks.yaml
+```
+
+Bulk-creates every block defined in `blocks.yaml` (`--batch`) using settings from an explicit config file
+(`--config-path`).
+
+```text
+/ak-typo3:make-content-block --migrate-from=mask
+```
+
+Converts existing Mask elements to Content Blocks format (`--migrate-from`; also accepts `dce`).
+
 ## When to Use
 
 - Creating content blocks using the native TYPO3 CLI command

@@ -9,10 +9,34 @@ Provides proactive and reactive security guidance when writing or reviewing code
 ## Usage
 
 ```text
+/ak-security:code-security [scope or topic]
+```
+
+This is a guideline skill — it carries no formal flags. It activates automatically (proactive mode) whenever code
+handles user input, authentication, file operations, database queries, network requests, or cryptography. Any trailing
+text in `$ARGUMENTS` is treated as a scope or topic (a file, directory, language, or vulnerability class) that focuses
+which rules to consult.
+
+## Examples
+
+```text
 /ak-security:code-security
 ```
 
-Activates automatically when code handles user input, authentication, file operations, database queries, network requests, or cryptography.
+Invoked with no arguments — Claude applies the relevant rule categories to whatever code is currently in context (the
+file being written or reviewed).
+
+```text
+/ak-security:code-security review src/api for SQL injection and SSRF
+```
+
+The trailing text scopes the consultation to `src/api` and narrows focus to the SQL Injection and SSRF rule files.
+
+```text
+/ak-security:code-security check this Terraform for least-privilege issues
+```
+
+Directs the skill to the infrastructure rules (Terraform AWS/Azure/GCP) for the HCL in context.
 
 ## When to Use
 

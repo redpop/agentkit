@@ -21,6 +21,8 @@ Skills are slash commands that users invoke directly in Claude Code via `/plugin
 | [coderabbit](ak-review/coderabbit.md) | ak-review | Automated code review with CodeRabbit |
 | [finalize](ak-review/finalize.md) | ak-review | Task completion workflow |
 | [workflow](ak-review/workflow.md) | ak-review | Generate or audit task completion workflows |
+| [delegate](ak-review/delegate.md) | ak-review | Generate a code-review prompt for a foreign agent |
+| [advise](ak-review/advise.md) | ak-review | Validate a foreign agent's review findings |
 | [code-security](ak-security/code-security.md) | ak-security | OWASP security guidelines for 15+ languages |
 | [llm-security](ak-security/llm-security.md) | ak-security | OWASP Top 10 for LLM Applications |
 | [semgrep](ak-security/semgrep.md) | ak-security | Semgrep static analysis scanning |
