@@ -161,10 +161,11 @@ Add a skip clause for this step: `Skip step N for docs-only or internal config c
   - **CodeRabbit available**: Use the CodeRabbit variant:
 
     ```
-    5. **Review** — Run CodeRabbit review on uncommitted changes, then fix reported issues
-       - Claude Code: invoke `/ak-review:coderabbit`
-       - Other tools: run `coderabbit review --prompt-only --type uncommitted`
-       - **Critically evaluate CodeRabbit results** — not all suggestions are correct or relevant. Accept only changes that genuinely improve the code; dismiss false positives and overly pedantic findings.
+    5. **Review** — Run code review on uncommitted changes, then fix reported issues
+       - **Local review**: invoke `/ak-review:coderabbit` for immediate inline feedback (default)
+       - **Optional delegated review**: ask the user whether to also invoke `/ak-review:delegate` to generate a self-contained review prompt for external agents (Kimi, Codex, etc.) — useful for comprehensive cross-check or second opinions
+       - **Other tools**: run `coderabbit review --prompt-only --type uncommitted`
+       - **Critically evaluate review results** — not all suggestions are correct or relevant. Accept only changes that genuinely improve the code; dismiss false positives and overly pedantic findings.
     ```
 
   - **CodeRabbit not available**: Use the self-review variant:
@@ -173,6 +174,7 @@ Add a skip clause for this step: `Skip step N for docs-only or internal config c
     5. **Review** — Review uncommitted changes for bugs, security issues, and design problems
        - Run `git diff` and analyze each changed file for: logic errors, missed edge cases,
          security concerns, naming/readability issues, and consistency with project conventions
+       - Ask the user whether to also invoke `/ak-review:delegate` for comprehensive cross-check with external agents
        - Fix any issues found before continuing
     ```
 
