@@ -39,7 +39,7 @@ targeted improvements; there are no arguments, so discovery is automatic and sco
 - Avoid adding obvious information derivable from code -- each line should earn its place
 - Keep instructions actionable with real paths and copy-paste ready commands
 - Consolidate if both CLAUDE.md and AGENTS.md exist at the same level
-- The skill always checks for a "Task completion workflow" section and delegates generation/audit to `/ak-review:workflow` (or `/ak-review:workflow --audit`) when it is missing or stale
+- The skill always checks for a "Task completion workflow" section and **always invokes `/ak-review:workflow --audit`** when the section exists — manual command checks cannot detect template drift (new optional steps, changed bullet structure)
 
 ## Related
 
