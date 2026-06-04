@@ -12,11 +12,23 @@ Runs `react-doctor` to analyze a React codebase and produce a 0-100 health score
 /ak-react:react-doctor
 ```
 
-Executes:
+No arguments. The skill always runs the bundled command against the current project:
 
 ```bash
 npx -y react-doctor@latest . --verbose --diff
 ```
+
+The `.` scans the current working directory, `--verbose` expands each finding with detail, and `--diff` focuses the
+report on recently changed files.
+
+## Examples
+
+```text
+/ak-react:react-doctor
+```
+
+Scans the current React project and prints a 0-100 health score — invoked with no argument because the command
+target (`.`) and flags (`--verbose --diff`) are fixed by the skill.
 
 ## When to Use
 

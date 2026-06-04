@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.0] - 2026-06-04
+
+### ✨ Added
+
+- `ak-review:delegate` — Generates a self-contained, project-specific code-review prompt for
+  any foreign coding agent (Kimi, Codex, etc.). Analyzes the current project (instructions,
+  languages, test/lint commands, docs) and the requested scope, then emits a ready-to-paste
+  prompt. Scope flags mirror CodeRabbit semantics (`--type all|committed|uncommitted`,
+  `--base <ref>`) plus `--path`/`--all`; report-only by default, `--fix` opts into direct
+  fixing, `--out <path>` writes the prompt to a file. The prompt forces a Markdown + JSON
+  findings report consumable by `ak-review:advise`.
+- `ak-review:advise` — Validates a foreign agent's code-review findings against the real code
+  and returns a per-finding verdict (`confirmed`, `false_positive`, `needs_more_context`,
+  `uncertain`) with confidence and a fix hint. Read-only: never modifies code and never
+  invents new findings. Accepts findings via `--in <path>` or pasted content. Together with
+  `delegate` this forms a two-agent review loop (foreign agent reviews → Claude validates →
+  foreign agent fixes).
+
 ## [1.14.0] - 2026-05-17
 
 ### ✨ Added

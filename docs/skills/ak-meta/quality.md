@@ -31,6 +31,36 @@ Recommended workflow: `--quick` to find weak spots fast, then full assessment on
 
 Evaluates two components side-by-side with a delta column showing where each is stronger. Useful for verifying a rewrite improved quality, choosing between alternative implementations, or catching regressions. Positive delta = first component scores higher; focus on the highest-weighted dimensions for the meaningful differences.
 
+## Examples
+
+```text
+/ak-meta:quality plugins/ak-meta/skills/quality
+```
+
+Full standard assessment (both layers, all 8 dimensions) of the quality skill directory — the path positional
+argument points at the component to score.
+
+```text
+/ak-meta:quality plugins/ak-git/agents/git-workflow-specialist.md --quick
+```
+
+Structural-only review of a single agent file — `--quick` skips the expert agent and scores the 5 dimensions with
+structural signals in seconds.
+
+```text
+/ak-meta:quality plugins/ak-meta/skills/discover --compare plugins/ak-meta/skills/quality
+```
+
+Side-by-side comparison of two skills — `--compare <path-b>` scores both and shows per-dimension deltas so you can
+see which is stronger and where.
+
+```text
+/ak-meta:quality plugins/ak-react/skills/react-doctor --quick --compare plugins/ak-react/skills/react-best-practices
+```
+
+Fast structural comparison — combining `--quick` with `--compare` runs the 5-dimension structural pass on both
+components, ideal for quickly ranking siblings before a deeper audit.
+
 ## When to Use
 
 - After creating or significantly modifying a skill or agent

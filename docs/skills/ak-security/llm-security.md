@@ -9,10 +9,34 @@ Covers all ten OWASP LLM risk categories: prompt injection, sensitive informatio
 ## Usage
 
 ```text
+/ak-security:llm-security [scope or topic]
+```
+
+This is a guideline skill — it carries no formal flags. It activates automatically (proactive mode) when building or
+reviewing code that interacts with LLMs (prompt handling, output processing, tool use, or data pipelines). Any trailing
+text in `$ARGUMENTS` is treated as a scope or topic — typically the application pattern you are building (chatbot, RAG,
+agent, fine-tuning pipeline, LLM API) — used to select the most relevant OWASP LLM rules.
+
+## Examples
+
+```text
 /ak-security:llm-security
 ```
 
-Activates automatically when building or reviewing code that interacts with LLMs -- prompt handling, output processing, tool use, or data pipelines.
+Invoked with no arguments — Claude maps the LLM code in context to the relevant OWASP LLM Top 10 categories.
+
+```text
+/ak-security:llm-security audit my RAG retrieval pipeline
+```
+
+The trailing text identifies a RAG system, so the skill prioritizes Vector/Embedding Weaknesses (LLM08), Prompt
+Injection (LLM01), and Sensitive Disclosure (LLM02).
+
+```text
+/ak-security:llm-security review the tool-calling agent for excessive agency
+```
+
+Scopes the consultation to an AI agent with tools and focuses on Excessive Agency (LLM06) and Output Handling (LLM05).
 
 ## When to Use
 

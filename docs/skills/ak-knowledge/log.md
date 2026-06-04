@@ -9,10 +9,36 @@ Transforms a solved problem from the current conversation into a structured docu
 ## Usage
 
 ```text
+/ak-knowledge:log
 /ak-knowledge:log [context hint]
 ```
 
-The optional context hint narrows focus when a session covered multiple topics.
+All arguments are treated as a free-text context hint (`$ARGUMENTS`). With no argument, the skill inspects the
+current conversation to identify the solved problem. The optional context hint narrows focus when a session
+covered multiple topics.
+
+## Examples
+
+```text
+/ak-knowledge:log
+```
+
+Capture the problem solved in the current conversation; with no argument, the skill reconstructs the fix from
+the session history on its own.
+
+```text
+/ak-knowledge:log fixed the flaky auth test by awaiting the token refresh before asserting
+```
+
+Document a just-solved problem from free text; the hint is the problem/fix summary the entry is built from,
+useful when you want to be explicit about what to record.
+
+```text
+/ak-knowledge:log the CORS preflight fix, not the unrelated logging change
+```
+
+Disambiguate which resolution to log when a session covered multiple topics; the hint tells the skill to focus
+on the CORS fix and ignore the others.
 
 ## When to Use
 

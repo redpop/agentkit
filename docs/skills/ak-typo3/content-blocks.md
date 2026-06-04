@@ -18,6 +18,34 @@ Creates complete Content Block scaffolding including `config.yaml`, Fluid templa
 
 If arguments are missing, the skill guides you interactively.
 
+## Examples
+
+```text
+/ak-typo3:content-blocks hero-section
+```
+
+Creates a Content Element named `hero-section` with default settings (`--type=element`) and prompts for fields interactively.
+
+```text
+/ak-typo3:content-blocks teaser-card --fields=header,text,image,link
+```
+
+Scaffolds a Content Element with four pre-defined fields (`--fields`), generating the matching `config.yaml` and Fluid
+templates.
+
+```text
+/ak-typo3:content-blocks landing-page --type=page --sitepackage=./packages/my-site
+```
+
+Creates a Page Type (`--type=page`) inside a non-default SitePackage location (`--sitepackage`).
+
+```text
+/ak-typo3:content-blocks hero-section --with-components --component-type=external
+```
+
+Generates the Content Block plus matching Fluid v4 Components (`--with-components`) as separate external component files
+(`--component-type=external`).
+
 ## When to Use
 
 - Creating new content elements for a TYPO3 v13 project

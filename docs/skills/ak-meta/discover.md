@@ -3,11 +3,25 @@
 | Field | Value |
 |-------|-------|
 | Plugin | ak-meta |
-| Invoke | `/ak-meta:discover [focus]` |
+| Invoke | `/ak-meta:discover [scope]` |
 
 ## Purpose
 
 Surface and stress-test improvement opportunities across any project. Applies to code, content, product, or strategy — uncovers blind spots and produces a prioritized set of ideas before brainstorming.
+
+## Usage
+
+```text
+/ak-meta:discover [scope]
+```
+
+The single optional `$ARGUMENTS` value narrows the exploration. It accepts any of:
+
+- A **topic** — `DX improvements`, `blog content for Q3`
+- A **file path** — `plugins/ak-security/`
+- A **constraint** — `low-complexity quick wins`
+- A **quantity hint** — `top 3`, `100 ideas`, `raise the bar`
+- **Empty** — unconstrained exploration across the whole project
 
 ## Workflow
 
@@ -21,12 +35,30 @@ Surface and stress-test improvement opportunities across any project. Applies to
 
 ## Examples
 
-```bash
-/ak-meta:discover                        # Open-ended discovery
-/ak-meta:discover blog content Q3        # Content ideas for blog
-/ak-meta:discover DX improvements        # Developer experience focus
-/ak-meta:discover top 3 quick wins       # Volume + constraint hint
+```text
+/ak-meta:discover
 ```
+
+Runs an unconstrained, project-wide exploration — no scope argument means every lens is fair game.
+
+```text
+/ak-meta:discover DX improvements
+```
+
+Focuses the lenses on developer-experience opportunities — the topic argument steers the candidate generation.
+
+```text
+/ak-meta:discover plugins/ak-security/
+```
+
+Scopes discovery to a specific directory — the file-path argument keeps findings grounded in that part of the
+codebase.
+
+```text
+/ak-meta:discover top 3 low-complexity quick wins
+```
+
+Combines a quantity hint with a constraint — narrows the shortlist to the three easiest high-value wins.
 
 ## Related
 

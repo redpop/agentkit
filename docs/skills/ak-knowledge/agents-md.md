@@ -12,7 +12,17 @@ Finds all `CLAUDE.md` files in a project, renames them to `AGENTS.md`, and creat
 /ak-knowledge:agents-md
 ```
 
-No arguments required. Operates on the current working directory recursively.
+No arguments required. The skill operates on the current working directory (`pwd`) recursively, scanning for
+every `CLAUDE.md` file (excluding `node_modules/` and `.git/`).
+
+## Examples
+
+```text
+/ak-knowledge:agents-md
+```
+
+Run from a project root to convert all `CLAUDE.md` files in the tree to `AGENTS.md` plus `CLAUDE.md` symlinks;
+there are no arguments, so the working directory determines the scope.
 
 ## When to Use
 

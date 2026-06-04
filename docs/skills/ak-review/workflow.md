@@ -5,6 +5,30 @@
 | Plugin | ak-review |
 | Invoke | `/ak-review:workflow [--audit]` |
 
+## Usage
+
+```text
+/ak-review:workflow [--audit]
+```
+
+**Flags:** `--audit` (audit an existing workflow against current tooling). With no flag, runs in Generate mode.
+
+## Examples
+
+```text
+/ak-review:workflow
+```
+
+Scans the project tooling and generates a tailored `## Task completion workflow` section, then writes it to
+`AGENTS.md` after you approve — the default Generate mode.
+
+```text
+/ak-review:workflow --audit
+```
+
+Audits the existing workflow against the project's current tooling and reports drift (removed commands, renamed
+scripts, missing steps); `--audit` switches from generating to checking.
+
 ## Purpose
 
 Generate a project-specific Task Completion Workflow for AGENTS.md, or audit an existing one against the current project tooling. Detects build tools, test runners, linters, formatters, and type checkers to produce a tailored 6-step workflow.
@@ -26,13 +50,6 @@ Generate a project-specific Task Completion Workflow for AGENTS.md, or audit an 
 3. Compare: missing tools, removed commands, renamed scripts, structural gaps
 4. Report findings by severity
 5. Offer to apply corrections
-
-## Examples
-
-```bash
-/ak-review:workflow                # Generate workflow for this project
-/ak-review:workflow --audit        # Audit existing workflow
-```
 
 ## Related
 
