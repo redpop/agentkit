@@ -262,7 +262,7 @@ and the **Semgrep MCP Server** for automated static analysis scanning:
 brew install semgrep          # or: python3 -m pip install semgrep
 ```
 
-The [Semgrep MCP Server](https://semgrep.dev/docs/mcp) provides tools like
+The [Semgrep MCP Server](https://github.com/semgrep/semgrep/tree/develop/cli/src/semgrep/mcp) provides tools like
 `semgrep_scan` and `semgrep_findings` to the AI agent:
 
 - **Claude Code**: Run `/plugin`, search for "Semgrep" in the Discover tab, and install
