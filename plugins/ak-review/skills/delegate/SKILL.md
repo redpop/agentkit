@@ -103,7 +103,7 @@ findings, then list what you changed.
 Produce a Markdown report grouped by priority, then a machine-readable JSON block.
 
 ### Markdown
-Group findings under: 🔴 High · 🟡 Medium · 🟢 Low · then a "Nitpicks" section.
+Group findings under: 🔴 Critical · 🟠 High · 🟡 Medium · 🟢 Low · then a "Nitpicks" section.
 Each finding: `**F-NNN** — <title>` / `file:line` / severity / category /
 rationale / suggested fix.
 
@@ -117,7 +117,7 @@ rationale / suggested fix.
     {
       "id": "F-001",
       "title": "...",
-      "severity": "high|medium|low|nitpick",
+      "severity": "critical|high|medium|low|nitpick",
       "category": "...",
       "file": "path/to/file.ext",
       "start_line": 42,
