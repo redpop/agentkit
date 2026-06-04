@@ -17,6 +17,33 @@ Operates in two modes. **Generation mode** creates Fluid v4 components following
 
 If no arguments are provided, the skill guides you interactively.
 
+## Examples
+
+```text
+/ak-typo3:fluid-components button
+```
+
+Generates an atom-level component named `button` (default `--type=atom`) with a typed template, SCSS, and a PHPUnit test.
+
+```text
+/ak-typo3:fluid-components card --type=molecule
+```
+
+Creates a molecule-level component (`--type=molecule`) suited for composite UI like cards with header/body/footer slots.
+
+```text
+/ak-typo3:fluid-components hero --type=organism --sitepackage=./packages/my-site
+```
+
+Generates an organism-level component (`--type=organism`) inside a non-default SitePackage path (`--sitepackage`).
+
+```text
+/ak-typo3:fluid-components --analyze
+```
+
+Runs analysis mode (`--analyze`) via the `typo3-fluid-expert` agent to evaluate existing Fluid templates instead of
+generating new ones.
+
 ## When to Use
 
 - Building reusable UI components for a TYPO3 v13 project

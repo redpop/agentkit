@@ -14,7 +14,17 @@ actionable findings grouped by severity (Critical / High / Medium / Suggestion).
 /ak-js:config-doctor
 ```
 
-No arguments. Runs on the current working directory. Auto-detects monorepos.
+No arguments. Runs on the current working directory and auto-detects monorepos (npm/pnpm/yarn workspaces, Lerna,
+Turbo, Nx). The skill is read-only and never modifies files.
+
+## Examples
+
+```text
+/ak-js:config-doctor
+```
+
+Audits every config file under the current directory and prints a scored report — no argument needed because the
+skill always targets the working directory and discovers monorepo packages on its own.
 
 ## When to Use
 

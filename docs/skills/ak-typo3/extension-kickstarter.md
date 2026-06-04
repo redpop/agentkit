@@ -16,6 +16,43 @@ Scaffolds TYPO3 extensions with `composer.json`, `ext_emconf.php`, `Services.yam
 
 If no arguments are provided, the skill guides you interactively.
 
+## Examples
+
+```text
+/ak-typo3:extension-kickstarter my_extension
+```
+
+Scaffolds a basic extension named `my_extension` (default `--type=basic`) with `composer.json`, `ext_emconf.php`, and DI
+configuration.
+
+```text
+/ak-typo3:extension-kickstarter my_shop --type=plugin --with-plugin --with-tests
+```
+
+Creates an Extbase plugin extension (`--type=plugin`, `--with-plugin`) including a PHPUnit/PHPStan test setup
+(`--with-tests`).
+
+```text
+/ak-typo3:extension-kickstarter my_api --with-middleware --with-command --with-event-listener
+```
+
+Builds an extension bundling a PSR-15 middleware (`--with-middleware`), a console command (`--with-command`), and an
+attribute-based event listener (`--with-event-listener`).
+
+```text
+/ak-typo3:extension-kickstarter my_module --type=backend-module --with-backend-module --composer-name=acme/my-module
+```
+
+Generates a backend-module extension (`--type=backend-module`, `--with-backend-module`) with an explicit Composer
+package name (`--composer-name`).
+
+```text
+/ak-typo3:extension-kickstarter my_extension --use-kickstarter
+```
+
+Delegates scaffolding to `stefanfroemken/ext-kickstarter` when installed (`--use-kickstarter`), falling back to manual
+scaffolding otherwise.
+
 ## When to Use
 
 - Starting a new TYPO3 extension from scratch

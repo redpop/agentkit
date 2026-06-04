@@ -9,11 +9,49 @@ Cross-references existing solution documents against the current codebase to det
 ## Usage
 
 ```text
+/ak-knowledge:refresh
 /ak-knowledge:refresh [scope hint]
+/ak-knowledge:refresh mode:autofix
 /ak-knowledge:refresh mode:autofix [scope hint]
 ```
 
-Without arguments, targets all documents under `docs/solutions/`. A scope hint narrows by subdirectory, frontmatter fields, filename, or content.
+The skill parses `$ARGUMENTS` for one flag and a scope hint:
+
+- `mode:autofix` -- run autonomously without prompts, applying safe actions and marking uncertain cases stale.
+  Omit it for the default interactive mode, which confirms ambiguous decisions.
+- Everything remaining after flag extraction is the scope hint. Without it, all documents under
+  `docs/solutions/` are targeted; with it, the working set narrows by subdirectory, frontmatter field, filename,
+  or content (matched in that priority order).
+
+## Examples
+
+```text
+/ak-knowledge:refresh
+```
+
+Review every document under `docs/solutions/` interactively; with no arguments the full knowledge base is in
+scope and ambiguous decisions are confirmed with you.
+
+```text
+/ak-knowledge:refresh build-errors
+```
+
+Limit the interactive review to one area; the scope hint `build-errors` matches the subdirectory, so only those
+docs are cross-referenced against the codebase.
+
+```text
+/ak-knowledge:refresh webpack
+```
+
+Target documents about a topic; the hint `webpack` matches by frontmatter, filename, or content when no
+subdirectory of that name exists.
+
+```text
+/ak-knowledge:refresh mode:autofix build-errors
+```
+
+Run a hands-off sweep of one area; `mode:autofix` applies safe Keep/Update/Delete actions without prompting,
+marks uncertain docs as stale, and the trailing `build-errors` scopes it to that subdirectory.
 
 ## When to Use
 
