@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.16.0] - 2026-06-05
+
+### ✨ Added
+
+- `ak-knowledge:agents-md` — After creating a symlink (converted or consolidated), the skill
+  now automatically inserts a notice `` > `CLAUDE.md` is a symlink pointing to this file. ``
+  at the top of `AGENTS.md` (directly after the `# AGENTS.md` heading, skipped if already
+  present).
+
+### 🐛 Fixed
+
+- `ak-review:workflow` + `AGENTS.md` — Review workflow bullet renamed from
+  **"Optional delegated review"** to **"Delegated review"**: the "Optional" label caused
+  agents to skip the entire bullet (including the mandatory user prompt) rather than just
+  making the *execution* optional. Asking the user is now framed as a required step.
+- `ak-knowledge:agents-md-improver` — Added Common Issues item 8: checks that `AGENTS.md`
+  carries the symlink notice when `CLAUDE.md` is a symlink pointing to it. Removed a
+  redundant prose block in Phase 1 that duplicated the same rule already expressed in
+  the checklist.
+
 ## [1.15.2] - 2026-06-04
 
 ### 🐛 Fixed

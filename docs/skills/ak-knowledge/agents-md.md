@@ -36,6 +36,7 @@ there are no arguments, so the working directory determines the scope.
 - Review the consolidation output when both files existed as regular files
 - Excludes `node_modules/` and `.git/` directories automatically
 - Check version control after running to verify symlinks are tracked correctly
+- After conversion, a notice `` > `CLAUDE.md` is a symlink pointing to this file. `` is automatically inserted at the top of `AGENTS.md` (skipped if already present)
 
 ## Related
 

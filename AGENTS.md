@@ -1,5 +1,7 @@
 # AGENTS.md
 
+> `CLAUDE.md` is a symlink pointing to this file.
+
 This file provides guidance to AI agents (Claude Code, Warp AI, etc.) when working with the AgentKit repository.
 
 ## Project overview
@@ -114,7 +116,7 @@ Wrapper format: `{"description": "...", "hooks": {...}}`. The `${CLAUDE_PLUGIN_R
 
 - Use conventional commits: `feat:`, `fix:`, `docs:`, `refactor:`
 - Scope by plugin when applicable: `feat(ak-typo3): add content block field type`
-- Keep versions synchronized across `marketplace.json` and all `plugin.json` files (currently `1.15.2`)
+- Keep versions synchronized across `marketplace.json` and all `plugin.json` files (currently `1.16.0`)
 
 ## Task completion workflow
 
@@ -129,7 +131,7 @@ After implementing changes:
    - Fallback: invoke the `refactoring-expert` agent on modified files
 3. **Review** — Run code review on uncommitted changes, then fix reported issues
    - **Local review**: invoke `/ak-review:coderabbit` for immediate inline feedback (default)
-   - **Optional delegated review**: ask the user whether to also invoke `/ak-review:delegate` to generate a self-contained review prompt for external agents (Kimi, Codex, etc.) — useful for comprehensive cross-check or second opinions
+   - **Delegated review** — Ask the user whether to also invoke `/ak-review:delegate` to generate a self-contained review prompt for external agents (Kimi, Codex, etc.) — useful for comprehensive cross-check or second opinions
    - **Other tools**: run `coderabbit review --prompt-only --type uncommitted`
    - **Critically evaluate review results** — not all suggestions are correct or relevant. Accept only changes that genuinely improve the code; dismiss false positives and overly pedantic findings.
 4. **Docs** — If plugins, skills, agents, or hooks changed, update `docs/` (detail files and index READMEs) and the root `README.md` plugin table

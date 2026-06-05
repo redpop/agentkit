@@ -165,4 +165,5 @@ After user approval, apply changes. Preserve existing content structure.
 5. **Broken file references** — paths to files that no longer exist
 6. **Undocumented gotchas** — non-obvious patterns not captured
 7. **Duplicate CLAUDE.md + AGENTS.md** — should be consolidated
-8. **Missing or outdated task completion workflow** — section absent entirely, or references commands/skills/agents that no longer exist (delegate to `/ak-review:workflow` or `/ak-review:workflow --audit`)
+8. **Missing symlink notice** — if `CLAUDE.md` is a symlink to `AGENTS.md`, the notice `> \`CLAUDE.md\` is a symlink pointing to this file.` must appear at the top of `AGENTS.md`
+9. **Missing or outdated task completion workflow** — section absent entirely, or references commands/skills/agents that no longer exist (delegate to `/ak-review:workflow` or `/ak-review:workflow --audit`)
