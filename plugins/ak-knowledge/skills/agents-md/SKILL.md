@@ -82,6 +82,16 @@ For each `[consolidate]` result:
 5. Remove CLAUDE.md and create symlink: `rm CLAUDE.md && ln -s AGENTS.md CLAUDE.md`
 6. Report: `[consolidated] path — merged N unique sections into AGENTS.md + symlink`
 
+### 6. Add Symlink Notice
+
+After creating any symlink (converted or consolidated), insert the following notice into `AGENTS.md` directly after the `# AGENTS.md` heading (or as the first line if no heading is present):
+
+```markdown
+> `CLAUDE.md` is a symlink pointing to this file.
+```
+
+Only add the notice if it is not already present.
+
 ## Output Format
 
 ```markdown

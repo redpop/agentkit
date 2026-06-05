@@ -163,7 +163,7 @@ Add a skip clause for this step: `Skip step N for docs-only or internal config c
     ```
     5. **Review** — Run code review on uncommitted changes, then fix reported issues
        - **Local review**: invoke `/ak-review:coderabbit` for immediate inline feedback (default)
-       - **Optional delegated review**: ask the user whether to also invoke `/ak-review:delegate` to generate a self-contained review prompt for external agents (Kimi, Codex, etc.) — useful for comprehensive cross-check or second opinions
+       - **Delegated review** — Ask the user whether to also invoke `/ak-review:delegate` to generate a self-contained review prompt for external agents (Kimi, Codex, etc.) — useful for comprehensive cross-check or second opinions
        - **Other tools**: run `coderabbit review --prompt-only --type uncommitted`
        - **Critically evaluate review results** — not all suggestions are correct or relevant. Accept only changes that genuinely improve the code; dismiss false positives and overly pedantic findings.
     ```
