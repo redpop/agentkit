@@ -5,7 +5,8 @@ description: This skill should be used when the user asks to "validate review fi
 
 # Advise on Review Findings
 
-Validate a foreign coding agent's code-review findings against the **real code** in this project, and return a verdict per finding. **Read-only — never modifies code and never invents new findings.**
+Validate a foreign coding agent's code-review findings against the **real code** in this project, and return a verdict
+per finding. **Read-only — never modifies code and never invents new findings.**
 
 ## Arguments
 
@@ -25,9 +26,11 @@ paste the findings and stop.
 
 ### Phase 2: Validate Each Finding
 
-For each finding, read the cited `file` around `start_line..end_line` and check the `claim` against the actual code. For
-long lists, validate in internal groups (≈8 at a time) to avoid cross-issue context mixing. Do not modify code. Do not
-add findings that were not in the input.
+For each finding, read the cited `file` around `start_line..end_line` and check the `claim` against the actual code. Do
+not modify code. Do not add findings that were not in the input.
+
+For lists with more than ~5 findings, dispatch one sub-agent per group of ≤8 tightly related findings.
+Each sub-agent reads only its cited file(s), checks the claim, and returns its verdict.
 
 Assign a verdict:
 

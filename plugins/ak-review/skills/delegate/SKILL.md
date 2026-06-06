@@ -5,7 +5,8 @@ description: This skill should be used when the user asks to "delegate a code re
 
 # Delegate Code Review
 
-Generate a self-contained, project-specific code-review prompt for a foreign coding agent (Kimi, Codex, etc.). **Output only — this skill never modifies code** (except writing the prompt file when `--out` is given).
+Generate a self-contained, project-specific code-review prompt for a foreign coding agent (Kimi, Codex, etc.).
+**Output only — this skill never modifies code** (except writing the prompt file when `--out` is given).
 
 ## Arguments
 
@@ -79,10 +80,15 @@ You do not have prior context — gather everything you need from the repo itsel
 - Run linter with: [command]
 - Conventions & quirks: [...]
 
-## 3. Scope — review exactly this
+## 3. Approach
+Dispatch one sub-agent per review dimension (Security, Performance, Tests, …), merge the
+findings, then produce the final report. Each sub-agent reads only the files relevant to
+its dimension.
+
+## 4. Scope — review exactly this
 [Concrete file list OR exact git commands to run, e.g. `git diff origin/main...HEAD`]
 
-## 4. What to check
+## 5. What to check
 Review across these dimensions (skip those that do not apply):
 - Correctness & logic errors
 - Security (input validation, auth, injection, secrets)
@@ -94,12 +100,12 @@ Review across these dimensions (skip those that do not apply):
 Severity scale: Critical / High / Medium / Low. Separate true risks from
 nitpicks (cosmetic items with no functional impact).
 
-## 5. [MODE]
+## 6. [MODE]
 [If report-only:] Do NOT modify any code. Produce only the report below.
 [If --fix:] First produce the report below, then fix the Confirmed High/Critical
 findings, then list what you changed.
 
-## 6. Required output format
+## 7. Required output format
 Produce a Markdown report grouped by priority, then a machine-readable JSON block.
 
 ### Markdown

@@ -61,6 +61,8 @@ printing it.
 - The generated prompt is self-contained -- paste it as-is into the other agent
 - Keep report-only for hand-off workflows; use `--fix` only when you want direct edits
 - The foreign agent's output uses a Markdown + JSON format consumable by `/ak-review:advise`
+- The generated prompt instructs the foreign agent to dispatch one sub-agent per review
+  dimension (Security, Performance, Tests, …) and merge findings before the final report
 
 ## Related
 
