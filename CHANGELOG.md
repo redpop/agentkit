@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.17.0] - 2026-06-06
+
+### ✨ Added
+
+- `ak-review:delegate` — New **Phase 2.5: Discover Requirements Context** automatically
+  discovers and embeds requirements context in every generated review prompt — no flags
+  needed. Three sources are checked in order:
+  1. **Jira tickets** — searches branch name and commit messages for ticket IDs
+     (pattern `[A-Z]{2,}-\d+`) and fetches details via Atlassian MCP (summary,
+     type/status, description, acceptance criteria). Skipped if MCP is unavailable.
+  2. **Spec / task Markdown files** — scans the working tree for files whose name or
+     directory matches task/spec patterns (`TODO`, `TASK`, `SPEC`, `tasks/`, etc.)
+     and any Markdown files modified in the current diff scope.
+  3. **Fallback summary** — when neither source yields results, synthesizes a one-paragraph
+     summary from commit messages so the review agent always has requirements context.
+
+  Fetched content is always embedded directly in the generated prompt to keep it
+  self-contained, regardless of whether the reviewing agent has its own Atlassian MCP
+  access. The generated prompt uses composable sub-sections (Jira tickets, Specification
+  documents, Summary) that are included or omitted based on what was discovered.
+
 ## [1.16.1] - 2026-06-06
 
 ### 🔄 Changed

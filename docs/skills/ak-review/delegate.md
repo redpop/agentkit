@@ -10,6 +10,21 @@ coding agent (Kimi, Codex, …) to perform a code review. Report-only by default
 the prompt also fix findings. The skill never modifies code (it only writes a file when
 `--out` is given).
 
+The skill automatically discovers requirements context so the reviewing agent knows what
+the change was supposed to accomplish:
+
+1. **Jira tickets** — searches branch name and commit messages for ticket IDs (e.g.
+   `PROJ-123`), then fetches details via Atlassian MCP (summary, description, acceptance
+   criteria). Only runs when Atlassian MCP is connected.
+2. **Spec / task Markdown files** — scans the working tree for task/spec documents
+   (filenames or directories matching common patterns like `tasks/`, `SPEC`, `TODO`, …)
+   and any Markdown files modified in the current scope.
+3. **Fallback** — if neither source is found, synthesizes a brief summary from the commit
+   messages so the reviewer always has some requirements context.
+
+No flags are needed — discovery is automatic and silently skipped in projects without
+Jira or spec files.
+
 ## Usage
 
 ```text
@@ -63,6 +78,8 @@ printing it.
 - The foreign agent's output uses a Markdown + JSON format consumable by `/ak-review:advise`
 - The generated prompt instructs the foreign agent to dispatch one sub-agent per review
   dimension (Security, Performance, Tests, …) and merge findings before the final report
+- Requirements context (Jira tickets, spec files, or commit summary) is discovered
+  automatically — no flags needed
 
 ## Related
 
