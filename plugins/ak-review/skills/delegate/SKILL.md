@@ -45,15 +45,57 @@ Detect: primary languages/frameworks, test command, lint command, build
 command, key documentation paths, project-specific conventions and quirks.
 Collect concrete file paths the reviewer should read first.
 
+### Phase 2.5: Discover Requirements Context
+
+Always run — no flag required. Check sources in this order:
+
+#### A) Jira tickets (only when Atlassian MCP is available)
+
+Search for ticket IDs matching `[A-Z]{2,}-\d+` in:
+
+- Branch name: `git rev-parse --abbrev-ref HEAD`
+- Commit messages in scope: `git log <range> --oneline`
+
+Deduplicate, cap at 10. For each ID call `getJiraIssue`. Extract: summary,
+type/status, description (≤ 500 chars), acceptance criteria (if present in
+description or as a dedicated field).
+
+Always embed the extracted content directly in the generated prompt. Even if
+the reviewing agent has its own Atlassian MCP access and could re-fetch the
+tickets, embedding ensures the prompt is self-contained and the reviewer has
+the key requirements at hand without relying on external connectivity.
+
+#### B) Spec / task Markdown files
+
+Search the working tree for Markdown files that look like requirements documents:
+
+- Filename contains `TODO`, `TASK`, `SPEC`, `BACKLOG`, `STORY`, `TICKET`, or
+  `REQUIREMENT` (case-insensitive), **or** lives under `tasks/`, `specs/`,
+  `docs/tasks/`, `.tasks/`
+- **Or** any Markdown file modified in the current diff scope that contains
+  checklists, acceptance criteria, or user-story language
+
+Read the matching files and prepare a concise excerpt for the prompt.
+
+#### C) Fallback — synthesize from commit messages
+
+When neither tickets nor spec files are found, summarize the commit messages
+in scope (reuse the output already collected in step A) into one short paragraph:
+what was the goal, what was changed.
+
+Combine whichever sources yielded results; all three can appear together.
+
 ### Phase 3: Assemble the Prompt
 
-Combine three parts into the template below:
+Combine up to four parts into the template below:
 
 1. **Generic review dimensions** — draw from
    `${CLAUDE_PLUGIN_ROOT}/knowledge/review-dimensions.md` (Security, Performance,
    Architecture, Testing, Accessibility; severity scale; dedup rules).
 2. **Project-specific** — the files/conventions/commands found in Phase 2.
 3. **Task** — the resolved scope (Phase 1), the mode (report-only unless `--fix`), and the required output format.
+4. **Requirements context** — tickets, spec files, or synthesized summary
+   from Phase 2.5.
 
 ### Phase 4: Emit
 
@@ -80,15 +122,37 @@ You do not have prior context — gather everything you need from the repo itsel
 - Run linter with: [command]
 - Conventions & quirks: [...]
 
-## 3. Approach
+## 3. Requirements context
+[Include each sub-section that has content; omit empty ones.
+If no formal documentation was found, include only the summary below.]
+
+### Jira tickets
+[Include when tickets were found — one entry per ticket:]
+
+**PROJ-123 — [Summary]**
+**Type:** Story | **Status:** In Review
+[Description / Acceptance criteria — fetched at prompt-generation time]
+
+### Specification documents
+[Include when spec / task Markdown files were found:]
+- `tasks/PROJ-123-login.md` — [brief description]
+[Relevant excerpts]
+
+### Summary
+[Include when neither Jira tickets nor spec files were found — synthesize from commits:]
+No formal requirements documentation was found. Based on the commit history,
+this change implements: [synthesized summary from commit messages].
+Review whether the implementation appears complete and correct for this stated purpose.
+
+## 4. Approach
 Dispatch one sub-agent per review dimension (Security, Performance, Tests, …), merge the
 findings, then produce the final report. Each sub-agent reads only the files relevant to
 its dimension.
 
-## 4. Scope — review exactly this
+## 5. Scope — review exactly this
 [Concrete file list OR exact git commands to run, e.g. `git diff origin/main...HEAD`]
 
-## 5. What to check
+## 6. What to check
 Review across these dimensions (skip those that do not apply):
 - Correctness & logic errors
 - Security (input validation, auth, injection, secrets)
@@ -97,15 +161,18 @@ Review across these dimensions (skip those that do not apply):
 - Tests (coverage of changed behavior, edge cases)
 - Maintainability & adherence to the project conventions above
 
+Where a Requirements context section (§ 3) is present, also check whether the
+implementation fulfils the stated requirements and acceptance criteria.
+
 Severity scale: Critical / High / Medium / Low. Separate true risks from
 nitpicks (cosmetic items with no functional impact).
 
-## 6. [MODE]
+## 7. [MODE]
 [If report-only:] Do NOT modify any code. Produce only the report below.
 [If --fix:] First produce the report below, then fix the Confirmed High/Critical
 findings, then list what you changed.
 
-## 7. Required output format
+## 8. Required output format
 Produce a Markdown report grouped by priority, then a machine-readable JSON block.
 
 ### Markdown
@@ -143,3 +210,5 @@ point to in the code.
 
 - Keep the prompt agent-agnostic — no Claude-specific or session-specific references.
 - If the scope is empty (no diff), say so and stop instead of emitting an empty prompt.
+- Always embed ticket and spec content in the prompt body — never rely on the reviewing
+  agent fetching it themselves. The reviewing agent may lack Atlassian or file access.
