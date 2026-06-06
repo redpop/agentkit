@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.16.1] - 2026-06-06
+
+### 🔄 Changed
+
+- `ak-review:delegate` — Generated prompt now includes a dedicated **Approach** section
+  (section 3) instructing the foreign agent to dispatch one sub-agent per review dimension
+  (Security, Performance, Tests, …) and merge findings before producing the final report.
+- `ak-review:advise` — Phase 2 now recommends dispatching one sub-agent per group of ≤8
+  tightly related findings (for lists >5), replacing the previous "internal groups of ≈8"
+  workaround. This avoids cross-issue context mixing and enables parallel validation.
+
 ## [1.16.0] - 2026-06-05
 
 ### ✨ Added

@@ -44,6 +44,7 @@ content inline.
 - Prefer feeding the JSON block -- it parses most reliably
 - Use the returned `confidence` to decide what to fix; the skill does not auto-threshold
 - Pass back the JSON `results[]` to the fixing agent so it knows what is confirmed
+- For large finding lists (>5), the skill dispatches one sub-agent per group of ≤8 findings to avoid context mixing
 
 ## Related
 
