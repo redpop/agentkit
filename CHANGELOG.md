@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.18.0] - 2026-07-03
+
+### ✨ Added
+
+- `ak-review:explain` — New skill that explains a code snippet to a developer: what it
+  does, why it's built that way, and what's notable about it. Ported from the pt-ai
+  `explain` skill. Explains the current editor selection, or whatever is passed as
+  arguments (an optional introductory sentence before the snippet is ignored). Output
+  follows a fixed structure — Purpose, How it works, and an optional Noteworthy section
+  — capped at ~250 words, without improvement suggestions or assumptions beyond the
+  visible code.
+
 ## [1.17.0] - 2026-06-06
 
 ### ✨ Added
