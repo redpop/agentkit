@@ -8,6 +8,7 @@ task completion workflow, and file validation hooks.
 | Skill | Description |
 |-------|-------------|
 | `coderabbit` | CodeRabbit CLI integration for automated code review |
+| `explain` | Explain a code snippet's purpose, mechanics, and notable patterns |
 | `finalize` | Project-specific task completion workflow |
 
 ## Knowledge
@@ -29,6 +30,7 @@ task completion workflow, and file validation hooks.
 ## Usage
 
 /ak-review:coderabbit
+/ak-review:explain
 /ak-review:finalize
 
 ## Requirements
