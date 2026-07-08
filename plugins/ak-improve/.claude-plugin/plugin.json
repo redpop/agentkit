@@ -1,7 +1,7 @@
 {
   "name": "ak-improve",
   "description": "Code improvement agents for refactoring and performance optimization",
-  "version": "1.18.0",
+  "version": "1.18.1",
   "author": {
     "name": "redpop",
     "url": "https://github.com/redpop"
