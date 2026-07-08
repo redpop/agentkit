@@ -14,7 +14,9 @@ fixed three-part structure (Purpose, How it works, Noteworthy) scaled to the len
 /ak-review:explain [code snippet]
 ```
 
-If code is currently selected in the editor, the selection is explained and no snippet needs to be passed.
+If code is currently selected in a connected IDE (e.g. the VS Code extension), the selection is explained and no
+snippet needs to be passed -- `/ak-review:explain` alone is enough. Without an IDE connection, paste the snippet
+after the command.
 
 ## Examples
 
@@ -49,3 +51,4 @@ An introductory sentence before the snippet is ignored -- only the code portion 
 - Paste the smallest snippet that is self-contained enough to explain
 - For long files, explain function by function rather than the whole file at once
 - Use this instead of `/ak-review:coderabbit` when you want understanding, not a quality/bug review
+- In a terminal session without an IDE connection, always paste the snippet -- there is no selection to fall back on

@@ -10,9 +10,16 @@ improvement suggestions, no assumptions beyond the visible code.
 
 ## Input
 
-- If code is selected in the editor, explain the selection.
-- Otherwise, treat everything written after the skill invocation as the input. If it opens with a short
-  introductory sentence before the actual snippet, use only the code portion -- ignore the introduction.
+Determine the snippet to explain, in this order:
+
+1. **IDE selection** -- when connected to an IDE (e.g. the VS Code extension), a selection is auto-injected into the
+   turn as context (for example a line like `Selected N lines from <file>`), separate from `$ARGUMENTS`. If such a
+   selection is present in the current turn, explain it -- even when nothing follows the skill invocation.
+2. **Typed/pasted input** -- otherwise, treat everything written after the skill invocation as the input. If it
+   opens with a short introductory sentence before the actual snippet, use only the code portion -- ignore the
+   introduction.
+3. **Neither present** -- if there is no IDE selection and no text after the invocation, ask the user to select
+   code or paste a snippet. Do not guess at a file or symbol to explain.
 
 ## Constraints
 
