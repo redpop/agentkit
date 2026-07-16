@@ -489,13 +489,26 @@ export default function RootLayout({ children }) {
 
 **Correct: loads after hydration**
 
+`ssr: false` throws in Server Components, and a root layout is always a
+Server Component. Isolate the deferred import in a Client Component instead
+of adding `'use client'` to the layout — that would opt the entire tree out
+of Server Components.
+
 ```tsx
+// app/analytics.tsx
+'use client'
+
 import dynamic from 'next/dynamic'
 
-const Analytics = dynamic(
+export const Analytics = dynamic(
   () => import('@vercel/analytics/react').then(m => m.Analytics),
   { ssr: false }
 )
+```
+
+```tsx
+// app/layout.tsx — stays a Server Component
+import { Analytics } from './analytics'
 
 export default function RootLayout({ children }) {
   return (
@@ -528,6 +541,8 @@ function CodePanel({ code }: { code: string }) {
 **Correct: Monaco loads on demand**
 
 ```tsx
+'use client'
+
 import dynamic from 'next/dynamic'
 
 const MonacoEditor = dynamic(
