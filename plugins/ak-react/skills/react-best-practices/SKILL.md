@@ -7,7 +7,7 @@ description: >
 
 # React Best Practices
 
-Comprehensive performance optimization guide for React and Next.js applications, based on Vercel Engineering guidelines. Contains 65 rules across 8 categories, prioritized by impact.
+Comprehensive performance optimization guide for React and Next.js applications, based on Vercel Engineering guidelines. Contains 66 rules across 8 categories, prioritized by impact.
 
 See `${CLAUDE_PLUGIN_ROOT}/knowledge/full-guide.md` for all rules with detailed code examples.
 
