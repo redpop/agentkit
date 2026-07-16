@@ -38,7 +38,12 @@ The skill passes you:
 | `svelte.config.js` | SvelteKit | Adapter required, `kit.alias` consistency |
 | `tailwind.config.{js,ts,mjs}` | Tailwind | `content` glob matches actual source files, plugin imports |
 | `eslint.config.{js,mjs}` | ESLint Flat Config | Import paths, parser setup, recommended config included |
-| `postcss.config.{js,cjs,mjs}` | PostCSS | Plugin list, common missing plugins (autoprefixer) |
+| `postcss.config.{js,cjs,mjs}` | PostCSS | Plugin list, common missing plugins (autoprefixer — see the Tailwind v4 exception below) |
+
+**Tailwind v4 exception:** never flag a missing `autoprefixer` when `@tailwindcss/postcss`
+appears in the PostCSS plugin list or `tailwindcss@4` is in the passed `package.json`.
+Tailwind v4 prefixes via Lightning CSS, so autoprefixer is obsolete and recommending it
+would be wrong advice.
 
 ## Methodology
 
