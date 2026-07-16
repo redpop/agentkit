@@ -60,12 +60,15 @@ Update ALL of these — do not skip any:
 Before continuing, confirm every version is identical and no plugin was left behind:
 
 ```bash
-grep -h '"version"' .claude-plugin/marketplace.json plugins/*/.claude-plugin/plugin.json \
-  | sort -u
+grep -ho '"version"[[:space:]]*:[[:space:]]*"[^"]*"' \
+  .claude-plugin/marketplace.json plugins/*/.claude-plugin/plugin.json \
+  | grep -o '[^"]*"$' | sort -u
 ```
 
-This must print exactly **one** distinct version line — the new one. More than one line means
-a file was missed; fix it before proceeding. Also verify that the number of `marketplace.json`
+This must print exactly **one** distinct version — the new one. More than one means a file was
+missed; fix it before proceeding. Match only the value, not the whole line: `marketplace.json`
+nests its entries deeper than `plugin.json`, so comparing raw lines reports a false mismatch on
+indentation alone. Also verify that the number of `marketplace.json`
 entries equals the number of `plugin.json` files.
 
 ### Step 5: Output summary
