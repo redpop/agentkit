@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.18.2] - 2026-07-16
+
+### 🐛 Fixed
+
+- `ak-react:react-best-practices` — The guide's dynamic-import examples used `ssr: false`
+  in files without a `'use client'` directive. In "Defer Non-Critical Third-Party
+  Libraries" the example marked **Correct** placed it next to a `RootLayout`, which is
+  always a Server Component, so the recommended code threw at runtime
+  (`ssr: false is not allowed with next/dynamic in Server Components`) while the
+  **Incorrect** example above it worked — the guide advised trading working code for
+  breaking code. The Correct example is now split into a `'use client'` module that the
+  layout imports, keeping the layout a Server Component, and the section states outright
+  that `ssr: false` throws in Server Components. The Monaco example in "Dynamic Imports
+  for Heavy Components" gained the missing directive.
+- `ak-js:config-doctor` — The analyzer listed a missing `autoprefixer` as a PostCSS
+  finding without any version qualifier. Tailwind v4 prefixes via Lightning CSS inside
+  `@tailwindcss/postcss` and needs no autoprefixer, so the check could produce wrong
+  advice on v4 projects — which have no `tailwind.config.*` but do have a
+  `postcss.config.*`. Both v4 markers were already in the analyzer's input, so the
+  exception costs no extra scanning.
+- `ak-react:react-best-practices` — Corrected the rule count: the skill claimed 65 rules
+  and the guide abstract still said "40+"; both now say 66, matching the guide.
+
 ## [1.18.1] - 2026-07-08
 
 ### 🐛 Fixed
