@@ -37,21 +37,36 @@ Apply the semver increment to the current version:
 - `minor`: 1.1.2 → 1.2.0
 - `major`: 1.1.2 → 2.0.0
 
-### Step 4: Update all 11 files
+### Step 4: Update every version-carrying file
 
-Use the Edit tool to update the version in each of these files. Update ALL of them — do not skip any:
+**Never work from a hardcoded plugin list — discover the files first.** A hardcoded list
+silently skips plugins added since the list was written, leaving them stranded on the old
+version.
 
-1. **`.claude-plugin/marketplace.json`** — Update ALL 9 plugin `"version"` entries
-2. **`plugins/ak-review/.claude-plugin/plugin.json`** — Update `"version"` field
-3. **`plugins/ak-git/.claude-plugin/plugin.json`** — Update `"version"` field
-4. **`plugins/ak-meta/.claude-plugin/plugin.json`** — Update `"version"` field
-5. **`plugins/ak-improve/.claude-plugin/plugin.json`** — Update `"version"` field
-6. **`plugins/ak-knowledge/.claude-plugin/plugin.json`** — Update `"version"` field
-7. **`plugins/ak-notifications/.claude-plugin/plugin.json`** — Update `"version"` field
-8. **`plugins/ak-react/.claude-plugin/plugin.json`** — Update `"version"` field
-9. **`plugins/ak-security/.claude-plugin/plugin.json`** — Update `"version"` field
-10. **`plugins/ak-typo3/.claude-plugin/plugin.json`** — Update `"version"` field
-11. **`AGENTS.md`** — Update the version reference `(currently X.Y.Z)` in the "Commit and PR guidelines" section
+```bash
+ls -1 plugins/*/.claude-plugin/plugin.json
+```
+
+Update ALL of these — do not skip any:
+
+1. **`.claude-plugin/marketplace.json`** — update the `"version"` of **every** entry in the
+   `plugins` array (one per plugin, must match the discovered count)
+2. **Every `plugins/*/.claude-plugin/plugin.json`** found above — update the `"version"` field
+3. **`AGENTS.md`** — update the version reference `(currently X.Y.Z)` in the
+   "Commit and PR guidelines" section
+
+### Step 4a: Verify no file was missed
+
+Before continuing, confirm every version is identical and no plugin was left behind:
+
+```bash
+grep -h '"version"' .claude-plugin/marketplace.json plugins/*/.claude-plugin/plugin.json \
+  | sort -u
+```
+
+This must print exactly **one** distinct version line — the new one. More than one line means
+a file was missed; fix it before proceeding. Also verify that the number of `marketplace.json`
+entries equals the number of `plugin.json` files.
 
 ### Step 5: Output summary
 
@@ -62,18 +77,12 @@ Version bump: X.Y.Z → A.B.C (bump-type)
 Reason: <why this bump type was chosen>
 
 Updated files:
-  - .claude-plugin/marketplace.json (9 entries)
-  - plugins/ak-review/.claude-plugin/plugin.json
-  - plugins/ak-git/.claude-plugin/plugin.json
-  - plugins/ak-meta/.claude-plugin/plugin.json
-  - plugins/ak-improve/.claude-plugin/plugin.json
-  - plugins/ak-knowledge/.claude-plugin/plugin.json
-  - plugins/ak-notifications/.claude-plugin/plugin.json
-  - plugins/ak-react/.claude-plugin/plugin.json
-  - plugins/ak-security/.claude-plugin/plugin.json
-  - plugins/ak-typo3/.claude-plugin/plugin.json
+  - .claude-plugin/marketplace.json (<N> entries)
+  - <one line per discovered plugins/*/.claude-plugin/plugin.json>
   - AGENTS.md
 ```
+
+List the plugin.json files that were actually updated, not a remembered set.
 
 ### Step 6: Run changelog
 
