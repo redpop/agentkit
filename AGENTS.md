@@ -59,7 +59,7 @@ plugins/{plugin-name}/
 ```
 
 | Plugin | Skills | Agents | Extras |
-|--------|--------|--------|--------|
+| -------- | -------- | -------- | -------- |
 | `ak-review` | 6 | - | hooks, markdownlint config, knowledge/ (2 files) |
 | `ak-git` | 1 | 2 | |
 | `ak-meta` | 4 | 2 | |
@@ -133,7 +133,8 @@ After implementing changes:
 3. **Review** — Run code review on uncommitted changes, then fix reported issues
    - **Local review**: invoke `/ak-review:coderabbit` for immediate inline feedback (default)
    - **Delegated review** — Ask the user whether to also invoke `/ak-review:delegate` to generate a self-contained review prompt for external agents (Kimi, Codex, etc.) — useful for comprehensive cross-check or second opinions
-   - **Other tools**: run `coderabbit review --prompt-only --type uncommitted`
+   - **Other tools**: run `coderabbit review --uncommitted` (CLI ≥ 0.7 dropped
+     `--prompt-only`/`--type`/`--plain`; plain text is the default output now)
    - **Critically evaluate review results** — not all suggestions are correct or relevant. Accept only changes that genuinely improve the code; dismiss false positives and overly pedantic findings.
 4. **Docs** — If plugins, skills, agents, or hooks changed, update `docs/` (detail files and index READMEs) and the root `README.md` plugin table
 5. **Re-validate** — Re-run JSON/shellcheck validation if those files were modified during steps 2-4
