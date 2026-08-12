@@ -1,7 +1,7 @@
 {
   "name": "ak-js",
   "description": "JavaScript project configuration doctor — validates package.json, tsconfig, framework configs, and enforces cross-file best practices",
-  "version": "1.18.2",
+  "version": "1.18.3",
   "author": {
     "name": "redpop",
     "url": "https://github.com/redpop"
