@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.18.3] - 2026-08-12
+
+### 🐛 Fixed
+
+- `ak-review:coderabbit` — CodeRabbit CLI 0.7.0 removed the `--prompt-only`, `--type` and
+  `--plain` flags (plain text is the default output now), so the skill's documented review
+  command errored with `unknown option '--plain'`/`'--type'`. `--type uncommitted|committed|all`
+  now maps to the CLI's own `--uncommitted`/`--committed`/no-flag scope. The same stale command
+  was still referenced as the "Other tools" fallback in this repo's own `AGENTS.md`, fixed
+  alongside it.
+
 ## [1.18.2] - 2026-07-16
 
 ### 🐛 Fixed
@@ -97,7 +108,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ak-review:workflow` + `AGENTS.md` — Review workflow bullet renamed from
   **"Optional delegated review"** to **"Delegated review"**: the "Optional" label caused
   agents to skip the entire bullet (including the mandatory user prompt) rather than just
-  making the *execution* optional. Asking the user is now framed as a required step.
+  making the _execution_ optional. Asking the user is now framed as a required step.
 - `ak-knowledge:agents-md-improver` — Added Common Issues item 8: checks that `AGENTS.md`
   carries the symlink notice when `CLAUDE.md` is a symlink pointing to it. Removed a
   redundant prose block in Phase 1 that duplicated the same rule already expressed in

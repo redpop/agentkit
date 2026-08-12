@@ -1,7 +1,7 @@
 {
   "name": "ak-git",
   "description": "Smart Git operations with intelligent commit messages, change analysis, and conflict resolution",
-  "version": "1.18.2",
+  "version": "1.18.3",
   "author": {
     "name": "redpop",
     "url": "https://github.com/redpop"
