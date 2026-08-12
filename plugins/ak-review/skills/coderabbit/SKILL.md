@@ -24,10 +24,17 @@ Parse arguments: `$ARGUMENTS`
 
 ### Phase 2: Execute Review
 
-Run synchronously (takes 7-30+ minutes):
+Run synchronously (takes 7-30+ minutes). CodeRabbit CLI ≥ 0.7 dropped `--prompt-only`/`--type`
+in favor of separate scope flags (plain text is the default output now); map `[type]` to:
+
+- `uncommitted` (default) → `--uncommitted`
+- `committed` → `--committed`
+- `all` → no scope flag (reviews the full diff against `--base`)
 
 ```bash
-coderabbit review --prompt-only --type [type] --base [base]
+coderabbit review --base [base]        # type: all
+coderabbit review --uncommitted --base [base]
+coderabbit review --committed --base [base]
 ```
 
 Set timeout to 3600000ms (60 minutes). Inform user about expected duration.
