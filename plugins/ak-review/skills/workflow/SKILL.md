@@ -20,6 +20,13 @@ Parse `$ARGUMENTS` for mode:
 | *(none)* | **Generate** — Scan project, build workflow, write to AGENTS.md |
 | `--audit` | **Audit** — Verify existing workflow against current tooling |
 
+## Workflow Shapes
+
+A workflow section in the instruction file is in one of two shapes — both modes below refer back to this definition rather than re-deriving it:
+
+- **Pointer form** (target shape): a short paragraph referencing a skill file path (`.claude/skills/task-completion/SKILL.md`), which holds the actual numbered steps. Keeps AGENTS.md/CLAUDE.md lean, since that file is resent in full on every prompt while the skill file is only loaded when invoked.
+- **Inline form** (legacy): the numbered steps are written directly into the instruction file's section.
+
 ## Mode: Generate
 
 ### Step 1: Locate Project Instructions
@@ -43,7 +50,7 @@ In the located file, search for a `##` heading matching (case-insensitive):
 - `Completion checklist`
 - Any `##` containing "completion", "workflow", "finalize", "quality"
 
-If found: warn the user that a workflow already exists, show it, and ask whether to **replace** or **cancel**. Do not proceed without confirmation.
+If found, determine its shape (see Workflow Shapes above) — in pointer form, also read the pointer target. Warn the user that a workflow already exists, show it (the pointer target's content if pointer form), and ask whether to **replace** or **cancel**. Do not proceed without confirmation.
 
 ### Step 3: Detect Project Tooling
 
@@ -189,12 +196,37 @@ Wait for the user to review and approve. If they request changes, adjust and pre
 
 ### Step 6: Write to Project Instructions
 
+The generated workflow is never inlined into the instruction file — it's always split into a lazy-loaded skill and a short pointer, so the full step list doesn't ride along on every prompt that includes AGENTS.md/CLAUDE.md.
+
 After confirmation:
 
-1. Read the chosen instruction file from Step 1
-2. Append the workflow section at an appropriate location (typically after existing dev environment or code style sections, before commit guidelines if present)
-3. If no instruction file exists, create `AGENTS.md` with a minimal structure containing the workflow section
-4. Show the user what was written and where
+1. Write the full generated workflow to `.claude/skills/task-completion/SKILL.md`, creating the directory if needed, with the frontmatter and `# Task Completion Workflow` heading shown below — standalone SKILL.md bodies in this convention start with an H1, not the `##` heading Step 4 used for the inline case:
+
+   ```markdown
+   ---
+   name: task-completion
+   description: Task completion workflow for {project name} — {comma-separated step names}. Use after implementing changes and before committing.
+   ---
+
+   # Task Completion Workflow
+
+   After implementing changes:
+
+   1. **Validate** — ...
+   ```
+
+2. Read the chosen instruction file from Step 1.
+3. Write a `## Task completion workflow` section containing a single pointer line, at the location the full block would otherwise have gone (typically after existing dev environment or code style sections, before commit guidelines if present):
+
+   ```markdown
+   ## Task completion workflow
+
+   After implementing changes, follow the task-completion skill (`.claude/skills/task-completion/SKILL.md`): {arrow-separated step names, e.g. validate → simplify → review → docs → re-validate → version & changelog}.
+   ```
+
+4. If no instruction file exists, create `AGENTS.md` with a minimal structure containing the pointer section.
+5. Show the user both files that were written.
+6. **Optional**: if the project has the `skill-creator` skill installed (check the available-skills listing), offer to run it against the newly written `.claude/skills/task-completion/SKILL.md` as a quality pass on the skill's own structure and frontmatter — nice-to-have, not required. Skip silently if `skill-creator` isn't available; don't suggest installing it just for this.
 
 ## Mode: Audit (`--audit`)
 
@@ -208,7 +240,7 @@ Same detection as Generate Step 3.
 
 ### Step 3: Compare Workflow Against Tooling
 
-For each step in the existing workflow, check:
+Run the comparison against the resolved step content (see Workflow Shapes). For each step, check:
 
 | Check | Issue |
 |-------|-------|
@@ -227,6 +259,12 @@ Also verify structural completeness:
 - Are tool invocation hints accurate (correct agent/skill names, e.g., `/simplify` not `code-simplifier:code-simplifier`)?
 - Does the review step match what's actually available (CodeRabbit vs self-review)?
 - Does the release step reference the correct skill (`/bump-version`, `/ak-meta:changelog`, or manual)?
+
+In pointer form, also check for drift between the two files:
+
+- Does the arrow-separated step-name list in the instruction file's pointer line match the actual step names in `.claude/skills/task-completion/SKILL.md`? Flag as **[Drift]** if a step was renamed, added, or removed in one file but not the other.
+
+If the workflow is still in inline form, flag this as a **Conciseness** finding (see Workflow Shapes for why) and offer the migration in Step 5.
 
 ### Step 4: Report Findings
 
@@ -251,4 +289,7 @@ Present results grouped by severity:
 
 ### Step 5: Offer to Fix
 
-If issues were found, ask the user whether to apply the suggested corrections. On approval, update the workflow section in place (replace old section with corrected version).
+If issues were found, ask the user whether to apply the suggested corrections. On approval:
+
+- **Content drift** (commands, tool references, missing/extra steps): update the resolved step content in place (see Workflow Shapes for where that lives).
+- **Inline-form finding**: offer specifically to migrate — apply Generate Step 6 to write the corrected workflow into pointer form.

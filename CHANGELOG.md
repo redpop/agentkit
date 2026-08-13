@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.19.0] - 2026-08-13
+
+### ✨ Added
+
+- `ak-review:workflow` — Generate and Audit modes now produce a "pointer form" Task
+  Completion Workflow: the full step list is written to
+  `.claude/skills/task-completion/SKILL.md` (a lazy-loaded skill body, read only when
+  invoked) instead of being inlined into AGENTS.md/CLAUDE.md, which is resent in full on
+  every prompt regardless of whether the workflow is needed that turn. Audit mode still
+  recognizes the old inline form, flags it as a Conciseness gap, checks drift between the
+  pointer's step-name summary and the skill file, and offers to migrate it to pointer
+  form. This repo's own `AGENTS.md` was migrated to pointer form as the reference example.
+- `ak-review:finalize` — Resolves the pointer automatically (reading
+  `.claude/skills/task-completion/SKILL.md`) before parsing and executing workflow steps,
+  and now stops with an explicit error instead of silently executing zero steps when the
+  pointer is broken or the section has no actionable content.
+- `ak-knowledge:agents-md-improver` — The Task Completion Workflow check now accepts
+  pointer form as passing and flags a still-inline workflow as a Conciseness finding,
+  pointing at `/ak-review:workflow --audit` for the fix.
+
 ## [1.18.3] - 2026-08-12
 
 ### 🐛 Fixed
@@ -108,7 +128,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ak-review:workflow` + `AGENTS.md` — Review workflow bullet renamed from
   **"Optional delegated review"** to **"Delegated review"**: the "Optional" label caused
   agents to skip the entire bullet (including the mandatory user prompt) rather than just
-  making the _execution_ optional. Asking the user is now framed as a required step.
+  making the *execution* optional. Asking the user is now framed as a required step.
 - `ak-knowledge:agents-md-improver` — Added Common Issues item 8: checks that `AGENTS.md`
   carries the symlink notice when `CLAUDE.md` is a symlink pointing to it. Removed a
   redundant prose block in Phase 1 that duplicated the same rule already expressed in

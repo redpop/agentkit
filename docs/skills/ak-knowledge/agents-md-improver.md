@@ -40,7 +40,8 @@ targeted improvements; there are no arguments, so discovery is automatic and sco
 - Keep instructions actionable with real paths and copy-paste ready commands
 - Consolidate if both CLAUDE.md and AGENTS.md exist at the same level
 - If `CLAUDE.md` is a symlink to `AGENTS.md`, the skill checks that `AGENTS.md` carries the symlink notice at the top; flags it as a common issue if missing
-- The skill always checks for a "Task completion workflow" section and **always invokes `/ak-review:workflow --audit`** when the section exists — manual command checks cannot detect template drift (new optional steps, changed bullet structure)
+- The skill always checks for a "Task completion workflow" section and **always invokes `/ak-review:workflow --audit`** when the section exists — manual command checks cannot detect template drift (new optional steps, changed bullet structure, pointer/skill-file mismatch)
+- A workflow section with its steps inlined directly in AGENTS.md/CLAUDE.md is flagged as a Conciseness finding -- the fix is extracting it to `.claude/skills/task-completion/SKILL.md` with a short pointer line left behind, which `/ak-review:workflow --audit` can do automatically
 
 ## Related
 
