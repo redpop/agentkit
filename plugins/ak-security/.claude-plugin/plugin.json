@@ -1,7 +1,7 @@
 {
   "name": "ak-security",
   "description": "Security guidelines for secure code, LLM applications, and static analysis with Semgrep",
-  "version": "1.19.0",
+  "version": "1.19.1",
   "author": {
     "name": "redpop",
     "url": "https://github.com/redpop"
