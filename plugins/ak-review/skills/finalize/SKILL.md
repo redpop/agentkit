@@ -32,17 +32,24 @@ Section extends until the next `##` or `#` heading.
 
 If no workflow found: proceed to Phase 2b.
 
+If found, the section body is in one of two shapes — determine which before moving on:
+
+- **Pointer form**: the section is a short paragraph referencing a skill file path, e.g. `.claude/skills/task-completion/SKILL.md`. Extract that path, Read the file, and treat *its* body as the workflow to parse in Phase 3 (that file has its own numbered steps). If the path doesn't resolve to an existing file, stop and tell the user the pointer is broken — do not silently continue with zero steps.
+- **Inline form**: the section itself contains the numbered steps directly. Parse it as-is in Phase 3.
+
+If the section matches neither shape (no pointer, no numbered list), stop and report that the workflow section exists but has no actionable steps — do not proceed to Phase 3 as if it had steps.
+
 ## Phase 2b: Offer Workflow Creation
 
 When no workflow section exists, offer to create one. Present the user with a brief explanation and ask if they want you to generate a `## Task completion workflow` section for their project.
 
-If the user agrees: invoke `/ak-review:workflow` — it will scan the project tooling, generate a tailored workflow, confirm with the user, and write it to the instruction file. Once it completes, continue with Phase 3 to execute the newly created workflow.
+If the user agrees: invoke `/ak-review:workflow` — it will scan the project tooling, generate a tailored workflow, confirm with the user, and write it (in pointer form, with the steps in `.claude/skills/task-completion/SKILL.md`) to the instruction file. Once it completes, continue with Phase 3 to execute the newly created workflow.
 
 If the user declines: exit.
 
 ## Phase 3: Parse Steps
 
-Extract numbered steps. For each step, identify:
+Extract numbered steps from the resolved workflow content (the skill file's body in pointer form, or the section body in inline form). For each step, identify:
 
 - **Number**, **Name** (bold title), **Description**
 - **Commands** (bash commands in backticks)

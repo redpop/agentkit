@@ -4,7 +4,7 @@
 
 ## Overview
 
-Discovers the project's task completion workflow from `AGENTS.md` or `CLAUDE.md`, parses its steps, and executes them sequentially -- running bash commands, invoking agents, and tracking progress. If no workflow exists, offers to generate one based on detected project tooling (package managers, test runners, linters). Stops on failure and asks how to proceed.
+Discovers the project's task completion workflow from `AGENTS.md` or `CLAUDE.md`, parses its steps, and executes them sequentially -- running bash commands, invoking agents, and tracking progress. The workflow section may be inline (steps written directly in the instruction file) or pointer form (a short line referencing `.claude/skills/task-completion/SKILL.md`) -- finalize resolves the pointer and reads the referenced file automatically. If no workflow exists, offers to generate one based on detected project tooling (package managers, test runners, linters). Stops on failure and asks how to proceed.
 
 ## Usage
 
@@ -20,8 +20,9 @@ No arguments required. Reads the workflow from the project's instruction files.
 /ak-review:finalize
 ```
 
-Discovers the `## Task completion workflow` section in `AGENTS.md` / `CLAUDE.md` and runs each step in order against
-your current working-tree changes — the standard post-implementation pass.
+Discovers the `## Task completion workflow` section in `AGENTS.md` / `CLAUDE.md`, resolves it to its steps —
+following the pointer to `.claude/skills/task-completion/SKILL.md` if that's how the project has it set up — and
+runs each step in order against your current working-tree changes — the standard post-implementation pass.
 
 ```text
 /ak-review:finalize

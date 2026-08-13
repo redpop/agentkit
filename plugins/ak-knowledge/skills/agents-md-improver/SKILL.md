@@ -47,16 +47,21 @@ For each file found, evaluate against these criteria:
 
 **Always verify the file contains a "Task completion workflow" section** (typically near the end). Every project benefits from documented post-implementation steps so coding agents know what to run after changes.
 
-**If the section is missing:** flag as a high-priority gap. The fix is to invoke `/ak-review:workflow`, which analyzes project tooling (build, test, lint, format, review, changelog) and generates an appropriate workflow tailored to the detected stack.
+**If the section is missing:** flag as a high-priority gap. The fix is to invoke `/ak-review:workflow`, which analyzes project tooling (build, test, lint, format, review, changelog) and generates an appropriate workflow tailored to the detected stack, in pointer form (see below).
 
-**If the section exists, audit it:**
+**If the section exists, first check its shape:**
+
+- **Pointer form** — the section is a short paragraph referencing `.claude/skills/task-completion/SKILL.md`. This passes the presence check on its own merits (it keeps AGENTS.md/CLAUDE.md lean, which the Conciseness criterion rewards); audit the referenced file's content as described below.
+- **Inline form** — the full numbered step list is written directly into the instruction file. This is a **Conciseness** finding: the file is resent in full on every prompt, so the steps belong in `.claude/skills/task-completion/SKILL.md` (lazy-loaded, only read when the skill is invoked) with a single pointer line left in its place. The fix is `/ak-review:workflow --audit`, which now offers this exact migration.
+
+**Then audit the content** (the skill file's body in pointer form, or the section body in inline form):
 
 - Are all referenced commands/scripts still present (e.g., `pnpm test`, `cargo build`, `composer test`)?
 - Are referenced skills/agents still installed (e.g., `/ak-review:coderabbit`, `/simplify`, `refactoring-expert`)?
 - Have tools been renamed or replaced (e.g., `prettier` → `biome`, `eslint` → `oxlint`)?
 - Have new tools been added that should be incorporated (e.g., a type checker, new formatter, additional review skill)?
 - Are any steps redundant, duplicated, or no longer applicable to the current project?
-- **Always invoke `/ak-review:workflow --audit`** — it detects template drift (e.g., new optional steps, changed bullet structure) that manual command checks cannot catch. Do not rely on reading commands alone.
+- **Always invoke `/ak-review:workflow --audit`** — it detects template drift (e.g., new optional steps, changed bullet structure, pointer/skill-file mismatch) that manual command checks cannot catch, including pointer-vs-skill-file step-name drift. Do not rely on reading commands alone or re-deriving checks it already performs.
 
 **Quality grades:**
 
