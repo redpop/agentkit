@@ -34,6 +34,5 @@
     "MD060": false
   },
   "fix": true,
-  "globs": ["**/*.md"],
   "ignores": ["**/node_modules/**", "**/vendor/**", "**/.git/**"]
 }

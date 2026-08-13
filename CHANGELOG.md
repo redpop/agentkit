@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.19.1] - 2026-08-13
+
+### 🐛 Fixed
+
+- `ak-review` markdown-format hook — `plugins/ak-review/hooks/config/.markdownlint-cli2.jsonc`
+  had a top-level `"globs": ["**/*.md"]` field, which markdownlint-cli2 merges with (rather
+  than overrides for) the single file path the hook passes on the command line. Every
+  Write/Edit/MultiEdit on one Markdown file therefore triggered a `--fix` pass across every
+  `.md` file in the repo, silently reformatting unrelated files (observed repeatedly reflipping
+  `_underscore_` emphasis to `*asterisk*` in unrelated CHANGELOG.md sections while editing
+  AGENTS.md). Removed the `globs` field so the hook's own file-path argument is authoritative;
+  `ignores` alone does not reintroduce repo-wide scanning.
+
 ## [1.19.0] - 2026-08-13
 
 ### ✨ Added
