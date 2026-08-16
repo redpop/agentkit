@@ -34,7 +34,7 @@ Parse `$ARGUMENTS`:
 
 ## Workflow
 
-### Phase 1: Resolve Configuration
+### Phase 1: Resolve Configuration and Check the Adapter
 
 Run this, and every other script in this workflow, with the reviewed repository as the working directory
 — `resolve-config.sh` reads the project config layer from the cwd-relative `.claude/ak-review.local.json`,
@@ -51,6 +51,19 @@ ${CLAUDE_PLUGIN_ROOT}/skills/execute/scripts/resolve-config.sh \
 The script reads `.claude/ak-review.local.json` and `~/.claude/ak-review.local.json` itself. If it exits
 non-zero, print its stderr message verbatim and **stop** — do not guess a tool or model. On success it
 prints resolved JSON: `{"tool":..., "model":..., "effort":..., "fix_threshold":...}`.
+
+Then confirm the resolved adapter can actually run, before any work is done:
+
+```bash
+${CLAUDE_PLUGIN_ROOT}/skills/execute/scripts/<tool>-preflight.sh
+```
+
+Exit 0 means ready — or not provably unready; the adapter decides which, and says so on stderr.
+A non-zero exit means it cannot run: print the script's stderr verbatim and **stop**. Do not
+attempt to install, authenticate or repair anything, and do not proceed hoping it will work.
+
+This runs before Phase 2 on purpose: building the prompt reads the repository and may fetch tickets,
+which is wasted if the tool is not there. If the adapter has no `-preflight.sh`, skip this step.
 
 ### Phase 2: Build the Prompt
 
@@ -125,8 +138,17 @@ No raw JSON dump in the final message — this is the human-facing digest.
 
 ## Adapter Reference
 
-No adapter plugin/registry system — this table is the whole abstraction. Adding a tool means adding a
-subsection here plus one script under `scripts/`, following the same shape as the entry below.
+No adapter plugin/registry system — this table is the whole abstraction, and the filesystem is the
+registry: an adapter is the set of scripts named after its tool under `scripts/`.
+
+| Script | Contract | Required? |
+|--------|----------|-----------|
+| `<tool>-adapter.sh <prompt-file> <model> [effort] <raw-output-file>` | Runs the review, writing the tool's raw output to the given file. Exits with the tool's own exit code. | Yes |
+| `<tool>-preflight.sh` | Exit 0 = ready, *or not provably unready*. Non-zero = cannot run, with the reason and the concrete fix on stderr. **An adapter that cannot check something reliably must exit 0 and say so on stderr, not block** — see the `opencode` entry for why. | Optional; skipped if absent |
+| `<tool>-models.sh` | Prints the models the tool offers, one per line, to stdout. Used by `/ak-review:setup`. | Optional; setup asks the user to type a model if absent |
+
+Adding a tool means adding those scripts plus a subsection here, following the shape of the entry
+below.
 
 ### `opencode`
 
@@ -138,6 +160,8 @@ subsection here plus one script under `scripts/`, following the same shape as th
   (`rm -rf`, `git reset --hard`, `git push --force`, …) gated to `"ask"`. This skill never passes
   `--auto` — that would silently approve those too. If a run stalls, fix the permission config; do not
   reach for `--auto`.
+- **Preflight:** `opencode-preflight.sh` checks one thing — whether `opencode` is on PATH — and hard-fails if it is not. It deliberately does **not** check authentication. That check existed and was removed: it had to parse `opencode auth list`'s human-readable output (the exit code is 0 either way), and three successive escape-stripping patterns were each defeated by a different ANSI class, every time by wrongly hard-blocking a *correctly authenticated* user. An unauthenticated opencode fails instantly, for free, and says so itself, so the check bought a marginally nicer message at the cost of the worst failure mode there is. Do not add it back without a machine-readable signal (a documented exit code or a `--json` mode). The script's own comment header carries the full account.
+- **Models:** `opencode-models.sh` wraps `opencode models`.
 - **Run the adapter with the reviewed repository as the working directory.** OpenCode gates paths outside
   the cwd behind its `external_directory` permission, and in non-interactive `run` mode a gated path is
   **auto-rejected, not prompted** — the review then proceeds without ever reading the files, exits 0, and
