@@ -1,0 +1,19 @@
+#!/bin/bash
+set -euo pipefail
+
+if [ $# -ne 1 ]; then
+  echo "Usage: extract-cost.sh <raw-jsonl-file>" >&2
+  exit 1
+fi
+
+RAW_FILE="$1"
+
+if [ ! -f "$RAW_FILE" ]; then
+  echo "extract-cost.sh: file not found: $RAW_FILE" >&2
+  exit 1
+fi
+
+jq -cs '{
+  total_cost: ((map(select(.type == "step_finish") | .part.cost // 0) | add) // 0),
+  total_tokens: ((map(select(.type == "step_finish") | .part.tokens.total // 0) | add) // 0)
+}' "$RAW_FILE"
