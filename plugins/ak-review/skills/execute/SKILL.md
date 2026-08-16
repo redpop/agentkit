@@ -155,6 +155,11 @@ For findings with verdict `confirmed` **and** `severity` at or above the resolve
 (Apply / Adapt / Skip). Everything else — other verdicts, or `confirmed` below the threshold — is left
 untouched and recorded for the summary with its reason.
 
+A claim recovered via Phase 3's salvage path carries no `severity`, so `fix_threshold` cannot gate it —
+Phase 5's manual verification stands in for that gate instead. A salvaged claim Phase 5 judged genuine
+gets the same Apply/Adapt/Skip framework as a normal confirmed finding; one it could not verify, or
+judged not genuine, is left untouched and recorded like everything else.
+
 ### Phase 7: Validate (skip if `--report-only`)
 
 Run the project's own test and lint commands (already captured by `delegate`'s Phase 2 project-context
@@ -165,7 +170,8 @@ the user decide, since reverting a fix that exposed a real pre-existing failure 
 
 Produce one compact report, in the language of the invoking session:
 
-- Findings by verdict and severity (counts)
+- Findings by verdict and severity (counts) for `findings[]`; a separate count of salvaged claims, if
+  Phase 3 took that path, noting they carry no severity
 - What was fixed, one line each with the reason it qualified
 - What was skipped, one line each with the reason (false positive / below threshold / needs context / uncertain)
 - Validation result (tests/lint pass?), only if Phase 7 ran
