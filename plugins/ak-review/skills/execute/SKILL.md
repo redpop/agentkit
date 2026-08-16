@@ -68,9 +68,10 @@ Then confirm the resolved adapter can actually run, before any work is done.
 ${CLAUDE_PLUGIN_ROOT}/skills/execute/scripts/<tool>-preflight.sh
 ```
 
-Exit 0 means ready — or not provably unready; the adapter decides which, and says so on stderr.
-A non-zero exit means it cannot run: print the script's stderr verbatim and **stop**. Do not
-attempt to install, authenticate or repair anything, and do not proceed hoping it will work.
+Exit 0 means ready — or not provably unready; the adapter either dropped an unreliable check or
+noted the gap on stderr, so stderr may or may not carry anything. A non-zero exit means it cannot
+run: print the script's stderr verbatim and **stop**. Do not attempt to install, authenticate or
+repair anything, and do not proceed hoping it will work.
 
 This phase runs before Phase 2 on purpose: building the prompt reads the repository and may fetch
 tickets, which is wasted if the tool is not there.
