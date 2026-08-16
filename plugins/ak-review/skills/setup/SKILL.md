@@ -68,6 +68,12 @@ ${CLAUDE_PLUGIN_ROOT}/skills/execute/scripts/<tool>-models.sh
 then ask them to type the model identifier themselves. Name the format the adapter expects — for
 `opencode`, that is `provider/model`. Do not suggest a specific model.
 
+**Caution — the typed value cannot be verified here**, because this adapter offers no authoritative
+list. Repeat back the exact string the user gave, and ask them to confirm it before it is written
+to the config file. If the value turns out wrong, the symptom will surface later when `/ak-review:execute`
+runs the adapter and it rejects the model — so it is worth getting right now, rather than debugging
+a failing review after the fact.
+
 **If the script exists:** run it to list the models. Present the list and let the user choose. If
 the list is long, group or summarise it — but the value must come from that output, never from a
 suggestion of your own. **Do not recommend a specific model.** If the script fails, show its stderr
