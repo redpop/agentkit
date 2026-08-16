@@ -26,6 +26,11 @@ not the plugin's.
 
 ## Workflow
 
+**Ask and report in the language of the invoking session** — the same rule `/ak-review:execute`
+follows for its summary. This is an interactive setup, so the person answering should be asked in
+the language they are working in. Only the conversation follows the session: file contents, key
+names and values are written exactly as specified here and are never translated.
+
 ### Phase 1: Scope (skip if `--global` or `--project` was passed)
 
 Ask where the configuration should live:
