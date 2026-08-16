@@ -26,19 +26,21 @@ not the plugin's.
 
 ## Workflow
 
-### Phase 1: Check for an existing configuration
-
-Read `.claude/ak-review.local.json` and `~/.claude/ak-review.local.json`. If either exists, show its
-current contents and ask whether to **replace** it or **cancel**. Do not proceed without an answer,
-and never overwrite silently.
-
-### Phase 2: Scope (skip if `--global` or `--project` was passed)
+### Phase 1: Scope (skip if `--global` or `--project` was passed)
 
 Ask where the configuration should live:
 
 - **Global** — `~/.claude/ak-review.local.json`. The default, and the file to copy to another
   machine (a remote server, a second laptop) to carry the same setup.
 - **Project** — `.claude/ak-review.local.json`, this repository only. Overrides the global file.
+
+### Phase 2: Check for an existing configuration
+
+Read the file that will be written to (determined by Phase 1). If it exists, show its current
+contents and ask whether to **replace** it or **cancel**. Do not proceed without an answer,
+and never overwrite silently. If the *other* scope's file exists (project when configuring global,
+or global when configuring project), mention it without asking about it, and note that the project
+file overrides the global one.
 
 ### Phase 3: Tool
 
@@ -49,8 +51,10 @@ ls ${CLAUDE_PLUGIN_ROOT}/skills/execute/scripts/*-adapter.sh
 ```
 
 The tool name is the filename minus `-adapter.sh`. The filesystem is the registry — do not keep a
-list anywhere. If exactly one adapter exists, state which one is being configured rather than asking
-a question with one possible answer. If several exist, ask.
+list anywhere. If no adapters are found, **stop immediately**: report that this installation has no
+external review adapters, so there is nothing to configure. If exactly one adapter exists, state
+which one is being configured rather than asking a question with one possible answer. If several
+exist, ask.
 
 ### Phase 4: Model
 
@@ -88,7 +92,7 @@ Write the file:
   "external_review": {
     "tool": "<chosen>",
     "model": "<chosen>",
-    "effort": "<chosen or omitted>",
+    "effort": "<chosen, or omit the key entirely if skipped>",
     "fix_threshold": "<chosen>"
   }
 }
