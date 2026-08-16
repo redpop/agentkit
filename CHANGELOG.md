@@ -5,6 +5,49 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.21.0] - 2026-08-16
+
+### ✨ Added
+
+- `ak-review:setup` — New skill that configures `ak-review:execute` interactively. No configuration
+  ships with the plugin, deliberately, so the first run always fails with a guidance message; this
+  turns that dead end into a guided setup. It asks where the config should live (global, the file you
+  copy to another machine, or project-local), which model to use — picked from the list the tool
+  itself reports, never one this plugin suggests — and how aggressive auto-fixing should be. Then it
+  writes the file, reads it back from disk, and proves it resolves, because a config written without
+  proof is how a typo ships. It is a separate skill rather than a flag on `execute`, following the
+  `workflow`/`finalize` precedent in this plugin: the generator is not the consumer.
+
+  **`setup` is always interactive; `execute` still never is.** A missing config in `execute` fails
+  fast rather than prompting — a prompt would hang a cron or remote run forever. Interactivity is
+  opted into by invoking `setup`, never inferred from the session.
+
+- **Adapter preflight**, wired into `execute`'s Phase 1, so a missing tool is caught before the prompt
+  is built and any repository is read. It checks whether the tool is on PATH and **deliberately does
+  not check authentication** — that check existed and was removed after three attempts. `opencode auth
+  list` exits 0 in both states, so only its ANSI-decorated output distinguishes them, and three
+  successive escape-stripping patterns were each defeated by a different escape class, every time by
+  wrongly hard-blocking a *correctly authenticated* user. Deriving a gate from human-readable TUI
+  output is unbounded. An unauthenticated tool fails instantly and for free and says so itself, so the
+  check bought a nicer message at the cost of the worst failure mode there is.
+
+- **A three-script adapter convention** — `<tool>-adapter.sh`, `<tool>-preflight.sh`, `<tool>-models.sh`
+  — documented in `execute`'s Adapter Reference. The filesystem is the registry: adding a tool needs no
+  list updated anywhere. Preflight and models are optional, and the skills handle their absence.
+
+- `extract-subagents.sh` — recovers findings from a run that hung. The external tool dispatches one
+  sub-agent per review dimension and merges them only at the end, so a stalled run still holds
+  everything the finished sub-agents produced — in `tool_use` parts the report extractor cannot see.
+  Measured on a real stalled run of this very branch: the report extractor recovered 91 characters of
+  narration while 4085 characters of findings sat unread. `execute`'s Phase 3 now has an explicit
+  timeout branch that salvages instead of falling through.
+
+### 🐛 Fixed
+
+- `docs/README.md` had drifted since 1.18.0 — 9 plugins (10), 21 skills (28), 10 agents (13),
+  `ak-meta` at 3 skills (4), and `ak-js` missing from the table entirely. Every number re-counted from
+  the filesystem rather than copied from another document.
+
 ## [1.20.1] - 2026-08-16
 
 ### 🐛 Fixed
