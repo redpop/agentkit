@@ -27,10 +27,11 @@ fi
 AUTH_OUTPUT=$(opencode auth list 2>&1 || true)
 
 # Strip ANSI escape sequences to handle decorated output. BSD sed does not support \x1b,
-# so we build the escape character explicitly with printf. Bash parameter expansion does not
-# support regex, so sed is necessary here.
-# shellcheck disable=SC2001
+# so we build the escape character explicitly with printf. Bash parameter expansion matches
+# glob patterns, not regex, so [0-9;]* there means "any filename chars", not "zero or more
+# digits/semicolons"; a parameter-expansion rewrite would silently fail to strip some escapes.
 ESC=$(printf '\033')
+# shellcheck disable=SC2001  # regex replacement requires sed; parameter expansion matches globs
 AUTH_CLEAN=$(echo "$AUTH_OUTPUT" | sed "s/${ESC}\[[0-9;]*[a-zA-Z]//g")
 
 if echo "$AUTH_CLEAN" | grep -qE '(^|[^0-9])0 credentials'; then
