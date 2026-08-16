@@ -88,4 +88,17 @@ set -e
 [ "$CODE" -eq 0 ] || fail "case 6: decorated 10 credentials must exit 0, got $CODE"
 echo "$ERRTXT" | grep -qi "could not determine" && fail "case 6: authenticated user must not be blocked by decoration"
 
+# Case 7: cursor hide/show splitting digits (CSI with ? private mode) -> exit 0.
+# This is a real sequence that `opencode auth list` emits, not a constructed edge case.
+# The [?25l...[?25h pattern splits "10" just like [1m...[0m does, requiring the full
+# ECMA-48 CSI grammar to strip.
+CURSOR_SPLIT="${ESC}[?25l1${ESC}[?25h0 credentials"
+write_fake "$CURSOR_SPLIT"
+set +e
+ERRTXT=$(PATH="$WORK/bin:$PATH" bash "$SCRIPT" 2>&1 >/dev/null)
+CODE=$?
+set -e
+[ "$CODE" -eq 0 ] || fail "case 7: cursor-split 10 credentials must exit 0, got $CODE"
+echo "$ERRTXT" | grep -qi "could not determine" && fail "case 7: authenticated user must not be blocked by cursor sequences"
+
 echo "PASS: test-opencode-preflight.sh"

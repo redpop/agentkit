@@ -26,13 +26,15 @@ fi
 
 AUTH_OUTPUT=$(opencode auth list 2>&1 || true)
 
-# Strip ANSI escape sequences to handle decorated output. BSD sed does not support \x1b,
-# so we build the escape character explicitly with printf. Bash parameter expansion matches
-# glob patterns, not regex, so [0-9;]* there means "any filename chars", not "zero or more
-# digits/semicolons"; a parameter-expansion rewrite would silently fail to strip some escapes.
+# Strip ANSI escape sequences to handle decorated output. Use the full ECMA-48 CSI grammar
+# to handle all parameter, intermediate, and final bytes: ESC [ <param>* <intermediate>* <final>
+# where <param> is 0x30–0x3F, <intermediate> is 0x20–0x2F, and <final> is 0x40–0x7E. This covers
+# common sequences like [1m (bold) and rare ones like [?25l (cursor hide) that split digits.
+# BSD sed does not support \x1b, so we build the escape character explicitly with printf.
+# LC_ALL=C ensures bracket ranges are byte ranges, not affected by collation order.
 ESC=$(printf '\033')
 # shellcheck disable=SC2001  # regex replacement requires sed; parameter expansion matches globs
-AUTH_CLEAN=$(echo "$AUTH_OUTPUT" | sed "s/${ESC}\[[0-9;]*[a-zA-Z]//g")
+AUTH_CLEAN=$(echo "$AUTH_OUTPUT" | LC_ALL=C sed "s/${ESC}\[[0-?]*[ -/]*[@-~]//g")
 
 if echo "$AUTH_CLEAN" | grep -qE '(^|[^0-9])0 credentials'; then
   echo "opencode-preflight.sh: opencode has no credentials configured." >&2
