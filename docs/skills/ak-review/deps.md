@@ -50,6 +50,13 @@ project that knows it has a pixel comparison can be told to run it.
 The generated skill also grows: its final step folds observations from each update back into the file, so it
 accumulates project findings that no generic version could hold without polluting every other project.
 
+## Language
+
+The interview and the audit report follow the language of the invoking session — the same rule
+[setup](./setup.md) and [execute](./execute.md) follow. The **generated file does not**: it follows the target
+project's own `AGENTS.md` / `CLAUDE.md`, defaulting to English. It outlives the session that produced it and is
+read by whoever picks up the next update.
+
 ## Detection
 
 | Axis | What it finds |
@@ -57,7 +64,7 @@ accumulates project findings that no generic version could hold without pollutin
 | Ecosystem and installs | Package manager (via lockfile), update commands, how many independent installs share the repo, whether Renovate/Dependabot opens the PRs |
 | Baseline | Type check, lint, test, build commands, and which of them CI runs |
 | Second baseline | Visual regression, bundle-size budget, benchmark, structural snapshot, Lighthouse budget — plus what each one does *not* cover |
-| Pins and couplings | What is already pinned exactly, which versions appear in more than one file, and where CI masks a drift |
+| Pins and couplings | What is already pinned exactly, what determines the result but carries a range anyway, which versions appear in more than one file, and where CI masks a drift |
 
 Manifest, config and lockfile signals come from `knowledge/project-tooling-detection.md`, shared with
 [workflow](./workflow.md) so both skills detect identically.
@@ -88,7 +95,9 @@ to settle it — never as an invented rule.
 
 1. Read the existing skill
 2. Re-run detection (no re-interview)
-3. Compare, separating project drift from skill drift
+3. Compare, separating project drift from skill drift — including two checks that a
+   before/after comparison cannot reach: a result-determining package that has *always* carried a range, and a
+   ticket the skill names as the current one but which has since closed
 4. Report, project drift first
 5. Offer to fix the document; report project drift for the user to decide on
 
