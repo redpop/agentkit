@@ -171,7 +171,14 @@ below.
   (`rm -rf`, `git reset --hard`, `git push --force`, …) gated to `"ask"`. This skill never passes
   `--auto` — that would silently approve those too. If a run stalls, fix the permission config; do not
   reach for `--auto`.
-- **Preflight:** `opencode-preflight.sh` checks one thing — whether `opencode` is on PATH — and hard-fails if it is not. It deliberately does **not** check authentication. That check existed and was removed: it had to parse `opencode auth list`'s human-readable output (the exit code is 0 either way), and three successive escape-stripping patterns were each defeated by a different ANSI class, every time by wrongly hard-blocking a *correctly authenticated* user. An unauthenticated opencode fails instantly, for free, and says so itself, so the check bought a marginally nicer message at the cost of the worst failure mode there is. Do not add it back without a machine-readable signal (a documented exit code or a `--json` mode). The script's own comment header carries the full account.
+- **Preflight:** `opencode-preflight.sh` checks one thing — whether `opencode` is on PATH — and hard-fails if it
+  is not. It deliberately does **not** check authentication. That check existed and was removed: it had to parse
+  `opencode auth list`'s human-readable output (the exit code is 0 either way), and three successive
+  escape-stripping patterns were each defeated by a different ANSI class, every time by wrongly hard-blocking a
+  *correctly authenticated* user. An unauthenticated opencode fails instantly, for free, and says so itself, so
+  the check bought a marginally nicer message at the cost of the worst failure mode there is. Do not add it back
+  without a machine-readable signal (a documented exit code or a `--json` mode). The script's own comment header
+  carries the full account.
 - **Models:** `opencode-models.sh` wraps `opencode models`, and fails loudly when `opencode models` itself errors.
 - **Run the adapter with the reviewed repository as the working directory.** OpenCode gates paths outside
   the cwd behind its `external_directory` permission, and in non-interactive `run` mode a gated path is
