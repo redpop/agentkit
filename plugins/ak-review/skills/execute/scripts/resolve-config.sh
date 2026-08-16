@@ -85,6 +85,8 @@ Only "tool" and "model" are required. "fix_threshold" defaults to "high"
 (auto-fix confirmed high/critical findings only); "effort" is optional.
 
 Or pass them for a single run: --tool <name> --model <provider/model>
+
+For a guided setup that writes this file for you: /ak-review:setup
 EOF
   exit 1
 fi
