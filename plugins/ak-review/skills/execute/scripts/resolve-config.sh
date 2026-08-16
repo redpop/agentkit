@@ -51,9 +51,41 @@ MISSING=""
 [ -z "$TOOL" ] && MISSING="${MISSING}tool "
 [ -z "$MODEL" ] && MISSING="${MISSING}model "
 
+# This is the first thing a new user meets, because no config ships with the
+# plugin — by design, since defaulting would pick someone's tool and model for
+# them. That makes the message itself the onboarding: it must be enough to act
+# on without opening the docs. It names the adapters that exist (a fact about
+# this plugin) but never a model (that is the user's choice, and baking one in
+# here would be the default this design exists to avoid) — instead it says how
+# to list them.
 if [ -n "$MISSING" ]; then
-  echo "resolve-config.sh: missing required setting(s): $MISSING" >&2
-  echo "Set via --tool/--model flags, or add \"external_review\": {\"tool\": ..., \"model\": ...} to $PROJECT_CONFIG or $GLOBAL_CONFIG" >&2
+  cat >&2 <<EOF
+resolve-config.sh: missing required setting(s): $MISSING
+
+/ak-review:execute runs the review with an external coding-agent CLI, and does
+not assume which one — no tool or model is configured by default.
+
+Create one of these (the project file wins over the global one):
+
+  $GLOBAL_CONFIG   — your default, everywhere
+  $PROJECT_CONFIG  — this project only (gitignore it)
+
+  {
+    "external_review": {
+      "tool": "opencode",
+      "model": "<provider/model>",
+      "effort": "high",
+      "fix_threshold": "high"
+    }
+  }
+
+Implemented adapters: opencode
+Models for opencode: run \`opencode models\` to list them.
+Only "tool" and "model" are required. "fix_threshold" defaults to "high"
+(auto-fix confirmed high/critical findings only); "effort" is optional.
+
+Or pass them for a single run: --tool <name> --model <provider/model>
+EOF
   exit 1
 fi
 
