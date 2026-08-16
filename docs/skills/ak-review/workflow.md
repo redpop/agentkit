@@ -50,7 +50,8 @@ migrated to this form.
 
 1. Locate project instruction file (AGENTS.md / CLAUDE.md)
 2. Check for an existing workflow section (inline or pointer form) — warn if found
-3. Detect project tooling (package.json, composer.json, Cargo.toml, pyproject.toml, Makefile, etc.)
+3. Detect project tooling (package.json, composer.json, Cargo.toml, pyproject.toml, Makefile, etc.) — the manifest,
+   config-file and lockfile signals come from `knowledge/project-tooling-detection.md`, shared with [deps](./deps.md)
 4. Build a 6-step workflow: Validate, Tests, Format, Simplify, Review, Re-validate
 5. Present for review; after approval, write the steps to `.claude/skills/task-completion/SKILL.md` and the pointer to the instruction file
 
@@ -65,4 +66,5 @@ migrated to this form.
 ## Related
 
 - [finalize](./finalize.md) -- Executes the workflow that this skill creates
+- [deps](./deps.md) -- Same generator pattern for dependency updates; shares the tooling-detection reference
 - [coderabbit](./coderabbit.md) -- Review step referenced in generated workflows

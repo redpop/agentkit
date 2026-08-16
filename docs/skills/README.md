@@ -21,6 +21,7 @@ Skills are slash commands that users invoke directly in Claude Code via `/plugin
 | [coderabbit](ak-review/coderabbit.md) | ak-review | Automated code review with CodeRabbit |
 | [finalize](ak-review/finalize.md) | ak-review | Task completion workflow |
 | [workflow](ak-review/workflow.md) | ak-review | Generate or audit task completion workflows |
+| [deps](ak-review/deps.md) | ak-review | Generate or audit a project-specific dependency update skill |
 | [delegate](ak-review/delegate.md) | ak-review | Generate a code-review prompt for a foreign agent |
 | [advise](ak-review/advise.md) | ak-review | Validate a foreign agent's review findings |
 | [execute](ak-review/execute.md) | ak-review | Run delegate → external agent → advise → fix unattended |
