@@ -189,11 +189,22 @@ below.
   `auto-rejecting` there. **Check that warning before trusting a report** — a silently uninformed review is
   this adapter's most dangerous failure mode.
 - Output is a newline-delimited JSON event stream, always redirected straight to a file — see Phase 3/4.
-- **A run can hang.** Observed in practice: every review sub-agent completed, then no final event for over
-  two hours at ~0% CPU. If the Phase 3 timeout expires, kill the process and treat the partial stream as
-  partial — `extract-report.sh`/`extract-cost.sh` both handle a truncated stream — rather than waiting it out.
-  After an external kill the adapter never reaches its own warning, so read `<raw-output-file>.stderr`
-  directly in that case; the file is written by the OS as the run goes and survives the kill.
+- **A run can hang, and a hung run is not an empty run.** Observed twice: the process sits at ~0% CPU and
+  emits no further events, once for over two hours. Two measurements minutes apart tell a hang from a slow
+  call — a single CPU reading cannot — and the absence of any open network connection is what proves it is
+  waiting on nothing. When the Phase 3 timeout expires, kill it rather than waiting, then salvage in this
+  order:
+  1. `extract-subagents.sh` **first.** The tool dispatches one sub-agent per review dimension and merges
+     them only at the end, so a run that stalls before that still holds every finding the finished
+     sub-agents produced. Those live in `tool_use` parts, which `extract-report.sh` cannot see.
+  2. `extract-report.sh` for whatever prose exists. On a stall before synthesis this is usually just
+     narration — do not read a short result as "nothing was produced".
+  3. `extract-cost.sh`, which works on a partial stream and reports what the run actually cost.
+
+  Measured on a real stalled run: `extract-report.sh` returned 91 characters of narration while 4085
+  characters of findings sat unread in a completed sub-agent result. After an external kill the adapter
+  never reaches its own warning, so read `<raw-output-file>.stderr` directly in that case; the file is
+  written by the OS as the run goes and survives the kill.
 
 ## Configuration
 
