@@ -5,6 +5,59 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.22.0] - 2026-08-16
+
+### ✨ Added
+
+- `ak-review:deps` — New skill that **generates a project-specific dependency update skill** at
+  `.claude/skills/dependency-update/SKILL.md`, mirroring the generator/executor split that
+  `workflow` and `finalize` already use. It never updates a dependency itself; it produces the
+  procedure that does.
+
+  The reason it generates rather than generalizes: a generic dependency skill can say "take a
+  baseline", but not *which* baseline — and that is where the safety lives. A dependency bump can
+  pass every behavioural test and still be wrong, because tests assert behaviour and a CSS
+  framework bump that moves a border leaves a full E2E suite green. Only a project that knows it
+  has a pixel comparison can be told to run it.
+
+  Detection covers four axes the existing tooling scan did not: **install boundaries** (manifests
+  with their own lockfiles are separate projects), **the baseline** including a deliberate hunt for
+  a *second* kind of baseline (visual regression, bundle-size budget, benchmark, structural
+  snapshot, Lighthouse budget) together with what each one fails to cover, **exact pins** versus
+  ranges, and **couplings** — the same version string duplicated across manifests, CI config,
+  Dockerfiles and documentation.
+
+  What detection cannot find, it asks: at most six questions, and only those whose trigger actually
+  fired. Where the user does not know an answer, it is written into the generated skill as an open
+  question with the command to settle it — never as an invented rule.
+
+  `--audit` re-runs detection against an existing skill and separates **project drift** (a coupling
+  the skill guards has actually come apart — a real bug) from **skill drift** (the document is
+  stale). Only the second is edited automatically.
+
+  Verified against a real project whose hand-written equivalent was the model for this skill: the
+  detection reconstructs both separate installs, the visual baseline via the `*-snapshots/` signal,
+  and all five locations of the pinned package-manager version — including a CI header comment and
+  an AGENTS.md prose line, the two that a manifest-only analysis would miss.
+
+- `ak-review` knowledge — Two new reference files. `dependency-update-methodology.md` holds the
+  transferable rules (baseline as numbers not pass/fail, three-tier classification, verify-instead-
+  of-assume commands per ecosystem, one logical step per commit, pin what determines the result,
+  and the fold-back loop that lets a generated skill accumulate project findings).
+  `project-tooling-detection.md` holds the manifest, config-file and lockfile signals.
+
+### ♻️ Changed
+
+- `ak-review:workflow` — Step 3's manifest and config-file detection tables moved into the new
+  shared `project-tooling-detection.md` rather than being duplicated into `deps`. Both skills now
+  detect identically and the tables have one place to be maintained. No behavioural change to
+  generated workflows.
+
+### 📝 Docs
+
+- The root `README.md` header claimed 24 skills and its `ak-review` knowledge table listed only the
+  two original files. Both corrected alongside the new skill — 29 skills, four knowledge files.
+
 ## [1.21.1] - 2026-08-16
 
 ### 📝 Documentation
