@@ -26,13 +26,20 @@ fi
 
 AUTH_OUTPUT=$(opencode auth list 2>&1 || true)
 
-if echo "$AUTH_OUTPUT" | grep -qE '(^|[^0-9])0 credentials'; then
+# Strip ANSI escape sequences to handle decorated output. BSD sed does not support \x1b,
+# so we build the escape character explicitly with printf. Bash parameter expansion does not
+# support regex, so sed is necessary here.
+# shellcheck disable=SC2001
+ESC=$(printf '\033')
+AUTH_CLEAN=$(echo "$AUTH_OUTPUT" | sed "s/${ESC}\[[0-9;]*[a-zA-Z]//g")
+
+if echo "$AUTH_CLEAN" | grep -qE '(^|[^0-9])0 credentials'; then
   echo "opencode-preflight.sh: opencode has no credentials configured." >&2
   echo "Run \`opencode auth login\` and try again." >&2
   exit 1
 fi
 
-if ! echo "$AUTH_OUTPUT" | grep -qE '[0-9]+ credentials'; then
+if ! echo "$AUTH_CLEAN" | grep -qE '[0-9]+ credentials'; then
   echo "opencode-preflight.sh: could not determine opencode's authentication state — continuing anyway." >&2
   echo "(The check reads \`opencode auth list\`; its output format may have changed. If the run fails to authenticate, that is why.)" >&2
 fi
