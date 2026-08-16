@@ -42,6 +42,9 @@ or updating `ak-review` therefore never forces a specific tool or model on anyon
 `tool` and `model` are required from some layer (or via flags) — there's no built-in default. Without
 either, the skill stops and reports exactly which flag or config key to set.
 
+`/ak-review:setup` writes this file interactively, including picking a model from the list your tool
+actually reports — use it instead of hand-writing the JSON if you prefer being walked through it.
+
 ## Examples
 
 ```text
@@ -95,6 +98,7 @@ Widens auto-fixing to confirmed Medium findings and above (default is High and a
 
 ## Related
 
+- [setup](./setup.md) -- guided configuration for this skill
 - [delegate](./delegate.md) -- the prompt-building logic this skill's Phase 2 follows
 - [advise](./advise.md) -- the verification logic this skill's Phase 5 follows
 - [coderabbit](./coderabbit.md) -- the CodeRabbit-specific equivalent; this skill's Phase 6 reuses its fix framework
