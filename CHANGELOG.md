@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.21.1] - 2026-08-16
+
+### 📝 Documentation
+
+- `AGENTS.md` — New convention: when you add a case to something, hunt down every sentence that still
+  describes only the old one. Derived from this repo's own history rather than from principle: the
+  pattern occurred five times while building the `setup` skill for 1.21.0 — a stale claim left in a
+  contract table, in a doc page, in an adjacent paragraph, in a phase that consumed the changed
+  output — every one caught by a review and none by the author, and the fifth created by the fix for
+  the fourth. Adding the branch is the easy half.
+
 ## [1.21.0] - 2026-08-16
 
 ### ✨ Added

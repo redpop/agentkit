@@ -117,7 +117,7 @@ Wrapper format: `{"description": "...", "hooks": {...}}`. The `${CLAUDE_PLUGIN_R
 
 - Use conventional commits: `feat:`, `fix:`, `docs:`, `refactor:`
 - Scope by plugin when applicable: `feat(ak-typo3): add content block field type`
-- Keep versions synchronized across `marketplace.json` and all `plugin.json` files (currently `1.21.0`)
+- Keep versions synchronized across `marketplace.json` and all `plugin.json` files (currently `1.21.1`)
 
 ## Task completion workflow
 
@@ -134,3 +134,9 @@ docs → re-validate → version & changelog.
 - When adding, removing, or modifying plugins, skills, agents, or hooks, update the corresponding documentation in `docs/` (detail files and index READMEs) and the root `README.md` plugin table
 - The `markdown-format.sh` hook requires `markdownlint-cli2` (Homebrew preferred, npx fallback)
 - Before debugging from scratch, check `docs/solutions/` for previously documented fixes and reusable patterns — the project knowledge base grows via `/ak-knowledge:log` and is organized by track (bug fixes and knowledge/best-practices)
+- **When you add a case to something, hunt down every sentence that still describes only the old one.** A behaviour
+  that gains a second case leaves stale claims behind — in the same file, in a contract table above it, on a doc
+  page, in a test's name. This is the most frequent defect in this repo's own history: it occurred five times while
+  building the `setup` skill for 1.21.0, every time caught by a review and never by the author, and the fifth was
+  created by the fix for the fourth. Adding the branch is the easy half; the search afterwards is the work. Grep for
+  the *old case's wording* across the plugin and `docs/`, not just the line you edited
