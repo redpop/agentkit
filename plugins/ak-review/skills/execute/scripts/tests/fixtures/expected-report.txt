@@ -1,0 +1,9 @@
+## Findings
+
+Security dimension: no issues found.
+
+## Summary
+
+```json
+{"findings":[]}
+```
