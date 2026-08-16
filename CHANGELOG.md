@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.22.1] - 2026-08-16
+
+### 🐛 Fixed
+
+All three findings come from the first real run of `--audit` against a project whose hand-written
+dependency skill predates the generator.
+
+- `ak-review:deps` — **The audit could only see changes, never standing gaps.** Every check compared
+  the project against what the skill already recorded, so a package that was *never* pinned looked
+  identical on every run and stayed invisible. The real run showed this exactly: Biome and Playwright
+  were pinned exactly in both installs while TypeScript carried a caret in both — a compiler, whose
+  version decides the result rather than merely what installs, and precisely what the methodology
+  says to pin. Detection now asks the question outright by crossing the result-determining tools
+  against the exact-pin list, and the audit table carries it as a standing check rather than a
+  change check. It is reported as a project finding; the skill never pins anything as a side effect
+  of writing a document.
+
+- `ak-review:deps` — **Nothing stopped the generator from writing claims that expire.** The audited
+  skill named a ticket as "the current one" for major bumps; that ticket had since closed, and the
+  document had no way to notice. The audit now checks the status of any ticket, issue or milestone a
+  skill calls current, and — the deeper half — the generator is told not to write such a claim in the
+  first place, because the next ticket makes any number stale again. State the rule; cite closed
+  tickets only where they are introduced as past examples.
+
+- `ak-review:deps` — **The language rule was left unstated**, the same gap `setup` closed in 1.21.0.
+  `deps` both interviews a person and writes a file, so it needed the rule more than either skill
+  that already had it: the interview and the audit report follow the invoking session's language,
+  while the generated file follows the target project's own instruction files and defaults to
+  English. A generated skill outlives the session that produced it.
+
 ## [1.22.0] - 2026-08-16
 
 ### ✨ Added
