@@ -127,7 +127,17 @@ subsection here plus one script under `scripts/`, following the same shape as th
   (`rm -rf`, `git reset --hard`, `git push --force`, …) gated to `"ask"`. This skill never passes
   `--auto` — that would silently approve those too. If a run stalls, fix the permission config; do not
   reach for `--auto`.
+- **Run the adapter with the reviewed repository as the working directory.** OpenCode gates paths outside
+  the cwd behind its `external_directory` permission, and in non-interactive `run` mode a gated path is
+  **auto-rejected, not prompted** — the review then proceeds without ever reading the files, exits 0, and
+  produces a confident-looking report based on nothing.
+- Those rejections are reported on **stderr**, never in the JSON stream, so the adapter tees stderr to
+  `<raw-output-file>.stderr` and prints a warning when it finds `auto-rejecting` there. **Check that warning
+  before trusting a report** — a silently uninformed review is this adapter's most dangerous failure mode.
 - Output is a newline-delimited JSON event stream, always redirected straight to a file — see Phase 3/4.
+- **A run can hang.** Observed in practice: every review sub-agent completed, then no final event for over
+  two hours at ~0% CPU. If the Phase 3 timeout expires, kill the process and treat the partial stream as
+  partial — `extract-report.sh`/`extract-cost.sh` both handle a truncated stream — rather than waiting it out.
 
 ## Configuration
 
