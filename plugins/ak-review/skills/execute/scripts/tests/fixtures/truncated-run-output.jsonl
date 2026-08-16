@@ -1,0 +1,3 @@
+{"type":"step_start","timestamp":1786870562755,"sessionID":"ses_test1","part":{"id":"prt_1","messageID":"msg_1","sessionID":"ses_test1","snapshot":"abc123","type":"step-start"}}
+{"type":"text","timestamp":1786870562784,"sessionID":"ses_test1","part":{"id":"prt_2","messageID":"msg_1","sessionID":"ses_test1","type":"text","text":"## Findings\n\nSecurity dimension: no issues found.","time":{"start":1786870562753,"end":1786870562781}}}
+{"type":"step_finish","timestamp":1786870562840,"sessionID":"ses_test1","part":{"id":"prt_3","reason":"stop","snapshot":"abc123","messageID":"msg_1","sessionID":"ses_test1","type":"step-finish","tokens":{"total":500,"input":480,"output":20,"reasoning":0,"cache":{"

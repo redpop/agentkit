@@ -13,7 +13,13 @@ if [ ! -f "$RAW_FILE" ]; then
   exit 1
 fi
 
-REPORT=$(jq -rs 'map(select(.type == "text") | .part.text) | join("\n\n")' "$RAW_FILE")
+# Read line-by-line and drop any line that isn't valid JSON (`fromjson? // empty`)
+# before re-assembling into an array, rather than `jq -s` parsing the whole file
+# as one document. This tolerates a stream truncated mid-line — e.g. after an
+# external kill on a hung run (see SKILL.md's Adapter Reference) — recovering
+# every complete event instead of aborting on the first malformed one.
+REPORT=$(jq -R 'fromjson? // empty' "$RAW_FILE" \
+  | jq -rs 'map(select(.type == "text") | .part.text) | join("\n\n")')
 
 if [ -z "$REPORT" ]; then
   echo "extract-report.sh: no text events found in $RAW_FILE" >&2
