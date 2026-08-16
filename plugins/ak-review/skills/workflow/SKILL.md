@@ -54,34 +54,11 @@ If found, determine its shape (see Workflow Shapes above) — in pointer form, a
 
 ### Step 3: Detect Project Tooling
 
-Scan the project root for tooling signals. Run detection in parallel where possible:
+Read `${CLAUDE_PLUGIN_ROOT}/knowledge/project-tooling-detection.md` and apply its manifest, config-file and
+lockfile tables — they are shared with `/ak-review:deps` so both skills detect the same way. Run detection in
+parallel where possible.
 
-**Package/dependency files:**
-
-| File | Scan For |
-|------|----------|
-| `package.json` | `scripts` block (build, test, lint, format, typecheck, check), `devDependencies` (eslint, prettier, biome, vitest, jest, mocha, playwright, cypress) |
-| `composer.json` | `scripts` block, `require-dev` (phpunit, phpstan, phpcs, php-cs-fixer, rector) |
-| `pyproject.toml` | `[tool.*]` sections (pytest, ruff, mypy, black, isort, flake8) |
-| `Cargo.toml` | Presence implies `cargo build`, `cargo test`, `cargo clippy`, `cargo fmt` |
-| `go.mod` | Presence implies `go build`, `go test`, `go vet` |
-| `Makefile` / `Justfile` | Target names (build, test, lint, format, check) |
-| `Gemfile` | `development`/`test` groups (rspec, rubocop, minitest) |
-
-**Config files as secondary signals:**
-
-| File | Implies |
-|------|---------|
-| `biome.json` / `biome.jsonc` | Biome formatter/linter |
-| `.eslintrc*` / `eslint.config.*` | ESLint |
-| `.prettierrc*` | Prettier |
-| `tsconfig.json` | TypeScript type checking |
-| `.phpstan.neon*` | PHPStan |
-| `phpunit.xml*` | PHPUnit |
-| `.ruff.toml` / `ruff.toml` | Ruff |
-| `pytest.ini` / `conftest.py` | Pytest |
-| `rustfmt.toml` | Rust formatting |
-| `.golangci.yml` | GolangCI-Lint |
+Then add the signals below, which are specific to building a task completion workflow:
 
 **Review tools:**
 
@@ -101,9 +78,7 @@ Scan the project root for tooling signals. Run detection in parallel where possi
 | `/bump-version` skill available in installed plugins | Preferred invocation in release step |
 | `/ak-meta:changelog` skill available | Fallback invocation in release step |
 
-**CI as hints (lower priority):**
-
-Check `.github/workflows/*.yml`, `.gitlab-ci.yml`, or `Jenkinsfile` for commands that confirm which tools the project actually runs.
+**CI as hints (lower priority):** see the CI section of the shared detection reference.
 
 Produce a **tooling summary**: which build, test, lint, format, typecheck, and review commands are available, plus which optional steps apply.
 

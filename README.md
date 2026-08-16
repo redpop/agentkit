@@ -1,6 +1,6 @@
 # AgentKit
 
-Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) — 10 plugins with 24 skills, 13 agents, and domain knowledge bases for Git workflows, security, React, TYPO3, and more.
+Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) — 10 plugins with 29 skills, 13 agents, and domain knowledge bases for Git workflows, security, React, TYPO3, and more.
 
 ## Plugins
 
@@ -13,7 +13,7 @@ Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/
 | [**ak-meta**](#ak-meta--project-management-tools) | 4 | 2 | Discovery, changelog generation, AI context handoff, quality assessment, diagrams |
 | [**ak-notifications**](#ak-notifications--macos-notifications) | — | — | macOS sound and banner notifications |
 | [**ak-react**](#ak-react--react--nextjs-development) | 2 | — | React and Next.js best practices, performance optimization, code scanning |
-| [**ak-review**](#ak-review--quality-assurance) | 8 | — | CodeRabbit review, code explanation, finalize workflow, workflow management, external review delegation, unattended external-tool execution with guided setup, validation hooks |
+| [**ak-review**](#ak-review--quality-assurance) | 9 | — | CodeRabbit review, code explanation, finalize workflow, workflow management, dependency update skill generation, external review delegation, unattended external-tool execution with guided setup, validation hooks |
 | [**ak-security**](#ak-security--security-guidelines) | 3 | — | OWASP security guidelines, LLM security, Semgrep static analysis |
 | [**ak-typo3**](#ak-typo3--typo3-v134-development) | 5 | 5 | TYPO3 v13.4 Content Blocks, SitePackage, extensions |
 
@@ -188,6 +188,7 @@ dimensions, and file validation hooks with markdown formatting.
 | [`/ak-review:coderabbit`](docs/skills/ak-review/coderabbit.md) | Run CodeRabbit review on uncommitted or staged changes | `/ak-review:coderabbit` |
 | [`/ak-review:finalize`](docs/skills/ak-review/finalize.md) | Run the task completion workflow (format, simplify, review) | `/ak-review:finalize` |
 | [`/ak-review:workflow`](docs/skills/ak-review/workflow.md) | Generate or audit a task completion workflow | `/ak-review:workflow --audit` |
+| [`/ak-review:deps`](docs/skills/ak-review/deps.md) | Generate or audit a project-specific dependency update skill | `/ak-review:deps --audit` |
 | [`/ak-review:delegate`](docs/skills/ak-review/delegate.md) | Generate a self-contained code-review prompt for a foreign agent | `/ak-review:delegate --type uncommitted` |
 | [`/ak-review:advise`](docs/skills/ak-review/advise.md) | Validate a foreign agent's review findings against the code | `/ak-review:advise --in findings.json` |
 | [`/ak-review:explain`](docs/skills/ak-review/explain.md) | Explain a code snippet's purpose, mechanics, and notable patterns | `/ak-review:explain [code snippet]` |
@@ -209,6 +210,8 @@ dimensions, and file validation hooks with markdown formatting.
 |------|---------|
 | review-dimensions.md | 5 review dimensions with checklists — Security, Performance, Architecture, Testing, Accessibility |
 | wcag-audit-patterns.md | Comprehensive WCAG 2.2 audit — 60+ criteria, remediation patterns, automated testing |
+| dependency-update-methodology.md | Transferable dependency-update rules — baseline as numbers, tiering, verify-instead-of-assume, pinning, couplings |
+| project-tooling-detection.md | Shared manifest, config-file and lockfile signals used by `workflow` and `deps` |
 
 ### ak-security — Security Guidelines
 
