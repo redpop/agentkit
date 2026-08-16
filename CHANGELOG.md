@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.20.0] - 2026-08-16
+
+### ✨ Added
+
+- `ak-review:execute` — New skill running the full **delegate → external agent → advise → fix**
+  loop unattended, closing the manual hand-off that `delegate` and `advise` deliberately left open.
+  It builds the review prompt with `delegate`'s logic, runs it against an external coding-agent CLI,
+  verifies every finding against the real code with `advise`'s logic, auto-fixes the confirmed
+  high-value ones using `coderabbit`'s Apply/Adapt/Skip framework, validates with the project's own
+  tests, and reports one compact summary. `--report-only` reduces it to report-and-verify.
+
+  **The external tool and model are never hardcoded.** They resolve from CLI flags, then a project
+  `.claude/ak-review.local.json`, then a global `~/.claude/ak-review.local.json` — and the skill stops
+  with guidance when unresolved rather than defaulting. Installing or updating this plugin therefore
+  never forces a specific tool or model on anyone. `fix_threshold` defaults to `high` (matching
+  `coderabbit`); `effort` has no default at all, being adapter-specific.
+
+  Ships one adapter, `opencode`, as four small guarded shell scripts under `skills/execute/scripts/`.
+  Two of its properties come from failures observed while building it, not from theory:
+  `opencode run` **auto-rejects** permission-gated paths instead of prompting, reports it only on
+  stderr, and still exits 0 — so a review that never read the repository would have produced a
+  confident, uninformed report. The adapter now captures stderr beside the JSON stream and warns on
+  `auto-rejecting`. And a run can hang after its sub-agents finish, so the report and cost extractors
+  tolerate a truncated stream rather than dying on it, making the documented salvage path real.
+  `--auto` is never passed: it would approve the destructive commands a user's own OpenCode config
+  deliberately gates.
+
 ## [1.19.1] - 2026-08-13
 
 ### 🐛 Fixed
