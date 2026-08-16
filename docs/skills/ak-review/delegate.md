@@ -85,3 +85,4 @@ printing it.
 
 - [advise](./advise.md) -- validate the findings the foreign agent returns
 - [coderabbit](./coderabbit.md) -- run an in-session automated review instead
+- [execute](./execute.md) -- run this skill's prompt through an external tool and the advise/fix loop unattended

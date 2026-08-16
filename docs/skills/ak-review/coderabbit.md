@@ -61,3 +61,4 @@ Reviews both committed and uncommitted changes in one pass for a full sweep of e
 
 - [finalize](./finalize.md) -- full task completion workflow that includes CodeRabbit
 - [ak-git:operations](../ak-git/operations.md) -- commit after review passes
+- [execute](./execute.md) -- the tool-agnostic equivalent of this skill, reusing its fix decision framework

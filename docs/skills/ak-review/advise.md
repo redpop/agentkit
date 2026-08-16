@@ -49,3 +49,4 @@ content inline.
 ## Related
 
 - [delegate](./delegate.md) -- generate the review prompt that produces these findings
+- [execute](./execute.md) -- runs this skill's verification automatically as part of the unattended delegate -> external tool -> advise -> fix loop
