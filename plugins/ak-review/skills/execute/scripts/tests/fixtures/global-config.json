@@ -1,0 +1,8 @@
+{
+  "external_review": {
+    "tool": "opencode",
+    "model": "opencode-go/glm-5.3",
+    "effort": "high",
+    "fix_threshold": "high"
+  }
+}
