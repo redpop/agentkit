@@ -9,11 +9,13 @@ model. No configuration ships with the plugin on purpose: a default would pick s
 model for them, and a plugin update would silently change it. This skill is how that choice gets
 made — interactively, once.
 
-It asks where the config should live, which model to use (from the list the tool itself reports),
-and how aggressive auto-fixing should be. Then it writes the file and runs the resolver against it,
-so a typo surfaces immediately rather than on the next review.
+It asks where the config should live, which model to use, and how aggressive auto-fixing should be.
+For the model: if the tool publishes a list of available models, you pick from it; if not, you type
+the model identifier in the format the tool expects, and the skill repeats it back for you to confirm.
+Then it writes the file and runs the resolver against it, so a typo surfaces immediately rather than
+on the next review.
 
-**It never runs a review and never calls a paid model.** Listing models is free.
+**It never runs a review and never calls a paid model.** Listing models (when available) is free.
 
 ## Usage
 
