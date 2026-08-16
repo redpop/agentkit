@@ -13,7 +13,7 @@ Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/
 | [**ak-meta**](#ak-meta--project-management-tools) | 4 | 2 | Discovery, changelog generation, AI context handoff, quality assessment, diagrams |
 | [**ak-notifications**](#ak-notifications--macos-notifications) | — | — | macOS sound and banner notifications |
 | [**ak-react**](#ak-react--react--nextjs-development) | 2 | — | React and Next.js best practices, performance optimization, code scanning |
-| [**ak-review**](#ak-review--quality-assurance) | 6 | — | CodeRabbit review, code explanation, finalize workflow, workflow management, external review delegation, validation hooks |
+| [**ak-review**](#ak-review--quality-assurance) | 7 | — | CodeRabbit review, code explanation, finalize workflow, workflow management, external review delegation, unattended external-tool execution, validation hooks |
 | [**ak-security**](#ak-security--security-guidelines) | 3 | — | OWASP security guidelines, LLM security, Semgrep static analysis |
 | [**ak-typo3**](#ak-typo3--typo3-v134-development) | 5 | 5 | TYPO3 v13.4 Content Blocks, SitePackage, extensions |
 
@@ -191,6 +191,7 @@ dimensions, and file validation hooks with markdown formatting.
 | [`/ak-review:delegate`](docs/skills/ak-review/delegate.md) | Generate a self-contained code-review prompt for a foreign agent | `/ak-review:delegate --type uncommitted` |
 | [`/ak-review:advise`](docs/skills/ak-review/advise.md) | Validate a foreign agent's review findings against the code | `/ak-review:advise --in findings.json` |
 | [`/ak-review:explain`](docs/skills/ak-review/explain.md) | Explain a code snippet's purpose, mechanics, and notable patterns | `/ak-review:explain [code snippet]` |
+| [`/ak-review:execute`](docs/skills/ak-review/execute.md) | Run delegate → external agent → advise → fix, unattended | `/ak-review:execute --type uncommitted` |
 
 #### Hooks
 
