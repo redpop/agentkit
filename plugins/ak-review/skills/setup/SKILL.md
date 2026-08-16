@@ -66,7 +66,8 @@ ${CLAUDE_PLUGIN_ROOT}/skills/execute/scripts/<tool>-models.sh
 
 **If the script does not exist:** this adapter offers no automatic model listing. Tell the user so,
 then ask them to type the model identifier themselves. Name the format the adapter expects — for
-`opencode`, that is `provider/model`. Do not suggest a specific model.
+`opencode`, that is `provider/model`: a provider name (e.g., `opencode-go`), then a slash, then
+the model name. Do not suggest a specific model.
 
 **Caution — the typed value cannot be verified here**, because this adapter offers no authoritative
 list. Repeat back the exact string the user gave, and ask them to confirm it before it is written
@@ -75,9 +76,14 @@ runs the adapter and it rejects the model — so it is worth getting right now, 
 a failing review after the fact.
 
 **If the script exists:** run it to list the models. Present the list and let the user choose. If
-the list is long, group or summarise it — but the value must come from that output, never from a
-suggestion of your own. **Do not recommend a specific model.** If the script fails, show its stderr
-and stop: a config naming a model the tool does not have is worse than no config.
+the list is long, group or summarise it — but ensure the user can unambiguously name a choice.
+If grouping strips prefixes, keep the full identifier visible on each line, or number the entries
+and invite a number. Show at least one real, complete example from the output (e.g., "for example:
+`opencode-go/glm-5.3`") so the expected shape is concrete. If the user gives a bare model name
+that matches more than one provider in the list, show which providers have it and ask which one
+they mean. The value must come from the output, never from a suggestion. **Do not recommend a
+specific model.** If the script fails, show its stderr and stop: a config naming a model the tool
+does not have is worse than no config.
 
 ### Phase 5: Fix threshold
 
