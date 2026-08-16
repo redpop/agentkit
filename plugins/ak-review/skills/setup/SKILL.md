@@ -58,16 +58,20 @@ exist, ask.
 
 ### Phase 4: Model
 
-Run the chosen adapter's model lister:
+Check whether the adapter has a model lister:
 
 ```bash
 ${CLAUDE_PLUGIN_ROOT}/skills/execute/scripts/<tool>-models.sh
 ```
 
-Present the list and let the user choose. If the list is long, group or summarise it — but the value
-must come from that output, never from a suggestion of your own. **Do not recommend a specific
-model.** If the script fails, show its stderr and stop: a config naming a model the tool does not
-have is worse than no config.
+**If the script does not exist:** this adapter offers no automatic model listing. Tell the user so,
+then ask them to type the model identifier themselves. Name the format the adapter expects — for
+`opencode`, that is `provider/model`. Do not suggest a specific model.
+
+**If the script exists:** run it to list the models. Present the list and let the user choose. If
+the list is long, group or summarise it — but the value must come from that output, never from a
+suggestion of your own. **Do not recommend a specific model.** If the script fails, show its stderr
+and stop: a config naming a model the tool does not have is worse than no config.
 
 ### Phase 5: Fix threshold
 

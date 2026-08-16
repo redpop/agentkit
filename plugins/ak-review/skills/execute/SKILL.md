@@ -52,7 +52,17 @@ The script reads `.claude/ak-review.local.json` and `~/.claude/ak-review.local.j
 non-zero, print its stderr message verbatim and **stop** — do not guess a tool or model. On success it
 prints resolved JSON: `{"tool":..., "model":..., "effort":..., "fix_threshold":...}`.
 
-Then confirm the resolved adapter can actually run, before any work is done:
+Then confirm the resolved adapter can actually run, before any work is done.
+
+**Check whether the adapter has a preflight script:**
+
+```bash
+[ -f "${CLAUDE_PLUGIN_ROOT}/skills/execute/scripts/<tool>-preflight.sh" ]
+```
+
+**If the script does not exist:** skip the rest of this Phase and continue to Phase 2.
+
+**If the script exists:** run it:
 
 ```bash
 ${CLAUDE_PLUGIN_ROOT}/skills/execute/scripts/<tool>-preflight.sh
@@ -62,8 +72,8 @@ Exit 0 means ready — or not provably unready; the adapter decides which, and s
 A non-zero exit means it cannot run: print the script's stderr verbatim and **stop**. Do not
 attempt to install, authenticate or repair anything, and do not proceed hoping it will work.
 
-This runs before Phase 2 on purpose: building the prompt reads the repository and may fetch tickets,
-which is wasted if the tool is not there. If the adapter has no `-preflight.sh`, skip this step.
+This phase runs before Phase 2 on purpose: building the prompt reads the repository and may fetch
+tickets, which is wasted if the tool is not there.
 
 ### Phase 2: Build the Prompt
 
@@ -144,7 +154,7 @@ registry: an adapter is the set of scripts named after its tool under `scripts/`
 | Script | Contract | Required? |
 |--------|----------|-----------|
 | `<tool>-adapter.sh <prompt-file> <model> [effort] <raw-output-file>` | Runs the review, writing the tool's raw output to the given file. Exits with the tool's own exit code. | Yes |
-| `<tool>-preflight.sh` | Exit 0 = ready, *or not provably unready*. Non-zero = cannot run, with the reason and the concrete fix on stderr. **An adapter that cannot check something reliably must exit 0 and say so on stderr, not block** — see the `opencode` entry for why. | Optional; skipped if absent |
+| `<tool>-preflight.sh` | Exit 0 = ready, *or not provably unready*. Non-zero = cannot run, with the reason and the concrete fix on stderr. **An adapter must not block on a check it cannot make reliably — it either drops the check or notes the gap on stderr.** See the `opencode` entry for why this matters. | Optional; skipped if absent |
 | `<tool>-models.sh` | Prints the models the tool offers, one per line, to stdout. Used by `/ak-review:setup`. | Optional; setup asks the user to type a model if absent |
 
 Adding a tool means adding those scripts plus a subsection here, following the shape of the entry
@@ -161,7 +171,7 @@ below.
   `--auto` — that would silently approve those too. If a run stalls, fix the permission config; do not
   reach for `--auto`.
 - **Preflight:** `opencode-preflight.sh` checks one thing — whether `opencode` is on PATH — and hard-fails if it is not. It deliberately does **not** check authentication. That check existed and was removed: it had to parse `opencode auth list`'s human-readable output (the exit code is 0 either way), and three successive escape-stripping patterns were each defeated by a different ANSI class, every time by wrongly hard-blocking a *correctly authenticated* user. An unauthenticated opencode fails instantly, for free, and says so itself, so the check bought a marginally nicer message at the cost of the worst failure mode there is. Do not add it back without a machine-readable signal (a documented exit code or a `--json` mode). The script's own comment header carries the full account.
-- **Models:** `opencode-models.sh` wraps `opencode models`.
+- **Models:** `opencode-models.sh` wraps `opencode models`, and fails loudly when `opencode models` itself errors.
 - **Run the adapter with the reviewed repository as the working directory.** OpenCode gates paths outside
   the cwd behind its `external_directory` permission, and in non-interactive `run` mode a gated path is
   **auto-rejected, not prompted** — the review then proceeds without ever reading the files, exits 0, and
