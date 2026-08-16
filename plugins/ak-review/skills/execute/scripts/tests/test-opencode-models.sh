@@ -6,6 +6,11 @@ set -euo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SCRIPT="$DIR/../opencode-models.sh"
 
+# Resolve bash NOW: a `PATH=... bash` invocation uses the modified PATH to find bash
+# itself, so emptying PATH inline makes the shell unfindable (exit 127) and the script
+# under test never runs.
+BASH_BIN="$(command -v bash)"
+
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 mkdir -p "$WORK/bin"
@@ -38,7 +43,7 @@ echo "$ERRTXT" | grep -q "opencode-models.sh" || fail "case 2: stderr should nam
 
 # Case 3: the tool is not installed at all -> exit 1, actionable message.
 set +e
-ERRTXT=$(PATH="$WORK/empty" bash "$SCRIPT" 2>&1 >/dev/null)
+ERRTXT=$(PATH="$WORK/empty" "$BASH_BIN" "$SCRIPT" 2>&1 >/dev/null)
 CODE=$?
 set -e
 [ "$CODE" -eq 1 ] || fail "case 3: a missing binary must exit 1, got $CODE"
