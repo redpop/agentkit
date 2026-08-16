@@ -36,6 +36,11 @@ Parse `$ARGUMENTS`:
 
 ### Phase 1: Resolve Configuration
 
+Run this, and every other script in this workflow, with the reviewed repository as the working directory
+— `resolve-config.sh` reads the project config layer from the cwd-relative `.claude/ak-review.local.json`,
+so a wrong cwd silently drops that layer and falls back to global with no error (the same requirement the
+Adapter Reference states for the external tool itself).
+
 Run (only pass flags the user actually supplied):
 
 ```bash
@@ -52,8 +57,11 @@ prints resolved JSON: `{"tool":..., "model":..., "effort":..., "fix_threshold":.
 Follow `/ak-review:delegate`'s Phase 1–3 exactly: resolve scope (this skill's `--type`/`--base`/`--path`/
 `--all`, same semantics), capture project context, discover requirements context, assemble the prompt.
 The generated prompt is always report-only (delegate template §7) — the external agent never edits code.
-Write the assembled prompt to a scratch file, e.g. `/tmp/ak-review-execute/<timestamp>/prompt.md`. If
-the resolved scope is empty, `delegate`'s own "say so and stop" behavior applies here too.
+Write the assembled prompt to a scratch file at `/tmp/ak-review-execute/<timestamp>/prompt.md`. Use that
+same `<timestamp>` directory for every other artifact this run produces — `$RAW_OUTPUT_FILE`
+(`raw-output.jsonl`), `$REPORT_FILE` (`report.md`) and `$COST_FILE` (`cost.json`) in Phase 3/4 — so the
+whole run's evidence lives in one place. If the resolved scope is empty, `delegate`'s own "say so and
+stop" behavior applies here too.
 
 ### Phase 3: Execute
 
@@ -109,6 +117,9 @@ Produce one compact report, in the language of the invoking session:
 - What was skipped, one line each with the reason (false positive / below threshold / needs context / uncertain)
 - Validation result (tests/lint pass?), only if Phase 7 ran
 - Total cost and tokens from `$COST_FILE`
+- The path to `$RAW_OUTPUT_FILE` — it is kept on disk after the run (see Notes) and this is the only place
+  that path is surfaced to the user; without it, re-running `/ak-review:advise` against the kept output
+  means hunting for a `/tmp/ak-review-execute/<timestamp>/` directory rather than reading it off the report
 
 No raw JSON dump in the final message — this is the human-facing digest.
 

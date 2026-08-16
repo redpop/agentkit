@@ -49,6 +49,7 @@ OUT="$WORK/case2.jsonl"
 FAKE_STDOUT='{"type":"text"}' FAKE_STDERR='' FAKE_EXIT=0 \
   bash "$SCRIPT" "$PROMPT" some/model "$OUT" 2> /dev/null
 grep -qx -- "--variant" "$FAKE_ARGV_FILE" && fail "case 2: --variant must be omitted in the 3-arg form"
+grep -qx -- "--auto" "$FAKE_ARGV_FILE" && fail "case 2: --auto must never be passed"
 
 # Case 3: opencode's exit code is propagated, not replaced by the adapter's own
 # later commands.
