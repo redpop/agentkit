@@ -55,4 +55,27 @@ set -e
 [ "$MISSING_EXIT" -eq 1 ] || fail "case 4: a missing file must exit 1, got $MISSING_EXIT"
 [ "$NOSUB_EXIT" -eq 1 ] || fail "case 4: a stream with no completed sub-agents must exit 1, got $NOSUB_EXIT"
 
+# Case 5: a completed non-`task` tool_use (bash/read/grep/…) must never be emitted.
+# Without the `select(.tool == "task")` filter, every completed tool call in the
+# stream leaks through as a "recovered finding" — the full internal event trace,
+# not just what the review sub-agents produced.
+cat > "$WORK/nontask.jsonl" <<'JSONL'
+{"type":"tool_use","part":{"tool":"bash","state":{"status":"completed","title":"git diff","output":"NOISE"}}}
+{"type":"tool_use","part":{"type":"tool","tool":"task","state":{"status":"completed","title":"Real sub-agent","output":"REAL-FINDING"}}}
+JSONL
+OUT=$(bash "$SCRIPT" "$WORK/nontask.jsonl")
+echo "$OUT" | grep -q "NOISE" && fail "case 5: a non-task tool_use (bash) leaked into the output"
+echo "$OUT" | grep -q "REAL-FINDING" || fail "case 5: the real sub-agent's finding was lost"
+
+# Case 6 (Minor 9): a malformed `part` (not an object) must not crash the script.
+# This is an undocumented schema of an actively developed tool; a shape change
+# should degrade gracefully, not abort with a raw jq indexing error before either
+# of the script's own messages can print.
+cat > "$WORK/malformed.jsonl" <<'JSONL'
+{"type":"tool_use","part":"not-an-object"}
+{"type":"tool_use","part":{"type":"tool","tool":"task","state":{"status":"completed","title":"Still works","output":"SURVIVED"}}}
+JSONL
+OUT=$(bash "$SCRIPT" "$WORK/malformed.jsonl")
+echo "$OUT" | grep -q "SURVIVED" || fail "case 6: a malformed part crashed or dropped the valid result"
+
 echo "PASS: test-extract-subagents.sh"
