@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.20.1] - 2026-08-16
+
+### 🐛 Fixed
+
+- `ak-review:execute` — The "no tool or model configured" message is now enough to act on. No
+  config ships with the plugin, deliberately, so this message is what every new user meets first,
+  and it previously said only which keys were missing. It now names both config paths and which
+  one wins, shows a copy-pasteable skeleton, lists the adapters that exist (`opencode`) and says how
+  to find models for one (`opencode models`) — but still names **no** model, because printing one
+  would be the default this design exists to avoid.
+
 ## [1.20.0] - 2026-08-16
 
 ### ✨ Added
