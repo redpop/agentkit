@@ -20,6 +20,16 @@ generated skill.
 
 **This skill does not update any dependency.** It produces the procedure that does.
 
+**Ask and report in the language of the invoking session** — the same rule `/ak-review:setup` and
+`/ak-review:execute` follow. The Step 5 interview and every audit report go to a person, so they follow that
+person's language.
+
+**The generated skill file does not.** Its language follows the target project's own instruction files
+(`AGENTS.md` / `CLAUDE.md`), defaulting to English when they give no signal. A generated skill outlives the session
+that produced it and is read by whoever picks up the next update, so it should read like the rest of the project
+rather than like the conversation that happened to create it. Commands, file paths and package names are never
+translated in either case.
+
 ## Arguments
 
 Parse `$ARGUMENTS` for mode:
@@ -98,6 +108,13 @@ Also check whether the test runner swallows console output — Vitest intercepts
 **What is already pinned exactly?** Run the ecosystem's listing snippet from
 `${CLAUDE_PLUGIN_ROOT}/knowledge/dependency-update-methodology.md` §5. An exact pin is a decision someone made; the
 generated skill must not silently loosen it.
+
+**What determines the result but is *not* pinned?** Ask this separately, because it is the question a
+pin-versus-range comparison never reaches: a package that was never pinned looks the same on every run. Cross the
+detected formatters, linters, browser engines, compilers and the package manager against the exact-pin list from
+above; anything on the first list and missing from the second carries a range on something whose version decides
+the outcome. Report each one with the range it currently carries. This is a finding about the project, not about
+the skill — never pin anything as a side effect of generating a document.
 
 **Which versions appear in more than one place?** These are the silent-drift candidates:
 
@@ -188,7 +205,7 @@ If the baseline is already red or noisy, stop and report that first.
 
 - **Patch, same minor** — update together in one step.
 - **Minor** — update, then run the regression that actually covers that package, named per package.
-- **Major** — do not bundle. {Ticket convention, if any.}
+- **Major** — do not bundle. {Ticket convention, if any — the rule, never a specific open ticket number.}
 
 ## 3. Verify claims instead of assuming
 
@@ -225,6 +242,13 @@ this skill. Add what you find there rather than to this file.
 {second baseline result}, final state versus baseline, observations folded in.}
 ````
 
+**Write no claim that expires on its own.** A ticket number, a milestone or a release named as the *current* one is
+true on the day it is written and silently false afterwards — the generated skill has no way to notice, and the
+next reader has no reason to doubt it. State the rule instead ("a major goes in its own ticket with its own
+verification"); closed tickets may still be cited, but only where they are introduced as past examples. The same
+applies to counts that the project can change without touching this file: write how to obtain the number, or accept
+that the audit has to re-derive it.
+
 Then:
 
 1. Show the user the written file.
@@ -260,10 +284,12 @@ already records. Ask only where a *new* trigger fired that the skill has no answ
 | A second baseline exists that the skill does not mention | The most costly gap; report first |
 | The skill's stated limits no longer hold | E.g. the visual suite now runs in CI, or on a second platform |
 | An exact pin has become a range | Someone loosened a decision; confirm it was deliberate |
+| A result-determining package carries a range and always has | **Not a change — a standing gap.** A comparison against the previous state cannot surface this, so check it outright every audit (Step 4 of Generate) |
 | A coupled version now differs across files | **Live drift — this is a project bug, not a document bug** |
 | A version string now appears in more files than the skill states | Coupling grew |
 | An install was added or removed | Scope statement stale |
 | An automated update source appeared | Renovate/Dependabot now opens the PRs |
+| The skill names a ticket, issue or milestone as the *current* one | Check whether it is still open. A named "current" ticket is a claim with an expiry date, and it expires silently |
 
 ### Step 4: Report
 

@@ -68,6 +68,9 @@ Pin exactly — no caret, no tilde — anything whose version decides the *outco
 formatters, linters, browser engines, compilers, the package manager itself. A caret on those turns a reproducible
 check into a moving target.
 
+The listing below is only half the check. The other half is which result-determining packages are *missing* from
+it — a package that was never pinned looks identical on every run, so nothing but an outright check will surface it.
+
 To list what a project already treats that way:
 
 ```bash
