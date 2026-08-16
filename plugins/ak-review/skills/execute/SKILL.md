@@ -69,9 +69,11 @@ ${CLAUDE_PLUGIN_ROOT}/skills/execute/scripts/<tool>-preflight.sh
 ```
 
 Exit 0 means ready — or not provably unready; the adapter either dropped an unreliable check or
-noted the gap on stderr, so stderr may or may not carry anything. A non-zero exit means it cannot
-run: print the script's stderr verbatim and **stop**. Do not attempt to install, authenticate or
-repair anything, and do not proceed hoping it will work.
+noted the gap on stderr, so stderr may or may not carry anything. If exit is 0 and stderr is
+non-empty, print it as a warning and continue to Phase 2 — the adapter is flagging a gap it could
+not check, not blocking the run. A non-zero exit means it cannot run: print the script's stderr
+verbatim and **stop**. Do not attempt to install, authenticate or repair anything, and do not
+proceed hoping it will work.
 
 This phase runs before Phase 2 on purpose: building the prompt reads the repository and may fetch
 tickets, which is wasted if the tool is not there.
@@ -83,9 +85,10 @@ Follow `/ak-review:delegate`'s Phase 1–3 exactly: resolve scope (this skill's 
 The generated prompt is always report-only (delegate template §7) — the external agent never edits code.
 Write the assembled prompt to a scratch file at `/tmp/ak-review-execute/<timestamp>/prompt.md`. Use that
 same `<timestamp>` directory for every other artifact this run produces — `$RAW_OUTPUT_FILE`
-(`raw-output.jsonl`), `$REPORT_FILE` (`report.md`) and `$COST_FILE` (`cost.json`) in Phase 3/4 — so the
-whole run's evidence lives in one place. If the resolved scope is empty, `delegate`'s own "say so and
-stop" behavior applies here too.
+(`raw-output.jsonl`), `$REPORT_FILE` (`report.md`), `$COST_FILE` (`cost.json`) in Phase 3/4, and
+`$SUBAGENTS_FILE` (`subagents.md`, written only if Phase 3's timeout branch runs) — so the whole run's
+evidence lives in one place. If the resolved scope is empty, `delegate`'s own "say so and stop" behavior
+applies here too.
 
 ### Phase 3: Execute
 
@@ -101,7 +104,26 @@ ${CLAUDE_PLUGIN_ROOT}/skills/execute/scripts/opencode-adapter.sh \
 If `tool` matches no known adapter, stop and report which tools are implemented. Use a generous timeout
 (20 minutes) — this is long-running and produces no intermediate output; do not attempt to babysit it.
 
+**If the timeout expires:** kill the process — `$RAW_OUTPUT_FILE` is written incrementally by the OS as
+the run goes, so it survives the kill. Do **not** fall through to the normal Phase 4 path below; go to
+the salvage path instead:
+
+```bash
+${CLAUDE_PLUGIN_ROOT}/skills/execute/scripts/extract-subagents.sh "$RAW_OUTPUT_FILE" > "$SUBAGENTS_FILE"
+${CLAUDE_PLUGIN_ROOT}/skills/execute/scripts/extract-report.sh "$RAW_OUTPUT_FILE" > "$REPORT_FILE"
+${CLAUDE_PLUGIN_ROOT}/skills/execute/scripts/extract-cost.sh "$RAW_OUTPUT_FILE" > "$COST_FILE"
+```
+
+Run `extract-subagents.sh` **first**, in that order. The tool dispatches one sub-agent per review
+dimension and merges them only at the end, so a run killed before that still holds every finished
+sub-agent's output — and that output lives in `tool_use` parts that `extract-report.sh` cannot see (it
+reads `text` parts, which carry only the coordinating agent's narration). See the `opencode` entry in
+the Adapter Reference below for a measurement of exactly how much that narration misses. Then continue
+to Phase 5 with both `$SUBAGENTS_FILE` and `$REPORT_FILE` in hand — see Phase 5 for how they differ.
+
 ### Phase 4: Parse the Report
+
+Normal path — the run completed within the timeout, so there is no `$SUBAGENTS_FILE`:
 
 ```bash
 ${CLAUDE_PLUGIN_ROOT}/skills/execute/scripts/extract-report.sh "$RAW_OUTPUT_FILE" > "$REPORT_FILE"
@@ -118,6 +140,13 @@ file, start_line, end_line, claim, evidence, suggested_fix`).
 Follow `/ak-review:advise`'s Phase 2 exactly against the parsed `findings[]`: read the cited file/lines
 for each finding, check the claim against the real code, assign a verdict (`confirmed | false_positive |
 needs_more_context | uncertain`).
+
+**If Phase 3 took the salvage path**, also read `$SUBAGENTS_FILE` — but not the same way. It is the
+recovered sub-agents' **prose**, not the delegate `findings[]` schema: no `id`, `severity`, `category`
+or line range to carry through. Read each block as an individual claim and verify it directly against
+the cited code the way a human reviewer would, rather than trying to parse it. Because it carries no
+`severity`, nothing in it can be matched against Phase 6's `fix_threshold` automatically — treat every
+salvaged claim as needing a manual judgment call before any fix is applied.
 
 ### Phase 6: Fix (skip if `--report-only`)
 
@@ -156,7 +185,7 @@ registry: an adapter is the set of scripts named after its tool under `scripts/`
 |--------|----------|-----------|
 | `<tool>-adapter.sh <prompt-file> <model> [effort] <raw-output-file>` | Runs the review, writing the tool's raw output to the given file. Exits with the tool's own exit code. | Yes |
 | `<tool>-preflight.sh` | Exit 0 = ready, *or not provably unready*. Non-zero = cannot run, with the reason and the concrete fix on stderr. **An adapter must not block on a check it cannot make reliably — it either drops the check or notes the gap on stderr.** See the `opencode` entry for why this matters. | Optional; skipped if absent |
-| `<tool>-models.sh` | Prints the models the tool offers, one per line, to stdout. Used by `/ak-review:setup`. | Optional; setup asks the user to type a model if absent |
+| `<tool>-models.sh` | Prints one candidate per line, to stdout; the format is the tool's own and is not guaranteed. Used by `/ak-review:setup`. | Optional; setup asks the user to type a model if absent |
 
 Adding a tool means adding those scripts plus a subsection here, following the shape of the entry
 below.
@@ -192,8 +221,8 @@ below.
 - **A run can hang, and a hung run is not an empty run.** Observed twice: the process sits at ~0% CPU and
   emits no further events, once for over two hours. Two measurements minutes apart tell a hang from a slow
   call — a single CPU reading cannot — and the absence of any open network connection is what proves it is
-  waiting on nothing. When the Phase 3 timeout expires, kill it rather than waiting, then salvage in this
-  order:
+  waiting on nothing. When the Phase 3 timeout expires, follow Phase 3's salvage path above — kill the
+  process, then run the extractors in this order:
   1. `extract-subagents.sh` **first.** The tool dispatches one sub-agent per review dimension and merges
      them only at the end, so a run that stalls before that still holds every finding the finished
      sub-agents produced. Those live in `tool_use` parts, which `extract-report.sh` cannot see.

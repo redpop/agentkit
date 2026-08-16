@@ -18,7 +18,10 @@
 # and a half-written finding is worse than a missing one.
 #
 # Tolerant of a truncated trailing line, for the same reason as its siblings:
-# the stream this reads is usually one that was killed.
+# the stream this reads is usually one that was killed. Also tolerant of a
+# `part` that isn't an object at all — this parses an undocumented schema of
+# an actively developed tool, and a shape change must not crash the script
+# with a raw jq indexing error before either of its own messages can print.
 set -euo pipefail
 
 if [ $# -ne 1 ]; then
@@ -35,6 +38,7 @@ fi
 
 RESULTS=$(jq -R 'fromjson? // empty' "$RAW_FILE" | jq -rs '
   map(select(.type == "tool_use")
+      | select((.part | type) == "object")
       | .part
       | select(.tool == "task")
       | select(.state.status == "completed")

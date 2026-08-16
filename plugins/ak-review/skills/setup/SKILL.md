@@ -74,21 +74,35 @@ then ask them to type the model identifier themselves. Name the format the adapt
 `opencode`, that is `provider/model`: a provider name (e.g., `opencode-go`), then a slash, then
 the model name. Do not suggest a specific model.
 
-**Caution — the typed value cannot be verified here**, because this adapter offers no authoritative
-list. Repeat back the exact string the user gave, and ask them to confirm it before it is written
-to the config file. If the value turns out wrong, the symptom will surface later when `/ak-review:execute`
-runs the adapter and it rejects the model — so it is worth getting right now, rather than debugging
-a failing review after the fact.
+**Caution — in this branch, the typed value cannot be verified here**, because this adapter offers
+no authoritative list. Repeat back the exact string the user gave, and ask them to confirm it before
+it is written to the config file. If the value turns out wrong, the symptom will surface later when
+`/ak-review:execute` runs the adapter and it rejects the model — so it is worth getting right now,
+rather than debugging a failing review after the fact.
 
 **If the script exists:** run it to list the models. Present the list and let the user choose. If
 the list is long, group or summarise it — but ensure the user can unambiguously name a choice.
 If grouping strips prefixes, keep the full identifier visible on each line, or number the entries
-and invite a number. Show at least one real, complete example from the output (e.g., "for example:
-`opencode-go/glm-5.3`") so the expected shape is concrete. If the user gives a bare model name
-that matches more than one provider in the list, show which providers have it and ask which one
-they mean. The value must come from the output, never from a suggestion. **Do not recommend a
-specific model.** If the script fails, show its stderr and stop: a config naming a model the tool
-does not have is worse than no config.
+and invite a number. Show at least one real, complete example by quoting one line verbatim from the
+script's own output, so the expected shape is concrete without naming a model of the skill's choosing.
+If the user gives a bare model name that matches more than one provider in the list, show which
+providers have it and ask which one they mean. The value must come from the output, never from a
+suggestion. **Do not recommend a specific model.**
+
+If the script fails, read its stderr. When it reports the tool itself is missing (as
+`opencode-models.sh` does when `opencode` is not on PATH), do not hard-stop — this is exactly the
+portable-global-file case Phase 1 advertises: writing a config on a machine where the tool is not
+installed yet. Fall through to the same typed-entry flow as the "script does not exist" branch above,
+with the same caution about being unable to verify the value here. If instead the stderr reports the
+tool ran and the listing itself failed (e.g. `opencode models` erroring, an auth problem) — a real
+listing error, not a missing binary — show it and stop: a config naming a model the tool does not
+have is worse than no config.
+
+**Before writing, in either branch:** confirm the chosen value looks like `provider/model` (a name,
+one `/`, another name) — the shape `opencode` (and any adapter following the same convention) expects.
+A model lister's output format is the tool's own and is not guaranteed to already look this way. If
+the chosen entry does not have that shape, ask the user to confirm the exact string to write rather
+than assuming the listed line is it.
 
 ### Phase 5: Fix threshold
 
@@ -124,8 +138,24 @@ Then read the file back from disk and prove it resolves, from the repository roo
 ```bash
 ls -l <absolute path to the file>
 cat <absolute path to the file>
-${CLAUDE_PLUGIN_ROOT}/skills/execute/scripts/resolve-config.sh
 ```
+
+Then resolve it. `resolve-config.sh` merges global → project → flags with the project layer winning,
+so which call proves the file just written depends on which file Phase 1 wrote:
+
+- **Wrote the global file:** pass `--project-config /dev/null`, so a project config elsewhere in this
+  repo cannot win the merge and print values that don't match what was just `cat`-ed:
+
+  ```bash
+  ${CLAUDE_PLUGIN_ROOT}/skills/execute/scripts/resolve-config.sh --project-config /dev/null
+  ```
+
+- **Wrote the project file:** call it bare — the project layer winning over any global file is exactly
+  what should be proven here:
+
+  ```bash
+  ${CLAUDE_PLUGIN_ROOT}/skills/execute/scripts/resolve-config.sh
+  ```
 
 Show the resolved JSON. If it does not resolve, the file is wrong — fix it before reporting success.
 Writing a config without proving it resolves is how a typo ships.
@@ -141,7 +171,11 @@ Show the user, concretely, what now exists — they should never have to go look
    was meant to be written. The point is to show what is really there; those two differ exactly when
    something went wrong, which is the case worth catching.
 3. **The resolved result** from `resolve-config.sh`, which proves the file is not merely present but
-   valid and reachable.
+   valid and reachable — and **say which layer supplied it**: "these are the values from the file just
+   written" for a global write (verified with `--project-config /dev/null`), or "the project file's
+   values win, per precedence" for a project write. Without that label, the `cat`-ed file and the
+   resolved JSON sit side by side and can be misread as contradicting each other whenever a project
+   config elsewhere in the repo differs from the global file just written.
 4. **What each value does**, in one line each — a user who is shown four keys they did not choose
    understandingly will not touch the file again.
 

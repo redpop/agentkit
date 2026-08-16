@@ -14,6 +14,14 @@ The external tool and model are never hardcoded in the plugin. They resolve from
 a project-local `.claude/ak-review.local.json`, then a global `~/.claude/ak-review.local.json`. Installing
 or updating `ak-review` therefore never forces a specific tool or model on anyone — see Configuration.
 
+Before any of that work happens, Phase 1 also runs the resolved adapter's preflight check (if it has
+one), confirming the tool can actually run before the prompt is built and any tickets are fetched — a
+missing tool would otherwise surface as a cryptic shell error mid-run. And because a hung run is not an
+empty run, Phase 3 caps execution at a 20-minute timeout: if it expires, the skill kills the process and
+salvages what already finished instead of discarding a paid, mostly-done run — completed sub-agent
+findings first (`extract-subagents.sh`), since those live in event-stream parts the normal report
+extractor cannot see, then whatever report prose and cost data survived.
+
 ## Usage
 
 ```text
