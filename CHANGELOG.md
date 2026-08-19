@@ -5,6 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.23.0] - 2026-08-19
+
+### ♻️ Changed
+
+- `ak-meta:handoff` — **The skill only ever fit one moment: being stuck.** It looked for "the current
+  unresolved problem", explicitly discarded anything already resolved, and had nothing to say about a
+  session that simply ended. That covers the rarest case and misses the ordinary one — a session that
+  reached its goal, or stopped half-way, and whose successor needs to know what was settled just as much
+  as what is open. The skill now captures a *session*, not a problem, and detects which of three states
+  it is in: `Blocked` (a problem that resisted several attempts), `In Progress` (moving but unfinished),
+  or `Complete` (goal reached). The state shifts the document's emphasis; `--blocked`, `--wip` and
+  `--done` override the detection when it guesses wrong. Resolved work is now recorded rather than
+  dropped.
+
+- `ak-meta:handoff` — **The handoff had no way to say what should happen next.** It described where the
+  work stopped and left the successor to infer the rest, which is exactly the part a human already knows
+  and the next agent cannot guess. `$ARGUMENTS` is now the mission for the next session, passed through
+  verbatim — `/ak-meta:handoff continue with ABC-123` puts that instruction at the top of the document,
+  ahead of any next step the skill would have derived on its own.
+
+### ✨ Added
+
+- `ak-meta:handoff` — **Three sections that answer what a fresh session actually asks first.** *Current
+  State* records the Git side — branch, uncommitted changes, commits made this session — which is the
+  most common blind spot on a session switch: what sits on disk versus what is committed. *Files
+  Touched* names each file with one sentence on why. *Decisions & Assumptions* separates a deliberate
+  choice from an unverified premise, so the next agent neither re-litigates a settled question nor
+  trusts something that was never checked.
+
+- `ak-meta:handoff` — **A fixed home for the document.** Handoffs are written to
+  `docs/handoffs/YYYY-MM-DD-<slug>.md`, mirroring `ak-meta:discover`'s `docs/discover/`, and a name
+  collision appends `-2` rather than overwriting. The safety rule is restated to match: code and Git are
+  read only, and the handoff document is the single file the skill writes — the old wording ("NEVER
+  modify code") would have read as forbidding the write it now performs.
+
 ## [1.22.3] - 2026-08-19
 
 ### 🐛 Fixed
