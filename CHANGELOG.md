@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.22.2] - 2026-08-19
+
+### 🐛 Fixed
+
+- `ak-review` markdown-format hook — **The config detection listed two file names that
+  `markdownlint-cli2` does not read.** `.markdownlint-cli2.json` and `.markdownlint-cli2.yml` have no
+  such form (only `.jsonc`, `.yaml`, `.cjs`, `.mjs` do), yet the hook accepted both as a project
+  config and therefore dropped the plugin config. The linter then ignored the file too, so a project
+  using either name silently lost both rule sets and fell back to bare markdownlint defaults. The
+  same list was missing `.markdownlint.cjs` and `.markdownlint.mjs`, which are valid. Both halves are
+  corrected and the list now carries a note to keep it in sync with what the tool actually reads.
+
+### ✨ Added
+
+- `ak-review` docs — **How to override the Markdown rules per project.** The hook has always deferred
+  to a project's own markdownlint config, but nothing said so. The hook documentation now covers the
+  resolution order, the valid config file names, and the fact that a project config *replaces* the
+  plugin config rather than merging with it — including why `extends` cannot be used to inherit the
+  AgentKit defaults.
+
+- `ak-review` docs — **Running Prettier alongside the hook.** Projects that format Markdown with
+  Prettier could end up in a rewrite loop with the hook. The cause is a single rule: the plugin
+  config pins `MD049` to `asterisk` while Prettier emits `_italic_`; markdownlint's own defaults are
+  Prettier-compatible. The documentation now shows both resolutions — `"fix": false` to make the hook
+  report-only, or `*.md` in `.prettierignore` to keep the hook as the formatter — and names `fix` as
+  the switch that decides which tool writes.
+
 ## [1.22.1] - 2026-08-16
 
 ### 🐛 Fixed
@@ -488,13 +515,15 @@ dependency skill predates the generator.
 
 - Extended `agents-md-improver` skill (ak-knowledge) with Task Completion Workflow check
   - Phase 2: audits existing workflow sections for stale commands, removed skills, renamed tools, and redundant steps
-  - Phase 4: delegates missing or stale workflow generation/audit to `/ak-review:workflow` (or `--audit` mode) instead of duplicating detection logic
+  - Phase 4: delegates missing or stale workflow generation/audit to `/ak-review:workflow` (or `--audit` mode) instead
+    of duplicating detection logic
   - Common Issues: new entry #8 for missing or outdated task completion workflow
 - Overhauled Task completion workflow in `AGENTS.md` with explicit Validate, Re-validate, and Version & Changelog steps
   - Step 1 Validate: documents JSON/shellcheck/markdown validation explicitly
   - Step 2 Simplify: prefers `/simplify` skill over `refactoring-expert` agent fallback
   - Step 3 Review: adds critical CodeRabbit evaluation reminder
-  - Step 6 Version & Changelog: delegates to `/bump-version` (full automation: 11 files + changelog + commit + tag) with `/ak-meta:changelog` as manual fallback
+  - Step 6 Version & Changelog: delegates to `/bump-version` (full automation: 11 files + changelog + commit + tag) with
+    `/ak-meta:changelog` as manual fallback
 
 ## [1.11.0] - 2026-04-05
 
@@ -507,10 +536,14 @@ dependency skill predates the generator.
   - Tier ratings: Platinum (90+), Gold (80+), Silver (70+), Bronze (60+)
   - Detects 7 quality issues (RIGID_LANGUAGE, WEAK_DESCRIPTION, MISSING_ACTIVATION, etc.)
 - New agent `quality-assessor` in ak-meta for expert scoring on 4 dimensions with anchored rubrics
-- New agent `diagram-creator` in ak-meta for Mermaid diagram generation (flowcharts, sequences, ERDs, state diagrams, C4, and more)
-- New knowledge file `hypothesis-debugging.md` in ak-improve with structured root cause analysis framework (6 failure mode categories, evidence standards, arbitration protocol)
-- New knowledge file `review-dimensions.md` in ak-review with 5 structured review dimensions (Security, Performance, Architecture, Testing, Accessibility) and 58 checklist items
-- New knowledge file `wcag-audit-patterns.md` in ak-review with comprehensive WCAG 2.2 coverage across all 4 POUR principles (60+ criteria, remediation patterns, automated testing)
+- New agent `diagram-creator` in ak-meta for Mermaid diagram generation (flowcharts, sequences, ERDs, state diagrams,
+  C4, and more)
+- New knowledge file `hypothesis-debugging.md` in ak-improve with structured root cause analysis framework (6 failure
+  mode categories, evidence standards, arbitration protocol)
+- New knowledge file `review-dimensions.md` in ak-review with 5 structured review dimensions (Security, Performance,
+  Architecture, Testing, Accessibility) and 58 checklist items
+- New knowledge file `wcag-audit-patterns.md` in ak-review with comprehensive WCAG 2.2 coverage across all 4 POUR
+  principles (60+ criteria, remediation patterns, automated testing)
 
 ## [1.10.1] - 2026-04-04
 
@@ -546,7 +579,8 @@ dependency skill predates the generator.
 
 ### Added
 
-- New plugin `ak-security` with 3 skills (code-security, llm-security, semgrep) and 43 knowledge files covering OWASP Top 10, LLM security, and Semgrep static analysis
+- New plugin `ak-security` with 3 skills (code-security, llm-security, semgrep) and 43 knowledge files covering OWASP
+  Top 10, LLM security, and Semgrep static analysis
 - New plugin `ak-react` with 2 skills (react-best-practices, react-doctor) and Vercel Engineering performance guide
 - New skill `discover` in ak-meta for divergent idea generation with adversarial filtering
 - New skill `agents-md-improver` in ak-knowledge for auditing and improving AGENTS.md files
@@ -592,7 +626,8 @@ Users with ak-core installed should:
 
 ### Added
 
-- ✨ ak-git: Automatic ticket detection from branch names — extracts issue IDs (e.g., `ABC-1234`) and prefixes commit messages automatically
+- ✨ ak-git: Automatic ticket detection from branch names — extracts issue IDs (e.g., `ABC-1234`) and prefixes commit
+  messages automatically
 
 ## [1.6.0] - 2026-02-27
 
@@ -602,14 +637,16 @@ Users with ak-core installed should:
 
 ### Changed
 
-- 🔄 ak-meta: Changelog skill now commits by default — replaced `--commit` with `--no-commit` opt-out, removed `--fast` and `--update-version` flags
+- 🔄 ak-meta: Changelog skill now commits by default — replaced `--commit` with `--no-commit` opt-out, removed `--fast`
+  and `--update-version` flags
 - 📝 README: Added Superpowers Extended to recommended plugins
 
 ## [1.5.0] - 2026-02-24
 
 ### Added
 
-- ✨ ak-core: agents-md skill now consolidates both CLAUDE.md and AGENTS.md when both exist — identifies the more comprehensive file as base and merges unique sections from the other
+- ✨ ak-core: agents-md skill now consolidates both CLAUDE.md and AGENTS.md when both exist — identifies the more
+  comprehensive file as base and merges unique sections from the other
 
 ## [1.4.0] - 2026-02-22
 
@@ -627,7 +664,8 @@ Users with ak-core installed should:
 
 ### Added
 
-- ✨ ak-core: Finalize skill now offers to create a task completion workflow when none exists — detects project tooling and generates project-specific steps
+- ✨ ak-core: Finalize skill now offers to create a task completion workflow when none exists — detects project tooling
+  and generates project-specific steps
 
 ## [1.2.1] - 2026-02-22
 
