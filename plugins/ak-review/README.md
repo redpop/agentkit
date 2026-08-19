@@ -27,6 +27,10 @@ task completion workflow, and file validation hooks.
 | shellcheck-validate | After Write/Edit | Lints shell scripts via ShellCheck |
 | skill-suggestions | After Write/Edit | Suggests relevant AgentKit skills |
 
+The Markdown hook honours a project's own markdownlint config when one exists and only falls back to
+the plugin defaults otherwise — see
+[Customizing Markdown rules per project](../../docs/hooks/ak-review/validation-hooks.md#customizing-markdown-rules-per-project).
+
 ## Usage
 
 /ak-review:coderabbit
