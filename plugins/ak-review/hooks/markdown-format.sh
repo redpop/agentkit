@@ -41,16 +41,18 @@ FILE_DIR=$(dirname "$FILE_PATH")
 # Check for project-specific config files (search up the directory tree)
 CURRENT_DIR="$FILE_DIR"
 while [ "$CURRENT_DIR" != "/" ]; do
+    # Must stay in sync with the config file names markdownlint-cli2 actually reads.
+    # Note the asymmetry: the -cli2 variants have no .json/.yml form, the plain ones do.
     if [ -f "$CURRENT_DIR/.markdownlint-cli2.jsonc" ] || \
-       [ -f "$CURRENT_DIR/.markdownlint-cli2.json" ] || \
        [ -f "$CURRENT_DIR/.markdownlint-cli2.yaml" ] || \
-       [ -f "$CURRENT_DIR/.markdownlint-cli2.yml" ] || \
        [ -f "$CURRENT_DIR/.markdownlint-cli2.cjs" ] || \
        [ -f "$CURRENT_DIR/.markdownlint-cli2.mjs" ] || \
        [ -f "$CURRENT_DIR/.markdownlint.jsonc" ] || \
        [ -f "$CURRENT_DIR/.markdownlint.json" ] || \
        [ -f "$CURRENT_DIR/.markdownlint.yaml" ] || \
-       [ -f "$CURRENT_DIR/.markdownlint.yml" ]; then
+       [ -f "$CURRENT_DIR/.markdownlint.yml" ] || \
+       [ -f "$CURRENT_DIR/.markdownlint.cjs" ] || \
+       [ -f "$CURRENT_DIR/.markdownlint.mjs" ]; then
         # Project has its own config, use it
         break
     fi
