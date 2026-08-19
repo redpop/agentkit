@@ -10,7 +10,7 @@ Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/
 | [**ak-improve**](#ak-improve--code-improvement) | — | 2 | Code refactoring and performance optimization agents |
 | [**ak-js**](#ak-js--javascript-config-doctor) | 1 | 1 | JS config validation, 11 cross-file rules, monorepo-aware |
 | [**ak-knowledge**](#ak-knowledge--solution-documentation) | 4 | 1 | Solution docs, knowledge maintenance, AGENTS.md tools |
-| [**ak-meta**](#ak-meta--project-management-tools) | 4 | 2 | Discovery, changelog generation, AI context handoff, quality assessment, diagrams |
+| [**ak-meta**](#ak-meta--project-management-tools) | 4 | 2 | Discovery, changelog generation, session handoff for the next AI session, quality assessment, diagrams |
 | [**ak-notifications**](#ak-notifications--macos-notifications) | — | — | macOS sound and banner notifications |
 | [**ak-react**](#ak-react--react--nextjs-development) | 2 | — | React and Next.js best practices, performance optimization, code scanning |
 | [**ak-review**](#ak-review--quality-assurance) | 9 | — | CodeRabbit review, code explanation, finalize workflow, workflow management, dependency update skill generation, external review delegation, unattended external-tool execution with guided setup, validation hooks |
@@ -135,7 +135,7 @@ and keep them up to date.
 ### ak-meta — Project Management Tools
 
 Discovery, changelog generation with automatic version detection, plugin quality
-assessment, and AI context handoff for cross-session collaboration.
+assessment, and session handoff so a fresh AI session can continue where the last one stopped.
 
 #### Skills
 
@@ -143,7 +143,7 @@ assessment, and AI context handoff for cross-session collaboration.
 |-------|---------|---------|
 | [`/ak-meta:discover`](docs/skills/ak-meta/discover.md) | Generate and evaluate improvement ideas with adversarial filtering | `/ak-meta:discover blog content Q3` |
 | [`/ak-meta:changelog`](docs/skills/ak-meta/changelog.md) | Update CHANGELOG.md with automatic version detection | `/ak-meta:changelog` |
-| [`/ak-meta:handoff`](docs/skills/ak-meta/handoff.md) | Create context handoff documents for other AI sessions | `/ak-meta:handoff` |
+| [`/ak-meta:handoff`](docs/skills/ak-meta/handoff.md) | Capture session state so the next AI session can continue | `/ak-meta:handoff continue with ABC-123` |
 | [`/ak-meta:quality`](docs/skills/ak-meta/quality.md) | Assess plugin component quality with 8-dimension scoring | `/ak-meta:quality plugins/ak-git/` |
 
 #### Agents

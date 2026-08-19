@@ -14,7 +14,7 @@ Skills are slash commands that users invoke directly in Claude Code via `/plugin
 | [refresh](ak-knowledge/refresh.md) | ak-knowledge | Review and maintain solution docs |
 | [discover](ak-meta/discover.md) | ak-meta | Generate improvement ideas with adversarial filtering |
 | [changelog](ak-meta/changelog.md) | ak-meta | Update CHANGELOG.md with version detection |
-| [handoff](ak-meta/handoff.md) | ak-meta | Create context handoff for other AI sessions |
+| [handoff](ak-meta/handoff.md) | ak-meta | Capture session state for the next AI session |
 | [quality](ak-meta/quality.md) | ak-meta | Assess plugin component quality with structured scoring |
 | [react-best-practices](ak-react/react-best-practices.md) | ak-react | React/Next.js performance optimization (65 rules) |
 | [react-doctor](ak-react/react-doctor.md) | ak-react | Scan React codebase for issues |

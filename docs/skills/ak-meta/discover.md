@@ -63,4 +63,4 @@ Combines a quantity hint with a constraint — narrows the shortlist to the thre
 ## Related
 
 - Brainstorming workflow (superpowers) — Takes a selected idea and defines it precisely
-- `/ak-meta:handoff` — Hand off context to another AI session
+- `/ak-meta:handoff` — Capture session state for the next AI session

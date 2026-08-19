@@ -56,4 +56,4 @@ Updates CHANGELOG.md, commits it, and pushes the commit to the remote in one ste
 ## Related
 
 - [ak-git:operations](../ak-git/operations.md) -- commit with conventional commit messages
-- [handoff](./handoff.md) -- document context for another AI session
+- [handoff](./handoff.md) -- capture session state for the next AI session

@@ -8,7 +8,7 @@ Project management utilities plugin for AgentKit.
 |-------|-------------|
 | `changelog` | AI-powered CHANGELOG.md management with automatic version detection |
 | `discover` | Surface and stress-test improvement opportunities across any project |
-| `handoff` | Documents current problem context for handoff to another AI assistant |
+| `handoff` | Captures session state — done, open, blocked — so the next AI session can continue |
 | `quality` | Assess plugin component quality with structural review and expert scoring |
 
 ## Agents
@@ -24,6 +24,7 @@ Project management utilities plugin for AgentKit.
 /ak-meta:changelog --fast
 /ak-meta:discover
 /ak-meta:handoff
+/ak-meta:handoff continue with ABC-123
 /ak-meta:quality plugins/ak-review/skills/coderabbit/
 /ak-meta:quality plugins/ak-typo3/agents/typo3-architect.md --quick
 /ak-meta:quality plugins/ak-git/ --compare plugins/ak-review/
