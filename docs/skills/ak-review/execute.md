@@ -17,10 +17,12 @@ or updating `ak-review` therefore never forces a specific tool or model on anyon
 Before any of that work happens, Phase 1 also runs the resolved adapter's preflight check (if it has
 one), confirming the tool can actually run before the prompt is built and any tickets are fetched — a
 missing tool would otherwise surface as a cryptic shell error mid-run. And because a hung run is not an
-empty run, Phase 3 caps execution at a 20-minute timeout: if it expires, the skill kills the process and
-salvages what already finished instead of discarding a paid, mostly-done run — completed sub-agent
-findings first (`extract-subagents.sh`), since those live in event-stream parts the normal report
-extractor cannot see, then whatever report prose and cost data survived.
+empty run, the adapter itself caps execution at a 20-minute ceiling (override with
+`AK_REVIEW_TIMEOUT_SECS`) and exits `124` when it fires — enforced inside the adapter rather than left to
+the calling agent, because an unattended harness may background the call and lose the timer. On a timeout
+the skill salvages what already finished instead of discarding a paid, mostly-done run — completed
+sub-agent findings first (`extract-subagents.sh`), since those live in event-stream parts the normal
+report extractor cannot see, then whatever report prose and cost data survived.
 
 ## Usage
 

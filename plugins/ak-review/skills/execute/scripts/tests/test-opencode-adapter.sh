@@ -106,4 +106,91 @@ set -e
 [ "$MISSING_EXIT" -eq 1 ] || fail "case 6: a missing prompt file must exit 1, got $MISSING_EXIT"
 [ "$USAGE_EXIT" -eq 1 ] || fail "case 6: a bad argument count must exit 1, got $USAGE_EXIT"
 
+# Case 7: a hung run is killed at the timeout and reported as 124.
+# The fake sleeps far longer than the ceiling; AK_REVIEW_TIMEOUT_SECS keeps the
+# test fast. 124 is GNU timeout's convention, so a caller can branch on the code
+# instead of parsing the message.
+OUT="$WORK/case7.jsonl"
+ERRTXT="$WORK/case7.err"
+cat > "$WORK/bin/opencode" <<'HANG'
+#!/bin/bash
+printf '%s\n' "$@" > "$FAKE_ARGV_FILE"
+echo '{"type":"text","part":"partial"}'
+sleep 60
+HANG
+chmod +x "$WORK/bin/opencode"
+
+START=$(date +%s)
+set +e
+AK_REVIEW_TIMEOUT_SECS=2 bash "$SCRIPT" "$PROMPT" some/model high "$OUT" 2> "$ERRTXT"
+TIMEOUT_EXIT=$?
+set -e
+ELAPSED=$(( $(date +%s) - START ))
+
+[ "$TIMEOUT_EXIT" -eq 124 ] || fail "case 7: expected exit 124 on timeout, got $TIMEOUT_EXIT"
+[ "$ELAPSED" -lt 30 ] || fail "case 7: the watchdog did not kill the run (took ${ELAPSED}s)"
+grep -q "TIMEOUT" "$ERRTXT" || fail "case 7: no timeout message was reported"
+grep -q "extract-subagents.sh" "$ERRTXT" || fail "case 7: the message must point at the salvage path"
+# The partial stream must survive the kill — the whole reason salvage works.
+grep -q '"partial"' "$OUT" || fail "case 7: the partial stream was lost when the run was killed"
+# The marker is internal bookkeeping and must not be left behind.
+[ ! -f "$OUT.timed-out" ] || fail "case 7: the timeout marker file was left on disk"
+
+# Case 8: a run that finishes inside the ceiling is untouched by the watchdog —
+# it must not add latency, and must not claim a timeout.
+cat > "$WORK/bin/opencode" <<'FAKE2'
+#!/bin/bash
+printf '%s\n' "$@" > "$FAKE_ARGV_FILE"
+[ -n "${FAKE_STDOUT:-}" ] && echo "$FAKE_STDOUT"
+[ -n "${FAKE_STDERR:-}" ] && echo "$FAKE_STDERR" >&2
+exit "${FAKE_EXIT:-0}"
+FAKE2
+chmod +x "$WORK/bin/opencode"
+
+OUT="$WORK/case8.jsonl"
+ERRTXT="$WORK/case8.err"
+START=$(date +%s)
+FAKE_STDOUT='{"type":"text"}' FAKE_STDERR='' FAKE_EXIT=0 \
+  AK_REVIEW_TIMEOUT_SECS=30 bash "$SCRIPT" "$PROMPT" some/model high "$OUT" 2> "$ERRTXT"
+ELAPSED=$(( $(date +%s) - START ))
+[ "$ELAPSED" -lt 10 ] || fail "case 8: the watchdog delayed a fast run by ${ELAPSED}s"
+grep -q "TIMEOUT" "$ERRTXT" && fail "case 8: a run inside the ceiling must not report a timeout"
+grep -q '{"type":"text"}' "$OUT" || fail "case 8: stdout was not captured"
+
+# Case 9: the timeout kills the whole process TREE, not just the direct child.
+# This is what `set -m` + `kill -- -PID` buys. opencode spawns several processes;
+# signalling only the child leaves the rest running, which is exactly what
+# happened on the hung run this watchdog was written for. The fake stands in for
+# that shape: a wrapper whose grandchild outlives a naive kill.
+#
+# Mutation note: removing `set -m` or the group kill does NOT turn this red — it
+# makes the case HANG, because the surviving grandchild holds the adapter's
+# inherited stdout open and `bash "$SCRIPT"` never returns. That is an ugly
+# failure signal but an honest one, and it is the strongest evidence for the
+# fix: without the group kill the adapter itself does not come back. Do not
+# "fix" the hang by narrowing the kill.
+OUT="$WORK/case9.jsonl"
+GRANDCHILD_PID_FILE="$WORK/case9.grandchild"
+cat > "$WORK/bin/opencode" <<'TREE'
+#!/bin/bash
+printf '%s\n' "$@" > "$FAKE_ARGV_FILE"
+echo '{"type":"text","part":"partial"}'
+sleep 120 &
+echo $! > "$GRANDCHILD_PID_FILE"
+wait
+TREE
+chmod +x "$WORK/bin/opencode"
+export GRANDCHILD_PID_FILE
+
+set +e
+AK_REVIEW_TIMEOUT_SECS=2 bash "$SCRIPT" "$PROMPT" some/model high "$OUT" 2> /dev/null
+set -e
+sleep 1
+GRANDCHILD_PID="$(cat "$GRANDCHILD_PID_FILE" 2> /dev/null || echo "")"
+[ -n "$GRANDCHILD_PID" ] || fail "case 9: the fake did not record its grandchild pid"
+if kill -0 "$GRANDCHILD_PID" 2> /dev/null; then
+  kill -KILL "$GRANDCHILD_PID" 2> /dev/null || true
+  fail "case 9: a grandchild survived the timeout — the kill did not reach the process group"
+fi
+
 echo "PASS: test-opencode-adapter.sh"

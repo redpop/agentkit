@@ -101,12 +101,18 @@ ${CLAUDE_PLUGIN_ROOT}/skills/execute/scripts/opencode-adapter.sh \
 
 (Omit the `$EFFORT` argument entirely, not as an empty string, when Phase 1 resolved it to `null`.)
 
-If `tool` matches no known adapter, stop and report which tools are implemented. Use a generous timeout
-(20 minutes) — this is long-running and produces no intermediate output; do not attempt to babysit it.
+If `tool` matches no known adapter, stop and report which tools are implemented. This is long-running
+and produces no intermediate output; do not attempt to babysit it.
 
-**If the timeout expires:** kill the process — `$RAW_OUTPUT_FILE` is written incrementally by the OS as
-the run goes, so it survives the kill. Do **not** fall through to the normal Phase 4 path below; go to
-the salvage path instead:
+**Where the ceiling is enforced:** an adapter is expected to enforce its own timeout and to exit `124`
+(GNU `timeout`'s convention) when it fires, because a ceiling the *caller* has to hold is the one that
+breaks in an unattended run — a harness may background the call and take the timer with it. `opencode`
+does this (20 min, override with `AK_REVIEW_TIMEOUT_SECS`). Still pass a generous timeout of your own
+as a backstop for an adapter that does not, but treat exit `124` as the definitive timeout signal.
+
+**If the run times out** (exit `124`, or your own backstop fires): kill the process if it is still
+up — `$RAW_OUTPUT_FILE` is written incrementally by the OS as the run goes, so it survives the kill.
+Do **not** fall through to the normal Phase 4 path below; go to the salvage path instead:
 
 ```bash
 ${CLAUDE_PLUGIN_ROOT}/skills/execute/scripts/extract-subagents.sh "$RAW_OUTPUT_FILE" > "$SUBAGENTS_FILE"
@@ -189,7 +195,7 @@ registry: an adapter is the set of scripts named after its tool under `scripts/`
 
 | Script | Contract | Required? |
 |--------|----------|-----------|
-| `<tool>-adapter.sh <prompt-file> <model> [effort] <raw-output-file>` | Runs the review, writing the tool's raw output to the given file. Exits with the tool's own exit code. | Yes |
+| `<tool>-adapter.sh <prompt-file> <model> [effort] <raw-output-file>` | Runs the review, writing the tool's raw output to the given file. Exits with the tool's own exit code — except on its own timeout, where it kills the tool's whole process group and exits `124`. **Enforcing a ceiling is the adapter's job, not the caller's:** an unattended caller may lose the timer, and a killed run is still salvageable because the raw output is written as the run goes. | Yes |
 | `<tool>-preflight.sh` | Exit 0 = ready, *or not provably unready*. Non-zero = cannot run, with the reason and the concrete fix on stderr. **An adapter must not block on a check it cannot make reliably — it either drops the check or notes the gap on stderr.** See the `opencode` entry for why this matters. | Optional; skipped if absent |
 | `<tool>-models.sh` | Prints one candidate per line, to stdout; the format is the tool's own and is not guaranteed. Used by `/ak-review:setup`. | Optional; setup asks the user to type a model if absent |
 
@@ -224,11 +230,15 @@ below.
   `auto-rejecting` there. **Check that warning before trusting a report** — a silently uninformed review is
   this adapter's most dangerous failure mode.
 - Output is a newline-delimited JSON event stream, always redirected straight to a file — see Phase 3/4.
-- **A run can hang, and a hung run is not an empty run.** Observed twice: the process sits at ~0% CPU and
-  emits no further events, once for over two hours. Two measurements minutes apart tell a hang from a slow
-  call — a single CPU reading cannot — and the absence of any open network connection is what proves it is
-  waiting on nothing. When the Phase 3 timeout expires, follow Phase 3's salvage path above — kill the
-  process, then run the extractors in this order:
+- **A run can hang, and a hung run is not an empty run.** Observed three times: the process sits at ~0% CPU
+  and emits no further events, once for over two hours, once for 83 minutes before a human asked about it.
+  Since then the adapter enforces its own ceiling (see above), so this should surface as exit `124` rather
+  than as an open-ended wait. Note that a hung `opencode` is **several** processes, not one — the adapter
+  kills the whole process group, and a manual cleanup needs `pkill -f opencode`, not a single `kill`.
+  Two measurements minutes apart tell a hang from a slow call — a single CPU reading cannot — and the
+  absence of any open network connection is what proves it is waiting on nothing. When the Phase 3
+  timeout expires, follow Phase 3's salvage path above — kill the process, then run the extractors in
+  this order:
   1. `extract-subagents.sh` **first.** The tool dispatches one sub-agent per review dimension and merges
      them only at the end, so a run that stalls before that still holds every finding the finished
      sub-agents produced. Those live in `tool_use` parts, which `extract-report.sh` cannot see.
@@ -236,8 +246,10 @@ below.
      narration — do not read a short result as "nothing was produced".
   3. `extract-cost.sh`, which works on a partial stream and reports what the run actually cost.
 
-  Measured on a real stalled run: `extract-report.sh` returned 91 characters of narration while 4085
-  characters of findings sat unread in a completed sub-agent result. After an external kill the adapter
+  Measured on two real stalled runs: `extract-report.sh` returned 91 characters of narration against
+  4085 characters of unread sub-agent findings in the first, and 416 against **31832** in the second —
+  five completed sub-agents whose entire output the normal path cannot see. A short `report.md` is not
+  evidence that the review found nothing. After an external kill the adapter
   never reaches its own warning, so read `<raw-output-file>.stderr` directly in that case; the file is
   written by the OS as the run goes and survives the kill.
 
