@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.22.3] - 2026-08-19
+
+### 🐛 Fixed
+
+- `ak-review:execute` — **The 20-minute ceiling on an external review run was never enforced anywhere it
+  could hold.** It existed only as an instruction to the calling agent in the skill, which is exactly the
+  guarantee that breaks in an unattended run: a harness may background the call and take the timer with it.
+  A hung `opencode` then ran for 83 minutes before a human asked about it. The ceiling now lives in the
+  `opencode` adapter itself, which kills the run at 20 minutes (override with `AK_REVIEW_TIMEOUT_SECS`) and
+  exits `124`, GNU `timeout`'s convention, so a caller can branch on the code instead of parsing text. The
+  adapter contract records this as an adapter's job rather than a caller's.
+
+- `ak-review:execute` — **A timeout killed one process and left the rest running.** `opencode` is several
+  processes, not one; signalling only the direct child left survivors that had to be cleared by hand with
+  `pkill`. The adapter now runs the tool in its own process group and signals the whole tree. A killed run
+  is still not a lost run — the JSON stream is written as the run goes, so the existing salvage path
+  recovers every finished sub-agent's findings from what is already on disk. The second stalled run held
+  31832 characters of sub-agent findings behind a 416-character report, which is why a short report must
+  never be read as "nothing was found".
+
 ## [1.22.2] - 2026-08-19
 
 ### 🐛 Fixed
