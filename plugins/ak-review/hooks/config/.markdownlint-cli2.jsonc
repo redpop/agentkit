@@ -23,8 +23,8 @@
     "MD041": false,
     // Code block style - use fenced blocks
     "MD046": { "style": "fenced" },
-    // Emphasis style - use asterisks
-    "MD049": { "style": "asterisk" },
+    // Emphasis style - match Prettier's default output (_italic_, **bold**)
+    "MD049": { "style": "underscore" },
     "MD050": { "style": "asterisk" },
     // Link fragments should be valid
     "MD051": false,

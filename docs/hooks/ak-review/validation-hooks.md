@@ -72,13 +72,40 @@ Two things to know:
 
 ### Using Prettier alongside the hook
 
-Prettier formats Markdown too, so a project that runs it via an npm script can end up in a loop: the
-hook rewrites what Prettier just wrote, and vice versa. In practice this comes down to a single rule
-— the plugin config pins `MD049` to `asterisk` while Prettier emits `_italic_`. markdownlint's own
-defaults are Prettier-compatible, since the style rules default to `consistent` and accept whatever
-Prettier produces.
+Prettier formats Markdown too, so a project that runs it via an npm script can end up fighting the
+hook: the hook rewrites what Prettier just wrote, and vice versa. In practice this comes down to two
+rules — the plugin config pins `MD049`/`MD050` to `asterisk` while Prettier emits `_italic_` and
+`**bold**`.
 
-Let one tool format and the other only report:
+markdownlint's own defaults leave the style rules on `consistent`, which is Prettier-compatible
+**only for files with a uniform emphasis style**. On mixed style, `consistent` normalizes to
+whichever marker appears first in the file — if that happens to be an asterisk, markdownlint fixes
+toward it and Prettier reverts it on the next run. Not an infinite loop, but a one-shot
+counter-format per file: diff noise, no benefit.
+
+**Recommended — calibrate the rules to Prettier's output.** Pin only the two rules that can disagree
+with Prettier, and drop what Prettier already owns:
+
+```jsonc
+// .markdownlint.jsonc
+{
+  "MD049": { "style": "underscore" }, // italic: Prettier emits _text_
+  "MD050": { "style": "asterisk" }, // bold: Prettier emits **text**
+
+  // Line length is Prettier's concern (proseWrap), not a lint error
+  "MD013": false
+}
+```
+
+Unlike `consistent`, this follows Prettier's output regardless of file content, so the direction is
+deterministic instead of depending on what happens to appear first. Both tools stay fully active and
+the hook can keep using `--fix`. Reach for this whenever Prettier formats Markdown in the project —
+the common case once it runs via an npm script. Prettier does not wrap prose by default
+(`proseWrap: "preserve"`), which MD013 cannot match — either disable MD013 as above, or set Prettier
+to `"proseWrap": "always"` with `printWidth` equal to `line_length`.
+
+**Alternative — make the hook report-only**, if you'd rather have Prettier own Markdown formatting
+end to end:
 
 ```jsonc
 // .markdownlint-cli2.jsonc
@@ -91,14 +118,17 @@ Let one tool format and the other only report:
 }
 ```
 
-The project config drops the plugin's `MD049` pin, and `"fix": false` overrides the `--fix` the hook
-always passes, so markdownlint reports but never writes. Note that Prettier does not wrap prose by
-default (`proseWrap: "preserve"`), which MD013 cannot fix — either disable MD013 or set Prettier to
-`"proseWrap": "always"` with `printWidth` equal to `line_length`.
+This drops the plugin's `MD049`/`MD050` pins, and `"fix": false` overrides the `--fix` the hook
+always passes, so markdownlint reports but never writes. The cost is auto-fix for every rule, not
+just the two that can disagree with Prettier.
 
-If you would rather keep the hook as the Markdown formatter — say Prettier is only in the project for
-JS and CSS — invert it instead: add `*.md` to `.prettierignore` and leave `"fix": true`. What matters
-is that exactly one of the two writes to Markdown; `fix` is the switch that decides which.
+**Alternative — keep the hook as the Markdown formatter**, if Prettier in the project only handles JS
+and CSS and never touches Markdown: add `*.md` to `.prettierignore` and leave `"fix": true`. If
+Prettier does format Markdown in the project, this gives up table alignment and a consistent
+`proseWrap` for no reason — calibrating the rules keeps both.
+
+Whichever option you pick, exactly one of the two tools should hold the deciding vote on each rule;
+`fix` and the rule pins are the switches that decide which.
 
 ## Best Practices
 
