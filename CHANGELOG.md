@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.23.1] - 2026-08-20
+
+### 🐛 Fixed
+
+- `ak-review` — The plugin's markdown-format hook pinned `MD049` (italic emphasis) to `asterisk`,
+  fighting any project that runs Prettier on Markdown: Prettier emits `_italic_`, so the two tools
+  rewrote each other's output on every pass whenever a file's existing style happened to start with
+  an asterisk. `MD049` now pins to `underscore`, matching Prettier's default, so the hook's `--fix`
+  and Prettier agree on direction instead of taking turns overwriting one another. Projects that
+  don't use Prettier for Markdown are unaffected in intent but will see existing `*italic*` text
+  rewritten to `_italic_` on the next hook run. Documented alongside the existing `"fix": false` and
+  `.prettierignore` alternatives in [validation-hooks.md](docs/hooks/ak-review/validation-hooks.md),
+  now with calibrating the rules to Prettier's output as the primary recommendation.
+
 ## [1.23.0] - 2026-08-19
 
 ### ♻️ Changed
