@@ -5,6 +5,54 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.24.3] - 2026-08-22
+
+### 🐛 Fixed
+
+All six items below came from an external review of `1.24.2`, run through `/ak-review:execute`'s own
+codex adapter and verified against the code before being applied.
+
+- `ak-review:execute` — **`SKILL.md` still told the calling agent that a startup stall is "not
+  something to retry automatically", which `1.24.2` had just made false.** The adapter had gained a
+  retry loop while the instruction describing the old behaviour stayed put — precisely the defect
+  `AGENTS.md` warns about. Phase 3 now explains that a transient failure is retried _inside_ the
+  adapter, so a surfaced `125` already means every attempt stalled and retrying again would repeat a
+  failed strategy.
+
+- `ak-review:execute` — **A `125` from opencode itself was reported as the adapter's own "never
+  started" signal.** `125` is reserved for the marker-confirmed startup stall; passing the tool's use
+  of it straight through told the caller "every attempt stalled, nothing to salvage" about an ordinary
+  tool failure. It is now remapped to `1` with an explicit note, and the tool's stderr still carries
+  the real reason.
+
+- `ak-review:execute` — **A run killed at the startup probe could lose output it had just produced.**
+  The probe checks for an empty file and then signals the process; a tool that flushes while being
+  signalled lands in that gap, and the next attempt's `>` truncated it. Worse, the run could end as
+  `125` with a _non-empty_ file, contradicting exactly what that code promises. Retry now requires the
+  marker **and** a still-empty stream, and a killed run that did produce output is reported as `124`
+  so the partial stream is salvaged.
+
+- `ak-review:execute` — **A non-numeric `AK_REVIEW_*` value aborted mid-run with no diagnostic.** It
+  reached `sleep`, failed under `set -e`, and killed the adapter before any of its error reporting
+  ran. All four variables are now validated up front, naming the offending one.
+
+- `ak-review:execute` — **A startup grace at or above the ceiling let the two watchdogs race**, so a
+  genuine timeout could be recorded as a startup stall and retried. The adapter now rejects that
+  configuration outright, since the startup probe is only meaningful if it fires first.
+
+- `ak-review:execute` — **`AK_REVIEW_TIMEOUT_SECS` no longer bounds the whole invocation** once
+  retries are enabled, which was true since `1.24.2` but undocumented. Each attempt gets a fresh
+  ceiling and the retry waits sit outside it, so the worst case is
+  `retries × (startup_grace + retry_wait) + timeout` — roughly 25 minutes at the defaults. Documented,
+  with `AK_REVIEW_STARTUP_RETRIES=0` as the way to make the ceiling absolute again.
+
+### ✅ Tests
+
+- `ak-review:execute` — Four cases covering the above: a tool-originated `125`, a deterministic
+  failure that must not be retried (stated in `1.24.2`'s commit message but never pinned), output
+  flushed from a `SIGTERM` trap, and a rejected non-numeric env value. Existing timeout cases now set
+  a startup grace explicitly, since they had relied on a combination the adapter now refuses.
+
 ## [1.24.2] - 2026-08-22
 
 ### ✨ Added
