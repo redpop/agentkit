@@ -36,7 +36,7 @@ Parse `$ARGUMENTS` for mode:
 
 | Argument | Mode |
 |---|---|
-| *(none)* | **Generate** — Scan project, interview the gaps, write the skill |
+| _(none)_ | **Generate** — Scan project, interview the gaps, write the skill |
 | `--audit` | **Audit** — Check an existing skill against the project's current state |
 
 ## Mode: Generate
@@ -80,7 +80,7 @@ Renovate config block in `package.json`. If one exists, the generated skill star
 
 ### Step 3: Detect the baseline
 
-The baseline is every check that must be green *before* the first version changes. Collect the commands from the
+The baseline is every check that must be green _before_ the first version changes. Collect the commands from the
 manifest's scripts or the ecosystem defaults: type check, lint, unit tests, integration/E2E tests, build.
 
 Then look specifically for a **second kind of baseline** — one that catches what a functional suite cannot. This is
@@ -109,7 +109,7 @@ Also check whether the test runner swallows console output — Vitest intercepts
 `${CLAUDE_PLUGIN_ROOT}/knowledge/dependency-update-methodology.md` §5. An exact pin is a decision someone made; the
 generated skill must not silently loosen it.
 
-**What determines the result but is *not* pinned?** Ask this separately, because it is the question a
+**What determines the result but is _not_ pinned?** Ask this separately, because it is the question a
 pin-versus-range comparison never reaches: a package that was never pinned looks the same on every run. Cross the
 detected formatters, linters, browser engines, compilers and the package manager against the exact-pin list from
 above; anything on the first list and missing from the second carries a range on something whose version decides
@@ -242,7 +242,7 @@ this skill. Add what you find there rather than to this file.
 {second baseline result}, final state versus baseline, observations folded in.}
 ````
 
-**Write no claim that expires on its own.** A ticket number, a milestone or a release named as the *current* one is
+**Write no claim that expires on its own.** A ticket number, a milestone or a release named as the _current_ one is
 true on the day it is written and silently false afterwards — the generated skill has no way to notice, and the
 next reader has no reason to doubt it. State the rule instead ("a major goes in its own ticket with its own
 verification"); closed tickets may still be cited, but only where they are introduced as past examples. The same
@@ -273,7 +273,7 @@ the flag.
 ### Step 2: Re-run detection
 
 Repeat Generate Steps 2-4. Do not repeat Step 5 — an audit must not re-interview the user about answers the skill
-already records. Ask only where a *new* trigger fired that the skill has no answer for.
+already records. Ask only where a _new_ trigger fired that the skill has no answer for.
 
 ### Step 3: Compare
 
@@ -289,7 +289,7 @@ already records. Ask only where a *new* trigger fired that the skill has no answ
 | A version string now appears in more files than the skill states | Coupling grew |
 | An install was added or removed | Scope statement stale |
 | An automated update source appeared | Renovate/Dependabot now opens the PRs |
-| The skill names a ticket, issue or milestone as the *current* one | Check whether it is still open. A named "current" ticket is a claim with an expiry date, and it expires silently |
+| The skill names a ticket, issue or milestone as the _current_ one | Check whether it is still open. A named "current" ticket is a claim with an expiry date, and it expires silently |
 
 ### Step 4: Report
 

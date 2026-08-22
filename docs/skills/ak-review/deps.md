@@ -42,7 +42,7 @@ is safe.
 
 ## Why generated, not generic
 
-A generic dependency skill can say "take a baseline". It cannot say *which* baseline, and that is where the value
+A generic dependency skill can say "take a baseline". It cannot say _which_ baseline, and that is where the value
 sits. A dependency bump can pass every behavioural test and still be wrong — a CSS framework bump that changes a
 button border leaves a full E2E suite green, because the tests assert the fill and the fill is still right. Only a
 project that knows it has a pixel comparison can be told to run it.
@@ -63,7 +63,7 @@ read by whoever picks up the next update.
 |---|---|
 | Ecosystem and installs | Package manager (via lockfile), update commands, how many independent installs share the repo, whether Renovate/Dependabot opens the PRs |
 | Baseline | Type check, lint, test, build commands, and which of them CI runs |
-| Second baseline | Visual regression, bundle-size budget, benchmark, structural snapshot, Lighthouse budget — plus what each one does *not* cover |
+| Second baseline | Visual regression, bundle-size budget, benchmark, structural snapshot, Lighthouse budget — plus what each one does _not_ cover |
 | Pins and couplings | What is already pinned exactly, what determines the result but carries a range anyway, which versions appear in more than one file, and where CI masks a drift |
 
 Manifest, config and lockfile signals come from `knowledge/project-tooling-detection.md`, shared with
@@ -96,7 +96,7 @@ to settle it — never as an invented rule.
 1. Read the existing skill
 2. Re-run detection (no re-interview)
 3. Compare, separating project drift from skill drift — including two checks that a
-   before/after comparison cannot reach: a result-determining package that has *always* carried a range, and a
+   before/after comparison cannot reach: a result-determining package that has _always_ carried a range, and a
    ticket the skill names as the current one but which has since closed
 4. Report, project drift first
 5. Offer to fix the document; report project drift for the user to decide on

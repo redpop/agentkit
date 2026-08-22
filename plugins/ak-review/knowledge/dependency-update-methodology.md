@@ -6,7 +6,7 @@ what `/ak-review:deps` draws on so it composes a method rather than inventing on
 
 ## 1. Baseline first, as numbers
 
-Run every check *before* changing a single version and write the results down, including warning, hint and info
+Run every check _before_ changing a single version and write the results down, including warning, hint and info
 counts. Not pass/fail: the counts are what later distinguishes "this bump caused it" from "that was already there".
 
 **Read the output, do not filter it.** Piping a build through `grep "built in"` to keep the transcript tidy throws
@@ -46,7 +46,7 @@ Four rules that hold in every ecosystem:
 - **A/B swap a version to test whether a message is new.** Install the old version, run the check, install the new
   one, compare. Two commands, and it settles "did this bump cause the warning" instead of leaving it open.
 - **Never run a migration command blindly** (`biome migrate --write`, `eslint --migrate-config`, `rector process`
-  and their kind). Run it on a copy, read the result, and verify the *effect*, not the exit code.
+  and their kind). Run it on a copy, read the result, and verify the _effect_, not the exit code.
 - **A non-zero exit is not automatically a failure, and a failure is not automatically real.** A build that stops at
   a signing or publishing step may have produced every artifact first. A check may fail because a previous command
   left the wrong build in place. Look at what was produced before calling either one broken.
@@ -64,11 +64,11 @@ before anything that changes what is rendered, so a difference has one possible 
 
 ## 5. Pin what determines the result
 
-Pin exactly — no caret, no tilde — anything whose version decides the *outcome* rather than merely what installs:
+Pin exactly — no caret, no tilde — anything whose version decides the _outcome_ rather than merely what installs:
 formatters, linters, browser engines, compilers, the package manager itself. A caret on those turns a reproducible
 check into a moving target.
 
-The listing below is only half the check. The other half is which result-determining packages are *missing* from
+The listing below is only half the check. The other half is which result-determining packages are _missing_ from
 it — a package that was never pinned looks identical on every run, so nothing but an outright check will surface it.
 
 To list what a project already treats that way:

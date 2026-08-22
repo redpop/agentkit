@@ -34,7 +34,7 @@ If no workflow found: proceed to Phase 2b.
 
 If found, the section body is in one of two shapes — determine which before moving on:
 
-- **Pointer form**: the section is a short paragraph referencing a skill file path, e.g. `.claude/skills/task-completion/SKILL.md`. Extract that path, Read the file, and treat *its* body as the workflow to parse in Phase 3 (that file has its own numbered steps). If the path doesn't resolve to an existing file, stop and tell the user the pointer is broken — do not silently continue with zero steps.
+- **Pointer form**: the section is a short paragraph referencing a skill file path, e.g. `.claude/skills/task-completion/SKILL.md`. Extract that path, Read the file, and treat _its_ body as the workflow to parse in Phase 3 (that file has its own numbered steps). If the path doesn't resolve to an existing file, stop and tell the user the pointer is broken — do not silently continue with zero steps.
 - **Inline form**: the section itself contains the numbered steps directly. Parse it as-is in Phase 3.
 
 If the section matches neither shape (no pointer, no numbered list), stop and report that the workflow section exists but has no actionable steps — do not proceed to Phase 3 as if it had steps.
