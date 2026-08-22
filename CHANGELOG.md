@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.24.1] - 2026-08-22
+
+### 🐛 Fixed
+
+- `ak-review:execute` — **The opencode adapter could fail with zero bytes, no error, and a message
+  that sent the reader after output which could not exist.** `opencode run` intermittently produces
+  nothing at all and never returns; the adapter reported that as its ordinary 20-minute timeout, so
+  every layer above it said "timed out — run the salvage path" against an empty file. It now caps
+  _startup_ separately (90s, `AK_REVIEW_STARTUP_GRACE_SECS`) and exits **`125`** instead of `124` when
+  no bytes have arrived, stating plainly that the run never reached the model and there is nothing to
+  salvage. A run that produces output and _then_ hangs is unchanged: still `124`, still salvageable.
+
+- `ak-review:execute` — **The adapter discarded the only diagnostic that exists for that failure.** On
+  a stall, opencode's stderr is empty, which reads as "nothing went wrong" when in fact nothing
+  happened. The adapter now passes `--print-logs --log-level DEBUG`; the output lands in
+  `<raw-output-file>.stderr` and the JSON stream stays untouched (verified on a live run: every stdout
+  line still parsed, 26 log lines went to the sidecar).
+
+### 📝 Documented
+
+- `ak-review:execute` — **Where the opencode stall actually happens**, which was previously unknown and
+  is now pinned by measurement. The evidence is opencode's _own_ log
+  (`~/.local/share/opencode/log/opencode.log`), not the event stream: a healthy run logs `init` then
+  immediately `created id=ses_…`; a stalled one logs `init` and stops forever. It therefore dies inside
+  **session creation**, before the model is ever called — and `opencode serve` started during a stall
+  failed with `database is locked`, pointing the same way. The root cause is upstream in opencode
+  (seen on `1.18.21`) and is _not_ fixed here. Ruled out by measurement, each with a paired control:
+  the database, config and plugins, stale processes, run cadence, and a concurrent instance holding
+  the DB. The Adapter Reference also records the methodological trap — the failure comes in windows of
+  minutes during which everything stalls, so an unpaired comparison produces a confident wrong answer.
+
 ## [1.24.0] - 2026-08-22
 
 ### ✨ Added
