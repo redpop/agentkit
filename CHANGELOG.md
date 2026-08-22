@@ -5,6 +5,65 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.24.0] - 2026-08-22
+
+### ✨ Added
+
+- `ak-review:execute` — **A `codex` adapter, so the skill is no longer a one-tool abstraction.** The
+  adapter convention existed from the start but had only ever been exercised by `opencode`, which meant
+  a handful of `opencode`-shaped assumptions had quietly hardened into the contract. Codex differs in
+  every one of them: a bare model name instead of `provider/model`, reasoning effort as
+  `-c model_reasoning_effort=…` instead of a flag (`--reasoning-effort` was removed in codex v0.50),
+  and a completely different event schema. Verified against `codex-cli 0.149.0`, including a live
+  end-to-end run.
+
+- `ak-review:execute` — **The codex adapter runs with `--sandbox read-only`.** `delegate`'s contract has
+  always been that the external agent only reports and never edits, but with `opencode` that was an
+  instruction the prompt gave and the permission config had to be trusted to honour. Codex can enforce
+  it structurally: the agent cannot write to the repository even if something told it to. The adapter
+  also passes `--ignore-user-config`, because a real `~/.codex/config.toml` drags MCP servers, hooks and
+  plugins into the run — measured on one, that meant failing auth handshakes and the review's own
+  context being crowded out by _"skill descriptions were shortened to fit the skills context budget"_.
+
+- `ak-review:execute` — **`codex-preflight.sh` checks authentication, which `opencode-preflight.sh`
+  deliberately does not.** That is not an inconsistency. opencode's auth check was removed in 1.17.1
+  because the only available signal was human-readable TUI output, and parsing it hard-blocked correctly
+  authenticated users; the rule that came out of it was "no auth check without a machine-readable
+  signal". `codex login status` supplies exactly that — exit `0` authenticated, exit `1` not — so the
+  verdict comes from an exit code and never from parsed text.
+
+### ♻️ Changed
+
+- `ak-review:execute` — **The output extractors are now part of the adapter, and named for it.**
+  `extract-report.sh`, `extract-cost.sh` and `extract-subagents.sh` read `opencode`'s event schema and
+  nothing else, but their generic names and unqualified call sites in `SKILL.md` presented them as
+  shared infrastructure. Pointing one tool's extractor at another tool's stream does not error — it
+  returns an empty report, which is indistinguishable from a clean review. They are now
+  `opencode-extract-*.sh`, joined by `codex-extract-*.sh`, and the adapter contract table lists them
+  alongside the adapter and preflight scripts.
+
+- `ak-review:execute` — **Cost reporting no longer assumes the tool reports cost.** Codex emits token
+  counts and no monetary figure at all, so `codex-extract-cost.sh` returns `"total_cost": null` and
+  Phase 8 now says the tool reports no cost instead of printing `$0.00`. Zero and "not reported" are
+  different claims and only one of them is true.
+
+- `ak-review:setup` — **The model and effort prompts no longer describe only `opencode`'s formats.**
+  Phase 4 presented `provider/model` as _the_ shape a model identifier has, and Phase 6 named
+  `--variant` as _the_ effort mechanism. Both are per-adapter: codex takes a bare model name and one of
+  `none|minimal|low|medium|high|xhigh|max`. Codex has no non-interactive model listing, so it uses the
+  existing typed-entry fallback rather than shipping a `codex-models.sh` that could not work.
+
+### 🐛 Fixed
+
+- `ak-review:execute` — **The adapter watchdog leaked a `sleep` process on every single run, and could
+  wedge a piped caller for 20 minutes.** Tearing the watchdog down killed the subshell but not the
+  `sleep` it was blocked in, which survived as an orphan still holding whatever stdout it inherited. A
+  caller reading the adapter's output through a pipe therefore never saw EOF and hung until the orphan
+  timed out. Found while building the codex adapter from this code, where it turned the new test suite
+  from failing into hanging. The watchdog now runs in its own process group and is killed by group, with
+  its descriptors pointed at `/dev/null` so no watchdog process holds the caller's stdout at all. Fixed
+  in both `opencode-adapter.sh` and `codex-adapter.sh`.
+
 ## [1.23.1] - 2026-08-20
 
 ### 🐛 Fixed
@@ -27,7 +86,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   unresolved problem", explicitly discarded anything already resolved, and had nothing to say about a
   session that simply ended. That covers the rarest case and misses the ordinary one — a session that
   reached its goal, or stopped half-way, and whose successor needs to know what was settled just as much
-  as what is open. The skill now captures a *session*, not a problem, and detects which of three states
+  as what is open. The skill now captures a _session_, not a problem, and detects which of three states
   it is in: `Blocked` (a problem that resisted several attempts), `In Progress` (moving but unfinished),
   or `Complete` (goal reached). The state shifts the document's emphasis; `--blocked`, `--wip` and
   `--done` override the detection when it guesses wrong. Resolved work is now recorded rather than
@@ -41,10 +100,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### ✨ Added
 
-- `ak-meta:handoff` — **Three sections that answer what a fresh session actually asks first.** *Current
-  State* records the Git side — branch, uncommitted changes, commits made this session — which is the
-  most common blind spot on a session switch: what sits on disk versus what is committed. *Files
-  Touched* names each file with one sentence on why. *Decisions & Assumptions* separates a deliberate
+- `ak-meta:handoff` — **Three sections that answer what a fresh session actually asks first.** _Current
+  State_ records the Git side — branch, uncommitted changes, commits made this session — which is the
+  most common blind spot on a session switch: what sits on disk versus what is committed. _Files
+  Touched_ names each file with one sentence on why. _Decisions & Assumptions_ separates a deliberate
   choice from an unverified premise, so the next agent neither re-litigates a settled question nor
   trusts something that was never checked.
 
@@ -90,7 +149,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `ak-review` docs — **How to override the Markdown rules per project.** The hook has always deferred
   to a project's own markdownlint config, but nothing said so. The hook documentation now covers the
-  resolution order, the valid config file names, and the fact that a project config *replaces* the
+  resolution order, the valid config file names, and the fact that a project config _replaces_ the
   plugin config rather than merging with it — including why `extends` cannot be used to inherit the
   AgentKit defaults.
 
@@ -109,7 +168,7 @@ All three findings come from the first real run of `--audit` against a project w
 dependency skill predates the generator.
 
 - `ak-review:deps` — **The audit could only see changes, never standing gaps.** Every check compared
-  the project against what the skill already recorded, so a package that was *never* pinned looked
+  the project against what the skill already recorded, so a package that was _never_ pinned looked
   identical on every run and stayed invisible. The real run showed this exactly: Biome and Playwright
   were pinned exactly in both installs while TypeScript carried a caret in both — a compiler, whose
   version decides the result rather than merely what installs, and precisely what the methodology
@@ -141,14 +200,14 @@ dependency skill predates the generator.
   procedure that does.
 
   The reason it generates rather than generalizes: a generic dependency skill can say "take a
-  baseline", but not *which* baseline — and that is where the safety lives. A dependency bump can
+  baseline", but not _which_ baseline — and that is where the safety lives. A dependency bump can
   pass every behavioural test and still be wrong, because tests assert behaviour and a CSS
   framework bump that moves a border leaves a full E2E suite green. Only a project that knows it
   has a pixel comparison can be told to run it.
 
   Detection covers four axes the existing tooling scan did not: **install boundaries** (manifests
   with their own lockfiles are separate projects), **the baseline** including a deliberate hunt for
-  a *second* kind of baseline (visual regression, bundle-size budget, benchmark, structural
+  a _second_ kind of baseline (visual regression, bundle-size budget, benchmark, structural
   snapshot, Lighthouse budget) together with what each one fails to cover, **exact pins** versus
   ranges, and **couplings** — the same version string duplicated across manifests, CI config,
   Dockerfiles and documentation.
@@ -217,7 +276,7 @@ dependency skill predates the generator.
   not check authentication** — that check existed and was removed after three attempts. `opencode auth
   list` exits 0 in both states, so only its ANSI-decorated output distinguishes them, and three
   successive escape-stripping patterns were each defeated by a different escape class, every time by
-  wrongly hard-blocking a *correctly authenticated* user. Deriving a gate from human-readable TUI
+  wrongly hard-blocking a _correctly authenticated_ user. Deriving a gate from human-readable TUI
   output is unbounded. An unauthenticated tool fails instantly and for free and says so itself, so the
   check bought a nicer message at the cost of the worst failure mode there is.
 
@@ -412,7 +471,7 @@ dependency skill predates the generator.
 - `ak-review:workflow` + `AGENTS.md` — Review workflow bullet renamed from
   **"Optional delegated review"** to **"Delegated review"**: the "Optional" label caused
   agents to skip the entire bullet (including the mandatory user prompt) rather than just
-  making the *execution* optional. Asking the user is now framed as a required step.
+  making the _execution_ optional. Asking the user is now framed as a required step.
 - `ak-knowledge:agents-md-improver` — Added Common Issues item 8: checks that `AGENTS.md`
   carries the symlink notice when `CLAUDE.md` is a symlink pointing to it. Removed a
   redundant prose block in Phase 1 that duplicated the same rule already expressed in
