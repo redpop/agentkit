@@ -111,6 +111,13 @@ breaks in an unattended run — a harness may background the call and take the t
 timeout of your own as a backstop for an adapter that does not, but treat exit `124` as the definitive
 timeout signal.
 
+**If the adapter exits `125`, the run never started — stop, and do not salvage.** This is a distinct
+failure from a timeout: the tool produced no bytes at all, so there is no partial stream and nothing
+to recover. Report the adapter's stderr verbatim and stop; do not run the extractors, and do not
+describe the result as "the review found nothing", because no review took place. Re-running later is
+the appropriate response, which is a decision for the user rather than something to retry
+automatically in an unattended run.
+
 **If the run times out** (exit `124`, or your own backstop fires): kill the process if it is still
 up — `$RAW_OUTPUT_FILE` is written incrementally by the OS as the run goes, so it survives the kill.
 Do **not** fall through to the normal Phase 4 path below; go to the salvage path instead. Run every
@@ -213,7 +220,7 @@ registry: an adapter is the set of scripts named after its tool under `scripts/`
 
 | Script | Contract | Required? |
 |--------|----------|-----------|
-| `<tool>-adapter.sh <prompt-file> <model> [effort] <raw-output-file>` | Runs the review, writing the tool's raw output to the given file. Exits with the tool's own exit code — except on its own timeout, where it kills the tool's whole process group and exits `124`. **Enforcing a ceiling is the adapter's job, not the caller's:** an unattended caller may lose the timer, and a killed run is still salvageable because the raw output is written as the run goes. | Yes |
+| `<tool>-adapter.sh <prompt-file> <model> [effort] <raw-output-file>` | Runs the review, writing the tool's raw output to the given file. Exits with the tool's own exit code, except for two reserved codes: `124` when its own ceiling fires (process group killed, partial stream salvageable) and `125` when the tool produced **no bytes at all** and never started (nothing to salvage). **Enforcing both is the adapter's job, not the caller's:** an unattended caller may lose the timer, and the two failures need opposite advice. | Yes |
 | `<tool>-preflight.sh` | Exit 0 = ready, _or not provably unready_. Non-zero = cannot run, with the reason and the concrete fix on stderr. **An adapter must not block on a check it cannot make reliably — it either drops the check or notes the gap on stderr.** See the `opencode` entry for why this matters. | Optional; skipped if absent |
 | `<tool>-extract-report.sh <raw-output-file>` | Prints the agent's report to stdout. Exits non-zero when the stream carries no report at all — that is an honest signal, not a parse failure, and must not be smoothed into an empty report. | Yes |
 | `<tool>-extract-cost.sh <raw-output-file>` | Prints `{"total_cost":…,"total_tokens":…}`. `total_cost` is `null` when the tool reports no money — never `0`, which would falsely claim the run was free. Extra keys are fine. Must degrade to zeros on a truncated stream rather than failing, so a salvaged report is not lost with it. | Yes |
@@ -256,6 +263,22 @@ below.
   `auto-rejecting` there. **Check that warning before trusting a report** — a silently uninformed review is
   this adapter's most dangerous failure mode.
 - Output is a newline-delimited JSON event stream, always redirected straight to a file — see Phase 3/4.
+- **A run can also stall at startup and produce nothing at all — exit `125`, not `124`.** Distinct from
+  the hang below, and far more confusing, because it yields zero bytes and no error. Measured
+  repeatedly on opencode `1.18.21`. What localises it is opencode's **own log**
+  (`~/.local/share/opencode/log/opencode.log`), not the event stream: a healthy run logs `init` and
+  then immediately `created id=ses_…`, `loop`, `stream`; a stalled run logs `init` and stops forever.
+  So it dies inside **session creation** — before the model is ever called. (`opencode serve` started
+  during one stall failed outright with `database is locked`, pointing the same way.)
+  The root cause is upstream and remains unidentified; these were ruled out **by measurement**, each
+  with a paired control run: the database (moved aside — still stalled), config and plugins (empty
+  `XDG_CONFIG_HOME` — still stalled once re-tested), stale processes (none survived), and a concurrent
+  instance holding the DB (no effect). It appears in windows of minutes during which _everything_
+  stalls, and disappears just as broadly — **so any single comparison is worthless unless paired with
+  a control run in the same minute.** An unpaired bisect will produce a confident, wrong answer; that
+  has already happened twice on this bug. The adapter now caps startup at 90s
+  (`AK_REVIEW_STARTUP_GRACE_SECS`) and passes `--print-logs --log-level DEBUG`, whose output lands in
+  `<raw-output-file>.stderr` and is the only diagnostic that exists on a stall. Retrying later works.
 - **A run can hang, and a hung run is not an empty run.** Observed three times: the process sits at ~0% CPU
   and emits no further events, once for over two hours, once for 83 minutes before a human asked about it.
   Since then the adapter enforces its own ceiling (see above), so this should surface as exit `124` rather

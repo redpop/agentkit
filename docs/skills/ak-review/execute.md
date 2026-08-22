@@ -27,6 +27,13 @@ normal report extractor cannot see. Codex has no sub-agents and emits its answer
 the end, so a killed Codex run usually has nothing to salvage — its report extractor exits non-zero to
 say so rather than returning an empty report that would read as "no issues found".
 
+A run that never starts is treated as its own failure, separate from a timeout. The OpenCode adapter
+also caps _startup_ (90 s, override with `AK_REVIEW_STARTUP_GRACE_SECS`) and exits `125` when the tool
+has produced no output at all by then — because that means it never reached the model, so there is no
+partial stream and nothing to salvage. Reporting it as a timeout sent readers after output that could
+not exist, and cost a full ceiling per attempt. See the skill's Adapter Reference for the measurements
+behind this and for how to tell the two failures apart in OpenCode's own log.
+
 ## Usage
 
 ```text
