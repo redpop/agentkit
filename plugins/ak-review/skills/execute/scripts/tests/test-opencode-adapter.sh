@@ -193,4 +193,88 @@ if kill -0 "$GRANDCHILD_PID" 2> /dev/null; then
   fail "case 9: a grandchild survived the timeout — the kill did not reach the process group"
 fi
 
+# ---------------------------------------------------------------------------
+# Cases 10-12 cover the ZERO-BYTE stall, which is a different failure from the
+# mid-run hang above and was previously indistinguishable from it.
+#
+# Measured on opencode 1.18.21: `opencode run` intermittently produces no bytes
+# at all and never returns. The comparison that localises it is in the tool's
+# own log (~/.local/share/opencode/log/opencode.log): a healthy run logs
+# `init` then immediately `created id=ses_...`; a stalled run logs `init` and
+# nothing further. So it dies during SESSION CREATION — before the first event,
+# before the model is ever called.
+#
+# That distinction matters to the caller: a run that never started has nothing
+# to salvage, while a run that stopped after 300 events has plenty. Reporting
+# both as "TIMEOUT — run the salvage path" sent the reader after output that
+# cannot exist.
+# ---------------------------------------------------------------------------
+
+# Case 10: no bytes within the startup grace -> exit 125, killed early.
+# The fake never writes anything, mimicking the stall exactly.
+OUT="$WORK/case10.jsonl"
+ERRTXT="$WORK/case10.err"
+cat > "$WORK/bin/opencode" <<'SILENT'
+#!/bin/bash
+printf '%s\n' "$@" > "$FAKE_ARGV_FILE"
+sleep 120
+SILENT
+chmod +x "$WORK/bin/opencode"
+
+START=$(date +%s)
+set +e
+AK_REVIEW_STARTUP_GRACE_SECS=3 AK_REVIEW_TIMEOUT_SECS=120 \
+  bash "$SCRIPT" "$PROMPT" some/model high "$OUT" 2> "$ERRTXT"
+SILENT_EXIT=$?
+set -e
+ELAPSED=$(( $(date +%s) - START ))
+
+[ "$SILENT_EXIT" -eq 125 ] || fail "case 10: a zero-byte stall must exit 125 (not 124), got $SILENT_EXIT"
+# The whole point is not burning the full ceiling: 120s ceiling, 3s grace.
+[ "$ELAPSED" -lt 40 ] || fail "case 10: the startup probe did not fire early (took ${ELAPSED}s of a 120s ceiling)"
+grep -qi "never produced any output" "$ERRTXT" || fail "case 10: message must say the run produced nothing"
+# Must NOT send the reader to the salvage path — there is nothing to salvage.
+grep -q "opencode-extract-subagents.sh" "$ERRTXT" && fail "case 10: a zero-byte stall has nothing to salvage; must not point at the salvage path"
+# Must name the tool's own log, which carries more than stderr does.
+grep -q "opencode.log" "$ERRTXT" || fail "case 10: message must point at opencode's own log file"
+[ ! -f "$OUT.never-started" ] || fail "case 10: the startup marker file was left on disk"
+
+# Case 11: output arrives quickly, THEN the run hangs -> still 124, still the
+# salvage path. This is the regression guard proving the startup probe does not
+# swallow the mid-run case: the fake emits one event immediately, then sleeps
+# past a startup grace that is deliberately shorter than the sleep.
+OUT="$WORK/case11.jsonl"
+ERRTXT="$WORK/case11.err"
+cat > "$WORK/bin/opencode" <<'LATEHANG'
+#!/bin/bash
+printf '%s\n' "$@" > "$FAKE_ARGV_FILE"
+echo '{"type":"text","part":"early"}'
+sleep 60
+LATEHANG
+chmod +x "$WORK/bin/opencode"
+
+set +e
+AK_REVIEW_STARTUP_GRACE_SECS=3 AK_REVIEW_TIMEOUT_SECS=6 \
+  bash "$SCRIPT" "$PROMPT" some/model high "$OUT" 2> "$ERRTXT"
+LATE_EXIT=$?
+set -e
+[ "$LATE_EXIT" -eq 124 ] || fail "case 11: a run that produced output then hung must exit 124, got $LATE_EXIT"
+grep -q "opencode-extract-subagents.sh" "$ERRTXT" || fail "case 11: a mid-run hang must still point at the salvage path"
+grep -qi "never produced any output" "$ERRTXT" && fail "case 11: a run that DID produce output must not claim it produced none"
+grep -q '"early"' "$OUT" || fail "case 11: the partial stream was lost"
+
+# Case 12: diagnostics are captured. opencode writes far more to its own log
+# than to stderr, and on a stall stderr is empty — which reads as "nothing went
+# wrong" when in fact nothing happened. The adapter must ask for logs.
+OUT="$WORK/case12.jsonl"
+cat > "$WORK/bin/opencode" <<'FAKE3'
+#!/bin/bash
+printf '%s\n' "$@" > "$FAKE_ARGV_FILE"
+echo '{"type":"text"}'
+FAKE3
+chmod +x "$WORK/bin/opencode"
+bash "$SCRIPT" "$PROMPT" some/model high "$OUT" 2> /dev/null
+grep -qx -- "--print-logs" "$FAKE_ARGV_FILE" || fail "case 12: --print-logs was not passed"
+grep -qx -- "--log-level" "$FAKE_ARGV_FILE" || fail "case 12: --log-level was not passed"
+
 echo "PASS: test-opencode-adapter.sh"

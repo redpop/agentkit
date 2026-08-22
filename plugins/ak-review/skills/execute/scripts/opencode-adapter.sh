@@ -39,6 +39,39 @@ TIMEOUT_SECS="${AK_REVIEW_TIMEOUT_SECS:-1200}"
 TIMEOUT_MARKER="${RAW_OUTPUT_FILE}.timed-out"
 rm -f "$TIMEOUT_MARKER"
 
+# There is a SECOND failure mode, and it is not a slow run: opencode 1.18.21
+# intermittently produces zero bytes and never returns. Reproduced repeatedly on
+# 2026-08-22 across every model, provider, prompt shape and working directory,
+# including an empty one.
+#
+# What localises it is opencode's OWN log (~/.local/share/opencode/log/opencode.log),
+# not the stream. A healthy run logs:
+#
+#   message=init
+#   message=created id=ses_...      <- session created
+#   message=loop ... step=0
+#   message=stream providerID=...   <- model called
+#
+# A stalled run logs `init` and then nothing, ever. So it dies inside SESSION
+# CREATION — a database write — before the first event and before the model is
+# reached. `opencode serve` started during one stall failed outright with
+# "database is locked", which points the same way.
+#
+# The root cause is upstream and was not isolated here: the DB was ruled out by
+# moving it aside (still stalled), config and plugins by running with an empty
+# XDG_CONFIG_HOME (still stalled, once the result was re-tested rather than
+# trusted), stale processes by checking for survivors (none), and a concurrent
+# instance by holding the DB open from a second process (no effect). It comes
+# and goes in windows of minutes, during which EVERYTHING stalls — so any single
+# comparison is worthless unless paired with a control run in the same minute.
+#
+# What the adapter can do is fail honestly and fast. A run that has emitted
+# nothing has not started, and burning the full 20-minute ceiling on it wastes
+# the caller's time and tells them the wrong thing.
+STARTUP_GRACE_SECS="${AK_REVIEW_STARTUP_GRACE_SECS:-90}"
+NEVER_STARTED_MARKER="${RAW_OUTPUT_FILE}.never-started"
+rm -f "$NEVER_STARTED_MARKER"
+
 # GNU `timeout` is not on a stock macOS, so the watchdog is plain bash. It marks
 # the file BEFORE signalling, so the wait below can tell a timeout kill from the
 # tool's own non-zero exit — the exit status alone cannot ($? is 143 either way
@@ -78,6 +111,26 @@ run_with_watchdog() {
   ) < /dev/null > /dev/null 2>&1 &
   local watchdog_pid=$!
 
+  # The startup probe. Same process-group discipline as the ceiling watchdog
+  # above, for the same reason. It checks ONE thing: did the run emit any bytes
+  # at all within the grace period? An empty stream at that point means opencode
+  # never got past session creation, so waiting out the remaining ceiling can
+  # only waste time — there is no partial result accumulating.
+  #
+  # `-s` on the raw output file is the whole test, and it is deliberately not a
+  # check for well-formed JSON: any byte proves the run started, and parsing
+  # here would just be a second thing that can be wrong.
+  (
+    sleep "$STARTUP_GRACE_SECS"
+    if [ ! -s "$RAW_OUTPUT_FILE" ]; then
+      touch "$NEVER_STARTED_MARKER"
+      kill -TERM -- "-$cmd_pid" 2> /dev/null || kill -TERM "$cmd_pid" 2> /dev/null
+      sleep 5
+      kill -KILL -- "-$cmd_pid" 2> /dev/null || kill -KILL "$cmd_pid" 2> /dev/null
+    fi
+  ) < /dev/null > /dev/null 2>&1 &
+  local startup_pid=$!
+
   [ "$had_monitor" -eq 1 ] || set +m
 
   local code=0
@@ -85,6 +138,8 @@ run_with_watchdog() {
 
   kill -TERM -- "-$watchdog_pid" 2> /dev/null || kill -TERM "$watchdog_pid" 2> /dev/null
   wait "$watchdog_pid" 2> /dev/null || true
+  kill -TERM -- "-$startup_pid" 2> /dev/null || kill -TERM "$startup_pid" 2> /dev/null
+  wait "$startup_pid" 2> /dev/null || true
 
   return "$code"
 }
@@ -97,11 +152,19 @@ STDERR_FILE="${RAW_OUTPUT_FILE}.stderr"
 
 # `set -e` would abort before the exit code could be captured and the warning
 # emitted, so the invocation is deliberately guarded here instead.
+#
+# `--print-logs --log-level DEBUG` is not noise: on a stall, stderr is EMPTY,
+# which reads as "nothing went wrong" when in fact nothing happened. These flags
+# are the only thing that produced any diagnostic at all while investigating the
+# zero-byte stall, and they cost nothing on a healthy run. The output lands in
+# the stderr sidecar, never in the JSON stream, so the extractors are unaffected.
 set +e
 if [ -n "$EFFORT" ]; then
-  run_with_watchdog opencode run "$PROMPT_TEXT" --model "$MODEL" --variant "$EFFORT" --format json
+  run_with_watchdog opencode run "$PROMPT_TEXT" --model "$MODEL" --variant "$EFFORT" \
+    --format json --print-logs --log-level DEBUG
 else
-  run_with_watchdog opencode run "$PROMPT_TEXT" --model "$MODEL" --format json
+  run_with_watchdog opencode run "$PROMPT_TEXT" --model "$MODEL" \
+    --format json --print-logs --log-level DEBUG
 fi
 EXIT_CODE=$?
 set -e
@@ -109,7 +172,21 @@ set -e
 # 124 is GNU timeout's convention, reused so a caller can branch on it without
 # parsing text. Reported before the stderr dump below, because on a timeout the
 # stderr file is usually empty and silence would read as "nothing happened".
-if [ -f "$TIMEOUT_MARKER" ]; then
+#
+# The never-started case is checked FIRST and reported as 125, not 124. Both are
+# "it did not finish", but they need opposite advice: 124 has a partial stream
+# worth salvaging, 125 has an empty file and nothing to recover. Telling the
+# reader to run the salvage path on an empty stream sends them after output that
+# cannot exist, which is how a whole day went into this.
+if [ -f "$NEVER_STARTED_MARKER" ]; then
+  rm -f "$NEVER_STARTED_MARKER" "$TIMEOUT_MARKER"
+  EXIT_CODE=125
+  echo "opencode-adapter.sh: STALLED AT STARTUP - opencode never produced any output within ${STARTUP_GRACE_SECS}s and was killed." >&2
+  echo "opencode-adapter.sh: this is NOT a slow review. opencode did not get past creating its session, so the model was never called and there is nothing to salvage - $RAW_OUTPUT_FILE is empty." >&2
+  echo "opencode-adapter.sh: this is a known, intermittent opencode failure (seen on 1.18.21), not a fault in the prompt or the model. It comes and goes in windows of minutes." >&2
+  echo "opencode-adapter.sh: to diagnose, compare the tail of ~/.local/share/opencode/log/opencode.log against a healthy run: a good run logs 'init' then 'created id=ses_...'; a stalled one logs 'init' and stops. See also ${STDERR_FILE}." >&2
+  echo "opencode-adapter.sh: retrying later usually works. Raise the grace period with AK_REVIEW_STARTUP_GRACE_SECS if this machine is simply slow to start." >&2
+elif [ -f "$TIMEOUT_MARKER" ]; then
   rm -f "$TIMEOUT_MARKER"
   EXIT_CODE=124
   echo "opencode-adapter.sh: TIMEOUT - opencode exceeded ${TIMEOUT_SECS}s and was killed." >&2
