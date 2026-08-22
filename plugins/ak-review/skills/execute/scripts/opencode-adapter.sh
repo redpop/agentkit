@@ -171,6 +171,28 @@ STARTUP_RETRIES="${AK_REVIEW_STARTUP_RETRIES:-2}"
 RETRY_WAIT_SECS="${AK_REVIEW_RETRY_WAIT_SECS:-60}"
 ATTEMPT=0
 
+# Validated up front, because the alternative is worse than it looks: a
+# non-numeric value reaches `sleep` (or the watchdog's) mid-run, fails under
+# `set -e`, and aborts the adapter at a point where none of the diagnostics
+# below have run — so the caller gets a bare non-zero exit and no reason.
+for _var in AK_REVIEW_TIMEOUT_SECS AK_REVIEW_STARTUP_GRACE_SECS \
+  AK_REVIEW_STARTUP_RETRIES AK_REVIEW_RETRY_WAIT_SECS; do
+  _val="$(eval "printf '%s' \"\${${_var}:-}\"")"
+  if [ -n "$_val" ] && ! printf '%s' "$_val" | grep -Eq '^[0-9]+$'; then
+    echo "opencode-adapter.sh: ${_var} must be a non-negative integer (got: ${_val})" >&2
+    exit 1
+  fi
+done
+
+# A startup grace at or above the ceiling makes the two watchdogs race, and the
+# loser's marker still gets written — which is how a genuine timeout could be
+# reported as a startup stall. Ordering them is cheaper than disambiguating
+# them afterwards.
+if [ "$STARTUP_GRACE_SECS" -ge "$TIMEOUT_SECS" ]; then
+  echo "opencode-adapter.sh: AK_REVIEW_STARTUP_GRACE_SECS (${STARTUP_GRACE_SECS}) must be below AK_REVIEW_TIMEOUT_SECS (${TIMEOUT_SECS}); the startup probe has to fire first to be meaningful." >&2
+  exit 1
+fi
+
 while :; do
   ATTEMPT=$((ATTEMPT + 1))
   rm -f "$NEVER_STARTED_MARKER" "$TIMEOUT_MARKER"
@@ -188,7 +210,12 @@ while :; do
   EXIT_CODE=$?
   set -e
 
-  [ -f "$NEVER_STARTED_MARKER" ] || break
+  # Retry only a CONFIRMED empty stall. The marker alone is not enough: output
+  # can land between the probe's empty check and the process actually dying
+  # (a tool flushing on SIGTERM does exactly this), and the next attempt's `>`
+  # redirection would truncate it. Worse, the run would then end as 125 with a
+  # non-empty file — the opposite of what 125 promises the caller.
+  [ -f "$NEVER_STARTED_MARKER" ] && [ ! -s "$RAW_OUTPUT_FILE" ] || break
   [ "$ATTEMPT" -le "$STARTUP_RETRIES" ] || break
 
   echo "opencode-adapter.sh: attempt ${ATTEMPT} stalled at startup (no output in ${STARTUP_GRACE_SECS}s); retrying in ${RETRY_WAIT_SECS}s - this failure is transient and usually clears." >&2
@@ -204,7 +231,7 @@ done
 # worth salvaging, 125 has an empty file and nothing to recover. Telling the
 # reader to run the salvage path on an empty stream sends them after output that
 # cannot exist, which is how a whole day went into this.
-if [ -f "$NEVER_STARTED_MARKER" ]; then
+if [ -f "$NEVER_STARTED_MARKER" ] && [ ! -s "$RAW_OUTPUT_FILE" ]; then
   rm -f "$NEVER_STARTED_MARKER" "$TIMEOUT_MARKER"
   EXIT_CODE=125
   echo "opencode-adapter.sh: STALLED AT STARTUP - opencode never produced any output within ${STARTUP_GRACE_SECS}s, across ${ATTEMPT} attempt(s), and was killed." >&2
@@ -212,11 +239,22 @@ if [ -f "$NEVER_STARTED_MARKER" ]; then
   echo "opencode-adapter.sh: this is a known, intermittent opencode failure (seen on 1.18.21), not a fault in the prompt or the model. It comes and goes in windows of minutes." >&2
   echo "opencode-adapter.sh: to diagnose, compare the tail of ~/.local/share/opencode/log/opencode.log against a healthy run: a good run logs 'init' then 'created id=ses_...'; a stalled one logs 'init' and stops. See also ${STDERR_FILE}." >&2
   echo "opencode-adapter.sh: retrying later usually works. Raise the grace period with AK_REVIEW_STARTUP_GRACE_SECS if this machine is simply slow to start." >&2
-elif [ -f "$TIMEOUT_MARKER" ]; then
-  rm -f "$TIMEOUT_MARKER"
+elif [ -f "$TIMEOUT_MARKER" ] || [ -f "$NEVER_STARTED_MARKER" ]; then
+  # Either the ceiling fired, or the startup probe killed a run that turned out
+  # to have produced output after all (it flushed while being signalled). Both
+  # leave a partial stream, so both are 124 — the code that means "salvageable".
+  rm -f "$TIMEOUT_MARKER" "$NEVER_STARTED_MARKER"
   EXIT_CODE=124
-  echo "opencode-adapter.sh: TIMEOUT - opencode exceeded ${TIMEOUT_SECS}s and was killed." >&2
+  echo "opencode-adapter.sh: TIMEOUT - opencode was killed after producing partial output." >&2
   echo "opencode-adapter.sh: the partial stream is at $RAW_OUTPUT_FILE - run the salvage path (opencode-extract-subagents.sh FIRST, then opencode-extract-report.sh, then opencode-extract-cost.sh)." >&2
+elif [ "$EXIT_CODE" -eq 125 ]; then
+  # 125 is reserved for the marker-confirmed startup stall above. opencode
+  # exiting 125 on its own would otherwise reach the caller as "every attempt
+  # stalled, nothing to salvage" — a specific, wrong story about an ordinary
+  # tool failure. Remapped to a generic failure; its stderr is forwarded below
+  # and carries the real reason.
+  EXIT_CODE=1
+  echo "opencode-adapter.sh: opencode exited 125 on its own. That code is reserved by this adapter for a startup stall, so it has been remapped to 1 to avoid a false 'never started' report. The tool's own error follows." >&2
 fi
 
 if [ -s "$STDERR_FILE" ]; then

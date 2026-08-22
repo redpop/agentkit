@@ -114,9 +114,12 @@ timeout signal.
 **If the adapter exits `125`, the run never started — stop, and do not salvage.** This is a distinct
 failure from a timeout: the tool produced no bytes at all, so there is no partial stream and nothing
 to recover. Report the adapter's stderr verbatim and stop; do not run the extractors, and do not
-describe the result as "the review found nothing", because no review took place. Re-running later is
-the appropriate response, which is a decision for the user rather than something to retry
-automatically in an unattended run.
+describe the result as "the review found nothing", because no review took place.
+
+**Do not retry a `125` yourself.** An adapter whose failure is transient retries internally and only
+surfaces `125` once _every_ attempt has stalled — `opencode` does exactly this, and its message states
+how many were made. Reaching this point therefore already means retrying did not help, so trying again
+in the same run would just repeat a failed strategy. Whether to come back later is the user's call.
 
 **If the run times out** (exit `124`, or your own backstop fires): kill the process if it is still
 up — `$RAW_OUTPUT_FILE` is written incrementally by the OS as the run goes, so it survives the kill.
@@ -286,6 +289,16 @@ below.
   salvageable and a retry would overwrite it, and any other non-zero exit (bad model, missing
   credentials) is deterministic and would fail identically after the wait. Exit `125` therefore now
   means _every_ attempt stalled, and the message says how many were made.
+- **`AK_REVIEW_TIMEOUT_SECS` bounds one attempt, not the whole invocation.** With retries on, the worst
+  case is `retries × (startup_grace + retry_wait) + timeout` — about 25 minutes at the defaults, not 20.
+  Size any backstop of your own against that figure, or set `AK_REVIEW_STARTUP_RETRIES=0` to make the
+  ceiling absolute again.
+- **`124` and `125` belong to the adapter, which will not pass through the tool's own use of them.** If
+  `opencode` itself exits `125`, the adapter remaps it to `1` and says so: letting it through would tell
+  the caller "every startup attempt stalled, nothing to salvage" about what was really an ordinary tool
+  failure. Its stderr is forwarded either way and carries the real reason. A `125` from the adapter also
+  guarantees an **empty** raw output file — if a killed run turns out to have flushed something after
+  all, it is reported as `124` instead, so the partial stream gets salvaged rather than discarded.
 - **A run can hang, and a hung run is not an empty run.** Observed three times: the process sits at ~0% CPU
   and emits no further events, once for over two hours, once for 83 minutes before a human asked about it.
   Since then the adapter enforces its own ceiling (see above), so this should surface as exit `124` rather
