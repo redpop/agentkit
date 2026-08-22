@@ -38,7 +38,7 @@ Determine the session's status, then let it shape the emphasis of the document:
 | `Complete` | The session's goal was reached | What was delivered, what it enables next |
 
 An explicit `--blocked` / `--wip` / `--done` flag overrides detection. When signals are mixed — a finished feature
-plus one unresolved side issue — choose the status of the *main* thread and record the rest under
+plus one unresolved side issue — choose the status of the _main_ thread and record the rest under
 "What Was Not Done".
 
 ## Execution

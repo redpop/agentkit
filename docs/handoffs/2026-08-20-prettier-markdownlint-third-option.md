@@ -19,13 +19,13 @@ Werkzeuge auf. Der Abschnitt behauptet zusätzlich, markdownlints Defaults seien
 weil die Stil-Regeln auf `consistent` stehen.
 
 Diese Session hat das gemessen. Die Aussage gilt **nur für Dateien mit einheitlichem
-Emphasis-Stil**. Bei gemischtem Stil normalisiert `consistent` auf das *erste* Vorkommen — steht
+Emphasis-Stil**. Bei gemischtem Stil normalisiert `consistent` auf das _erste_ Vorkommen — steht
 dort ein Asterisk, schreibt markdownlint gegen Prettier, und Prettier dreht es beim nächsten Lauf
 zurück. Das ist kein Endlos-Loop, aber eine gegenläufige Umformatierung pro Datei, also
 Diff-Rauschen ohne Nutzen.
 
 Das Projekt **skp-modernisierungsratgeber** löst das seit dem 2026-07-30 mit einer dritten Variante:
-markdownlint wird auf Prettiers Output *geeicht*, statt ihm überlassen zu werden. Beide Werkzeuge
+markdownlint wird auf Prettiers Output _geeicht_, statt ihm überlassen zu werden. Beide Werkzeuge
 bleiben voll aktiv. Zu tun bleibt die Übernahme hierher — mindestens als dokumentierte dritte
 Option, optional als geänderter Plugin-Default.
 
@@ -90,7 +90,7 @@ besser sind. Begründung der Rangfolge, die auch so in den Text gehört:
   sobald Prettier über einen npm-Script läuft): beide Werkzeuge behalten ihre volle Rolle, der Hook
   darf weiter `--fix` machen, und die Richtung ist deterministisch statt inhaltsabhängig (Beleg B).
 - **Alternative A — `"fix": false`**, wenn man den Hook bewusst nur als Reporter will. Kostet den
-  Auto-Fix für *alle* Regeln, nicht nur für die zwei strittigen.
+  Auto-Fix für _alle_ Regeln, nicht nur für die zwei strittigen.
 - **Alternative B — `*.md` in `.prettierignore`**, wenn Prettier im Projekt nur für JS und CSS da
   ist. Dann ist der Hook zu Recht der Markdown-Formatter. Hat ein Projekt Prettier auch für
   Markdown, verliert es damit Tabellen-Ausrichtung und einheitliches `proseWrap`.

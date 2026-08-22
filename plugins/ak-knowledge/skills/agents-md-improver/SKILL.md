@@ -132,7 +132,7 @@ The "Task completion workflow" section gets special handling because the `/ak-re
 
 For both cases, **always delegate to that skill** rather than manually patching the workflow section. Do not invent workflow steps inside this skill — let `/ak-review:workflow` analyze the project tooling and propose the structure. Manual inspection of commands cannot detect template drift (new optional steps, changed bullet structure, renamed sub-bullets).
 
-**Dogfooding check:** If the project being audited *is* AgentKit itself (or another project that maintains workflow templates for third parties), also verify that the project's own `AGENTS.md` workflow reflects the latest template it publishes. Improvements made to a project's own workflow (e.g., new skip clauses, corrected agent invocations, additional release-cycle rules) should be back-ported into the templates that project ships to others — otherwise the project recommends practices it no longer follows itself.
+**Dogfooding check:** If the project being audited _is_ AgentKit itself (or another project that maintains workflow templates for third parties), also verify that the project's own `AGENTS.md` workflow reflects the latest template it publishes. Improvements made to a project's own workflow (e.g., new skip clauses, corrected agent invocations, additional release-cycle rules) should be back-ported into the templates that project ships to others — otherwise the project recommends practices it no longer follows itself.
 
 ### Update format
 

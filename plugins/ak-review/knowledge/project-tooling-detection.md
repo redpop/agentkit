@@ -4,7 +4,7 @@ Shared detection signals for skills that need to know what a project builds, tes
 Referenced by `/ak-review:workflow` (to build a task completion workflow) and `/ak-review:deps` (to build a
 dependency update baseline). Each consumer adds its own signals on top; only what both need lives here.
 
-Run detection in parallel where possible. A signal found here is a *candidate* — confirm the command actually runs
+Run detection in parallel where possible. A signal found here is a _candidate_ — confirm the command actually runs
 before writing it into a generated file.
 
 ## Package and dependency manifests

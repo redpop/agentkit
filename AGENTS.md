@@ -139,4 +139,4 @@ docs → re-validate → version & changelog.
   page, in a test's name. This is the most frequent defect in this repo's own history: it occurred five times while
   building the `setup` skill for 1.21.0, every time caught by a review and never by the author, and the fifth was
   created by the fix for the fourth. Adding the branch is the easy half; the search afterwards is the work. Grep for
-  the *old case's wording* across the plugin and `docs/`, not just the line you edited
+  the _old case's wording_ across the plugin and `docs/`, not just the line you edited

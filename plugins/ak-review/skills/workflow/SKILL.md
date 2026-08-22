@@ -17,7 +17,7 @@ Parse `$ARGUMENTS` for mode:
 
 | Argument | Mode |
 |----------|------|
-| *(none)* | **Generate** — Scan project, build workflow, write to AGENTS.md |
+| _(none)_ | **Generate** — Scan project, build workflow, write to AGENTS.md |
 | `--audit` | **Audit** — Verify existing workflow against current tooling |
 
 ## Workflow Shapes
