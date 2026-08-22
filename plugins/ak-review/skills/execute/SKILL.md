@@ -276,9 +276,16 @@ below.
   instance holding the DB (no effect). It appears in windows of minutes during which _everything_
   stalls, and disappears just as broadly — **so any single comparison is worthless unless paired with
   a control run in the same minute.** An unpaired bisect will produce a confident, wrong answer; that
-  has already happened twice on this bug. The adapter now caps startup at 90s
+  has already happened twice on this bug. The adapter caps startup at 90s
   (`AK_REVIEW_STARTUP_GRACE_SECS`) and passes `--print-logs --log-level DEBUG`, whose output lands in
-  `<raw-output-file>.stderr` and is the only diagnostic that exists on a stall. Retrying later works.
+  `<raw-output-file>.stderr` and is the only diagnostic that exists on a stall.
+  **Because the failure is transient, the adapter also retries it automatically** — 2 further attempts
+  by default (`AK_REVIEW_STARTUP_RETRIES`, `0` disables) waiting 60s between them
+  (`AK_REVIEW_RETRY_WAIT_SECS`), so an ordinary run rides out a short stall window without the caller
+  noticing. Only exit `125` is retried: a `124` already holds the partial stream that makes it
+  salvageable and a retry would overwrite it, and any other non-zero exit (bad model, missing
+  credentials) is deterministic and would fail identically after the wait. Exit `125` therefore now
+  means _every_ attempt stalled, and the message says how many were made.
 - **A run can hang, and a hung run is not an empty run.** Observed three times: the process sits at ~0% CPU
   and emits no further events, once for over two hours, once for 83 minutes before a human asked about it.
   Since then the adapter enforces its own ceiling (see above), so this should surface as exit `124` rather
@@ -313,7 +320,12 @@ OpenAI's Codex CLI. Verified against `codex-cli 0.149.0`.
   was removed in codex v0.50 and passing it would be silently wrong on every current version. Valid
   values, from the API's own enum: `none`, `minimal`, `low`, `medium`, `high`, `xhigh`, `max`. (The
   "Ultra" offered in codex's interactive model picker is not among them.) Omit to use codex's default.
-- **Prerequisite:** none beyond an authenticated `codex`. There is no permission config to prepare —
+- **Prerequisite: the working directory must be a git repository.** Codex refuses to run outside one
+  ("Not inside a trusted directory and `--skip-git-repo-check` was not specified") and the adapter does
+  not pass that flag, deliberately: a review of an untracked directory is almost always a wrong cwd,
+  and failing in a fraction of a second with a clear message beats reviewing the wrong thing. This only
+  bites `--path`/`--all` runs aimed outside a repo; every git-diff-based scope implies one already.
+- **Prerequisite:** nothing else beyond an authenticated `codex`. There is no permission config to prepare —
   the adapter passes `--sandbox read-only`, which makes delegate's report-only contract _structural_:
   the external agent cannot write to the repository even if its prompt told it to. Never relax this.
 - **Preflight:** `codex-preflight.sh` checks PATH **and** authentication. The auth check is legitimate

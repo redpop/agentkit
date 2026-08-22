@@ -31,7 +31,10 @@ A run that never starts is treated as its own failure, separate from a timeout. 
 also caps _startup_ (90 s, override with `AK_REVIEW_STARTUP_GRACE_SECS`) and exits `125` when the tool
 has produced no output at all by then — because that means it never reached the model, so there is no
 partial stream and nothing to salvage. Reporting it as a timeout sent readers after output that could
-not exist, and cost a full ceiling per attempt. See the skill's Adapter Reference for the measurements
+not exist, and cost a full ceiling per attempt. Since that failure is transient, the adapter retries it
+automatically (2 further attempts, `AK_REVIEW_STARTUP_RETRIES`, 60 s apart via
+`AK_REVIEW_RETRY_WAIT_SECS`), so a short stall window passes unnoticed; only `125` is retried, never a
+`124` whose partial output is worth keeping. See the skill's Adapter Reference for the measurements
 behind this and for how to tell the two failures apart in OpenCode's own log.
 
 ## Usage
