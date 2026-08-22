@@ -223,7 +223,10 @@ chmod +x "$WORK/bin/opencode"
 
 START=$(date +%s)
 set +e
-AK_REVIEW_STARTUP_GRACE_SECS=3 AK_REVIEW_TIMEOUT_SECS=120 \
+# Retries off: this case pins the SINGLE-attempt behaviour. Retry itself is
+# covered by cases 13-16, and leaving the default on here would just add the
+# retry waits to the measured elapsed time.
+AK_REVIEW_STARTUP_GRACE_SECS=3 AK_REVIEW_TIMEOUT_SECS=120 AK_REVIEW_STARTUP_RETRIES=0 \
   bash "$SCRIPT" "$PROMPT" some/model high "$OUT" 2> "$ERRTXT"
 SILENT_EXIT=$?
 set -e
@@ -276,5 +279,91 @@ chmod +x "$WORK/bin/opencode"
 bash "$SCRIPT" "$PROMPT" some/model high "$OUT" 2> /dev/null
 grep -qx -- "--print-logs" "$FAKE_ARGV_FILE" || fail "case 12: --print-logs was not passed"
 grep -qx -- "--log-level" "$FAKE_ARGV_FILE" || fail "case 12: --log-level was not passed"
+
+# ---------------------------------------------------------------------------
+# Cases 13-16: automatic retry of the startup stall.
+#
+# The stall is TRANSIENT — it comes in windows of minutes and then clears — so
+# a retry is the one response that actually recovers the run rather than just
+# reporting it better. Retrying is therefore correct for exit 125 and WRONG for
+# everything else: a 124 already holds salvageable partial output that a retry
+# would overwrite, and a plain non-zero exit (bad model, no credentials) is
+# deterministic and would fail identically every time while burning the wait.
+# ---------------------------------------------------------------------------
+
+# A fake that stalls on its first N invocations and succeeds afterwards, using a
+# counter file that survives across the adapter's retries.
+COUNTER="$WORK/attempts.txt"
+cat > "$WORK/bin/opencode" <<'FLAKY'
+#!/bin/bash
+printf '%s\n' "$@" > "$FAKE_ARGV_FILE"
+n=$(cat "$COUNTER" 2>/dev/null || echo 0); n=$((n + 1)); echo "$n" > "$COUNTER"
+if [ "$n" -le "${FAKE_STALL_TIMES:-0}" ]; then sleep 120; fi
+echo '{"type":"text","part":"recovered"}'
+FLAKY
+chmod +x "$WORK/bin/opencode"
+export COUNTER
+
+# Case 13: stalls once, then succeeds -> the adapter recovers, exit 0.
+echo 0 > "$COUNTER"
+OUT="$WORK/case13.jsonl"
+ERRTXT="$WORK/case13.err"
+set +e
+FAKE_STALL_TIMES=1 AK_REVIEW_STARTUP_GRACE_SECS=3 AK_REVIEW_STARTUP_RETRIES=2 \
+  AK_REVIEW_RETRY_WAIT_SECS=1 AK_REVIEW_TIMEOUT_SECS=60 \
+  bash "$SCRIPT" "$PROMPT" some/model high "$OUT" 2> "$ERRTXT"
+RETRY_EXIT=$?
+set -e
+[ "$RETRY_EXIT" -eq 0 ] || fail "case 13: a stall that clears on retry must succeed, got $RETRY_EXIT"
+grep -q '"recovered"' "$OUT" || fail "case 13: the successful attempt's output was not captured"
+grep -qi "retrying" "$ERRTXT" || fail "case 13: the retry must be announced on stderr"
+[ "$(cat "$COUNTER")" -eq 2 ] || fail "case 13: expected exactly 2 attempts, got $(cat "$COUNTER")"
+
+# Case 14: stalls every time -> exhausts retries, exits 125, says how many tries.
+echo 0 > "$COUNTER"
+OUT="$WORK/case14.jsonl"
+ERRTXT="$WORK/case14.err"
+set +e
+FAKE_STALL_TIMES=99 AK_REVIEW_STARTUP_GRACE_SECS=3 AK_REVIEW_STARTUP_RETRIES=2 \
+  AK_REVIEW_RETRY_WAIT_SECS=1 AK_REVIEW_TIMEOUT_SECS=60 \
+  bash "$SCRIPT" "$PROMPT" some/model high "$OUT" 2> "$ERRTXT"
+EXHAUST_EXIT=$?
+set -e
+[ "$EXHAUST_EXIT" -eq 125 ] || fail "case 14: exhausted retries must still exit 125, got $EXHAUST_EXIT"
+[ "$(cat "$COUNTER")" -eq 3 ] || fail "case 14: expected 3 attempts (1 + 2 retries), got $(cat "$COUNTER")"
+grep -q "3 attempt" "$ERRTXT" || fail "case 14: the message must state how many attempts were made"
+
+# Case 15: retries can be disabled, and then there is exactly one attempt.
+echo 0 > "$COUNTER"
+OUT="$WORK/case15.jsonl"
+set +e
+FAKE_STALL_TIMES=99 AK_REVIEW_STARTUP_GRACE_SECS=3 AK_REVIEW_STARTUP_RETRIES=0 \
+  AK_REVIEW_RETRY_WAIT_SECS=1 AK_REVIEW_TIMEOUT_SECS=60 \
+  bash "$SCRIPT" "$PROMPT" some/model high "$OUT" 2> /dev/null
+set -e
+[ "$(cat "$COUNTER")" -eq 1 ] || fail "case 15: retries=0 must mean one attempt, got $(cat "$COUNTER")"
+
+# Case 16: a mid-run hang (124) is NOT retried. Retrying would overwrite the
+# partial stream that makes 124 salvageable in the first place.
+echo 0 > "$COUNTER"
+OUT="$WORK/case16.jsonl"
+ERRTXT="$WORK/case16.err"
+cat > "$WORK/bin/opencode" <<'MIDHANG'
+#!/bin/bash
+printf '%s\n' "$@" > "$FAKE_ARGV_FILE"
+n=$(cat "$COUNTER" 2>/dev/null || echo 0); echo "$((n + 1))" > "$COUNTER"
+echo '{"type":"text","part":"partial"}'
+sleep 60
+MIDHANG
+chmod +x "$WORK/bin/opencode"
+set +e
+AK_REVIEW_STARTUP_GRACE_SECS=2 AK_REVIEW_STARTUP_RETRIES=3 \
+  AK_REVIEW_RETRY_WAIT_SECS=1 AK_REVIEW_TIMEOUT_SECS=5 \
+  bash "$SCRIPT" "$PROMPT" some/model high "$OUT" 2> "$ERRTXT"
+MID_EXIT=$?
+set -e
+[ "$MID_EXIT" -eq 124 ] || fail "case 16: a mid-run hang must exit 124, got $MID_EXIT"
+[ "$(cat "$COUNTER")" -eq 1 ] || fail "case 16: a 124 must NOT be retried, got $(cat "$COUNTER") attempts"
+grep -q '"partial"' "$OUT" || fail "case 16: the salvageable partial stream was lost"
 
 echo "PASS: test-opencode-adapter.sh"

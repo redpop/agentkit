@@ -158,16 +158,42 @@ STDERR_FILE="${RAW_OUTPUT_FILE}.stderr"
 # are the only thing that produced any diagnostic at all while investigating the
 # zero-byte stall, and they cost nothing on a healthy run. The output lands in
 # the stderr sidecar, never in the JSON stream, so the extractors are unaffected.
-set +e
-if [ -n "$EFFORT" ]; then
-  run_with_watchdog opencode run "$PROMPT_TEXT" --model "$MODEL" --variant "$EFFORT" \
-    --format json --print-logs --log-level DEBUG
-else
-  run_with_watchdog opencode run "$PROMPT_TEXT" --model "$MODEL" \
-    --format json --print-logs --log-level DEBUG
-fi
-EXIT_CODE=$?
-set -e
+#
+# The startup stall is TRANSIENT — it appears in windows of minutes and then
+# clears — so retrying is the one response that actually recovers the run
+# instead of merely reporting it well.
+#
+# Retried ONLY on 125. Not on 124: that run holds partial output which is the
+# whole reason 124 is salvageable, and a retry would overwrite it. Not on any
+# other non-zero exit either: a bad model or missing credentials fails
+# identically every time, so retrying just burns the wait before the same error.
+STARTUP_RETRIES="${AK_REVIEW_STARTUP_RETRIES:-2}"
+RETRY_WAIT_SECS="${AK_REVIEW_RETRY_WAIT_SECS:-60}"
+ATTEMPT=0
+
+while :; do
+  ATTEMPT=$((ATTEMPT + 1))
+  rm -f "$NEVER_STARTED_MARKER" "$TIMEOUT_MARKER"
+
+  # `set -e` would abort before the exit code could be captured and the warning
+  # emitted, so the invocation is deliberately guarded here instead.
+  set +e
+  if [ -n "$EFFORT" ]; then
+    run_with_watchdog opencode run "$PROMPT_TEXT" --model "$MODEL" --variant "$EFFORT" \
+      --format json --print-logs --log-level DEBUG
+  else
+    run_with_watchdog opencode run "$PROMPT_TEXT" --model "$MODEL" \
+      --format json --print-logs --log-level DEBUG
+  fi
+  EXIT_CODE=$?
+  set -e
+
+  [ -f "$NEVER_STARTED_MARKER" ] || break
+  [ "$ATTEMPT" -le "$STARTUP_RETRIES" ] || break
+
+  echo "opencode-adapter.sh: attempt ${ATTEMPT} stalled at startup (no output in ${STARTUP_GRACE_SECS}s); retrying in ${RETRY_WAIT_SECS}s - this failure is transient and usually clears." >&2
+  sleep "$RETRY_WAIT_SECS"
+done
 
 # 124 is GNU timeout's convention, reused so a caller can branch on it without
 # parsing text. Reported before the stderr dump below, because on a timeout the
@@ -181,7 +207,7 @@ set -e
 if [ -f "$NEVER_STARTED_MARKER" ]; then
   rm -f "$NEVER_STARTED_MARKER" "$TIMEOUT_MARKER"
   EXIT_CODE=125
-  echo "opencode-adapter.sh: STALLED AT STARTUP - opencode never produced any output within ${STARTUP_GRACE_SECS}s and was killed." >&2
+  echo "opencode-adapter.sh: STALLED AT STARTUP - opencode never produced any output within ${STARTUP_GRACE_SECS}s, across ${ATTEMPT} attempt(s), and was killed." >&2
   echo "opencode-adapter.sh: this is NOT a slow review. opencode did not get past creating its session, so the model was never called and there is nothing to salvage - $RAW_OUTPUT_FILE is empty." >&2
   echo "opencode-adapter.sh: this is a known, intermittent opencode failure (seen on 1.18.21), not a fault in the prompt or the model. It comes and goes in windows of minutes." >&2
   echo "opencode-adapter.sh: to diagnose, compare the tail of ~/.local/share/opencode/log/opencode.log against a healthy run: a good run logs 'init' then 'created id=ses_...'; a stalled one logs 'init' and stops. See also ${STDERR_FILE}." >&2
