@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.24.2] - 2026-08-22
+
+### ✨ Added
+
+- `ak-review:execute` — **The opencode adapter now retries a startup stall instead of only reporting
+  it.** `1.24.1` made that failure legible; this makes it survivable. The stall is transient — it
+  appears in windows of minutes and then clears — so a retry is the one response that actually
+  recovers the run. Two further attempts by default (`AK_REVIEW_STARTUP_RETRIES`, `0` disables), 60s
+  apart (`AK_REVIEW_RETRY_WAIT_SECS`), which rides out a short window without the caller noticing.
+  **Only exit `125` is retried.** A `124` already holds the partial stream that makes it salvageable
+  and a retry would overwrite it; any other non-zero exit (bad model, missing credentials) is
+  deterministic and would fail identically after the wait. Exit `125` now means every attempt stalled,
+  and the message says how many were made.
+
+### 📝 Documented
+
+- `ak-review:execute` — **The codex adapter requires a git repository as its working directory**, which
+  was true from the start but written down nowhere. Codex refuses to run outside one ("Not inside a
+  trusted directory and `--skip-git-repo-check` was not specified") and the adapter deliberately does
+  not pass that flag: reviewing an untracked directory is nearly always a wrong `cwd`, and failing in
+  a fraction of a second with a clear message beats reviewing the wrong thing. Only affects
+  `--path`/`--all` runs aimed outside a repository; any git-diff-based scope implies one already.
+
 ## [1.24.1] - 2026-08-22
 
 ### 🐛 Fixed
