@@ -72,19 +72,23 @@ Create one of these (the project file wins over the global one):
 
   {
     "external_review": {
-      "tool": "opencode",
-      "model": "<provider/model>",
+      "tool": "<name>",
+      "model": "<model>",
       "effort": "high",
       "fix_threshold": "high"
     }
   }
 
-Implemented adapters: opencode
-Models for opencode: run \`opencode models\` to list them.
-Only "tool" and "model" are required. "fix_threshold" defaults to "high"
-(auto-fix confirmed high/critical findings only); "effort" is optional.
+Implemented adapters, and the "model" shape each one expects:
 
-Or pass them for a single run: --tool <name> --model <provider/model>
+  opencode  provider/model, e.g. the output of \`opencode models\`
+  codex     a bare model name, no provider prefix
+
+Only "tool" and "model" are required. "fix_threshold" defaults to "high"
+(auto-fix confirmed high/critical findings only); "effort" is optional, and its
+valid values are the tool's own.
+
+Or pass them for a single run: --tool <name> --model <model>
 
 For a guided setup that writes this file for you: /ak-review:setup
 EOF

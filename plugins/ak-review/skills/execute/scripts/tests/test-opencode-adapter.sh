@@ -130,7 +130,7 @@ ELAPSED=$(( $(date +%s) - START ))
 [ "$TIMEOUT_EXIT" -eq 124 ] || fail "case 7: expected exit 124 on timeout, got $TIMEOUT_EXIT"
 [ "$ELAPSED" -lt 30 ] || fail "case 7: the watchdog did not kill the run (took ${ELAPSED}s)"
 grep -q "TIMEOUT" "$ERRTXT" || fail "case 7: no timeout message was reported"
-grep -q "extract-subagents.sh" "$ERRTXT" || fail "case 7: the message must point at the salvage path"
+grep -q "opencode-extract-subagents.sh" "$ERRTXT" || fail "case 7: the message must point at the salvage path"
 # The partial stream must survive the kill — the whole reason salvage works.
 grep -q '"partial"' "$OUT" || fail "case 7: the partial stream was lost when the run was killed"
 # The marker is internal bookkeeping and must not be left behind.

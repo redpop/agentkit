@@ -56,21 +56,34 @@ run_with_watchdog() {
   set -m
   "$@" > "$RAW_OUTPUT_FILE" 2> "$STDERR_FILE" &
   local cmd_pid=$!
-  [ "$had_monitor" -eq 1 ] || set +m
 
+  # The watchdog is started while `set -m` is still in effect so it gets its own
+  # process group, and is torn down by group below. The earlier version killed
+  # only the subshell pid, which reaped the subshell but NOT the `sleep` it was
+  # blocked in: that survived as an orphan holding whatever stdout it inherited.
+  # Measured while building the codex adapter from this code: every completed run
+  # left a `sleep 1200` behind, and because those orphans keep the caller's pipe
+  # open, a caller reading this adapter's output through a pipe never sees EOF
+  # and hangs for the full 20 minutes.
+  #
+  # The /dev/null redirection is the second half of the fix: no watchdog process
+  # holds a descriptor on the caller's stdout at all, so even an orphan escaping
+  # the group kill cannot wedge a pipe.
   (
     sleep "$TIMEOUT_SECS"
     touch "$TIMEOUT_MARKER"
     kill -TERM -- "-$cmd_pid" 2> /dev/null || kill -TERM "$cmd_pid" 2> /dev/null
     sleep 10
     kill -KILL -- "-$cmd_pid" 2> /dev/null || kill -KILL "$cmd_pid" 2> /dev/null
-  ) &
+  ) < /dev/null > /dev/null 2>&1 &
   local watchdog_pid=$!
+
+  [ "$had_monitor" -eq 1 ] || set +m
 
   local code=0
   wait "$cmd_pid" || code=$?
 
-  kill -TERM "$watchdog_pid" 2> /dev/null
+  kill -TERM -- "-$watchdog_pid" 2> /dev/null || kill -TERM "$watchdog_pid" 2> /dev/null
   wait "$watchdog_pid" 2> /dev/null || true
 
   return "$code"
@@ -100,7 +113,7 @@ if [ -f "$TIMEOUT_MARKER" ]; then
   rm -f "$TIMEOUT_MARKER"
   EXIT_CODE=124
   echo "opencode-adapter.sh: TIMEOUT - opencode exceeded ${TIMEOUT_SECS}s and was killed." >&2
-  echo "opencode-adapter.sh: the partial stream is at $RAW_OUTPUT_FILE - run the salvage path (extract-subagents.sh FIRST, then extract-report.sh, then extract-cost.sh)." >&2
+  echo "opencode-adapter.sh: the partial stream is at $RAW_OUTPUT_FILE - run the salvage path (opencode-extract-subagents.sh FIRST, then opencode-extract-report.sh, then opencode-extract-cost.sh)." >&2
 fi
 
 if [ -s "$STDERR_FILE" ]; then
