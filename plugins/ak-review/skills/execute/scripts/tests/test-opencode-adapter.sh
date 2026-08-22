@@ -122,7 +122,7 @@ chmod +x "$WORK/bin/opencode"
 
 START=$(date +%s)
 set +e
-AK_REVIEW_TIMEOUT_SECS=2 bash "$SCRIPT" "$PROMPT" some/model high "$OUT" 2> "$ERRTXT"
+AK_REVIEW_TIMEOUT_SECS=2 AK_REVIEW_STARTUP_GRACE_SECS=1 bash "$SCRIPT" "$PROMPT" some/model high "$OUT" 2> "$ERRTXT"
 TIMEOUT_EXIT=$?
 set -e
 ELAPSED=$(( $(date +%s) - START ))
@@ -151,7 +151,7 @@ OUT="$WORK/case8.jsonl"
 ERRTXT="$WORK/case8.err"
 START=$(date +%s)
 FAKE_STDOUT='{"type":"text"}' FAKE_STDERR='' FAKE_EXIT=0 \
-  AK_REVIEW_TIMEOUT_SECS=30 bash "$SCRIPT" "$PROMPT" some/model high "$OUT" 2> "$ERRTXT"
+  AK_REVIEW_TIMEOUT_SECS=30 AK_REVIEW_STARTUP_GRACE_SECS=20 bash "$SCRIPT" "$PROMPT" some/model high "$OUT" 2> "$ERRTXT"
 ELAPSED=$(( $(date +%s) - START ))
 [ "$ELAPSED" -lt 10 ] || fail "case 8: the watchdog delayed a fast run by ${ELAPSED}s"
 grep -q "TIMEOUT" "$ERRTXT" && fail "case 8: a run inside the ceiling must not report a timeout"
@@ -183,7 +183,7 @@ chmod +x "$WORK/bin/opencode"
 export GRANDCHILD_PID_FILE
 
 set +e
-AK_REVIEW_TIMEOUT_SECS=2 bash "$SCRIPT" "$PROMPT" some/model high "$OUT" 2> /dev/null
+AK_REVIEW_TIMEOUT_SECS=2 AK_REVIEW_STARTUP_GRACE_SECS=1 bash "$SCRIPT" "$PROMPT" some/model high "$OUT" 2> /dev/null
 set -e
 sleep 1
 GRANDCHILD_PID="$(cat "$GRANDCHILD_PID_FILE" 2> /dev/null || echo "")"
@@ -365,5 +365,95 @@ set -e
 [ "$MID_EXIT" -eq 124 ] || fail "case 16: a mid-run hang must exit 124, got $MID_EXIT"
 [ "$(cat "$COUNTER")" -eq 1 ] || fail "case 16: a 124 must NOT be retried, got $(cat "$COUNTER") attempts"
 grep -q '"partial"' "$OUT" || fail "case 16: the salvageable partial stream was lost"
+
+# ---------------------------------------------------------------------------
+# Cases 17-20 come from an external review of the retry commit. Each pins a way
+# the reserved exit codes could lie to the caller.
+# ---------------------------------------------------------------------------
+
+# Case 17: opencode's OWN exit 125 must not be reported as a startup stall.
+# 125 is reserved for the marker-confirmed condition. A markerless 125 from the
+# tool would otherwise reach the caller as "every attempt stalled", which
+# SKILL.md tells them means an empty stream and nothing to salvage — while the
+# real cause was an ordinary tool failure. Remapped to 1, with stderr kept.
+echo 0 > "$COUNTER"
+OUT="$WORK/case17.jsonl"
+ERRTXT="$WORK/case17.err"
+cat > "$WORK/bin/opencode" <<'OWN125'
+#!/bin/bash
+printf '%s\n' "$@" > "$FAKE_ARGV_FILE"
+n=$(cat "$COUNTER" 2>/dev/null || echo 0); echo "$((n + 1))" > "$COUNTER"
+echo "opencode: something went wrong" >&2
+exit 125
+OWN125
+chmod +x "$WORK/bin/opencode"
+set +e
+AK_REVIEW_STARTUP_GRACE_SECS=30 AK_REVIEW_STARTUP_RETRIES=2 AK_REVIEW_RETRY_WAIT_SECS=1 \
+  bash "$SCRIPT" "$PROMPT" some/model high "$OUT" 2> "$ERRTXT"
+OWN125_EXIT=$?
+set -e
+[ "$OWN125_EXIT" -ne 125 ] || fail "case 17: a tool-originated 125 must not be reported as a startup stall"
+[ "$(cat "$COUNTER")" -eq 1 ] || fail "case 17: a tool-originated 125 must not be retried, got $(cat "$COUNTER") attempts"
+grep -qi "never produced any output" "$ERRTXT" && fail "case 17: must not claim a startup stall"
+grep -q "something went wrong" "$ERRTXT" || fail "case 17: the tool's own stderr must survive the remap"
+
+# Case 18: a deterministic failure is not retried. A bad model or missing
+# credentials fails identically every time, so a retry only burns the wait.
+# The commit message states this; nothing pinned it until now.
+echo 0 > "$COUNTER"
+OUT="$WORK/case18.jsonl"
+cat > "$WORK/bin/opencode" <<'DETERM'
+#!/bin/bash
+printf '%s\n' "$@" > "$FAKE_ARGV_FILE"
+n=$(cat "$COUNTER" 2>/dev/null || echo 0); echo "$((n + 1))" > "$COUNTER"
+echo "unknown model" >&2
+exit 7
+DETERM
+chmod +x "$WORK/bin/opencode"
+set +e
+AK_REVIEW_STARTUP_GRACE_SECS=30 AK_REVIEW_STARTUP_RETRIES=3 AK_REVIEW_RETRY_WAIT_SECS=1 \
+  bash "$SCRIPT" "$PROMPT" some/model high "$OUT" 2> /dev/null
+DETERM_EXIT=$?
+set -e
+[ "$DETERM_EXIT" -eq 7 ] || fail "case 18: a deterministic failure must propagate its own code, got $DETERM_EXIT"
+[ "$(cat "$COUNTER")" -eq 1 ] || fail "case 18: a deterministic failure must not be retried, got $(cat "$COUNTER") attempts"
+
+# Case 19: output that lands late — after the startup probe's empty check, while
+# the process is being signalled — must not be thrown away. Exiting 125 with a
+# NON-EMPTY raw file would contradict the contract that 125 means nothing to
+# salvage. The fake emits on SIGTERM, exactly reproducing that race.
+echo 0 > "$COUNTER"
+OUT="$WORK/case19.jsonl"
+ERRTXT="$WORK/case19.err"
+cat > "$WORK/bin/opencode" <<'LATE'
+#!/bin/bash
+printf '%s\n' "$@" > "$FAKE_ARGV_FILE"
+n=$(cat "$COUNTER" 2>/dev/null || echo 0); echo "$((n + 1))" > "$COUNTER"
+trap 'echo "{\"type\":\"text\",\"part\":\"late\"}"; exit 0' TERM
+sleep 120 &
+wait
+LATE
+chmod +x "$WORK/bin/opencode"
+set +e
+AK_REVIEW_STARTUP_GRACE_SECS=2 AK_REVIEW_STARTUP_RETRIES=2 AK_REVIEW_RETRY_WAIT_SECS=1 \
+  AK_REVIEW_TIMEOUT_SECS=60 bash "$SCRIPT" "$PROMPT" some/model high "$OUT" 2> "$ERRTXT"
+LATE_EXIT=$?
+set -e
+if [ -s "$OUT" ]; then
+  [ "$LATE_EXIT" -ne 125 ] || fail "case 19: exit 125 claims nothing to salvage, but the raw file is not empty"
+  grep -q '"late"' "$OUT" || fail "case 19: late output was overwritten by a retry"
+fi
+
+# Case 20: a non-numeric env value is rejected up front with a clear message,
+# rather than aborting mid-run at `sleep` under `set -e` — where the failure
+# would surface with no diagnostic at all.
+OUT="$WORK/case20.jsonl"
+ERRTXT="$WORK/case20.err"
+set +e
+AK_REVIEW_RETRY_WAIT_SECS="soon" bash "$SCRIPT" "$PROMPT" some/model high "$OUT" 2> "$ERRTXT"
+BADENV_EXIT=$?
+set -e
+[ "$BADENV_EXIT" -eq 1 ] || fail "case 20: a non-numeric env value must exit 1, got $BADENV_EXIT"
+grep -q "AK_REVIEW_RETRY_WAIT_SECS" "$ERRTXT" || fail "case 20: the message must name the offending variable"
 
 echo "PASS: test-opencode-adapter.sh"
