@@ -5,10 +5,10 @@
 # dispatches one sub-agent per review dimension and only writes the merged
 # report at the very end, so a run that stalls before that point still holds
 # every finding the finished sub-agents produced — in `tool_use` parts, which
-# `extract-report.sh` cannot see: it reads `text` parts, and those carry the
+# `opencode-extract-report.sh` cannot see: it reads `text` parts, and those carry the
 # agent's own prose, not its tools' output.
 #
-# Measured on a real stalled run: `extract-report.sh` recovered 91 characters
+# Measured on a real stalled run: `opencode-extract-report.sh` recovered 91 characters
 # of narration ("dispatching the four review sub-agents") while 4085 characters
 # of actual findings sat unread in a completed `task` result. The paid work was
 # done and nothing was reading it.
@@ -25,14 +25,14 @@
 set -euo pipefail
 
 if [ $# -ne 1 ]; then
-  echo "Usage: extract-subagents.sh <raw-jsonl-file>" >&2
+  echo "Usage: opencode-extract-subagents.sh <raw-jsonl-file>" >&2
   exit 1
 fi
 
 RAW_FILE="$1"
 
 if [ ! -f "$RAW_FILE" ]; then
-  echo "extract-subagents.sh: file not found: $RAW_FILE" >&2
+  echo "opencode-extract-subagents.sh: file not found: $RAW_FILE" >&2
   exit 1
 fi
 
@@ -46,7 +46,7 @@ RESULTS=$(jq -R 'fromjson? // empty' "$RAW_FILE" | jq -rs '
   | join("\n\n---\n\n")')
 
 if [ -z "$RESULTS" ]; then
-  echo "extract-subagents.sh: no completed sub-agent results found in $RAW_FILE" >&2
+  echo "opencode-extract-subagents.sh: no completed sub-agent results found in $RAW_FILE" >&2
   exit 1
 fi
 

@@ -1,6 +1,6 @@
 ---
 name: execute
-description: This skill should be used when the user asks to "run a review end-to-end", "delegate and fix automatically", "automated external review with fixes", "run this through OpenCode/GLM and fix it", or wants the full delegate → external agent → advise → fix loop run unattended, without manual copy-paste between agents.
+description: This skill should be used when the user asks to "run a review end-to-end", "delegate and fix automatically", "automated external review with fixes", "run this through OpenCode/GLM/Codex and fix it", or wants the full delegate → external agent → advise → fix loop run unattended, without manual copy-paste between agents.
 ---
 
 # Execute External Review
@@ -25,8 +25,8 @@ Parse `$ARGUMENTS`:
 | `--path <glob/dir/file …>` | Review specific paths instead of a git diff |
 | `--all` | Review the entire project |
 | `--tool <name>` | External tool adapter to use (overrides config) |
-| `--model <provider/model>` | Model passed to the adapter (overrides config) |
-| `--effort <level>` | Reasoning-effort/variant passed to the adapter (overrides config) |
+| `--model <model>` | Model passed to the adapter, in _that adapter's_ format (overrides config) |
+| `--effort <level>` | Reasoning-effort/variant passed to the adapter, in _that adapter's_ vocabulary (overrides config) |
 | `--fix-threshold critical\|high\|medium\|low` | Minimum severity to auto-fix (overrides config; default `high`) |
 | `--report-only` | Skip Phase 6–7 (fixing + validation); only report and verify |
 
@@ -92,10 +92,10 @@ applies here too.
 
 ### Phase 3: Execute
 
-Look up the resolved `tool` in the Adapter Reference below and run its recipe, e.g. for `opencode`:
+Look up the resolved `tool` in the Adapter Reference below and run its adapter:
 
 ```bash
-${CLAUDE_PLUGIN_ROOT}/skills/execute/scripts/opencode-adapter.sh \
+${CLAUDE_PLUGIN_ROOT}/skills/execute/scripts/<tool>-adapter.sh \
   "$PROMPT_FILE" "$MODEL" "$EFFORT" "$RAW_OUTPUT_FILE"
 ```
 
@@ -105,36 +105,51 @@ If `tool` matches no known adapter, stop and report which tools are implemented.
 and produces no intermediate output; do not attempt to babysit it.
 
 **Where the ceiling is enforced:** an adapter is expected to enforce its own timeout and to exit `124`
-(GNU `timeout`'s convention) when it fires, because a ceiling the *caller* has to hold is the one that
-breaks in an unattended run — a harness may background the call and take the timer with it. `opencode`
-does this (20 min, override with `AK_REVIEW_TIMEOUT_SECS`). Still pass a generous timeout of your own
-as a backstop for an adapter that does not, but treat exit `124` as the definitive timeout signal.
+(GNU `timeout`'s convention) when it fires, because a ceiling the _caller_ has to hold is the one that
+breaks in an unattended run — a harness may background the call and take the timer with it. Both
+`opencode` and `codex` do this (20 min, override with `AK_REVIEW_TIMEOUT_SECS`). Still pass a generous
+timeout of your own as a backstop for an adapter that does not, but treat exit `124` as the definitive
+timeout signal.
 
 **If the run times out** (exit `124`, or your own backstop fires): kill the process if it is still
 up — `$RAW_OUTPUT_FILE` is written incrementally by the OS as the run goes, so it survives the kill.
-Do **not** fall through to the normal Phase 4 path below; go to the salvage path instead:
+Do **not** fall through to the normal Phase 4 path below; go to the salvage path instead. Run every
+extractor the resolved adapter provides, `$SUBAGENTS_FILE` first where one exists:
 
 ```bash
-${CLAUDE_PLUGIN_ROOT}/skills/execute/scripts/extract-subagents.sh "$RAW_OUTPUT_FILE" > "$SUBAGENTS_FILE"
-${CLAUDE_PLUGIN_ROOT}/skills/execute/scripts/extract-report.sh "$RAW_OUTPUT_FILE" > "$REPORT_FILE"
-${CLAUDE_PLUGIN_ROOT}/skills/execute/scripts/extract-cost.sh "$RAW_OUTPUT_FILE" > "$COST_FILE"
+# only if the adapter has one — opencode does, codex does not
+${CLAUDE_PLUGIN_ROOT}/skills/execute/scripts/<tool>-extract-subagents.sh "$RAW_OUTPUT_FILE" > "$SUBAGENTS_FILE"
+${CLAUDE_PLUGIN_ROOT}/skills/execute/scripts/<tool>-extract-report.sh "$RAW_OUTPUT_FILE" > "$REPORT_FILE"
+${CLAUDE_PLUGIN_ROOT}/skills/execute/scripts/<tool>-extract-cost.sh "$RAW_OUTPUT_FILE" > "$COST_FILE"
 ```
 
-Run `extract-subagents.sh` **first**, in that order. The tool dispatches one sub-agent per review
-dimension and merges them only at the end, so a run killed before that still holds every finished
-sub-agent's output — and that output lives in `tool_use` parts that `extract-report.sh` cannot see (it
-reads `text` parts, which carry only the coordinating agent's narration). See the `opencode` entry in
-the Adapter Reference below for a measurement of exactly how much that narration misses. Then continue
-to Phase 5 with both `$SUBAGENTS_FILE` and `$REPORT_FILE` in hand — see Phase 5 for how they differ.
+**How much a timeout salvages depends entirely on the tool, and the two implemented adapters sit at
+opposite extremes.** Check the Adapter Reference before concluding anything from a short salvaged
+report:
+
+- `opencode` dispatches one sub-agent per review dimension and merges them only at the end, so a run
+  killed before that still holds every finished sub-agent's output — in `tool_use` parts that
+  `opencode-extract-report.sh` cannot see. Running `opencode-extract-subagents.sh` first is what
+  recovers them; the `opencode` entry below measures how much the report alone misses.
+- `codex` has no sub-agents and emits its answer as a single `agent_message` at the very end. A killed
+  codex run usually has **nothing** to recover, and `codex-extract-report.sh` exits non-zero to say so
+  rather than printing an empty report. That is an honest signal, not a failure to parse.
+
+Then continue to Phase 5 with whatever files exist — see Phase 5 for how `$SUBAGENTS_FILE` and
+`$REPORT_FILE` differ.
 
 ### Phase 4: Parse the Report
 
 Normal path — the run completed within the timeout, so there is no `$SUBAGENTS_FILE`:
 
 ```bash
-${CLAUDE_PLUGIN_ROOT}/skills/execute/scripts/extract-report.sh "$RAW_OUTPUT_FILE" > "$REPORT_FILE"
-${CLAUDE_PLUGIN_ROOT}/skills/execute/scripts/extract-cost.sh "$RAW_OUTPUT_FILE" > "$COST_FILE"
+${CLAUDE_PLUGIN_ROOT}/skills/execute/scripts/<tool>-extract-report.sh "$RAW_OUTPUT_FILE" > "$REPORT_FILE"
+${CLAUDE_PLUGIN_ROOT}/skills/execute/scripts/<tool>-extract-cost.sh "$RAW_OUTPUT_FILE" > "$COST_FILE"
 ```
+
+The extractors are **per-adapter**, not shared: each external tool emits its own event schema, and a
+mismatched extractor silently yields an empty report rather than an error. Use the ones named after
+the resolved `tool`.
 
 Read only `$REPORT_FILE` and `$COST_FILE` — never read `$RAW_OUTPUT_FILE` directly, it carries the
 adapter's full internal event trace and is far larger than what's needed. From `$REPORT_FILE`, take the
@@ -181,7 +196,10 @@ Produce one compact report, in the language of the invoking session:
 - What was fixed, one line each with the reason it qualified
 - What was skipped, one line each with the reason (false positive / below threshold / needs context / uncertain)
 - Validation result (tests/lint pass?), only if Phase 7 ran
-- Total cost and tokens from `$COST_FILE`
+- Cost and tokens from `$COST_FILE`. **Report only what the file actually contains.** `total_cost` is
+  `null` for an adapter whose tool does not report money — `codex` is one — and in that case say the
+  tool reports no cost, rather than printing `$0.00`. Zero and "not reported" are different claims,
+  and only one of them is true
 - The path to `$RAW_OUTPUT_FILE` — it is kept on disk after the run (see Notes) and this is the only place
   that path is surfaced to the user; without it, re-running `/ak-review:advise` against the kept output
   means hunting for a `/tmp/ak-review-execute/<timestamp>/` directory rather than reading it off the report
@@ -196,10 +214,18 @@ registry: an adapter is the set of scripts named after its tool under `scripts/`
 | Script | Contract | Required? |
 |--------|----------|-----------|
 | `<tool>-adapter.sh <prompt-file> <model> [effort] <raw-output-file>` | Runs the review, writing the tool's raw output to the given file. Exits with the tool's own exit code — except on its own timeout, where it kills the tool's whole process group and exits `124`. **Enforcing a ceiling is the adapter's job, not the caller's:** an unattended caller may lose the timer, and a killed run is still salvageable because the raw output is written as the run goes. | Yes |
-| `<tool>-preflight.sh` | Exit 0 = ready, *or not provably unready*. Non-zero = cannot run, with the reason and the concrete fix on stderr. **An adapter must not block on a check it cannot make reliably — it either drops the check or notes the gap on stderr.** See the `opencode` entry for why this matters. | Optional; skipped if absent |
+| `<tool>-preflight.sh` | Exit 0 = ready, _or not provably unready_. Non-zero = cannot run, with the reason and the concrete fix on stderr. **An adapter must not block on a check it cannot make reliably — it either drops the check or notes the gap on stderr.** See the `opencode` entry for why this matters. | Optional; skipped if absent |
+| `<tool>-extract-report.sh <raw-output-file>` | Prints the agent's report to stdout. Exits non-zero when the stream carries no report at all — that is an honest signal, not a parse failure, and must not be smoothed into an empty report. | Yes |
+| `<tool>-extract-cost.sh <raw-output-file>` | Prints `{"total_cost":…,"total_tokens":…}`. `total_cost` is `null` when the tool reports no money — never `0`, which would falsely claim the run was free. Extra keys are fine. Must degrade to zeros on a truncated stream rather than failing, so a salvaged report is not lost with it. | Yes |
+| `<tool>-extract-subagents.sh <raw-output-file>` | Recovers finished sub-agent output from a killed run. Only meaningful for tools that dispatch sub-agents and merge late. | Optional; omit when the tool has no such concept |
 | `<tool>-models.sh` | Prints one candidate per line, to stdout; the format is the tool's own and is not guaranteed. Used by `/ak-review:setup`. | Optional; setup asks the user to type a model if absent |
 
-Adding a tool means adding those scripts plus a subsection here, following the shape of the entry
+**The extractors are part of the adapter, not shared infrastructure.** Each tool emits its own event
+schema, and pointing one tool's extractor at another's stream produces an empty report rather than an
+error — a silent failure that looks exactly like a clean review. They were unprefixed while `opencode`
+was the only adapter; the names now carry the tool.
+
+Adding a tool means adding those scripts plus a subsection here, following the shape of the entries
 below.
 
 ### `opencode`
@@ -216,7 +242,7 @@ below.
   is not. It deliberately does **not** check authentication. That check existed and was removed: it had to parse
   `opencode auth list`'s human-readable output (the exit code is 0 either way), and three successive
   escape-stripping patterns were each defeated by a different ANSI class, every time by wrongly hard-blocking a
-  *correctly authenticated* user. An unauthenticated opencode fails instantly, for free, and says so itself, so
+  _correctly authenticated_ user. An unauthenticated opencode fails instantly, for free, and says so itself, so
   the check bought a marginally nicer message at the cost of the worst failure mode there is. Do not add it back
   without a machine-readable signal (a documented exit code or a `--json` mode). The script's own comment header
   carries the full account.
@@ -239,19 +265,62 @@ below.
   absence of any open network connection is what proves it is waiting on nothing. When the Phase 3
   timeout expires, follow Phase 3's salvage path above — kill the process, then run the extractors in
   this order:
-  1. `extract-subagents.sh` **first.** The tool dispatches one sub-agent per review dimension and merges
+  1. `opencode-extract-subagents.sh` **first.** The tool dispatches one sub-agent per review dimension and merges
      them only at the end, so a run that stalls before that still holds every finding the finished
-     sub-agents produced. Those live in `tool_use` parts, which `extract-report.sh` cannot see.
-  2. `extract-report.sh` for whatever prose exists. On a stall before synthesis this is usually just
+     sub-agents produced. Those live in `tool_use` parts, which `opencode-extract-report.sh` cannot see.
+  2. `opencode-extract-report.sh` for whatever prose exists. On a stall before synthesis this is usually just
      narration — do not read a short result as "nothing was produced".
-  3. `extract-cost.sh`, which works on a partial stream and reports what the run actually cost.
+  3. `opencode-extract-cost.sh`, which works on a partial stream and reports what the run actually cost.
 
-  Measured on two real stalled runs: `extract-report.sh` returned 91 characters of narration against
+  Measured on two real stalled runs: `opencode-extract-report.sh` returned 91 characters of narration against
   4085 characters of unread sub-agent findings in the first, and 416 against **31832** in the second —
   five completed sub-agents whose entire output the normal path cannot see. A short `report.md` is not
   evidence that the review found nothing. After an external kill the adapter
   never reaches its own warning, so read `<raw-output-file>.stderr` directly in that case; the file is
   written by the OS as the run goes and survives the kill.
+
+### `codex`
+
+OpenAI's Codex CLI. Verified against `codex-cli 0.149.0`.
+
+- Script: `${CLAUDE_PLUGIN_ROOT}/skills/execute/scripts/codex-adapter.sh <prompt-file> <model> [effort] <raw-output-file>`
+- `model` — a bare model name, e.g. `gpt-5.6-sol`. **Not** `provider/model`: unlike `opencode`, codex
+  takes no provider prefix, and a slashed value is rejected.
+- `effort` — passed as `-c model_reasoning_effort="<value>"`, **not** as a flag. `--reasoning-effort`
+  was removed in codex v0.50 and passing it would be silently wrong on every current version. Valid
+  values, from the API's own enum: `none`, `minimal`, `low`, `medium`, `high`, `xhigh`, `max`. (The
+  "Ultra" offered in codex's interactive model picker is not among them.) Omit to use codex's default.
+- **Prerequisite:** none beyond an authenticated `codex`. There is no permission config to prepare —
+  the adapter passes `--sandbox read-only`, which makes delegate's report-only contract _structural_:
+  the external agent cannot write to the repository even if its prompt told it to. Never relax this.
+- **Preflight:** `codex-preflight.sh` checks PATH **and** authentication. The auth check is legitimate
+  here, where opencode's was not, for one reason: `codex login status` exits `0` authenticated and `1`
+  unauthenticated, so the verdict comes from an exit code and never from parsing decorated output. If
+  a future release stops distinguishing those codes, delete the check rather than parsing text — see
+  `opencode-preflight.sh` for what that costs.
+- **Models:** there is no `codex-models.sh`. Codex has no non-interactive model listing (`codex models`
+  is not a subcommand; it is read as a prompt), so `/ak-review:setup` falls back to asking the user to
+  type the model name.
+- The adapter passes `--ignore-user-config`. A user's `~/.codex/config.toml` pulls in MCP servers,
+  hooks, plugins and skills, none of which serve an unattended review: measured on a real config, a run
+  emitted failing MCP auth handshakes, hook-timeout warnings, and _"skill descriptions were shortened
+  to fit the skills context budget"_ — the review's own context being crowded out by unrelated tooling.
+  Authentication is unaffected, resolving through `CODEX_HOME` independently of this flag.
+- The prompt is passed on **stdin** with `-` as the prompt argument, not as an argv element: a delegate
+  prompt carries project context and full diffs and can approach `ARG_MAX`. This also stops codex from
+  blocking on an inherited stdin in a backgrounded run.
+- Output is a newline-delimited JSON event stream (`thread.started`, `turn.started`, `item.completed`,
+  `turn.completed`), always redirected straight to a file — see Phase 3/4.
+- **Cost is not reported.** `turn.completed.usage` carries token counts only, with no price attached
+  anywhere in the stream. `codex-extract-cost.sh` therefore emits `"total_cost": null` — Phase 8 must
+  say codex reports no cost rather than printing `$0.00`.
+- **A killed run usually salvages nothing**, and this is the sharpest difference from `opencode`.
+  Codex has no sub-agents: it emits its answer as a single `agent_message` at the very end, so a run
+  killed at the ceiling typically holds only `reasoning` and `command_execution` items — the model's
+  scratch work, which is not findings and must never be fed to Phase 5 as though it were.
+  `codex-extract-report.sh` reads only `agent_message` items and exits non-zero when there are none,
+  which is the honest signal that the run produced no answer at all. Do not read that as "the review
+  found nothing".
 
 ## Configuration
 
@@ -275,6 +344,11 @@ Resolved by `scripts/resolve-config.sh`, precedence CLI flags > project file > g
 installing or updating this plugin never forces a specific tool or model on anyone. `fix_threshold`
 defaults to `high` if unset anywhere. `effort` has no default; if unresolved, the adapter is invoked
 without an effort flag.
+
+**`model` and `effort` are adapter-specific — the example above is `opencode`'s shape, not a universal
+one.** `opencode` takes `provider/model` and its own `--variant` levels; `codex` takes a bare model
+name and the reasoning-effort enum. Check the tool's entry in the Adapter Reference before writing
+either value, and note that a wrong `model` surfaces only when the adapter rejects it mid-run.
 
 ## Notes
 

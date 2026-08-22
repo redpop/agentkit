@@ -43,7 +43,7 @@ Ask where the configuration should live:
 
 Read the file that will be written to (determined by Phase 1). If it exists, show its current
 contents and ask whether to **replace** it or **cancel**. Do not proceed without an answer,
-and never overwrite silently. If the *other* scope's file exists (project when configuring global,
+and never overwrite silently. If the _other_ scope's file exists (project when configuring global,
 or global when configuring project), mention it without asking about it, and note that the project
 file overrides the global one.
 
@@ -70,9 +70,14 @@ ${CLAUDE_PLUGIN_ROOT}/skills/execute/scripts/<tool>-models.sh
 ```
 
 **If the script does not exist:** this adapter offers no automatic model listing. Tell the user so,
-then ask them to type the model identifier themselves. Name the format the adapter expects — for
-`opencode`, that is `provider/model`: a provider name (e.g., `opencode-go`), then a slash, then
-the model name. Do not suggest a specific model.
+then ask them to type the model identifier themselves. Name the format the adapter expects, which is
+**per-adapter** — read its entry in `execute`'s Adapter Reference rather than assuming:
+
+- `opencode` — `provider/model`: a provider name (e.g. `opencode-go`), a slash, then the model name.
+- `codex` — a bare model name, with **no** provider prefix and no slash. Codex has no model listing
+  command, so this branch is the only path for it.
+
+Do not suggest a specific model.
 
 **Caution — in this branch, the typed value cannot be verified here**, because this adapter offers
 no authoritative list. Repeat back the exact string the user gave, and ask them to confirm it before
@@ -98,25 +103,28 @@ tool ran and the listing itself failed (e.g. `opencode models` erroring, an auth
 listing error, not a missing binary — show it and stop: a config naming a model the tool does not
 have is worse than no config.
 
-**Before writing, in either branch:** confirm the chosen value looks like `provider/model` (a name,
-one `/`, another name) — the shape `opencode` (and any adapter following the same convention) expects.
-A model lister's output format is the tool's own and is not guaranteed to already look this way. If
-the chosen entry does not have that shape, ask the user to confirm the exact string to write rather
-than assuming the listed line is it.
+**Before writing, in either branch:** confirm the chosen value has the shape the _resolved adapter_
+expects — `provider/model` for `opencode`, a bare name for `codex`. A model lister's output format is
+the tool's own and is not guaranteed to already match. If the chosen entry does not have the expected
+shape, ask the user to confirm the exact string to write rather than assuming the listed line is it.
 
 ### Phase 5: Fix threshold
 
 Ask, proposing `high`:
 
-- `critical` / `high` — only findings that are confirmed *and* at least this severe are changed
+- `critical` / `high` — only findings that are confirmed _and_ at least this severe are changed
   automatically. `high` is the recommended default.
 - `medium` / `low` — more gets fixed unattended, and more of it will be wrong. Findings at these
   levels are disproportionately matters of taste, and a reviewer is least reliable there.
 
 ### Phase 6: Effort (optional)
 
-Ask whether to pin a reasoning-effort level for the adapter, offering to skip. For `opencode` this
-becomes `--variant` (e.g. `high`); leaving it unset uses the tool's own default.
+Ask whether to pin a reasoning-effort level for the adapter, offering to skip. Leaving it unset uses
+the tool's own default. The accepted values are the tool's, not this skill's:
+
+- `opencode` — becomes `--variant` (e.g. `high`).
+- `codex` — becomes `-c model_reasoning_effort=…`, one of `none`, `minimal`, `low`, `medium`, `high`,
+  `xhigh`, `max`.
 
 ### Phase 7: Write and verify
 

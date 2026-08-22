@@ -1,5 +1,5 @@
 #!/bin/bash
-# Pins extract-subagents.sh against hand-built streams.
+# Pins opencode-extract-subagents.sh against hand-built streams.
 #
 # The fixture shapes come from a real stalled run, not from imagination: a
 # completed `task` result carrying findings, a still-`running` one carrying
@@ -7,7 +7,7 @@
 set -euo pipefail
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SCRIPT="$DIR/../extract-subagents.sh"
+SCRIPT="$DIR/../opencode-extract-subagents.sh"
 
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
@@ -78,4 +78,4 @@ JSONL
 OUT=$(bash "$SCRIPT" "$WORK/malformed.jsonl")
 echo "$OUT" | grep -q "SURVIVED" || fail "case 6: a malformed part crashed or dropped the valid result"
 
-echo "PASS: test-extract-subagents.sh"
+echo "PASS: test-opencode-extract-subagents.sh"

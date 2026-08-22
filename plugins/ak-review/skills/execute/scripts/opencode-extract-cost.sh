@@ -2,18 +2,18 @@
 set -euo pipefail
 
 if [ $# -ne 1 ]; then
-  echo "Usage: extract-cost.sh <raw-jsonl-file>" >&2
+  echo "Usage: opencode-extract-cost.sh <raw-jsonl-file>" >&2
   exit 1
 fi
 
 RAW_FILE="$1"
 
 if [ ! -f "$RAW_FILE" ]; then
-  echo "extract-cost.sh: file not found: $RAW_FILE" >&2
+  echo "opencode-extract-cost.sh: file not found: $RAW_FILE" >&2
   exit 1
 fi
 
-# See extract-report.sh for why this is two jq passes: a line-by-line
+# See opencode-extract-report.sh for why this is two jq passes: a line-by-line
 # `fromjson? // empty` filter tolerates a stream truncated mid-line, where
 # `jq -s` would abort on the first malformed line instead of degrading to a
 # zeroed cost.

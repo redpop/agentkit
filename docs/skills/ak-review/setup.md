@@ -57,7 +57,9 @@ Skips the scope question and configures the global default, the file you copy to
 
 ## Requirements
 
-- The chosen tool's CLI, installed and authenticated (for `opencode`: `opencode auth login`)
+- The chosen tool's CLI, installed and authenticated — `opencode auth login` for `opencode`,
+  `codex login` for `codex`. Not needed at setup time if you are writing a global config for a machine
+  where the tool is not installed yet; the skill falls back to typing the model name by hand
 - `jq`, used by the config resolver
 
 ## Related

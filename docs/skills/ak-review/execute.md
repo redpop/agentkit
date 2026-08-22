@@ -5,7 +5,7 @@
 ## Overview
 
 Closes the loop `/ak-review:delegate` and `/ak-review:advise` deliberately left manual: this skill builds
-the delegate prompt, runs it against a configured external tool (currently OpenCode), verifies every
+the delegate prompt, runs it against a configured external tool (OpenCode or Codex), verifies every
 finding against the real code the same way `/ak-review:advise` does, auto-fixes the confirmed
 high/critical ones using `/ak-review:coderabbit`'s Apply/Adapt/Skip framework, validates with the
 project's own tests/lint, and reports one compact summary — no manual copy-paste, no checkpoints mid-run.
@@ -20,9 +20,12 @@ missing tool would otherwise surface as a cryptic shell error mid-run. And becau
 empty run, the adapter itself caps execution at a 20-minute ceiling (override with
 `AK_REVIEW_TIMEOUT_SECS`) and exits `124` when it fires — enforced inside the adapter rather than left to
 the calling agent, because an unattended harness may background the call and lose the timer. On a timeout
-the skill salvages what already finished instead of discarding a paid, mostly-done run — completed
-sub-agent findings first (`extract-subagents.sh`), since those live in event-stream parts the normal
-report extractor cannot see, then whatever report prose and cost data survived.
+the skill salvages what already finished instead of discarding a paid, mostly-done run. How much that
+recovers depends entirely on the tool: OpenCode dispatches sub-agents and merges late, so completed
+sub-agent findings are recoverable first (`opencode-extract-subagents.sh`) from event-stream parts the
+normal report extractor cannot see. Codex has no sub-agents and emits its answer as a single message at
+the end, so a killed Codex run usually has nothing to salvage — its report extractor exits non-zero to
+say so rather than returning an empty report that would read as "no issues found".
 
 ## Usage
 
@@ -31,8 +34,11 @@ report extractor cannot see, then whatever report prose and cost data survived.
 ```
 
 **Flags:** `--type all|committed|uncommitted` (default: all), `--base <ref>`, `--path <…>`, `--all`,
-`--tool <name>`, `--model <provider/model>`, `--effort <level>`, `--fix-threshold critical|high|medium|low`
+`--tool <name>`, `--model <model>`, `--effort <level>`, `--fix-threshold critical|high|medium|low`
 (default: high), `--report-only`
+
+`--model` and `--effort` take the _adapter's_ format, not a shared one: OpenCode wants `provider/model`
+and its own variant levels, Codex wants a bare model name and one of `none|minimal|low|medium|high|xhigh|max`.
 
 ## Configuration
 
@@ -67,7 +73,12 @@ Runs the full loop against your current uncommitted work, using whatever tool/mo
 /ak-review:execute --tool opencode --model opencode-go/glm-5.3 --effort high
 ```
 
-One-off run against a specific tool/model, without touching any config file.
+```text
+/ak-review:execute --tool codex --model gpt-5.6-sol --effort high
+```
+
+One-off run against a specific tool/model, without touching any config file. Note the differing model
+formats — Codex takes no provider prefix.
 
 ```text
 /ak-review:execute --report-only
@@ -97,14 +108,18 @@ Widens auto-fixing to confirmed Medium findings and above (default is High and a
 - Keep the global config (`~/.claude/ak-review.local.json`) for your personal default, and only add a
   project-local override when a specific repo genuinely needs a different tool or model
 - The OpenCode adapter needs a working, non-interactive-friendly OpenCode permission config first (see
-  the skill's Adapter Reference) — this skill never passes `--auto`
+  the skill's Adapter Reference) — this skill never passes `--auto`. The Codex adapter needs no such
+  preparation: it runs with `--sandbox read-only`, which makes the report-only contract structural
+- Codex reports token counts but no monetary cost, so the run summary shows tokens only for that adapter
 - Raw adapter output is kept on disk after each run for debugging and for re-running `/ak-review:advise`
   without repeating the external tool call
 
 ## Requirements
 
 - `jq` for the config resolution and output-extraction scripts
-- The OpenCode CLI (`opencode`), authenticated, for the `opencode` adapter
+- The external CLI for the adapter you configure, installed and authenticated:
+  - `opencode` for the `opencode` adapter
+  - `codex` for the `codex` adapter (verified against `codex-cli 0.149.0`)
 
 ## Related
 
