@@ -54,7 +54,8 @@ Skips the scope question and configures the global default, the file you copy to
 /ak-review:setup --show
 ```
 
-Shows the resolved configuration and which layer each value came from, which adapters are installed,
+Shows the resolved configuration and which layer each value came from, any `AK_REVIEW_*` runtime limits
+currently set in the environment (which the config file cannot show), which adapters are installed,
 and — for tools that can list them — the available models. Writes nothing, asks nothing. Use it before
 deciding what to switch to.
 

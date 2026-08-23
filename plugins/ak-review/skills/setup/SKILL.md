@@ -74,8 +74,21 @@ Report, in this order:
    value in the wrong shape is rejected
    mid-run, long after this point.
 
-If the listing is long, summarise or group it, but keep full identifiers visible — the reader's next
-step is copying one into a command.
+4. **Which runtime limits are in force.** These live in the environment, not the config file, so they
+   are invisible to `resolve-config.sh` and easy to forget — an `AK_REVIEW_TIMEOUT_SECS` exported in a
+   shell profile months ago silently governs every run since:
+
+   ```bash
+   env | grep '^AK_REVIEW_' | sort
+   ```
+
+   Report each one found, and say plainly that anything not listed is at its default. Do **not**
+   reproduce the defaults from memory: read them from `execute`'s "Environment variables" table, which
+   is generated from the adapters and is where they are maintained. Where a variable applies to an
+   adapter other than the configured one, say so — it is set but inert.
+
+If a model listing is long, summarise or group it, but keep full identifiers visible — the reader's
+next step is copying one into a command.
 
 Close by showing how to use a value without changing anything, and how to make it permanent:
 

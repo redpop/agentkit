@@ -461,6 +461,29 @@ name and the reasoning-effort enum; `claude` takes an alias (`opus`, `sonnet`) o
 with Claude Code's own effort enum. Check the tool's entry in the Adapter Reference before writing
 either value, and note that a wrong `model` surfaces only when the adapter rejects it mid-run.
 
+### Environment variables
+
+Runtime limits live in the environment rather than the config file, because they tune a single run
+rather than describing a setup. **They are adapter-specific**, and an adapter silently ignores any it
+does not implement — setting `AK_REVIEW_STARTUP_RETRIES` for `codex` does nothing at all.
+
+| Variable | Default | Adapters | Effect |
+|---|---|---|---|
+| `AK_REVIEW_TIMEOUT_SECS` | `1200` | all | Ceiling for **one attempt**, after which the adapter kills the process group and exits `124` |
+| `AK_REVIEW_STARTUP_GRACE_SECS` | `90` | `opencode` | How long a run may produce **no bytes at all** before it counts as stalled at startup. Must be below the timeout |
+| `AK_REVIEW_STARTUP_RETRIES` | `2` | `opencode` | Further attempts after a startup stall. `0` disables retrying; only exit `125` is ever retried |
+| `AK_REVIEW_RETRY_WAIT_SECS` | `60` | `opencode` | Wait between those attempts |
+| `AK_REVIEW_MAX_BUDGET_USD` | `5` | `claude` | Spend cap in dollars. `none` removes it — **not** `0`, which means zero dollars and aborts instantly |
+
+Two things the table cannot convey, both measured:
+
+- **The timeout bounds an attempt, not the invocation.** With `opencode`'s retries on, the worst case
+  is `retries × (startup_grace + retry_wait) + timeout`, roughly 25 minutes at the defaults. Size any
+  backstop of your own against that, or set `AK_REVIEW_STARTUP_RETRIES=0`.
+- **The budget cap is a ceiling, not a guarantee.** Claude Code checks spend between turns, so a run
+  stops just _after_ exceeding it; the overshoot is bounded by one turn's cost. A cap below the price
+  of a single turn cannot bind at all, and the adapter says so. See the `claude` entry above.
+
 ## Notes
 
 - This skill writes code (Phase 6) — unlike `delegate` and `advise`, which never do.
