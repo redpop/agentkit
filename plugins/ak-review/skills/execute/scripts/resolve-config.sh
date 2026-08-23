@@ -83,6 +83,7 @@ Implemented adapters, and the "model" shape each one expects:
 
   opencode  provider/model, e.g. the output of \`opencode models\`
   codex     a bare model name, no provider prefix
+  claude    a Claude Code alias (opus, sonnet) or a full model name
 
 Only "tool" and "model" are required. "fix_threshold" defaults to "high"
 (auto-fix confirmed high/critical findings only); "effort" is optional, and its

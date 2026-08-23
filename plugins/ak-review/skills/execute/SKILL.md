@@ -106,8 +106,8 @@ and produces no intermediate output; do not attempt to babysit it.
 
 **Where the ceiling is enforced:** an adapter is expected to enforce its own timeout and to exit `124`
 (GNU `timeout`'s convention) when it fires, because a ceiling the _caller_ has to hold is the one that
-breaks in an unattended run — a harness may background the call and take the timer with it. Both
-`opencode` and `codex` do this (20 min, override with `AK_REVIEW_TIMEOUT_SECS`). Still pass a generous
+breaks in an unattended run — a harness may background the call and take the timer with it. All three
+implemented adapters do this (20 min, override with `AK_REVIEW_TIMEOUT_SECS`). Still pass a generous
 timeout of your own as a backstop for an adapter that does not, but treat exit `124` as the definitive
 timeout signal.
 
@@ -127,13 +127,13 @@ Do **not** fall through to the normal Phase 4 path below; go to the salvage path
 extractor the resolved adapter provides, `$SUBAGENTS_FILE` first where one exists:
 
 ```bash
-# only if the adapter has one — opencode does, codex does not
+# only if the adapter has one — opencode and claude do, codex does not
 ${CLAUDE_PLUGIN_ROOT}/skills/execute/scripts/<tool>-extract-subagents.sh "$RAW_OUTPUT_FILE" > "$SUBAGENTS_FILE"
 ${CLAUDE_PLUGIN_ROOT}/skills/execute/scripts/<tool>-extract-report.sh "$RAW_OUTPUT_FILE" > "$REPORT_FILE"
 ${CLAUDE_PLUGIN_ROOT}/skills/execute/scripts/<tool>-extract-cost.sh "$RAW_OUTPUT_FILE" > "$COST_FILE"
 ```
 
-**How much a timeout salvages depends entirely on the tool, and the two implemented adapters sit at
+**How much a timeout salvages depends entirely on the tool, and the implemented adapters sit at
 opposite extremes.** Check the Adapter Reference before concluding anything from a short salvaged
 report:
 
@@ -141,6 +141,9 @@ report:
   killed before that still holds every finished sub-agent's output — in `tool_use` parts that
   `opencode-extract-report.sh` cannot see. Running `opencode-extract-subagents.sh` first is what
   recovers them; the `opencode` entry below measures how much the report alone misses.
+- `claude` behaves like `opencode` here: it dispatches sub-agents via its Task tool and merges late, so
+  `claude-extract-subagents.sh` recovers whatever the finished ones produced. The adapter passes
+  `--forward-subagent-text` precisely so that output reaches the stream at all.
 - `codex` has no sub-agents and emits its answer as a single `agent_message` at the very end. A killed
   codex run usually has **nothing** to recover, and `codex-extract-report.sh` exits non-zero to say so
   rather than printing an empty report. That is an honest signal, not a failure to parse.
@@ -370,6 +373,49 @@ OpenAI's Codex CLI. Verified against `codex-cli 0.149.0`.
   which is the honest signal that the run produced no answer at all. Do not read that as "the review
   found nothing".
 
+### `claude`
+
+Anthropic's Claude Code, run headless. Verified against `2.1.240`.
+
+- Script: `${CLAUDE_PLUGIN_ROOT}/skills/execute/scripts/claude-adapter.sh <prompt-file> <model> [effort] <raw-output-file>`
+- `model` — an alias (`opus`, `sonnet`, `fable`) or a full name (`claude-opus-5`). No provider prefix.
+- `effort` — passed as Claude Code's own `--effort`: `low`, `medium`, `high`, `xhigh`, `max`. Omit to
+  use its default.
+- **Read-only is enforced by an allowlist, not by the permission mode — and that distinction was
+  measured, not assumed.** A probe run with `--permission-mode plan` alone _successfully created a
+  file_: plan mode governs how Claude Code works, not what it may touch. The adapter therefore passes
+  an explicit allowlist (`Read`, `Glob`, `Grep`, `Task`, `WebFetch`, and four read-only `git`
+  invocations) plus a denial of `Write`/`Edit`/`NotebookEdit`. **Never grant `Bash` wholesale here:**
+  an unrestricted shell is a write path no deny-list can close, since `touch`, `>`, `sed -i` and the
+  rest cannot be enumerated. Verified with the allowlist in place, the agent reports it has no
+  permitted way to create a file while `git log` and file reads work normally.
+- `--permission-mode dontAsk` is what makes that workable unattended: nothing may sit waiting for a
+  prompt that no one will answer. Plan mode is deliberately **not** used — it wants to write a plan
+  file of its own, which the allowlist then blocks, producing a confusing complaint mid-report.
+- **Sub-agents work headless**, which is why this adapter has a `-extract-subagents.sh` and `codex`
+  does not. Confirmed on a real run: sub-agent messages arrive with `parent_tool_use_id` set, which is
+  also the only thing distinguishing them from the coordinating agent's own text. The adapter passes
+  `--forward-subagent-text` to get them into the stream at all.
+- **Preflight:** `claude-preflight.sh` checks PATH only. No authentication check: Claude Code exposes
+  no machine-readable login status the way `codex login status` does, and parsing human-readable
+  output to gate a run is exactly the mistake `opencode-preflight.sh` documents.
+- **Models:** there is no `claude-models.sh`; Claude Code has no listing command, so `/ak-review:setup`
+  falls back to asking for the name.
+- Output is a newline-delimited JSON event stream. The finished answer arrives in a single `result`
+  event as `.result`, alongside `total_cost_usd`, `num_turns` and `usage`.
+- **Cost is reported in money**, unlike `codex` — `total_cost_usd` comes straight from the tool, so
+  nothing has to be inferred from token counts.
+- **This is by far the most expensive adapter.** Measured: about **$0.26–0.61 for a single trivial
+  prompt**, because Claude Code loads substantial context before doing anything. Compare roughly
+  $0.002 for the same shape of work through `opencode`. Set `AK_REVIEW_MAX_BUDGET_USD` to give the run
+  a hard spend ceiling — this is the only adapter whose tool can stop itself on cost rather than time.
+- **A denied permission does not fail the run.** Claude Code records it in `permission_denials` and
+  carries on, so a review that could not read what it needed still exits 0 with a confident-looking
+  report — the same danger as opencode's silent auto-rejection. The adapter counts them and warns.
+  **Check that warning before trusting a report.**
+- Running this adapter from inside a Claude Code session is fine: it is a separate process with its own
+  permissions, and the allowlist above applies to it regardless of what the outer session may do.
+
 ## Configuration
 
 Resolved by `scripts/resolve-config.sh`, precedence CLI flags > project file > global file:
@@ -395,7 +441,8 @@ without an effort flag.
 
 **`model` and `effort` are adapter-specific — the example above is `opencode`'s shape, not a universal
 one.** `opencode` takes `provider/model` and its own `--variant` levels; `codex` takes a bare model
-name and the reasoning-effort enum. Check the tool's entry in the Adapter Reference before writing
+name and the reasoning-effort enum; `claude` takes an alias (`opus`, `sonnet`) or a full model name,
+with Claude Code's own effort enum. Check the tool's entry in the Adapter Reference before writing
 either value, and note that a wrong `model` surfaces only when the adapter rejects it mid-run.
 
 ## Notes
