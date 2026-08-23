@@ -5,6 +5,47 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.26.0] - 2026-08-23
+
+### ✨ Added
+
+- `ak-review:execute` — **A `claude` adapter, for running reviews through Claude Code headless.** It is
+  the only adapter that combines both qualities the other two split between them: sub-agents per review
+  dimension (which `codex` lacks) _and_ monetary cost reporting straight from the tool (which `codex`
+  also lacks), without `opencode`'s startup stall. On SWE-Atlas-QnA — the public benchmark closest to
+  reviewing, since it measures multi-file code comprehension rather than patch-writing — Opus 5 scores
+  63.2 against GPT-5.6-Sol's 46.0, a gap outside the confidence intervals. Verified against Claude Code
+  `2.1.240`, including a live end-to-end run.
+
+- `ak-review:execute` — **Read-only is enforced by an allowlist here, and the reason is a measurement,
+  not a preference.** A probe run with `--permission-mode plan` alone _successfully created a file_:
+  plan mode governs how Claude Code works, not what it may touch. The adapter therefore grants an
+  explicit allowlist — `Read`, `Glob`, `Grep`, `Task`, `WebFetch` and four read-only `git` invocations —
+  and denies `Write`/`Edit`/`NotebookEdit`. `Bash` is never granted wholesale, because an unrestricted
+  shell is a write path no deny-list can close: `touch`, `>`, `sed -i` and the rest cannot be
+  enumerated. With the allowlist in place the agent reports it has no permitted way to create a file,
+  while `git log` and file reads work normally. `--permission-mode dontAsk` completes it: unattended,
+  nothing may sit waiting for a prompt nobody will answer.
+
+- `ak-review:execute` — **`AK_REVIEW_MAX_BUDGET_USD` caps a run's spend in dollars.** Claude Code is by
+  a wide margin the most expensive adapter — measured at roughly **$0.26–0.61 for a single trivial
+  prompt**, against about $0.002 for the same shape of work through `opencode`, because it loads
+  substantial context before doing anything. It is also the only one of the three whose tool can stop
+  itself on cost rather than on time, so the ceiling is offered where it actually exists.
+
+- `ak-review:execute` — **The adapter warns when Claude Code was denied a tool call.** Denials are
+  recorded in `permission_denials` and the run continues, so a review that could not read what it
+  needed still exits 0 with a confident-looking report — the same silent failure `opencode`'s
+  auto-rejection produces, and it gets the same explicit warning.
+
+### 📝 Documented
+
+- `ak-review:execute` — Every place that enumerated the adapters or assumed there were two of them:
+  the ceiling paragraph ("Both `opencode` and `codex`"), the salvage comparison ("the two implemented
+  adapters sit at opposite extremes"), the model-format sentences in `setup` and the docs page, and
+  the adapter list in `resolve-config.sh`'s no-config message — which is the first thing a new user
+  ever sees.
+
 ## [1.25.0] - 2026-08-23
 
 ### ✨ Added
