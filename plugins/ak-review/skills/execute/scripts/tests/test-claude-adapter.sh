@@ -97,13 +97,64 @@ ERRTXT="$WORK/case7.err"
 FAKE_STDOUT="$RESULT_OK" FAKE_EXIT=0 bash "$SCRIPT" "$PROMPT" opus xhigh "$OUT" 2> "$ERRTXT"
 grep -q "WARNING" "$ERRTXT" && fail "case 7: a clean run must not warn"
 
-# Case 8: optional spend ceiling, off unless asked for.
-grep -qx -- "--max-budget-usd" "$FAKE_ARGV_FILE" && fail "case 8: the budget flag must be opt-in"
-OUT="$WORK/case8.jsonl"
-FAKE_STDOUT="$RESULT_OK" FAKE_EXIT=0 AK_REVIEW_MAX_BUDGET_USD=5 \
+# Case 8: the spend ceiling is ON by default at $5. This adapter is the most
+# expensive by a wide margin and the only one whose tool can stop itself on
+# cost, so an unattended run must not be able to bill open-endedly.
+grep -qx -- "--max-budget-usd" "$FAKE_ARGV_FILE" || fail "case 8: the budget cap must be on by default"
+grep -qx -- "5" "$FAKE_ARGV_FILE" || fail "case 8: the default cap should be 5"
+
+# Case 8b: overridable, and removable with 'none' — not with 0, which would read
+# as "zero dollars" and abort instantly.
+OUT="$WORK/case8b.jsonl"
+FAKE_STDOUT="$RESULT_OK" FAKE_EXIT=0 AK_REVIEW_MAX_BUDGET_USD=20 \
   bash "$SCRIPT" "$PROMPT" opus xhigh "$OUT" 2> /dev/null
-grep -qx -- "--max-budget-usd" "$FAKE_ARGV_FILE" || fail "case 8: the budget flag was not passed when set"
-grep -qx -- "5" "$FAKE_ARGV_FILE" || fail "case 8: the budget value was not passed"
+grep -qx -- "20" "$FAKE_ARGV_FILE" || fail "case 8b: an explicit budget was not passed"
+FAKE_STDOUT="$RESULT_OK" FAKE_EXIT=0 AK_REVIEW_MAX_BUDGET_USD=none \
+  bash "$SCRIPT" "$PROMPT" opus xhigh "$OUT" 2> /dev/null
+grep -qx -- "--max-budget-usd" "$FAKE_ARGV_FILE" && fail "case 8b: 'none' must remove the cap entirely"
+
+# Case 8c: hitting the cap is explained, not left as a bare non-zero exit.
+# Claude Code ends such a run with result:null, so without this the caller only
+# learns that no report was found — never that the cap is the reason.
+OUT="$WORK/case8c.jsonl"
+ERRTXT="$WORK/case8c.err"
+set +e
+FAKE_EXIT=1 \
+  FAKE_STDOUT='{"type":"result","subtype":"error_max_budget_usd","is_error":true,"terminal_reason":"budget_exhausted","total_cost_usd":5.12,"usage":{},"result":null}' \
+  bash "$SCRIPT" "$PROMPT" opus xhigh "$OUT" 2> "$ERRTXT"
+BUDGET_EXIT=$?
+set -e
+[ "$BUDGET_EXIT" -eq 1 ] || fail "case 8c: the tool's exit code must propagate, got $BUDGET_EXIT"
+grep -q "BUDGET EXHAUSTED" "$ERRTXT" || fail "case 8c: hitting the cap must be reported explicitly"
+grep -q "5.12" "$ERRTXT" || fail "case 8c: the actual spend should be named, not just the limit"
+grep -q "AK_REVIEW_MAX_BUDGET_USD=none" "$ERRTXT" || fail "case 8c: the message must say how to lift the cap"
+grep -q "claude-extract-subagents.sh" "$ERRTXT" || fail "case 8c: finished sub-agents are still salvageable and must be mentioned"
+
+# Case 8e: a cap below the price of one turn cannot bind, and saying so is the
+# point. Claude Code checks spend BETWEEN turns, so a run stops only once it has
+# already gone over — measured, a $0.01 cap ended at $0.28 after turns=1. Such a
+# cap buys nothing while looking like protection, so it is flagged rather than
+# silently accepted. It is still allowed: stopping almost immediately is a
+# legitimate thing to want.
+OUT="$WORK/case8e.jsonl"
+ERRTXT="$WORK/case8e.err"
+FAKE_STDOUT="$RESULT_OK" FAKE_EXIT=0 AK_REVIEW_MAX_BUDGET_USD=0.01 \
+  bash "$SCRIPT" "$PROMPT" opus xhigh "$OUT" 2> "$ERRTXT"
+grep -q "NOTE" "$ERRTXT" || fail "case 8e: a sub-\$1 cap must be flagged as unable to bind"
+grep -qx -- "0.01" "$FAKE_ARGV_FILE" || fail "case 8e: the cap must still be passed through, not rejected"
+
+# Case 8f: the default cap is above that threshold and must NOT be flagged,
+# or the note becomes noise on every single run.
+OUT="$WORK/case8f.jsonl"
+ERRTXT="$WORK/case8f.err"
+FAKE_STDOUT="$RESULT_OK" FAKE_EXIT=0 bash "$SCRIPT" "$PROMPT" opus xhigh "$OUT" 2> "$ERRTXT"
+grep -q "NOTE" "$ERRTXT" && fail "case 8f: the default cap must not trigger the sub-\$1 note"
+
+# Case 8d: a normal run must NOT claim budget exhaustion.
+OUT="$WORK/case8d.jsonl"
+ERRTXT="$WORK/case8d.err"
+FAKE_STDOUT="$RESULT_OK" FAKE_EXIT=0 bash "$SCRIPT" "$PROMPT" opus xhigh "$OUT" 2> "$ERRTXT"
+grep -q "BUDGET EXHAUSTED" "$ERRTXT" && fail "case 8d: a clean run must not report budget exhaustion"
 
 # Case 9: argument and env validation.
 set +e

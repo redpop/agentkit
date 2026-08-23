@@ -128,8 +128,12 @@ Widens auto-fixing to confirmed Medium findings and above (default is High and a
   preparation: it runs with `--sandbox read-only`, which makes the report-only contract structural
 - Codex reports token counts but no monetary cost, so the run summary shows tokens only for that adapter
 - The Claude Code adapter is by far the most expensive — roughly $0.26–0.61 for a trivial prompt against
-  about $0.002 through OpenCode. It is also the only one whose tool can cap its own spend: set
-  `AK_REVIEW_MAX_BUDGET_USD` to give a run a hard ceiling in dollars rather than in seconds
+  about $0.002 through OpenCode. It therefore ships with a **$5 spend cap on by default**; raise it with
+  `AK_REVIEW_MAX_BUDGET_USD`, or remove it with `AK_REVIEW_MAX_BUDGET_USD=none` (not `0`). Hitting the cap
+  ends the run without a report, which the adapter reports explicitly rather than leaving it to look like
+  an empty review. Note the cap is a ceiling rather than a guarantee: spend is checked between turns, so a
+  run stops just _after_ exceeding it — overshoot is bounded by one turn's cost. Set it with headroom, and
+  use the Anthropic Console's spend controls if you need a genuinely hard limit
 - Raw adapter output is kept on disk after each run for debugging and for re-running `/ak-review:advise`
   without repeating the external tool call
 
