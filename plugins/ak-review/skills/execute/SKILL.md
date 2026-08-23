@@ -405,10 +405,26 @@ Anthropic's Claude Code, run headless. Verified against `2.1.240`.
   event as `.result`, alongside `total_cost_usd`, `num_turns` and `usage`.
 - **Cost is reported in money**, unlike `codex` — `total_cost_usd` comes straight from the tool, so
   nothing has to be inferred from token counts.
-- **This is by far the most expensive adapter.** Measured: about **$0.26–0.61 for a single trivial
-  prompt**, because Claude Code loads substantial context before doing anything. Compare roughly
-  $0.002 for the same shape of work through `opencode`. Set `AK_REVIEW_MAX_BUDGET_USD` to give the run
-  a hard spend ceiling — this is the only adapter whose tool can stop itself on cost rather than time.
+- **This is by far the most expensive adapter, so a spend cap is ON by default: $5.** Measured: about
+  **$0.26–0.61 for a single trivial prompt**, because Claude Code loads substantial context before
+  doing anything. Compare roughly $0.002 for the same shape of work through `opencode`. Override with
+  `AK_REVIEW_MAX_BUDGET_USD`, or remove the cap with `AK_REVIEW_MAX_BUDGET_USD=none` — **not** with
+  `0`, which would read as "zero dollars" and abort instantly. This is the only adapter whose tool can
+  stop itself on cost rather than on time, which is why the ceiling lives here rather than in prose.
+- **The cap is a ceiling, not a guarantee — it can be exceeded, by design.** Claude Code checks spend
+  _between_ turns, never before committing to one, so a run stops once it has already gone over. The
+  overshoot is bounded by the cost of a single turn, not open-ended. Measured: a `$0.01` cap ended a
+  run at `$0.28` after `turns=1` — which is one turn, not a runaway. The practical rule is that a cap
+  bounds spend to roughly _itself plus one turn_, so set it with that headroom rather than at the exact
+  figure you cannot exceed. A cap below the price of one turn cannot bind at all; the adapter says so
+  rather than letting it look like protection. For a genuinely hard limit, use the spend controls in
+  the Anthropic Console — those sit outside this plugin and outside the tool.
+- **Hitting the cap produces no report at all.** Claude Code ends the run with
+  `terminal_reason: budget_exhausted` and `result: null`, so the report extractor would otherwise only
+  be able to say that nothing was found — never that the cap is the reason. The adapter detects this
+  and says so explicitly, naming the actual spend (which can overshoot the cap slightly before the run
+  stops) and how to lift it. Sub-agents that finished beforehand are still in the stream, so
+  `claude-extract-subagents.sh` is worth running on such a run.
 - **A denied permission does not fail the run.** Claude Code records it in `permission_denials` and
   carries on, so a review that could not read what it needed still exits 0 with a confident-looking
   report — the same danger as opencode's silent auto-rejection. The adapter counts them and warns.

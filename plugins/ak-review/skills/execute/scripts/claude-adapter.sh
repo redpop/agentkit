@@ -32,9 +32,35 @@ if [ -n "${AK_REVIEW_TIMEOUT_SECS:-}" ] && ! printf '%s' "$AK_REVIEW_TIMEOUT_SEC
   echo "claude-adapter.sh: AK_REVIEW_TIMEOUT_SECS must be a non-negative integer (got: $AK_REVIEW_TIMEOUT_SECS)" >&2
   exit 1
 fi
-if [ -n "${AK_REVIEW_MAX_BUDGET_USD:-}" ] && ! printf '%s' "$AK_REVIEW_MAX_BUDGET_USD" | grep -Eq '^[0-9]+(\.[0-9]+)?$'; then
-  echo "claude-adapter.sh: AK_REVIEW_MAX_BUDGET_USD must be a number (got: $AK_REVIEW_MAX_BUDGET_USD)" >&2
+# Claude Code is the most expensive adapter by a wide margin, and the only one
+# whose tool can stop itself on COST rather than on time. A ceiling is therefore
+# on by default here: an unattended review that quietly runs up an open-ended
+# bill is a worse failure than one that stops and says why.
+#
+# `none` removes the cap. `0` is deliberately not the way to do that — it would
+# read as "zero dollars" and abort instantly, which is the opposite of what
+# anyone typing it means.
+MAX_BUDGET_USD="${AK_REVIEW_MAX_BUDGET_USD:-5}"
+
+if [ "$MAX_BUDGET_USD" != "none" ] && ! printf '%s' "$MAX_BUDGET_USD" | grep -Eq '^[0-9]+(\.[0-9]+)?$'; then
+  echo "claude-adapter.sh: AK_REVIEW_MAX_BUDGET_USD must be a number or 'none' (got: $MAX_BUDGET_USD)" >&2
   exit 1
+fi
+
+# THE CAP IS A CEILING, NOT A GUARANTEE, and the difference is worth stating
+# because it is easy to assume otherwise. Claude Code checks spend BETWEEN
+# turns, not before committing to one, so a run stops once it has already gone
+# over — never before. The overshoot is bounded by the cost of a single turn,
+# which for Opus with a real review prompt is on the order of a few hundred
+# millidollars.
+#
+# Measured: a $0.01 cap ended a run at $0.28, having stopped after turns=1. That
+# is not a 28x runaway, it is one turn — but a cap set below the price of one
+# turn cannot bind at all, so it buys nothing while looking like protection.
+# Warn rather than reject: a deliberately tiny cap is a legitimate way to make a
+# run stop almost immediately, as long as nobody mistakes it for a hard limit.
+if [ "$MAX_BUDGET_USD" != "none" ] && awk -v v="$MAX_BUDGET_USD" 'BEGIN{exit !(v < 1)}'; then
+  echo "claude-adapter.sh: NOTE - a cap of \$${MAX_BUDGET_USD} is below the typical cost of a single Claude Code turn, so the run will almost certainly exceed it before it can stop (measured: a \$0.01 cap ended at \$0.28 after one turn). The cap bounds spend to roughly itself plus one turn, never to less." >&2
 fi
 
 # Same watchdog as the other two adapters, and deliberately identical: the
@@ -110,11 +136,8 @@ if [ -n "$EFFORT" ]; then
   CLAUDE_ARGS+=(--effort "$EFFORT")
 fi
 
-# Optional hard spend ceiling. Claude Code is the most expensive adapter here by
-# a wide margin, and this is the only one of the three whose tool can stop
-# itself on cost rather than on time.
-if [ -n "${AK_REVIEW_MAX_BUDGET_USD:-}" ]; then
-  CLAUDE_ARGS+=(--max-budget-usd "$AK_REVIEW_MAX_BUDGET_USD")
+if [ "$MAX_BUDGET_USD" != "none" ]; then
+  CLAUDE_ARGS+=(--max-budget-usd "$MAX_BUDGET_USD")
 fi
 
 # The prompt goes last as a positional argument. stdin is redirected from
@@ -136,6 +159,23 @@ fi
 
 if [ -s "$STDERR_FILE" ]; then
   cat "$STDERR_FILE" >&2
+fi
+
+# Budget exhaustion needs saying out loud. Claude Code ends the run with
+# `terminal_reason: budget_exhausted` and `result: null` — no report at all — so
+# without this the caller only learns that no report was found, never that the
+# cap is why. Measured: the spend can overshoot the cap slightly before the run
+# stops, so the figure reported here is the actual cost, not the limit.
+if [ -s "$RAW_OUTPUT_FILE" ]; then
+  BUDGET_STOP=$(jq -R 'fromjson? // empty' "$RAW_OUTPUT_FILE" 2> /dev/null \
+    | jq -rs '[.[] | select(.type == "result")] | last
+              | select(.terminal_reason == "budget_exhausted" or .subtype == "error_max_budget_usd")
+              | (.total_cost_usd // 0) | tostring' 2> /dev/null || echo "")
+  if [ -n "$BUDGET_STOP" ]; then
+    echo "claude-adapter.sh: BUDGET EXHAUSTED - the run was stopped by the \$${MAX_BUDGET_USD} spend cap after \$${BUDGET_STOP}, so it produced no final report." >&2
+    echo "claude-adapter.sh: this is a cost limit, not a failure of the review. Raise it with AK_REVIEW_MAX_BUDGET_USD, remove it with AK_REVIEW_MAX_BUDGET_USD=none, or review a smaller scope." >&2
+    echo "claude-adapter.sh: any sub-agents that finished before the cap are still in $RAW_OUTPUT_FILE - claude-extract-subagents.sh recovers them." >&2
+  fi
 fi
 
 # A denied permission does not fail the run: Claude Code records it and carries
