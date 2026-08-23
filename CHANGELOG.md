@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.25.0] - 2026-08-23
+
+### ✨ Added
+
+- `ak-review:setup` — **`--show`: see what is configured and what is on offer, without changing
+  anything.** Until now the only way to find out which models a tool exposes was to start a setup that
+  always ends in a write — the wrong instrument for a look, so people read the JSON by hand instead
+  and lost the precedence rules in the process. `--show` reports the resolved configuration _and which
+  layer each value came from_, the installed adapters (discovered from the filesystem, never a list
+  kept in prose), and the available models for every adapter that can list them. It writes nothing,
+  asks nothing, and closes with the two commands that turn a listed value into a one-off run or a
+  permanent default.
+
+- `ak-review:setup` — **Every value can now be passed as a flag**, so switching models is one line:
+  `/ak-review:setup --global --tool codex --model gpt-5.6-sol --effort xhigh`. Anything not passed is
+  still asked, which keeps the interactive walk exactly as it was for anyone who wants it — the flags
+  are shortcuts, not a second mode. A flag means the choice is already made, so the question is noise;
+  it does **not** mean the safety nets go. A `--tool` that names no installed adapter is rejected
+  rather than written and left to fail later inside `/ak-review:execute`, the previous file contents
+  are still shown before and after a flag-driven overwrite so the change stays reversible, and the
+  write is still verified to resolve. Speed is worth removing questions for, not proof.
+
+### ♻️ Changed
+
+- `ak-review:setup` — The skill described itself as **"Always interactive"**, which `--show` and the
+  value flags made false in the same commit that introduced them. Rewritten to "interactive by
+  default", along with the two other sentences that assumed a write always happens: the note claiming
+  it "writes exactly one file", and the closing tip that hand-editing the JSON is faster than
+  re-running the skill — which stopped being true the moment a one-line invocation existed.
+
 ## [1.24.3] - 2026-08-22
 
 ### 🐛 Fixed
