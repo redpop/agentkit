@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.26.2] - 2026-08-23
+
+### 📝 Documented
+
+- `ak-review:execute` — **The runtime limits had no single place that listed them.** All five
+  `AK_REVIEW_*` variables were documented, but each only inside the adapter section that uses it, so
+  finding out what knobs exist meant reading all three. A table in Configuration now names every
+  variable with its real default (read from the adapters, not from memory), which adapters honour it,
+  and what it does — including the two facts a table cannot carry on its own: that the timeout bounds
+  one _attempt_ rather than the invocation, and that the budget cap is a ceiling that can be exceeded
+  by up to one turn.
+
+### ✨ Added
+
+- `ak-review:setup` — **`--show` now reports the runtime limits actually in force.** They live in the
+  environment rather than the config file, which makes them invisible to `resolve-config.sh` and easy
+  to forget: an `AK_REVIEW_TIMEOUT_SECS` exported into a shell profile months ago silently governs
+  every run since, and nothing surfaced it. `--show` now lists what is set, states that anything
+  unlisted is at its default, and flags a variable belonging to an adapter other than the configured
+  one — set, but inert.
+
 ## [1.26.1] - 2026-08-23
 
 ### ♻️ Changed
@@ -22,16 +43,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ak-review:execute` — **Hitting the cap looked like a review that found nothing.** Claude Code ends
   such a run with `terminal_reason: budget_exhausted` and `result: null` — no report at all — so the
   extractor could only report that none was found, never that the cap was the reason. The adapter now
-  detects it and says so, naming the *actual* spend, how to lift it, and that sub-agents finishing
+  detects it and says so, naming the _actual_ spend, how to lift it, and that sub-agents finishing
   before the cap are still recoverable from the stream.
 
 ### 📝 Documented
 
 - `ak-review:execute` — **The spend cap is a ceiling, not a guarantee, and now says so.** Claude Code
-  checks spend *between* turns rather than before committing to one, so a run stops once it has already
+  checks spend _between_ turns rather than before committing to one, so a run stops once it has already
   gone over. The overshoot is bounded by a single turn, not open-ended: measured, a `$0.01` cap ended a
   run at `$0.28` — after `turns=1`, so one turn, not a runaway. A cap therefore bounds spend to roughly
-  *itself plus one turn*, which is worth knowing before setting one at the exact figure you cannot
+  _itself plus one turn_, which is worth knowing before setting one at the exact figure you cannot
   exceed. A cap below the price of one turn cannot bind at all, and the adapter now flags that rather
   than letting it look like protection. For a genuinely hard limit, the Anthropic Console's spend
   controls are the only thing outside both this plugin and the tool.
