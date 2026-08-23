@@ -193,7 +193,7 @@ dimensions, and file validation hooks with markdown formatting.
 | [`/ak-review:advise`](docs/skills/ak-review/advise.md) | Validate a foreign agent's review findings against the code | `/ak-review:advise --in findings.json` |
 | [`/ak-review:explain`](docs/skills/ak-review/explain.md) | Explain a code snippet's purpose, mechanics, and notable patterns | `/ak-review:explain [code snippet]` |
 | [`/ak-review:execute`](docs/skills/ak-review/execute.md) | Run delegate → external agent → advise → fix, unattended | `/ak-review:execute --type uncommitted` |
-| [`/ak-review:setup`](docs/skills/ak-review/setup.md) | Configure the execute skill interactively | `/ak-review:setup --global` |
+| [`/ak-review:setup`](docs/skills/ak-review/setup.md) | Show or change the execute skill's tool/model configuration | `/ak-review:setup --show` |
 
 #### Hooks
 
