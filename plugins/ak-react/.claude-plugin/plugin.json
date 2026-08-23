@@ -1,7 +1,7 @@
 {
   "name": "ak-react",
   "description": "React and Next.js development with best practices, performance optimization, and code quality scanning",
-  "version": "1.26.0",
+  "version": "1.26.1",
   "author": {
     "name": "redpop",
     "url": "https://github.com/redpop"
