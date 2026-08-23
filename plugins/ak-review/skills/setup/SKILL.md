@@ -1,12 +1,13 @@
 ---
 name: setup
-description: This skill should be used when the user asks to "set up ak-review:execute", "configure the external review tool", "which model should execute use", when /ak-review:execute reports no tool or model is configured, or when they want to change that configuration.
+description: This skill should be used when the user asks to "set up ak-review:execute", "configure the external review tool", "which model should execute use", "which models can I choose from", "what is currently configured", when /ak-review:execute reports no tool or model is configured, or when they want to see or change that configuration.
 ---
 
 # Set Up External Review
 
 Walk the user through configuring `/ak-review:execute`, then write the config file and prove it
-resolves. **Always interactive, and never runs a review.**
+resolves. **Never runs a review.** Interactive by default: every value not supplied as a flag is
+asked, and `--show` only reports.
 
 No configuration ships with this plugin, deliberately: defaulting would pick someone's coding-agent
 CLI and model for them, and an update would silently change it. This skill is how that choice gets
@@ -18,18 +19,71 @@ Parse `$ARGUMENTS`:
 
 | Flag | Effect |
 |------|--------|
+| `--show` | Report what is configured and what is available, then **stop**. Writes nothing |
 | `--global` | Skip the scope question; write `~/.claude/ak-review.local.json` |
 | `--project` | Skip the scope question; write `.claude/ak-review.local.json` |
+| `--tool <name>` | Use this adapter instead of asking |
+| `--model <model>` | Use this model instead of asking |
+| `--effort <level>` | Use this effort instead of asking |
+| `--fix-threshold <level>` | Use this threshold instead of asking |
 
-Everything else is a question. That is the point of this skill — the values are the user's choices,
-not the plugin's.
+**Any value not supplied as a flag is still a question.** The values remain the user's choices, not
+the plugin's — a flag only means the user has already made that choice, so asking again would be
+noise. `/ak-review:setup` with no arguments behaves exactly as it always has: a full interactive walk.
+
+Two things never become flags: this skill never invents a model, and it never skips the write
+verification in Phase 7. Speed is worth removing questions for, not proof.
 
 ## Workflow
 
 **Ask and report in the language of the invoking session** — the same rule `/ak-review:execute`
-follows for its summary. This is an interactive setup, so the person answering should be asked in
-the language they are working in. Only the conversation follows the session: file contents, key
+follows for its summary. Whatever is still asked, is asked in the language the person is working in
+— and `--show`'s report follows the same rule. Only the conversation follows the session: file contents, key
 names and values are written exactly as specified here and are never translated.
+
+### Phase 0: Show (only if `--show` was passed — then stop)
+
+Report the current state and stop. **Write nothing, ask nothing, change nothing.** This exists so
+checking what is configured, or what a tool offers, is free of consequences — the rest of this skill
+always writes, which makes it the wrong instrument for a look.
+
+Report, in this order:
+
+1. **What is configured now.** Run, from the repository root:
+
+   ```bash
+   ${CLAUDE_PLUGIN_ROOT}/skills/execute/scripts/resolve-config.sh
+   ```
+
+   Show the resolved JSON and **say which layer each value came from** — `cat` both
+   `.claude/ak-review.local.json` and `~/.claude/ak-review.local.json` (naming the absolute path of
+   the global one) so the precedence is visible rather than asserted. If the script exits non-zero,
+   nothing is configured: show its message, which already explains what to do, and continue to step 2
+   rather than stopping — the point of `--show` is to be informative when the setup is incomplete.
+
+2. **Which adapters exist**, discovered from the filesystem, never from a list kept here:
+
+   ```bash
+   ls ${CLAUDE_PLUGIN_ROOT}/skills/execute/scripts/*-adapter.sh
+   ```
+
+3. **Which models are available**, for each adapter that can say. Run `<tool>-models.sh` where it
+   exists. Where it does not, state that the tool offers no non-interactive listing and that the model
+   must be typed — do not fill the gap with models of your own. Name the format each adapter expects
+   (`provider/model` for `opencode`, a bare name for `codex`); a value in the wrong shape is rejected
+   mid-run, long after this point.
+
+If the listing is long, summarise or group it, but keep full identifiers visible — the reader's next
+step is copying one into a command.
+
+Close by showing how to use a value without changing anything, and how to make it permanent:
+
+```bash
+/ak-review:execute --report-only --tool <tool> --model <model> --effort <level>
+/ak-review:setup --global --tool <tool> --model <model> --effort <level>
+```
+
+Then **stop**. Do not fall through into the phases below.
 
 ### Phase 1: Scope (skip if `--global` or `--project` was passed)
 
@@ -47,7 +101,19 @@ and never overwrite silently. If the _other_ scope's file exists (project when c
 or global when configuring project), mention it without asking about it, and note that the project
 file overrides the global one.
 
-### Phase 3: Tool
+**When a scope flag and every value came in as flags**, the replacement was already authorised — the
+user spelled out what they want written — so do not ask. **Still show the previous contents**, before
+and after, so the change is visible and reversible. "Do not ask" and "do not show" are different
+things, and only the first is implied by a flag: a value silently replaced is a value that cannot be
+put back, which is the failure this phase exists to prevent.
+
+### Phase 3: Tool (skip the question if `--tool` was passed)
+
+**If `--tool` was passed**, verify that `<tool>-adapter.sh` actually exists before accepting it. A
+typo'd adapter name would otherwise be written to the config and only surface when
+`/ak-review:execute` fails to find it. If it does not exist, say so, list what does, and stop —
+do not fall back to asking, because the user's stated intent was unambiguous and guessing past a typo
+is how the wrong tool gets configured.
 
 Discover the implemented adapters:
 
@@ -61,7 +127,11 @@ external review adapters, so there is nothing to configure. If exactly one adapt
 which one is being configured rather than asking a question with one possible answer. If several
 exist, ask.
 
-### Phase 4: Model
+### Phase 4: Model (skip the question if `--model` was passed)
+
+**If `--model` was passed**, take it as given and skip the listing entirely — do not spend a tool call
+proving a choice the user already made. Still apply the shape check at the end of this phase, which
+costs nothing and catches the common paste error.
 
 Check whether the adapter has a model lister:
 
@@ -108,7 +178,7 @@ expects — `provider/model` for `opencode`, a bare name for `codex`. A model li
 the tool's own and is not guaranteed to already match. If the chosen entry does not have the expected
 shape, ask the user to confirm the exact string to write rather than assuming the listed line is it.
 
-### Phase 5: Fix threshold
+### Phase 5: Fix threshold (skip the question if `--fix-threshold` was passed)
 
 Ask, proposing `high`:
 
@@ -117,7 +187,7 @@ Ask, proposing `high`:
 - `medium` / `low` — more gets fixed unattended, and more of it will be wrong. Findings at these
   levels are disproportionately matters of taste, and a reviewer is least reliable there.
 
-### Phase 6: Effort (optional)
+### Phase 6: Effort (optional; skip the question if `--effort` was passed)
 
 Ask whether to pin a reasoning-effort level for the adapter, offering to skip. Leaving it unset uses
 the tool's own default. The accepted values are the tool's, not this skill's:
@@ -195,8 +265,12 @@ Then state what to run next: `/ak-review:execute --report-only` for a first supe
 ## Notes
 
 - This skill never runs a review and never calls a paid model. Listing models is free.
-- It writes exactly one file and changes nothing else.
-- To change a single value later, editing the JSON directly is usually faster than re-running this.
+- It writes at most one file and changes nothing else — and with `--show`, no file at all.
+- To change a single value later, pass it as a flag — `/ak-review:setup --global --tool codex
+  --model gpt-5.6-sol --effort xhigh` rewrites the file in one step and still proves it resolves,
+  which hand-editing the JSON does not.
+- `--show` is the read-only counterpart: use it to see what is set and what a tool offers before
+  deciding anything.
 
 ## Related
 
