@@ -1,0 +1,5 @@
+{"type":"system","subtype":"init","session_id":"ses_abc","tools":["Read","Grep","Task"]}
+{"type":"assistant","parent_tool_use_id":null,"message":{"content":[{"type":"text","text":"Dispatching review subagents."}]}}
+{"type":"assistant","parent_tool_use_id":"toolu_sub1","message":{"content":[{"type":"text","text":"Security dimension: no injection paths found in the diff."}]}}
+{"type":"assistant","parent_tool_use_id":"toolu_sub2","message":{"content":[{"type":"text","text":"Tests dimension: the new branch is covered by case 16."}]}}
+{"type":"assistant","parent_tool_use_id":"toolu_sub3","message":{"content":[{"type":"text","tex

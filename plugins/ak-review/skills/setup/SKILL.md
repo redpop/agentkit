@@ -70,7 +70,8 @@ Report, in this order:
 3. **Which models are available**, for each adapter that can say. Run `<tool>-models.sh` where it
    exists. Where it does not, state that the tool offers no non-interactive listing and that the model
    must be typed — do not fill the gap with models of your own. Name the format each adapter expects
-   (`provider/model` for `opencode`, a bare name for `codex`); a value in the wrong shape is rejected
+   (`provider/model` for `opencode`, a bare name for `codex`, an alias or full name for `claude`); a
+   value in the wrong shape is rejected
    mid-run, long after this point.
 
 If the listing is long, summarise or group it, but keep full identifiers visible — the reader's next
@@ -146,6 +147,8 @@ then ask them to type the model identifier themselves. Name the format the adapt
 - `opencode` — `provider/model`: a provider name (e.g. `opencode-go`), a slash, then the model name.
 - `codex` — a bare model name, with **no** provider prefix and no slash. Codex has no model listing
   command, so this branch is the only path for it.
+- `claude` — a Claude Code alias (`opus`, `sonnet`, `fable`) or a full model name such as
+  `claude-opus-5`. Claude Code has no listing command either, so this branch covers it too.
 
 Do not suggest a specific model.
 
@@ -174,7 +177,8 @@ listing error, not a missing binary — show it and stop: a config naming a mode
 have is worse than no config.
 
 **Before writing, in either branch:** confirm the chosen value has the shape the _resolved adapter_
-expects — `provider/model` for `opencode`, a bare name for `codex`. A model lister's output format is
+expects — `provider/model` for `opencode`, a bare name for `codex`, an alias such as `opus` or a full
+model name for `claude`. A model lister's output format is
 the tool's own and is not guaranteed to already match. If the chosen entry does not have the expected
 shape, ask the user to confirm the exact string to write rather than assuming the listed line is it.
 

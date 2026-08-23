@@ -5,7 +5,7 @@
 ## Overview
 
 Closes the loop `/ak-review:delegate` and `/ak-review:advise` deliberately left manual: this skill builds
-the delegate prompt, runs it against a configured external tool (OpenCode or Codex), verifies every
+the delegate prompt, runs it against a configured external tool (OpenCode, Codex or Claude Code), verifies every
 finding against the real code the same way `/ak-review:advise` does, auto-fixes the confirmed
 high/critical ones using `/ak-review:coderabbit`'s Apply/Adapt/Skip framework, validates with the
 project's own tests/lint, and reports one compact summary — no manual copy-paste, no checkpoints mid-run.
@@ -25,7 +25,8 @@ recovers depends entirely on the tool: OpenCode dispatches sub-agents and merges
 sub-agent findings are recoverable first (`opencode-extract-subagents.sh`) from event-stream parts the
 normal report extractor cannot see. Codex has no sub-agents and emits its answer as a single message at
 the end, so a killed Codex run usually has nothing to salvage — its report extractor exits non-zero to
-say so rather than returning an empty report that would read as "no issues found".
+say so rather than returning an empty report that would read as "no issues found". Claude Code sits with
+OpenCode here: it dispatches sub-agents too, so a killed run leaves recoverable work behind.
 
 A run that never starts is treated as its own failure, separate from a timeout. The OpenCode adapter
 also caps _startup_ (90 s, override with `AK_REVIEW_STARTUP_GRACE_SECS`) and exits `125` when the tool
@@ -48,7 +49,8 @@ behind this and for how to tell the two failures apart in OpenCode's own log.
 (default: high), `--report-only`
 
 `--model` and `--effort` take the _adapter's_ format, not a shared one: OpenCode wants `provider/model`
-and its own variant levels, Codex wants a bare model name and one of `none|minimal|low|medium|high|xhigh|max`.
+and its own variant levels, Codex a bare model name with `none|minimal|low|medium|high|xhigh|max`, and
+Claude Code an alias such as `opus` (or a full model name) with `low|medium|high|xhigh|max`.
 
 ## Configuration
 
@@ -87,8 +89,12 @@ Runs the full loop against your current uncommitted work, using whatever tool/mo
 /ak-review:execute --tool codex --model gpt-5.6-sol --effort high
 ```
 
+```text
+/ak-review:execute --tool claude --model opus --effort xhigh
+```
+
 One-off run against a specific tool/model, without touching any config file. Note the differing model
-formats — Codex takes no provider prefix.
+formats — only OpenCode takes a provider prefix.
 
 ```text
 /ak-review:execute --report-only
@@ -121,6 +127,9 @@ Widens auto-fixing to confirmed Medium findings and above (default is High and a
   the skill's Adapter Reference) — this skill never passes `--auto`. The Codex adapter needs no such
   preparation: it runs with `--sandbox read-only`, which makes the report-only contract structural
 - Codex reports token counts but no monetary cost, so the run summary shows tokens only for that adapter
+- The Claude Code adapter is by far the most expensive — roughly $0.26–0.61 for a trivial prompt against
+  about $0.002 through OpenCode. It is also the only one whose tool can cap its own spend: set
+  `AK_REVIEW_MAX_BUDGET_USD` to give a run a hard ceiling in dollars rather than in seconds
 - Raw adapter output is kept on disk after each run for debugging and for re-running `/ak-review:advise`
   without repeating the external tool call
 
@@ -130,6 +139,7 @@ Widens auto-fixing to confirmed Medium findings and above (default is High and a
 - The external CLI for the adapter you configure, installed and authenticated:
   - `opencode` for the `opencode` adapter
   - `codex` for the `codex` adapter (verified against `codex-cli 0.149.0`)
+  - `claude` for the `claude` adapter (verified against Claude Code `2.1.240`)
 
 ## Related
 
