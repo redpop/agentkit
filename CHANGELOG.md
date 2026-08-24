@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.27.0] - 2026-08-24
+
+### 🗑️ Removed
+
+- **`ak-typo3` plugin removed entirely** — 5 skills (`content-blocks`, `extension-kickstarter`,
+  `fluid-components`, `make-content-block`, `sitepackage`), 5 agents (`typo3-architect`,
+  `typo3-content-blocks-specialist`, `typo3-extension-developer`, `typo3-fluid-expert`,
+  `typo3-typoscript-expert`), and its 13-file knowledge base. Marketplace goes from 10 plugins to 9;
+  skill and agent counts drop from 29/13 to 24/8 across `AGENTS.md`, `README.md`, and `docs/`.
+
 ## [1.26.3] - 2026-08-23
 
 ### 🐛 Fixed
