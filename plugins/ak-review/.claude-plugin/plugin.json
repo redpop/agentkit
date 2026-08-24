@@ -1,7 +1,7 @@
 {
   "name": "ak-review",
   "description": "Quality assurance with CodeRabbit review, guided setup and unattended execution of external-agent reviews, task completion workflow, and file validation hooks",
-  "version": "1.26.2",
+  "version": "1.26.3",
   "author": {
     "name": "redpop",
     "url": "https://github.com/redpop"

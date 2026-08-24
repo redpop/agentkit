@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.26.3] - 2026-08-23
+
+### 🐛 Fixed
+
+- `ak-review:execute` — **Every dollar figure in `SKILL.md` was corrupted whenever the skill was invoked
+  with an argument.** `$0.26` looks like a positional parameter, so argument substitution replaced `$0`
+  with the argument itself: invoking `/ak-review:execute --show` rendered the cost documentation as
+  `--show.26–0.61` and `` `--show.01` ``. It hit all seven amounts — precisely the numbers that explain
+  the spend cap. They are now written as `USD 0.26`, which no substitution can touch; a backslash escape
+  was rejected because its behaviour here could not be verified. Found by a user's mistyped command,
+  which is the only way this surfaces: the file reads correctly on disk.
+
+### ♻️ Changed
+
+- `ak-review:execute` — **`SKILL.md` was 499 lines, and it is loaded in full on every invocation.**
+  The Adapter Reference alone was 213 of them, much of it duplicating the reasoning already recorded in
+  the adapter scripts' comment headers — `opencode-adapter.sh` carries 126 comment lines of its own.
+  Compressed to 371 lines by keeping what an executing agent needs at runtime (how to call it, what the
+  exit codes mean, which failures are silent) and pointing at the script headers for the measurements
+  and history behind each decision. Phase 3's exit-code semantics became a table. Verified afterwards
+  that every warning and instruction survived, including the `auto-rejecting` search term that is the
+  entry point for diagnosing a silently uninformed opencode review.
+
 ## [1.26.2] - 2026-08-23
 
 ### 📝 Documented
