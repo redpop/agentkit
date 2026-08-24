@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "ak-marketplace",
-  "description": "AgentKit - 10 modulare Plugins für Review, Git, Projekt-Management, Code-Verbesserung, Knowledge, React, Security, TYPO3, Notifications und JavaScript",
+  "description": "AgentKit - 9 modulare Plugins für Review, Git, Projekt-Management, Code-Verbesserung, Knowledge, React, Security, Notifications und JavaScript",
   "owner": {
     "name": "redpop",
     "url": "https://github.com/redpop"
@@ -59,15 +59,6 @@
       "version": "1.26.3",
       "category": "utilities",
       "keywords": ["notifications", "sound", "macos", "alerts"],
-      "license": "MIT"
-    },
-    {
-      "name": "ak-typo3",
-      "source": "./plugins/ak-typo3",
-      "description": "TYPO3 CMS development with content blocks, extensions, Fluid templates, and sitepackage skills",
-      "version": "1.26.3",
-      "category": "cms",
-      "keywords": ["typo3", "cms", "content-blocks", "fluid", "sitepackage"],
       "license": "MIT"
     },
     {

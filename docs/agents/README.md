@@ -14,8 +14,3 @@ Agents are specialized sub-agents that handle complex, autonomous tasks. They ar
 | [quality-assessor](ak-meta/quality-assessor.md) | ak-meta | Expert quality scoring for skills and agents |
 | [solution-reviewer](ak-knowledge/solution-reviewer.md) | ak-knowledge | Solution documentation quality validation |
 | [framework-config-analyzer](ak-js/framework-config-analyzer.md) | ak-js | Phase-2 worker for JS/TS framework config analysis |
-| [typo3-architect](ak-typo3/typo3-architect.md) | ak-typo3 | Enterprise TYPO3 architecture |
-| [typo3-content-blocks-specialist](ak-typo3/typo3-content-blocks-specialist.md) | ak-typo3 | Content Block creation and configuration |
-| [typo3-extension-developer](ak-typo3/typo3-extension-developer.md) | ak-typo3 | TYPO3 extension development |
-| [typo3-fluid-expert](ak-typo3/typo3-fluid-expert.md) | ak-typo3 | Fluid template architecture |
-| [typo3-typoscript-expert](ak-typo3/typo3-typoscript-expert.md) | ak-typo3 | TypoScript configuration and Site Sets |

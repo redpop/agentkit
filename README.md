@@ -1,6 +1,6 @@
 # AgentKit
 
-Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) — 10 plugins with 29 skills, 13 agents, and domain knowledge bases for Git workflows, security, React, TYPO3, and more.
+Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) — 9 plugins with 24 skills, 8 agents, and domain knowledge bases for Git workflows, security, React, and more.
 
 ## Plugins
 
@@ -15,7 +15,6 @@ Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/
 | [**ak-react**](#ak-react--react--nextjs-development) | 2 | — | React and Next.js best practices, performance optimization, code scanning |
 | [**ak-review**](#ak-review--quality-assurance) | 9 | — | CodeRabbit review, code explanation, finalize workflow, workflow management, dependency update skill generation, external review delegation, unattended external-tool execution with guided setup, validation hooks |
 | [**ak-security**](#ak-security--security-guidelines) | 3 | — | OWASP security guidelines, LLM security, Semgrep static analysis |
-| [**ak-typo3**](#ak-typo3--typo3-v134-development) | 5 | 5 | TYPO3 v13.4 Content Blocks, SitePackage, extensions |
 
 ## Installation
 
@@ -43,7 +42,6 @@ Install all plugins:
 /plugin install ak-notifications@ak-marketplace
 /plugin install ak-react@ak-marketplace
 /plugin install ak-security@ak-marketplace
-/plugin install ak-typo3@ak-marketplace
 ```
 
 Or browse available plugins interactively with `/plugin` and go to the **Marketplaces** tab.
@@ -225,31 +223,6 @@ static analysis scanning.
 | [`/ak-security:code-security`](docs/skills/ak-security/code-security.md) | OWASP Top 10 security guidelines for 15+ languages | `/ak-security:code-security` |
 | [`/ak-security:llm-security`](docs/skills/ak-security/llm-security.md) | OWASP Top 10 for LLM Applications security rules | `/ak-security:llm-security` |
 | [`/ak-security:semgrep`](docs/skills/ak-security/semgrep.md) | Semgrep static analysis scanning and custom rule creation | `/ak-security:semgrep` |
-
-### ak-typo3 — TYPO3 v13.4 Development
-
-TYPO3 CMS development with Content Blocks, Fluid components, extension
-scaffolding, and SitePackage generation.
-
-#### Skills
-
-| Skill | Purpose | Example |
-|-------|---------|---------|
-| [`/ak-typo3:content-blocks`](docs/skills/ak-typo3/content-blocks.md) | Generate Content Blocks v1.3 with modern field configs | `/ak-typo3:content-blocks Hero` |
-| [`/ak-typo3:extension-kickstarter`](docs/skills/ak-typo3/extension-kickstarter.md) | Create extensions via ext-kickstarter or manual scaffolding | `/ak-typo3:extension-kickstarter` |
-| [`/ak-typo3:fluid-components`](docs/skills/ak-typo3/fluid-components.md) | Generate Fluid v4 Components with Atomic Design patterns | `/ak-typo3:fluid-components Button` |
-| [`/ak-typo3:make-content-block`](docs/skills/ak-typo3/make-content-block.md) | Wrapper for `make:content-block` with smart defaults | `/ak-typo3:make-content-block` |
-| [`/ak-typo3:sitepackage`](docs/skills/ak-typo3/sitepackage.md) | Create a TYPO3 v13.4 SitePackage with Site Sets | `/ak-typo3:sitepackage my-site` |
-
-#### Agents
-
-| Agent | Purpose |
-|-------|---------|
-| [typo3-architect](docs/agents/ak-typo3/typo3-architect.md) | Enterprise CMS architecture, extension design, performance optimization |
-| [typo3-content-blocks-specialist](docs/agents/ak-typo3/typo3-content-blocks-specialist.md) | Content Block creation, field configuration, backend previews |
-| [typo3-extension-developer](docs/agents/ak-typo3/typo3-extension-developer.md) | Extension development, Extbase controllers, service configuration |
-| [typo3-fluid-expert](docs/agents/ak-typo3/typo3-fluid-expert.md) | Fluid template architecture, ViewHelper development, rendering optimization |
-| [typo3-typoscript-expert](docs/agents/ak-typo3/typo3-typoscript-expert.md) | TypoScript configuration, Site Sets, data processing chains |
 
 ## Recommended Tools
 

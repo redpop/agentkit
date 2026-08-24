@@ -30,8 +30,3 @@ Skills are slash commands that users invoke directly in Claude Code via `/plugin
 | [code-security](ak-security/code-security.md) | ak-security | OWASP security guidelines for 15+ languages |
 | [llm-security](ak-security/llm-security.md) | ak-security | OWASP Top 10 for LLM Applications |
 | [semgrep](ak-security/semgrep.md) | ak-security | Semgrep static analysis scanning |
-| [content-blocks](ak-typo3/content-blocks.md) | ak-typo3 | Generate TYPO3 Content Blocks v1.3 |
-| [extension-kickstarter](ak-typo3/extension-kickstarter.md) | ak-typo3 | Scaffold TYPO3 extensions |
-| [fluid-components](ak-typo3/fluid-components.md) | ak-typo3 | Fluid v4 Components with Atomic Design |
-| [make-content-block](ak-typo3/make-content-block.md) | ak-typo3 | TYPO3 make:content-block wrapper |
-| [sitepackage](ak-typo3/sitepackage.md) | ak-typo3 | Create TYPO3 v13.4 SitePackage |
