@@ -99,32 +99,27 @@ ${CLAUDE_PLUGIN_ROOT}/skills/execute/scripts/<tool>-adapter.sh \
   "$PROMPT_FILE" "$MODEL" "$EFFORT" "$RAW_OUTPUT_FILE"
 ```
 
-(Omit the `$EFFORT` argument entirely, not as an empty string, when Phase 1 resolved it to `null`.)
+(Omit `$EFFORT` entirely, not as an empty string, when Phase 1 resolved it to `null`.) If `tool`
+matches no adapter, stop and report which are implemented. The run is long and produces no
+intermediate output; do not babysit it.
 
-If `tool` matches no known adapter, stop and report which tools are implemented. This is long-running
-and produces no intermediate output; do not attempt to babysit it.
+**The adapter owns the ceiling, not you.** It enforces its own timeout (20 min,
+`AK_REVIEW_TIMEOUT_SECS`) because a ceiling the caller holds is the one that breaks when a harness
+backgrounds the call and takes the timer with it. Pass a generous backstop of your own anyway, but
+treat the exit code as definitive:
 
-**Where the ceiling is enforced:** an adapter is expected to enforce its own timeout and to exit `124`
-(GNU `timeout`'s convention) when it fires, because a ceiling the _caller_ has to hold is the one that
-breaks in an unattended run — a harness may background the call and take the timer with it. All three
-implemented adapters do this (20 min, override with `AK_REVIEW_TIMEOUT_SECS`). Still pass a generous
-timeout of your own as a backstop for an adapter that does not, but treat exit `124` as the definitive
-timeout signal.
+| Exit | Meaning | What to do |
+|------|---------|------------|
+| `124` | Ran, then hung. A partial stream exists | **Salvage** — see below |
+| `125` | Produced nothing; never reached the model | **Stop.** Nothing to salvage, and the extractors would only confirm the emptiness. Report the adapter's stderr verbatim. Do not call it "the review found nothing" — no review took place |
+| other | The tool's own failure | Report it and stop |
 
-**If the adapter exits `125`, the run never started — stop, and do not salvage.** This is a distinct
-failure from a timeout: the tool produced no bytes at all, so there is no partial stream and nothing
-to recover. Report the adapter's stderr verbatim and stop; do not run the extractors, and do not
-describe the result as "the review found nothing", because no review took place.
+**Never retry a `125` yourself.** An adapter whose failure is transient retries internally, so a
+surfaced `125` already means every attempt stalled. Coming back later is the user's call.
 
-**Do not retry a `125` yourself.** An adapter whose failure is transient retries internally and only
-surfaces `125` once _every_ attempt has stalled — `opencode` does exactly this, and its message states
-how many were made. Reaching this point therefore already means retrying did not help, so trying again
-in the same run would just repeat a failed strategy. Whether to come back later is the user's call.
-
-**If the run times out** (exit `124`, or your own backstop fires): kill the process if it is still
-up — `$RAW_OUTPUT_FILE` is written incrementally by the OS as the run goes, so it survives the kill.
-Do **not** fall through to the normal Phase 4 path below; go to the salvage path instead. Run every
-extractor the resolved adapter provides, `$SUBAGENTS_FILE` first where one exists:
+**Salvage path (`124` only).** Kill the process if it still runs — `$RAW_OUTPUT_FILE` is written as
+the run goes, so it survives. Do **not** fall through to Phase 4. Run every extractor the adapter
+provides, sub-agents **first** where one exists:
 
 ```bash
 # only if the adapter has one — opencode and claude do, codex does not
@@ -133,23 +128,11 @@ ${CLAUDE_PLUGIN_ROOT}/skills/execute/scripts/<tool>-extract-report.sh "$RAW_OUTP
 ${CLAUDE_PLUGIN_ROOT}/skills/execute/scripts/<tool>-extract-cost.sh "$RAW_OUTPUT_FILE" > "$COST_FILE"
 ```
 
-**How much a timeout salvages depends entirely on the tool, and the implemented adapters sit at
-opposite extremes.** Check the Adapter Reference before concluding anything from a short salvaged
-report:
+**How much this recovers depends entirely on the tool** — `opencode` and `claude` dispatch sub-agents
+and merge late, so plenty survives; `codex` emits one message at the end, so usually nothing does. A
+short `report.md` is therefore not evidence that the review found nothing. See the Adapter Reference.
 
-- `opencode` dispatches one sub-agent per review dimension and merges them only at the end, so a run
-  killed before that still holds every finished sub-agent's output — in `tool_use` parts that
-  `opencode-extract-report.sh` cannot see. Running `opencode-extract-subagents.sh` first is what
-  recovers them; the `opencode` entry below measures how much the report alone misses.
-- `claude` behaves like `opencode` here: it dispatches sub-agents via its Task tool and merges late, so
-  `claude-extract-subagents.sh` recovers whatever the finished ones produced. The adapter passes
-  `--forward-subagent-text` precisely so that output reaches the stream at all.
-- `codex` has no sub-agents and emits its answer as a single `agent_message` at the very end. A killed
-  codex run usually has **nothing** to recover, and `codex-extract-report.sh` exits non-zero to say so
-  rather than printing an empty report. That is an honest signal, not a failure to parse.
-
-Then continue to Phase 5 with whatever files exist — see Phase 5 for how `$SUBAGENTS_FILE` and
-`$REPORT_FILE` differ.
+Then continue to Phase 5 with whatever files exist.
 
 ### Phase 4: Parse the Report
 
@@ -211,7 +194,7 @@ Produce one compact report, in the language of the invoking session:
 - Validation result (tests/lint pass?), only if Phase 7 ran
 - Cost and tokens from `$COST_FILE`. **Report only what the file actually contains.** `total_cost` is
   `null` for an adapter whose tool does not report money — `codex` is one — and in that case say the
-  tool reports no cost, rather than printing `$0.00`. Zero and "not reported" are different claims,
+  tool reports no cost, rather than printing `USD 0.00`. Zero and "not reported" are different claims,
   and only one of them is true
 - The path to `$RAW_OUTPUT_FILE` — it is kept on disk after the run (see Notes) and this is the only place
   that path is surfaced to the user; without it, re-running `/ak-review:advise` against the kept output
@@ -243,194 +226,83 @@ below.
 
 ### `opencode`
 
-- Script: `${CLAUDE_PLUGIN_ROOT}/skills/execute/scripts/opencode-adapter.sh <prompt-file> <model> [effort] <raw-output-file>`
-- `model` — an OpenCode `provider/model` string, e.g. `opencode-go/glm-5.3`
-- `effort` — passed as OpenCode's `--variant` (e.g. `high`); omit to use OpenCode's own default
-- **Prerequisite:** a working OpenCode permission config (`opencode.jsonc`, project- or user-level) that
-  allows non-interactive bash execution for read-only/test/lint commands, with destructive commands
-  (`rm -rf`, `git reset --hard`, `git push --force`, …) gated to `"ask"`. This skill never passes
-  `--auto` — that would silently approve those too. If a run stalls, fix the permission config; do not
-  reach for `--auto`.
-- **Preflight:** `opencode-preflight.sh` checks one thing — whether `opencode` is on PATH — and hard-fails if it
-  is not. It deliberately does **not** check authentication. That check existed and was removed: it had to parse
-  `opencode auth list`'s human-readable output (the exit code is 0 either way), and three successive
-  escape-stripping patterns were each defeated by a different ANSI class, every time by wrongly hard-blocking a
-  _correctly authenticated_ user. An unauthenticated opencode fails instantly, for free, and says so itself, so
-  the check bought a marginally nicer message at the cost of the worst failure mode there is. Do not add it back
-  without a machine-readable signal (a documented exit code or a `--json` mode). The script's own comment header
-  carries the full account.
-- **Models:** `opencode-models.sh` wraps `opencode models`, and fails loudly when `opencode models` itself errors.
-- **Run the adapter with the reviewed repository as the working directory.** OpenCode gates paths outside
-  the cwd behind its `external_directory` permission, and in non-interactive `run` mode a gated path is
-  **auto-rejected, not prompted** — the review then proceeds without ever reading the files, exits 0, and
-  produces a confident-looking report based on nothing.
-- Those rejections are reported on **stderr**, never in the JSON stream, so the adapter captures stderr to
-  `<raw-output-file>.stderr` and, once the run ends, forwards it and prints a warning when it finds
-  `auto-rejecting` there. **Check that warning before trusting a report** — a silently uninformed review is
-  this adapter's most dangerous failure mode.
-- Output is a newline-delimited JSON event stream, always redirected straight to a file — see Phase 3/4.
-- **A run can also stall at startup and produce nothing at all — exit `125`, not `124`.** Distinct from
-  the hang below, and far more confusing, because it yields zero bytes and no error. Measured
-  repeatedly on opencode `1.18.21`. What localises it is opencode's **own log**
-  (`~/.local/share/opencode/log/opencode.log`), not the event stream: a healthy run logs `init` and
-  then immediately `created id=ses_…`, `loop`, `stream`; a stalled run logs `init` and stops forever.
-  So it dies inside **session creation** — before the model is ever called. (`opencode serve` started
-  during one stall failed outright with `database is locked`, pointing the same way.)
-  The root cause is upstream and remains unidentified; these were ruled out **by measurement**, each
-  with a paired control run: the database (moved aside — still stalled), config and plugins (empty
-  `XDG_CONFIG_HOME` — still stalled once re-tested), stale processes (none survived), and a concurrent
-  instance holding the DB (no effect). It appears in windows of minutes during which _everything_
-  stalls, and disappears just as broadly — **so any single comparison is worthless unless paired with
-  a control run in the same minute.** An unpaired bisect will produce a confident, wrong answer; that
-  has already happened twice on this bug. The adapter caps startup at 90s
-  (`AK_REVIEW_STARTUP_GRACE_SECS`) and passes `--print-logs --log-level DEBUG`, whose output lands in
-  `<raw-output-file>.stderr` and is the only diagnostic that exists on a stall.
-  **Because the failure is transient, the adapter also retries it automatically** — 2 further attempts
-  by default (`AK_REVIEW_STARTUP_RETRIES`, `0` disables) waiting 60s between them
-  (`AK_REVIEW_RETRY_WAIT_SECS`), so an ordinary run rides out a short stall window without the caller
-  noticing. Only exit `125` is retried: a `124` already holds the partial stream that makes it
-  salvageable and a retry would overwrite it, and any other non-zero exit (bad model, missing
-  credentials) is deterministic and would fail identically after the wait. Exit `125` therefore now
-  means _every_ attempt stalled, and the message says how many were made.
-- **`AK_REVIEW_TIMEOUT_SECS` bounds one attempt, not the whole invocation.** With retries on, the worst
-  case is `retries × (startup_grace + retry_wait) + timeout` — about 25 minutes at the defaults, not 20.
-  Size any backstop of your own against that figure, or set `AK_REVIEW_STARTUP_RETRIES=0` to make the
-  ceiling absolute again.
-- **`124` and `125` belong to the adapter, which will not pass through the tool's own use of them.** If
-  `opencode` itself exits `125`, the adapter remaps it to `1` and says so: letting it through would tell
-  the caller "every startup attempt stalled, nothing to salvage" about what was really an ordinary tool
-  failure. Its stderr is forwarded either way and carries the real reason. A `125` from the adapter also
-  guarantees an **empty** raw output file — if a killed run turns out to have flushed something after
-  all, it is reported as `124` instead, so the partial stream gets salvaged rather than discarded.
-- **A run can hang, and a hung run is not an empty run.** Observed three times: the process sits at ~0% CPU
-  and emits no further events, once for over two hours, once for 83 minutes before a human asked about it.
-  Since then the adapter enforces its own ceiling (see above), so this should surface as exit `124` rather
-  than as an open-ended wait. Note that a hung `opencode` is **several** processes, not one — the adapter
-  kills the whole process group, and a manual cleanup needs `pkill -f opencode`, not a single `kill`.
-  Two measurements minutes apart tell a hang from a slow call — a single CPU reading cannot — and the
-  absence of any open network connection is what proves it is waiting on nothing. When the Phase 3
-  timeout expires, follow Phase 3's salvage path above — kill the process, then run the extractors in
-  this order:
-  1. `opencode-extract-subagents.sh` **first.** The tool dispatches one sub-agent per review dimension and merges
-     them only at the end, so a run that stalls before that still holds every finding the finished
-     sub-agents produced. Those live in `tool_use` parts, which `opencode-extract-report.sh` cannot see.
-  2. `opencode-extract-report.sh` for whatever prose exists. On a stall before synthesis this is usually just
-     narration — do not read a short result as "nothing was produced".
-  3. `opencode-extract-cost.sh`, which works on a partial stream and reports what the run actually cost.
-
-  Measured on two real stalled runs: `opencode-extract-report.sh` returned 91 characters of narration against
-  4085 characters of unread sub-agent findings in the first, and 416 against **31832** in the second —
-  five completed sub-agents whose entire output the normal path cannot see. A short `report.md` is not
-  evidence that the review found nothing. After an external kill the adapter
-  never reaches its own warning, so read `<raw-output-file>.stderr` directly in that case; the file is
-  written by the OS as the run goes and survives the kill.
+- `model` — `provider/model`, e.g. `opencode-go/glm-5.3` · `effort` — OpenCode's `--variant`
+- **Prerequisite:** an `opencode.jsonc` permission config that allows non-interactive bash for
+  read-only/test/lint commands, with destructive ones gated to `"ask"`. This skill never passes
+  `--auto`; if a run stalls, fix the permission config rather than reaching for it.
+- **Preflight checks PATH only, never authentication** — deliberately, and do not add it back without a
+  machine-readable signal. The script header records what the parsing attempt cost.
+- **Run it with the reviewed repository as the working directory.** Paths outside the cwd are
+  **auto-rejected, not prompted**, in non-interactive mode, so the review silently proceeds without
+  reading them and still exits 0. Those rejections appear only on stderr (as `auto-rejecting`), which
+  the adapter captures to `<raw-output-file>.stderr` and warns about. **Check that warning before
+  trusting a report** — a silently uninformed review is this adapter's most dangerous failure.
+- **Two distinct failures, opposite advice.** Exit `124` = ran, then hung: a partial stream exists and is
+  worth salvaging. Exit `125` = produced nothing at all: it never reached the model, so there is nothing
+  to recover. Reserved codes are the adapter's own; a `125` from opencode itself is remapped to `1`, and
+  a `125` from the adapter always means an empty output file.
+- **The startup stall is transient and retried automatically** (2 attempts, 60s apart). Exit `125`
+  therefore means every attempt stalled. Upstream bug, unidentified; database, config, plugins, stale
+  processes and concurrent instances were each ruled out by measurement. It comes in windows of minutes
+  during which everything stalls — **so any comparison without a control run in the same minute will
+  produce a confident, wrong answer.** That has misled two investigations already.
+- **On a `124`, run `opencode-extract-subagents.sh` first.** Sub-agent findings live in `tool_use` parts
+  the report extractor cannot see. Measured on two stalled runs: the report held 91 and 416 characters
+  of narration against 4085 and **31832** characters of unread sub-agent findings. A short `report.md`
+  is not evidence that the review found nothing.
+- A hung opencode is **several** processes; manual cleanup needs `pkill -f opencode`.
 
 ### `codex`
 
 OpenAI's Codex CLI. Verified against `codex-cli 0.149.0`.
 
-- Script: `${CLAUDE_PLUGIN_ROOT}/skills/execute/scripts/codex-adapter.sh <prompt-file> <model> [effort] <raw-output-file>`
-- `model` — a bare model name, e.g. `gpt-5.6-sol`. **Not** `provider/model`: unlike `opencode`, codex
-  takes no provider prefix, and a slashed value is rejected.
-- `effort` — passed as `-c model_reasoning_effort="<value>"`, **not** as a flag. `--reasoning-effort`
-  was removed in codex v0.50 and passing it would be silently wrong on every current version. Valid
-  values, from the API's own enum: `none`, `minimal`, `low`, `medium`, `high`, `xhigh`, `max`. (The
-  "Ultra" offered in codex's interactive model picker is not among them.) Omit to use codex's default.
-- **Prerequisite: the working directory must be a git repository.** Codex refuses to run outside one
-  ("Not inside a trusted directory and `--skip-git-repo-check` was not specified") and the adapter does
-  not pass that flag, deliberately: a review of an untracked directory is almost always a wrong cwd,
-  and failing in a fraction of a second with a clear message beats reviewing the wrong thing. This only
-  bites `--path`/`--all` runs aimed outside a repo; every git-diff-based scope implies one already.
-- **Prerequisite:** nothing else beyond an authenticated `codex`. There is no permission config to prepare —
-  the adapter passes `--sandbox read-only`, which makes delegate's report-only contract _structural_:
-  the external agent cannot write to the repository even if its prompt told it to. Never relax this.
-- **Preflight:** `codex-preflight.sh` checks PATH **and** authentication. The auth check is legitimate
-  here, where opencode's was not, for one reason: `codex login status` exits `0` authenticated and `1`
-  unauthenticated, so the verdict comes from an exit code and never from parsing decorated output. If
-  a future release stops distinguishing those codes, delete the check rather than parsing text — see
-  `opencode-preflight.sh` for what that costs.
-- **Models:** there is no `codex-models.sh`. Codex has no non-interactive model listing (`codex models`
-  is not a subcommand; it is read as a prompt), so `/ak-review:setup` falls back to asking the user to
-  type the model name.
-- The adapter passes `--ignore-user-config`. A user's `~/.codex/config.toml` pulls in MCP servers,
-  hooks, plugins and skills, none of which serve an unattended review: measured on a real config, a run
-  emitted failing MCP auth handshakes, hook-timeout warnings, and _"skill descriptions were shortened
-  to fit the skills context budget"_ — the review's own context being crowded out by unrelated tooling.
-  Authentication is unaffected, resolving through `CODEX_HOME` independently of this flag.
-- The prompt is passed on **stdin** with `-` as the prompt argument, not as an argv element: a delegate
-  prompt carries project context and full diffs and can approach `ARG_MAX`. This also stops codex from
-  blocking on an inherited stdin in a backgrounded run.
-- Output is a newline-delimited JSON event stream (`thread.started`, `turn.started`, `item.completed`,
-  `turn.completed`), always redirected straight to a file — see Phase 3/4.
-- **Cost is not reported.** `turn.completed.usage` carries token counts only, with no price attached
-  anywhere in the stream. `codex-extract-cost.sh` therefore emits `"total_cost": null` — Phase 8 must
-  say codex reports no cost rather than printing `$0.00`.
-- **A killed run usually salvages nothing**, and this is the sharpest difference from `opencode`.
-  Codex has no sub-agents: it emits its answer as a single `agent_message` at the very end, so a run
-  killed at the ceiling typically holds only `reasoning` and `command_execution` items — the model's
-  scratch work, which is not findings and must never be fed to Phase 5 as though it were.
-  `codex-extract-report.sh` reads only `agent_message` items and exits non-zero when there are none,
-  which is the honest signal that the run produced no answer at all. Do not read that as "the review
-  found nothing".
+- `model` — a bare name, e.g. `gpt-5.6-sol`. **No provider prefix**; a slashed value is rejected.
+- `effort` — passed as `-c model_reasoning_effort=…`, **not** as a flag (`--reasoning-effort` was removed
+  in v0.50). Values: `none`, `minimal`, `low`, `medium`, `high`, `xhigh`, `max`.
+- **Prerequisite: the working directory must be a git repository.** Codex refuses otherwise, and the
+  adapter withholds `--skip-git-repo-check` on purpose: reviewing an untracked directory is almost always
+  a wrong cwd. Only affects `--path`/`--all` runs aimed outside a repo.
+- **Read-only is structural:** the adapter passes `--sandbox read-only`, so the agent cannot write even if
+  told to. Never relax this. It also passes `--ignore-user-config`, which keeps MCP servers, hooks and
+  plugins from crowding out the review's own context.
+- **Preflight checks authentication too** — legitimate here, unlike opencode, because `codex login status`
+  exits `0`/`1` rather than requiring output to be parsed.
+- **No model listing** (`codex models` is not a subcommand), so `/ak-review:setup` asks for the name.
+- **Cost is not reported** — token counts only, so `total_cost` is `null`. Phase 8 must say the tool
+  reports no cost rather than printing a zero.
+- **A killed run usually salvages nothing.** No sub-agents: the answer comes as one `agent_message` at the
+  very end, so a killed run holds only reasoning and command output — scratch work, not findings, and it
+  must never reach Phase 5 as though it were. The report extractor exits non-zero to say so.
 
 ### `claude`
 
-Anthropic's Claude Code, run headless. Verified against `2.1.240`.
+Anthropic's Claude Code, headless. Verified against `2.1.240`.
 
-- Script: `${CLAUDE_PLUGIN_ROOT}/skills/execute/scripts/claude-adapter.sh <prompt-file> <model> [effort] <raw-output-file>`
-- `model` — an alias (`opus`, `sonnet`, `fable`) or a full name (`claude-opus-5`). No provider prefix.
-- `effort` — passed as Claude Code's own `--effort`: `low`, `medium`, `high`, `xhigh`, `max`. Omit to
-  use its default.
-- **Read-only is enforced by an allowlist, not by the permission mode — and that distinction was
-  measured, not assumed.** A probe run with `--permission-mode plan` alone _successfully created a
-  file_: plan mode governs how Claude Code works, not what it may touch. The adapter therefore passes
-  an explicit allowlist (`Read`, `Glob`, `Grep`, `Task`, `WebFetch`, and four read-only `git`
-  invocations) plus a denial of `Write`/`Edit`/`NotebookEdit`. **Never grant `Bash` wholesale here:**
-  an unrestricted shell is a write path no deny-list can close, since `touch`, `>`, `sed -i` and the
-  rest cannot be enumerated. Verified with the allowlist in place, the agent reports it has no
-  permitted way to create a file while `git log` and file reads work normally.
-- `--permission-mode dontAsk` is what makes that workable unattended: nothing may sit waiting for a
-  prompt that no one will answer. Plan mode is deliberately **not** used — it wants to write a plan
-  file of its own, which the allowlist then blocks, producing a confusing complaint mid-report.
-- **Sub-agents work headless**, which is why this adapter has a `-extract-subagents.sh` and `codex`
-  does not. Confirmed on a real run: sub-agent messages arrive with `parent_tool_use_id` set, which is
-  also the only thing distinguishing them from the coordinating agent's own text. The adapter passes
-  `--forward-subagent-text` to get them into the stream at all.
-- **Preflight:** `claude-preflight.sh` checks PATH only. No authentication check: Claude Code exposes
-  no machine-readable login status the way `codex login status` does, and parsing human-readable
-  output to gate a run is exactly the mistake `opencode-preflight.sh` documents.
-- **Models:** there is no `claude-models.sh`; Claude Code has no listing command, so `/ak-review:setup`
-  falls back to asking for the name.
-- Output is a newline-delimited JSON event stream. The finished answer arrives in a single `result`
-  event as `.result`, alongside `total_cost_usd`, `num_turns` and `usage`.
-- **Cost is reported in money**, unlike `codex` — `total_cost_usd` comes straight from the tool, so
-  nothing has to be inferred from token counts.
-- **This is by far the most expensive adapter, so a spend cap is ON by default: $5.** Measured: about
-  **$0.26–0.61 for a single trivial prompt**, because Claude Code loads substantial context before
-  doing anything. Compare roughly $0.002 for the same shape of work through `opencode`. Override with
-  `AK_REVIEW_MAX_BUDGET_USD`, or remove the cap with `AK_REVIEW_MAX_BUDGET_USD=none` — **not** with
-  `0`, which would read as "zero dollars" and abort instantly. This is the only adapter whose tool can
-  stop itself on cost rather than on time, which is why the ceiling lives here rather than in prose.
-- **The cap is a ceiling, not a guarantee — it can be exceeded, by design.** Claude Code checks spend
-  _between_ turns, never before committing to one, so a run stops once it has already gone over. The
-  overshoot is bounded by the cost of a single turn, not open-ended. Measured: a `$0.01` cap ended a
-  run at `$0.28` after `turns=1` — which is one turn, not a runaway. The practical rule is that a cap
-  bounds spend to roughly _itself plus one turn_, so set it with that headroom rather than at the exact
-  figure you cannot exceed. A cap below the price of one turn cannot bind at all; the adapter says so
-  rather than letting it look like protection. For a genuinely hard limit, use the spend controls in
-  the Anthropic Console — those sit outside this plugin and outside the tool.
-- **Hitting the cap produces no report at all.** Claude Code ends the run with
-  `terminal_reason: budget_exhausted` and `result: null`, so the report extractor would otherwise only
-  be able to say that nothing was found — never that the cap is the reason. The adapter detects this
-  and says so explicitly, naming the actual spend (which can overshoot the cap slightly before the run
-  stops) and how to lift it. Sub-agents that finished beforehand are still in the stream, so
-  `claude-extract-subagents.sh` is worth running on such a run.
-- **A denied permission does not fail the run.** Claude Code records it in `permission_denials` and
-  carries on, so a review that could not read what it needed still exits 0 with a confident-looking
-  report — the same danger as opencode's silent auto-rejection. The adapter counts them and warns.
+- `model` — an alias (`opus`, `sonnet`) or full name (`claude-opus-5`) · `effort` — Claude Code's own
+  `--effort`: `low`…`max`
+- **Read-only rests on an allowlist, not the permission mode.** Measured: `--permission-mode plan` alone
+  still allowed a file to be created. The adapter allows only reading tools plus four read-only `git`
+  invocations, and denies `Write`/`Edit`/`NotebookEdit`. **Never grant `Bash` wholesale** — an
+  unrestricted shell is a write path no deny-list can close.
+- **Sub-agents work headless**, so a `124` is salvageable via `claude-extract-subagents.sh`. They are
+  identified solely by `parent_tool_use_id` being set.
+- **Preflight checks PATH only** — Claude Code exposes no machine-readable login status.
+- **No model listing**, so `/ak-review:setup` asks for the name.
+- **Cost is reported in money** (`total_cost_usd`), unlike codex.
+- **By far the most expensive adapter, so a spend cap is on by default: USD 5.** Measured: USD 0.26–0.61
+  for a single trivial prompt, against roughly USD 0.002 through opencode. Override with
+  `AK_REVIEW_MAX_BUDGET_USD`; remove it with `=none`, **not** `0`, which means zero dollars and aborts
+  instantly. **The cap is a ceiling, not a guarantee:** spend is checked between turns, so a run stops
+  just after exceeding it, overshooting by up to one turn's cost. A cap below the price of one turn
+  cannot bind at all and is flagged. For a hard limit, use the Anthropic Console's spend controls.
+- **Hitting the cap produces no report** (`result: null`), which the adapter reports explicitly so it is
+  not mistaken for an empty review. Finished sub-agents remain salvageable.
+- **A denied tool call does not fail the run** — Claude Code records it in `permission_denials` and
+  carries on, so an uninformed review still exits 0. The adapter counts them and warns.
   **Check that warning before trusting a report.**
-- Running this adapter from inside a Claude Code session is fine: it is a separate process with its own
-  permissions, and the allowlist above applies to it regardless of what the outer session may do.
+
+> Each adapter script carries a comment header with the measurements and the reasoning behind these
+> decisions. Read it before changing one — several encode failures that cost a day to diagnose.
 
 ## Configuration
 
