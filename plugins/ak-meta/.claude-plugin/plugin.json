@@ -1,7 +1,7 @@
 {
   "name": "ak-meta",
   "description": "Project management tools for changelog generation, session handoff, and plugin quality assessment",
-  "version": "1.26.3",
+  "version": "1.27.0",
   "author": {
     "name": "redpop",
     "url": "https://github.com/redpop"
