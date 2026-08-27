@@ -1,0 +1,40 @@
+{
+  // Written 2026-08-27. Before this file existed, markdownlint-cli2 ran on its
+  // defaults, which cap lines at 80 — a limit no file in this repo has ever
+  // met. A rule that everything violates is not a rule; it is noise that
+  // teaches you to ignore the linter's output.
+  //
+  // 100 is what the prose here is actually wrapped to: measured across 161
+  // files and 36,947 lines, the 95th percentile line is 102 characters.
+  //
+  // Not yet a passing gate: ~1,020 findings remain, spread across nearly every
+  // directory rather than concentrated in a legacy corner (120 would leave
+  // ~500, 150 ~320). Treat that as a backlog to work down file by file, not as
+  // a build break — and do not "fix" it by raising the number until it goes
+  // green, which is how the 80 nobody followed came about.
+  "config": {
+    "MD013": {
+      "line_length": 100,
+      // Tables and fenced code cannot be wrapped without changing meaning: a
+      // broken table stops being a table, and a wrapped shell command stops
+      // being runnable. Excluded so the remaining count only names lines a
+      // human could actually rewrap.
+      "code_blocks": false,
+      "tables": false
+    }
+  },
+  // Only affects glob invocations such as `markdownlint-cli2 "**/*.md"`. Files
+  // passed by path — which is what the markdown-format.sh hook does — are
+  // linted regardless; verified, because an ignore list that silently switched
+  // the hook off would be worse than the noise this file removes.
+  "ignores": [
+    "node_modules/**"
+  ]
+}
+
+// A note on why 100 is less strict in practice than it reads: MD013 exempts a
+// line that cannot be shortened by wrapping — one with no whitespace past the
+// limit column. A 103-character line whose final word straddles column 100 is
+// therefore clean, while a 127-character line with spaces beyond it is not.
+// Counting raw line lengths (`awk 'length>100'`) overstates the real backlog by
+// roughly a factor of two; use markdownlint's own count.
