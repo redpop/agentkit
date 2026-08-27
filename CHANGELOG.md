@@ -5,6 +5,40 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.28.0] - 2026-08-27
+
+### ✨ Added
+
+- `ak-review:execute` — **per-model runtime settings via `model_overrides`.** A model that reliably
+  runs longer than the adapter's 20-minute ceiling previously left only bad options: raise
+  `AK_REVIEW_TIMEOUT_SECS` globally, which makes every faster model's hang that much more expensive to
+  detect, or remember an env prefix at the prompt — and the run it is forgotten on is the one killed
+  just short of finishing. Measured 2026-08-27: `opencode-go/glm-5.3-flash` completed a real review in
+  898 s against a 900 s ceiling.
+
+  `resolve-config.sh` now reads a `timeout_secs` key and a `model_overrides` map keyed by model id,
+  merging the matching entry over the file layers before CLI flags. An entry may set `effort`,
+  `fix_threshold` and `timeout_secs`; `tool` and `model` are rejected with an error rather than
+  ignored, because the map is keyed on the model that has already been resolved and an entry able to
+  change it would mean the applied entry is not the one the resolved model points at. A `null` value
+  unsets an inherited setting instead of replacing it — without that, a per-model entry cannot be
+  safe across tools, since effort vocabularies belong to the adapter and a `codex` `xhigh` inherited
+  by an `opencode` run becomes a `--variant` that tool never defined. Also adds a `--timeout-secs`
+  flag for one-off runs, validated here rather than in the adapter so the message names the flag the
+  user typed instead of the env var it becomes.
+
+  The adapter is unchanged and still owns enforcement — the resolved value only tells it which number
+  to enforce, so the timer still cannot be lost by a harness that backgrounds the call. When nothing
+  resolves a value, the variable stays unset and the adapter's own default applies, keeping that
+  number in exactly one place. Five test cases cover the override applying, not applying to a
+  different model, losing to an explicit flag, the flag's validation, the rejected key, and `null`
+  unsetting an inherited value.
+
+- `ak-review:setup` — writing the config now **preserves keys it did not ask about**. The skill asks
+  four questions and writes the whole file, so `timeout_secs` and `model_overrides` would have been
+  destroyed by a plain overwrite — a per-model timeout silently reverting to the adapter default is
+  the kind of loss nobody connects back to having run setup.
+
 ## [1.27.0] - 2026-08-24
 
 ### 🗑️ Removed
