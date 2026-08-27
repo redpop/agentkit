@@ -46,7 +46,7 @@ behind this and for how to tell the two failures apart in OpenCode's own log.
 
 **Flags:** `--type all|committed|uncommitted` (default: all), `--base <ref>`, `--path <…>`, `--all`,
 `--tool <name>`, `--model <model>`, `--effort <level>`, `--fix-threshold critical|high|medium|low`
-(default: high), `--report-only`
+(default: high), `--timeout-secs <n>`, `--report-only`
 
 `--model` and `--effort` take the _adapter's_ format, not a shared one: OpenCode wants `provider/model`
 and its own variant levels, Codex a bare model name with `none|minimal|low|medium|high|xhigh|max`, and
@@ -62,13 +62,24 @@ Claude Code an alias such as `opus` (or a full model name) with `low|medium|high
     "tool": "opencode",
     "model": "opencode-go/glm-5.3",
     "effort": "high",
-    "fix_threshold": "high"
+    "fix_threshold": "high",
+    "timeout_secs": 1200,
+    "model_overrides": {
+      "opencode-go/glm-5.3-flash": { "timeout_secs": 1800 }
+    }
   }
 }
 ```
 
 `tool` and `model` are required from some layer (or via flags) — there's no built-in default. Without
 either, the skill stops and reports exactly which flag or config key to set.
+
+`model_overrides` applies settings only when its key is the model actually being used, which is what
+makes a per-model timeout possible: a model that reliably runs longer than the adapter's 20-minute
+ceiling gets more time, while every other model keeps a ceiling short enough that a genuine hang is
+still noticed quickly. An entry may set `effort`, `fix_threshold` and `timeout_secs` — not `tool` or
+`model`, which would contradict the key it is stored under. A `--timeout-secs` flag still overrides it
+for a single run.
 
 `/ak-review:setup` writes this file interactively, guiding you to pick or type a model depending on
 what your tool supports — use it instead of hand-writing the JSON if you prefer being walked through it.
@@ -108,6 +119,14 @@ first run before trusting auto-fix on a new tool/model combination.
 ```
 
 Widens auto-fixing to confirmed Medium findings and above (default is High and above).
+
+```text
+/ak-review:execute --timeout-secs 1800
+```
+
+Raises the per-attempt ceiling for one run. Prefer a `model_overrides` entry when a specific model
+always needs it — a flag has to be remembered every time, and the run it is forgotten on is the one
+that gets killed just short of finishing.
 
 ## When to Use
 
