@@ -28,6 +28,7 @@ Parse `$ARGUMENTS`:
 | `--model <model>` | Model passed to the adapter, in _that adapter's_ format (overrides config) |
 | `--effort <level>` | Reasoning-effort/variant passed to the adapter, in _that adapter's_ vocabulary (overrides config) |
 | `--fix-threshold critical\|high\|medium\|low` | Minimum severity to auto-fix (overrides config; default `high`) |
+| `--timeout-secs <n>` | Per-attempt ceiling for this run, overriding config and the adapter's own default |
 | `--report-only` | Skip Phase 6–7 (fixing + validation); only report and verify |
 
 **Scope precedence:** same as `delegate` — `--path`/`--all` override `--type`.
@@ -45,12 +46,19 @@ Run (only pass flags the user actually supplied):
 
 ```bash
 ${CLAUDE_PLUGIN_ROOT}/skills/execute/scripts/resolve-config.sh \
-  [--tool <val>] [--model <val>] [--effort <val>] [--fix-threshold <val>]
+  [--tool <val>] [--model <val>] [--effort <val>] [--fix-threshold <val>] [--timeout-secs <val>]
 ```
 
 The script reads `.claude/ak-review.local.json` and `~/.claude/ak-review.local.json` itself. If it exits
 non-zero, print its stderr message verbatim and **stop** — do not guess a tool or model. On success it
-prints resolved JSON: `{"tool":..., "model":..., "effort":..., "fix_threshold":...}`.
+prints resolved JSON:
+`{"tool":..., "model":..., "effort":..., "fix_threshold":..., "timeout_secs":...}`.
+
+`timeout_secs` is `null` unless the config or a flag set one — including through a `model_overrides`
+entry for the resolved model, which is how a model that is reliably slower than the adapter's default
+ceiling gets a longer one without slowing every other model down. Carry the value to Phase 3; do not
+substitute a number of your own when it is `null`, because the adapter's own default is the one place
+that number is written down.
 
 Then confirm the resolved adapter can actually run, before any work is done.
 
@@ -95,17 +103,22 @@ applies here too.
 Look up the resolved `tool` in the Adapter Reference below and run its adapter:
 
 ```bash
-${CLAUDE_PLUGIN_ROOT}/skills/execute/scripts/<tool>-adapter.sh \
+[AK_REVIEW_TIMEOUT_SECS=<resolved>] \
+  ${CLAUDE_PLUGIN_ROOT}/skills/execute/scripts/<tool>-adapter.sh \
   "$PROMPT_FILE" "$MODEL" "$EFFORT" "$RAW_OUTPUT_FILE"
 ```
 
-(Omit `$EFFORT` entirely, not as an empty string, when Phase 1 resolved it to `null`.) If `tool`
+(Omit `$EFFORT` entirely, not as an empty string, when Phase 1 resolved it to `null`. Likewise omit the
+`AK_REVIEW_TIMEOUT_SECS` prefix entirely when Phase 1 resolved `timeout_secs` to `null` — an unset
+variable is what selects the adapter's own default, and an empty one is a validation error.) If `tool`
 matches no adapter, stop and report which are implemented. The run is long and produces no
 intermediate output; do not babysit it.
 
 **The adapter owns the ceiling, not you.** It enforces its own timeout (20 min,
 `AK_REVIEW_TIMEOUT_SECS`) because a ceiling the caller holds is the one that breaks when a harness
-backgrounds the call and takes the timer with it. Pass a generous backstop of your own anyway, but
+backgrounds the call and takes the timer with it. Passing `timeout_secs` in the environment does not
+move that ownership: it only tells the adapter which number to enforce, and the enforcement still
+happens inside the adapter where the timer cannot be lost. Pass a generous backstop of your own anyway, but
 treat the exit code as definitive:
 
 | Exit | Meaning | What to do |
@@ -317,7 +330,11 @@ Resolved by `scripts/resolve-config.sh`, precedence CLI flags > project file > g
     "tool": "opencode",
     "model": "opencode-go/glm-5.3",
     "effort": "high",
-    "fix_threshold": "high"
+    "fix_threshold": "high",
+    "timeout_secs": 1200,
+    "model_overrides": {
+      "opencode-go/glm-5.3-flash": { "timeout_secs": 1800 }
+    }
   }
 }
 ```
@@ -325,7 +342,26 @@ Resolved by `scripts/resolve-config.sh`, precedence CLI flags > project file > g
 `tool` and `model` are required (from some layer, or via flags) — there is no built-in default, so
 installing or updating this plugin never forces a specific tool or model on anyone. `fix_threshold`
 defaults to `high` if unset anywhere. `effort` has no default; if unresolved, the adapter is invoked
-without an effort flag.
+without an effort flag. `timeout_secs` has no default here either — unset means the adapter's own
+ceiling applies, which keeps that number in exactly one place.
+
+### Per-model overrides
+
+`model_overrides` maps a model id to settings that apply **only when that model is the resolved one**.
+It exists because runtime limits are a property of the model, not of the setup: a model that reliably
+needs longer than the adapter's ceiling would otherwise force a global timeout that makes every faster
+model's hang cost that much more to detect. The example above is that case — a slower model gets 1800 s,
+everything else keeps 1200 s.
+
+An entry may set `effort`, `fix_threshold` and `timeout_secs`, and nothing else. Setting one to
+`null` **unsets** the inherited value rather than overriding it with a value — which is the only way
+to make a per-model entry safe across tools, because `effort` vocabularies are the adapter's own: a
+`codex` `xhigh` inherited by an `opencode` run becomes a `--variant` that tool never defined. `tool` and `model` are
+rejected with an error rather than ignored: the map is keyed on the model that has already been
+resolved, so an entry able to change it would mean the applied entry is not the one the resolved model
+points at. Precedence is global file < project file < matching `model_overrides` entry < CLI flags —
+the override is a per-model default, not a lock, so `--timeout-secs` still wins for one run. The project
+layer extends the global map key by key rather than replacing it.
 
 **`model` and `effort` are adapter-specific — the example above is `opencode`'s shape, not a universal
 one.** `opencode` takes `provider/model` and its own `--variant` levels; `codex` takes a bare model
@@ -339,9 +375,14 @@ Runtime limits live in the environment rather than the config file, because they
 rather than describing a setup. **They are adapter-specific**, and an adapter silently ignores any it
 does not implement — setting `AK_REVIEW_STARTUP_RETRIES` for `codex` does nothing at all.
 
+`AK_REVIEW_TIMEOUT_SECS` is the one exception, and only in one direction: Phase 1 may resolve a
+`timeout_secs` from the config and Phase 3 sets the variable from it, so a per-model ceiling survives
+without the user having to remember an env prefix at the prompt. A variable already set in the
+environment is not overwritten — the adapter reads whatever it is given.
+
 | Variable | Default | Adapters | Effect |
 |---|---|---|---|
-| `AK_REVIEW_TIMEOUT_SECS` | `1200` | all | Ceiling for **one attempt**, after which the adapter kills the process group and exits `124` |
+| `AK_REVIEW_TIMEOUT_SECS` | `1200` | all | Ceiling for **one attempt**, after which the adapter kills the process group and exits `124`. Also settable per model via `timeout_secs` / `model_overrides` (see Configuration) |
 | `AK_REVIEW_STARTUP_GRACE_SECS` | `90` | `opencode` | How long a run may produce **no bytes at all** before it counts as stalled at startup. Must be below the timeout |
 | `AK_REVIEW_STARTUP_RETRIES` | `2` | `opencode` | Further attempts after a startup stall. `0` disables retrying; only exit `125` is ever retried |
 | `AK_REVIEW_RETRY_WAIT_SECS` | `60` | `opencode` | Wait between those attempts |
