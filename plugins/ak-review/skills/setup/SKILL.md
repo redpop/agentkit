@@ -228,6 +228,12 @@ Write the file:
 }
 ```
 
+**If the file already exists, preserve every key under `external_review` this skill did not ask
+about** — `timeout_secs` and `model_overrides` in particular. This skill asks four questions and
+writes the whole file, so anything it does not know about is destroyed by a plain overwrite; a
+per-model timeout silently reverting to the adapter default is exactly the kind of loss nobody
+connects back to having run setup. Read the existing file first and merge the chosen values over it.
+
 Then read the file back from disk and prove it resolves, from the repository root:
 
 ```bash

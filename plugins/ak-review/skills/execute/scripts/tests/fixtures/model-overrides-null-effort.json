@@ -1,0 +1,13 @@
+{
+  "external_review": {
+    "tool": "codex",
+    "model": "gpt-5.6-sol",
+    "effort": "xhigh",
+    "model_overrides": {
+      "opencode-go/glm-5.3-flash": {
+        "effort": null,
+        "timeout_secs": 1800
+      }
+    }
+  }
+}

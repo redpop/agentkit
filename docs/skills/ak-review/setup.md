@@ -66,6 +66,11 @@ deciding what to switch to.
 Rewrites the global config in one step, without questions. The previous contents are shown before and
 after so the change stays reversible, and the file is still verified to resolve.
 
+Keys this skill does not ask about — `timeout_secs` and `model_overrides`, see
+[execute](./execute.md#configuration) — are carried over rather than dropped. It writes the whole
+file, so without that a per-model timeout would revert to the adapter default the next time anyone
+ran setup, and nothing in the output would connect the two.
+
 ## When to Use
 
 - `/ak-review:execute` reported that no tool or model is configured
@@ -76,6 +81,8 @@ after so the change stays reversible, and the file is still verified to resolve.
 
 - Prefer the **global** config, and only add a project-local one when a specific repository genuinely
   needs a different tool or model
+- Per-model runtime settings belong in `model_overrides`, not in a second config layer — a model that
+  needs a longer ceiling needs it in every repository. See [execute](./execute.md#configuration)
 - Keep `fix_threshold` at `high` — at lower levels a growing share of findings are matters of taste,
   and a reviewer is least reliable exactly there
 - Gitignore any project-local config; it is machine- and account-specific
