@@ -1,0 +1,12 @@
+{
+  "external_review": {
+    "tool": "opencode",
+    "model": "opencode-go/glm-5.3-flash",
+    "model_overrides": {
+      "opencode-go/glm-5.3-flash": {
+        "model": "opencode-go/glm-5.3",
+        "timeout_secs": 1800
+      }
+    }
+  }
+}
