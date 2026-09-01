@@ -44,6 +44,16 @@ adapters read that out of the event stream and print the tool's own reason, beca
 never carried it: one run spent 25 minutes before hitting a quota and reported only a bare failure.
 Unlike `125` it is not transient, so retrying immediately hits the same wall.
 
+When a salvaged run has recovered its dimension output but lost only the merge, the skill now runs a
+short **consolidation pass**: the same adapter, a prompt built from the recovered text, no
+repository access needed. This is the common shape of a timeout — the fan-out finishes long before
+the merge does, so a killed run holds nearly every dimension and lacks only the step that combines
+them. Measured on the run this came from: five of six dimensions complete, 60 KB recovered, and the
+missing piece was the most valuable one. The pass is skipped when the tool refused (`126`), since a
+second call hits the same wall. Its output carries two caveats into the summary: the severities are
+the sub-agents' own, rated without seeing each other, and coverage is whatever survived — a merge
+over five of six dimensions is not a complete review and is not reported as one.
+
 **A report extractor exiting `3` means the output is real but unfinished** — it has no `findings[]`
 block, so it is the model's running narration rather than its review. The prose is still returned, but
 the skill skips the auto-fix phase and says the run was cut short. Before this, such a run passed the
