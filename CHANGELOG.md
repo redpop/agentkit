@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.29.0] - 2026-09-01
+
+### ✨ Added
+
+- `ak-review:execute` — **A consolidation pass that finishes a review the salvage path
+  rescued.** When a run is killed near the end, the fan-out has long since completed and
+  only the merge is missing — measured on the run that prompted this: five of six
+  dimensions done, 60 KB recovered, and the one lost step was the most valuable. Phase 3b
+  now runs the same adapter a second time with a prompt built from the recovered text.
+  It needs no repository access and no write access, which is what makes it work under
+  every adapter, including codex's read-only sandbox and claude's allowlist.
+
+  It fires only when all three hold: `subagents.md` exists, the report extractor returned
+  `3` (output present, merge missing), and the adapter did not return `126` — a refusal
+  means a second call hits the same wall. The prompt is deliberately narrow: merge, do not
+  review. The model may read a cited file to check a line number or drop a claim the code
+  contradicts, but anything it adds that is not traceable to the recovered text is out of
+  scope.
+
+  Two limits travel with the result into Phase 8, because they change what it is worth:
+  the severities are the sub-agents' own, assigned without seeing each other's work, so
+  cross-dimension deduplication is weaker than in a run that merged normally; and coverage
+  is whatever survived — a merge over five of six dimensions is not a complete review and
+  is not summarised as one. The second call's cost is added to the run total.
+
+  Credit where due: this came from the agent whose handoff prompted the 1.28.1 fixes. My
+  original objection — that resumable consolidation needs writing sub-agents, which two
+  adapters forbid — was aimed at the wrong thing. Persistence was never the gap: the
+  extractor had already recovered everything from the stream without a single write. Only
+  the merge was lost, and merging needs no more than the prose already on disk.
+
 ## [1.28.1] - 2026-09-01
 
 Two real runs failed on 2026-08-31: a codex review that hit its usage quota after 25
@@ -31,8 +62,8 @@ still happened, through the salvage path, but the way there exposed six defects.
   broke but never what. All three adapters now inspect their stream and exit **`126`**,
   reserved for "the tool refused", printing the tool's own words. Distinct from `125` on
   purpose: a stall is transient and worth retrying, a spent quota is not. The adapter's
-  own markers still outrank it, since `124`/`125` record what it *did*, while an error
-  event only reports what the tool *said*.
+  own markers still outrank it, since `124`/`125` record what it _did_, while an error
+  event only reports what the tool _said_.
 
 - `ak-review:execute` — **Salvage was keyed on exit `124` instead of on whether anything
   survived.** Harmless for codex, which has no sub-agents, but wrong in general: a quota
