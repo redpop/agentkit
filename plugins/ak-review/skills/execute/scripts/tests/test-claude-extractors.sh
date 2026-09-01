@@ -27,7 +27,15 @@ echo "$OUT" | grep -q "Dispatching review subagents" && fail "case 1: narration 
 
 # Case 2: killed before the result event -> fall back to the COORDINATING
 # agent's own text only. Partial by nature, but never sub-agent output.
-TOUT="$(bash "$REPORT" "$TRUNCATED")"
+# A truncated stream is by definition an UNFINISHED report: it carries no
+# findings block, so the extractor now exits 3 to say so while still emitting
+# what it recovered. That is the whole point of the salvage path — the prose is
+# worth having, it just must not be mistaken for a completed review.
+set +e
+TOUT="$(bash "$REPORT" "$TRUNCATED" 2> /dev/null)"
+TEC=$?
+set -e
+[ "$TEC" -eq 3 ] || fail "case 2: a truncated stream must exit 3 (unfinished), got $TEC"
 echo "$TOUT" | grep -q "Dispatching review subagents" || fail "case 2: the fallback did not recover top-level text"
 echo "$TOUT" | grep -q "Security dimension" && fail "case 2: the fallback must not include sub-agent text"
 

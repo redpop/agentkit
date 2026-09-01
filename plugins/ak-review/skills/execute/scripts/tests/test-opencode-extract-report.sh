@@ -25,7 +25,15 @@ fi
 # SKILL.md's Adapter Reference) must still recover every complete text event
 # instead of dying on the first malformed line -- SKILL.md documents this as
 # the salvage path for that exact failure.
-TRUNCATED_ACTUAL="$(bash "$SCRIPT" "$TRUNCATED_FIXTURE")"
+# A truncated stream is by definition an UNFINISHED report: it carries no
+# findings block, so the extractor now exits 3 to say so while still emitting
+# what it recovered. That is the whole point of the salvage path — the prose is
+# worth having, it just must not be mistaken for a completed review.
+set +e
+TRUNCATED_ACTUAL="$(bash "$SCRIPT" "$TRUNCATED_FIXTURE" 2> /dev/null)"
+TRUNC_EC=$?
+set -e
+[ "$TRUNC_EC" -eq 3 ] || { echo "FAIL: a truncated stream must exit 3 (unfinished), got $TRUNC_EC"; exit 1; }
 TRUNCATED_EXPECTED="## Findings
 
 Security dimension: no issues found."

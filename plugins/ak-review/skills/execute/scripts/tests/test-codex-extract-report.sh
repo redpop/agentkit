@@ -46,7 +46,15 @@ fi
 # Case 3: a stream truncated mid-line still yields every COMPLETE event. A codex
 # run killed at the timeout ceiling leaves exactly this shape, and the salvage
 # path depends on the partial file being readable.
-TRUNCATED_ACTUAL="$(bash "$SCRIPT" "$TRUNCATED_FIXTURE")"
+# A truncated stream is by definition an UNFINISHED report: it carries no
+# findings block, so the extractor now exits 3 to say so while still emitting
+# what it recovered. That is the whole point of the salvage path — the prose is
+# worth having, it just must not be mistaken for a completed review.
+set +e
+TRUNCATED_ACTUAL="$(bash "$SCRIPT" "$TRUNCATED_FIXTURE" 2> /dev/null)"
+TRUNC_EC=$?
+set -e
+[ "$TRUNC_EC" -eq 3 ] || fail "a truncated stream must exit 3 (unfinished), got $TRUNC_EC"
 TRUNCATED_EXPECTED='## Findings
 
 Security dimension: no issues found.'

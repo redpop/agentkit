@@ -98,6 +98,14 @@ same `<timestamp>` directory for every other artifact this run produces — `$RA
 evidence lives in one place. If the resolved scope is empty, `delegate`'s own "say so and stop" behavior
 applies here too.
 
+**Measure the scope before running, and say so if it is large.** Count the files and commits in the
+resolved scope and the size of the assembled prompt. A review of ~100 files across dozens of commits
+with six dimensions does not fit a single fixed ceiling: measured, such a run consumed 25 minutes of
+quota and a 30-minute timeout without ever reaching consolidation. Report the figures, name the
+ceiling that applies, and — when the scope is plainly large — offer to split it (per app, per ticket
+group) before starting rather than after failing. Do not silently rescale the timeout: a limit that
+moves on its own is worse than one the user chose knowing the size.
+
 ### Phase 3: Execute
 
 Look up the resolved `tool` in the Adapter Reference below and run its adapter:
@@ -125,14 +133,20 @@ treat the exit code as definitive:
 |------|---------|------------|
 | `124` | Ran, then hung. A partial stream exists | **Salvage** — see below |
 | `125` | Produced nothing; never reached the model | **Stop.** Nothing to salvage, and the extractors would only confirm the emptiness. Report the adapter's stderr verbatim. Do not call it "the review found nothing" — no review took place |
+| `126` | **The tool refused** — quota exhausted, budget cap hit, model unavailable | **Stop, and say why.** The adapter prints the tool's own reason. Retrying now hits the same wall; unlike `125` this is not transient. Whatever was produced first is still worth salvaging if the adapter has a sub-agent extractor |
 | other | The tool's own failure | Report it and stop |
 
 **Never retry a `125` yourself.** An adapter whose failure is transient retries internally, so a
 surfaced `125` already means every attempt stalled. Coming back later is the user's call.
 
-**Salvage path (`124` only).** Kill the process if it still runs — `$RAW_OUTPUT_FILE` is written as
-the run goes, so it survives. Do **not** fall through to Phase 4. Run every extractor the adapter
-provides, sub-agents **first** where one exists:
+**Salvage path.** Attempt it whenever the adapter has a `<tool>-extract-subagents.sh` **and** the raw
+file is non-empty — not only on `124`. The exit code says how the run ended; only the extractor's
+existence says whether anything survived it. A quota refusal (`126`) or an ordinary crash can leave
+just as many finished sub-agents behind as a timeout, and the old rule silently discarded them.
+The one exception is `125`: the file is empty by definition, so there is nothing to run.
+
+Kill the process if it still runs — `$RAW_OUTPUT_FILE` is written as the run goes, so it survives. Do
+**not** fall through to Phase 4. Run every extractor the adapter provides, sub-agents **first**:
 
 ```bash
 # only if the adapter has one — opencode and claude do, codex does not
@@ -159,6 +173,14 @@ ${CLAUDE_PLUGIN_ROOT}/skills/execute/scripts/<tool>-extract-cost.sh "$RAW_OUTPUT
 The extractors are **per-adapter**, not shared: each external tool emits its own event schema, and a
 mismatched extractor silently yields an empty report rather than an error. Use the ones named after
 the resolved `tool`.
+
+**A report extractor exiting `3` means the output is real but UNFINISHED** — it carries no
+`findings[]` block, so it is the model's narration rather than its review. The prose is still written
+to `$REPORT_FILE`, deliberately, but it must not be treated as findings: **skip Phase 6 entirely**,
+show the user what was recovered, and say the run was cut short. Measured on a real run: a review that
+hit a usage limit after 25 minutes left 1441 bytes of _"I'll review this as a report-only audit…"_,
+which the old empty-check passed as a finished report. Verifying narration against code produces
+confident nonsense; that is the failure this code exists to prevent.
 
 Read only `$REPORT_FILE` and `$COST_FILE` — never read `$RAW_OUTPUT_FILE` directly, it carries the
 adapter's full internal event trace and is far larger than what's needed. From `$REPORT_FILE`, take the
@@ -224,7 +246,7 @@ registry: an adapter is the set of scripts named after its tool under `scripts/`
 |--------|----------|-----------|
 | `<tool>-adapter.sh <prompt-file> <model> [effort] <raw-output-file>` | Runs the review, writing the tool's raw output to the given file. Exits with the tool's own exit code, except for two reserved codes: `124` when its own ceiling fires (process group killed, partial stream salvageable) and `125` when the tool produced **no bytes at all** and never started (nothing to salvage). **Enforcing both is the adapter's job, not the caller's:** an unattended caller may lose the timer, and the two failures need opposite advice. | Yes |
 | `<tool>-preflight.sh` | Exit 0 = ready, _or not provably unready_. Non-zero = cannot run, with the reason and the concrete fix on stderr. **An adapter must not block on a check it cannot make reliably — it either drops the check or notes the gap on stderr.** See the `opencode` entry for why this matters. | Optional; skipped if absent |
-| `<tool>-extract-report.sh <raw-output-file>` | Prints the agent's report to stdout. Exits non-zero when the stream carries no report at all — that is an honest signal, not a parse failure, and must not be smoothed into an empty report. | Yes |
+| `<tool>-extract-report.sh <raw-output-file>` | Prints the agent's report to stdout. Exit `1` = the stream carries no report at all; exit `3` = output exists but has no `findings[]` block, so it is narration from a run that was cut short. `3` still prints what it found — the caller must show it without treating it as findings. Neither is a parse failure, and neither may be smoothed into an empty report. | Yes |
 | `<tool>-extract-cost.sh <raw-output-file>` | Prints `{"total_cost":…,"total_tokens":…}`. `total_cost` is `null` when the tool reports no money — never `0`, which would falsely claim the run was free. Extra keys are fine. Must degrade to zeros on a truncated stream rather than failing, so a salvaged report is not lost with it. | Yes |
 | `<tool>-extract-subagents.sh <raw-output-file>` | Recovers finished sub-agent output from a killed run. Only meaningful for tools that dispatch sub-agents and merge late. | Optional; omit when the tool has no such concept |
 | `<tool>-models.sh` | Prints one candidate per line, to stdout; the format is the tool's own and is not guaranteed. Used by `/ak-review:setup`. | Optional; setup asks the user to type a model if absent |
@@ -403,7 +425,10 @@ Two things the table cannot convey, both measured:
 - `--report-only` reduces this skill to "delegate + execute + advise, no fixing" — useful for a first,
   supervised run before trusting the auto-fix phase on a given tool/model combination.
 - The raw adapter output file is kept on disk after the run (not deleted) for debugging or for
-  re-running `/ak-review:advise` later without repeating the (paid) external tool call.
+  re-running `/ak-review:advise` later without repeating the (paid) external tool call. **It lives in
+  `/tmp` and therefore does not survive a reboot** — on macOS `/tmp` is cleared at boot. If a run is
+  worth re-examining later, copy its directory somewhere durable before the machine restarts; the
+  evidence for two failed runs was lost exactly this way.
 
 ## Related
 
