@@ -5,6 +5,81 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.28.1] - 2026-09-01
+
+Two real runs failed on 2026-08-31: a codex review that hit its usage quota after 25
+minutes, and an opencode review that timed out just short of consolidation. The review
+still happened, through the salvage path, but the way there exposed six defects.
+
+### 🐛 Fixed
+
+- `ak-review:execute` — **A cut-short run could hand its narration on as a finished
+  report.** The extractors checked only whether output was _empty_. A model's running
+  commentary ("I'll review this as a report-only audit…") is emitted as the same event
+  type as the report itself, so a quota abort left 1441 bytes of narration passing as a
+  review: exit 0, no error, no cost. Phase 5 would have verified narration against the
+  code and Phase 8 called it a free success. The extractors now require the `findings[]`
+  block that delegate §8 mandates, and exit **`3`** when it is missing. Deliberately a
+  signal rather than a rejection — the prose is still printed, because discarding it
+  would only invert the error: a model formatting the block differently would turn an
+  expensive, useful run into a reported failure. Confidently wrong is dangerous;
+  incomplete and labelled is merely expensive.
+
+- `ak-review:execute` — **No adapter read the error events in its own stream.** Codex
+  announced the quota exhaustion plainly, in a `turn.failed` event carrying the reason,
+  and the adapter passed its bare exit 1 through — so the caller learned that something
+  broke but never what. All three adapters now inspect their stream and exit **`126`**,
+  reserved for "the tool refused", printing the tool's own words. Distinct from `125` on
+  purpose: a stall is transient and worth retrying, a spent quota is not. The adapter's
+  own markers still outrank it, since `124`/`125` record what it *did*, while an error
+  event only reports what the tool *said*.
+
+- `ak-review:execute` — **Salvage was keyed on exit `124` instead of on whether anything
+  survived.** Harmless for codex, which has no sub-agents, but wrong in general: a quota
+  refusal or a crash leaves as many finished sub-agents behind as a timeout does, and
+  those were silently discarded. Salvage now runs whenever the adapter has a
+  `-extract-subagents.sh` and the raw file is non-empty — with `125` as the one
+  exception, where the file is empty by definition.
+
+- `ak-review:execute` — **The opencode permission warning could not be weighed.** It said
+  only that "one or more" requests were denied. A rejected `/tmp` scratch path is
+  harmless; a rejected source directory means the review never read the code it
+  describes. The warning now names the count and the rejected paths.
+
+### 📝 Documented
+
+- `ak-review:execute` — **Phase 2 now measures the scope and says when it is large.** 112
+  files across 67 commits with six dimensions does not fit a fixed ceiling: that run
+  spent 25 minutes of quota and a 30-minute timeout without reaching consolidation, and
+  nothing flagged the size beforehand. The skill now reports files, commits and prompt
+  size, names the applicable ceiling, and offers to split the work before starting rather
+  than after failing. It deliberately does **not** rescale the timeout on its own — a
+  limit that moves by itself is worse than one chosen knowingly.
+
+- `ak-review:execute` — **The raw output does not survive a reboot, which the skill had
+  promised it would.** `SKILL.md` offered it for re-running `/ak-review:advise` without
+  repeating the paid call, but it lives in `/tmp`, which macOS clears at boot. Found the
+  hard way: the evidence for both failed runs was gone before it could be examined.
+
+### ✅ Tests
+
+- Two new suites: one pinning the report-completeness signal across all three extractors,
+  including that exit `3` still emits what it found; one pinning refusal detection per
+  adapter and that `124` outranks it. Four existing tests were updated rather than worked
+  around — they encoded the old behaviour, and a truncated stream is by definition an
+  unfinished report.
+
+### ⚠️ Considered and rejected
+
+- **A quota preflight would not have helped.** The run was 25 minutes in when the limit
+  hit; at launch the quota was there, so a probe would have reported green and the abort
+  would have happened anyway. `codex` also exposes no quota command. Reading the stream
+  solves this; a preflight cannot.
+- **Sub-agents writing findings to disk incrementally** would make consolidation
+  resumable, but needs write access — which codex (`--sandbox read-only`) and claude
+  (allowlist) refuse structurally. That contract is worth more than resumability, and the
+  salvage path already recovered 60 KB across five of six dimensions.
+
 ## [1.28.0] - 2026-08-27
 
 ### ✨ Added
