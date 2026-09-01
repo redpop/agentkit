@@ -159,7 +159,102 @@ ${CLAUDE_PLUGIN_ROOT}/skills/execute/scripts/<tool>-extract-cost.sh "$RAW_OUTPUT
 and merge late, so plenty survives; `codex` emits one message at the end, so usually nothing does. A
 short `report.md` is therefore not evidence that the review found nothing. See the Adapter Reference.
 
-Then continue to Phase 5 with whatever files exist.
+Then continue to Phase 3b.
+
+### Phase 3b: Consolidate a Salvaged Run
+
+**When to run this — all three must hold:**
+
+1. `$SUBAGENTS_FILE` exists and is non-empty (the salvage path recovered dimension output), **and**
+2. the report extractor exited `3` (output exists but has no `findings[]` block — the merge never
+   happened), **and**
+3. the adapter did **not** exit `126`. A refusal means the tool is unavailable; a second call hits
+   the same wall.
+
+Otherwise skip straight to Phase 4.
+
+**Why this exists.** The fan-out finishes long before the merge does, so a run killed near the end
+holds nearly every dimension's findings and lacks only the step that combines them — measured: five
+of six dimensions complete, 60 KB recovered, and the one thing missing was the most valuable. That
+merge does not need the original run, the repository, or write access. It needs the prose that is
+already on disk, which makes it a cheap second call rather than a repetition of an expensive one.
+
+**Run the same adapter again**, with a prompt built from what was salvaged. Write it to
+`consolidate-prompt.md` in the same run directory and send the output to `consolidated-report.md`:
+
+```bash
+${CLAUDE_PLUGIN_ROOT}/skills/execute/scripts/<tool>-adapter.sh \
+  "$RUN_DIR/consolidate-prompt.md" "$MODEL" "$EFFORT" "$RUN_DIR/consolidated-raw.jsonl"
+```
+
+Use a short ceiling — this is a merge, not a review. `AK_REVIEW_TIMEOUT_SECS=300` is generous.
+
+**The prompt:**
+
+````text
+# Consolidate Review Findings
+
+A code review of the repository "[REPO_NAME]" ran across several dimensions but was cut short before
+it could merge its results. Every dimension's raw output is below. Your only job is to turn it into
+the final report — do NOT review any code yourself, and do NOT add findings that are not below.
+
+You may read the cited files to check a claim's line numbers or drop one that the code plainly
+contradicts. Do not go looking for new issues; anything you add that is not traceable to the text
+below is out of scope.
+
+## Recovered dimension output
+
+[contents of $SUBAGENTS_FILE]
+
+## What to produce
+
+1. Merge duplicates. Dimensions overlap — the same defect often appears two or three times under
+   different headings. Keep the clearest statement and note that it was found more than once.
+2. Assign severity per finding: critical / high / medium / low. The dimension agents rated in
+   isolation and could not see each other's work; a defect several of them hit independently usually
+   deserves the higher of their ratings, not the average.
+3. State plainly which dimensions are represented and, if you can tell, which are missing — a merge
+   over five of six dimensions must not read as a complete review.
+
+Then, as the LAST thing in your response, a single fenced JSON block:
+
+```json
+{
+  "findings": [
+    {
+      "id": "F1",
+      "title": "short title",
+      "severity": "critical|high|medium|low",
+      "category": "correctness|security|tests|maintainability|docs|performance",
+      "file": "path/to/file",
+      "start_line": 0,
+      "end_line": 0,
+      "claim": "what is wrong",
+      "evidence": "what in the code or the recovered output shows it",
+      "suggested_fix": "what to do"
+    }
+  ]
+}
+```
+
+If the recovered output contains no actionable findings, return an empty array rather than inventing
+entries to fill it.
+
+````
+
+**Then run the report extractor against the consolidation output.** If it now exits `0`, use
+`consolidated-report.md` as `$REPORT_FILE` for Phase 4 onward and say in Phase 8 that the findings
+came from a consolidation pass. If it exits `3` again, the merge failed too: keep the original
+`$SUBAGENTS_FILE` and continue as an unconsolidated salvage, per Phase 5.
+
+**Two limits to carry into Phase 8, because they change what the report is worth:**
+
+- **The severities are the sub-agents', not a coordinator's.** They rated without seeing each other,
+  so cross-dimension deduplication is weaker than in a run that merged normally.
+- **Coverage is whatever survived.** A consolidation over five of six dimensions is not a complete
+  review, and the summary must say which one is missing rather than presenting the result as whole.
+
+Add the consolidation's own cost to the run's total — it is a second paid call, however short.
 
 ### Phase 4: Parse the Report
 
@@ -193,7 +288,13 @@ Follow `/ak-review:advise`'s Phase 2 exactly against the parsed `findings[]`: re
 for each finding, check the claim against the real code, assign a verdict (`confirmed | false_positive |
 needs_more_context | uncertain`).
 
-**If Phase 3 took the salvage path**, also read `$SUBAGENTS_FILE` — but not the same way. It is the
+**If Phase 3b consolidated successfully**, treat its output as an ordinary report: it has a
+`findings[]` block with severities, so Phase 5 and Phase 6 work normally — while remembering that the
+severities came from sub-agents that never saw each other's work, which makes cross-dimension
+judgement weaker than in a run that merged on its own.
+
+**If the salvage path ran and consolidation did not** (skipped, or it exited `3` again), read
+`$SUBAGENTS_FILE` — but not the same way. It is the
 recovered sub-agents' **prose**, not the delegate `findings[]` schema: no `id`, `severity`, `category`
 or line range to carry through. Read each block as an individual claim and verify it directly against
 the cited code the way a human reviewer would, rather than trying to parse it. Because it carries no
