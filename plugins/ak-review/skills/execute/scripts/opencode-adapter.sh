@@ -262,7 +262,39 @@ if [ -s "$STDERR_FILE" ]; then
 fi
 
 if grep -q "auto-rejecting" "$STDERR_FILE" 2> /dev/null; then
-  echo "opencode-adapter.sh: WARNING - opencode denied one or more permissions; the review ran without full repository access. See $STDERR_FILE" >&2
+  DENIED_COUNT=$(grep -c "auto-rejecting" "$STDERR_FILE" 2> /dev/null || echo 0)
+  echo "opencode-adapter.sh: WARNING - opencode denied ${DENIED_COUNT} permission request(s); the review ran without full repository access." >&2
+  # Naming the paths is the difference between a warning the caller can weigh and
+  # one they can only worry about: a rejected /tmp scratch path is harmless, a
+  # rejected source directory means the review never read the code it reported on.
+  # The detail is already in the sidecar; withholding it just forces a second look.
+  grep "auto-rejecting" "$STDERR_FILE" 2> /dev/null | head -5 | sed 's/^/opencode-adapter.sh:   denied: /' >&2
+  [ "$DENIED_COUNT" -gt 5 ] && echo "opencode-adapter.sh:   … and $((DENIED_COUNT - 5)) more; see $STDERR_FILE" >&2
+  echo "opencode-adapter.sh: judge these before trusting the report - a denied source path means the review never read what it describes." >&2
+fi
+
+# Did the TOOL refuse, as opposed to failing or timing out? Measured 2026-08-31:
+# a codex review ran 25 minutes and then hit the account's usage limit, saying so
+# plainly in the stream — while the adapter passed the tool's bare exit code
+# through, so the caller learned that something broke but never what.
+#
+# 126 is reserved for this: the tool declined to continue, and retrying now is
+# futile for a reason that is neither 124 (timed out, salvage) nor 125 (never
+# started, transient). A quota resets on a clock; a budget cap needs raising.
+#
+# Our own markers outrank this. 124/125 record what THIS adapter did to the
+# process and are certain; an error event only reports what the tool said, and a
+# timed-out run may carry both. Checked last, and only when nothing else claimed
+# the exit code.
+if [ "$EXIT_CODE" -ne 0 ] && [ "$EXIT_CODE" -ne 124 ] && [ "$EXIT_CODE" -ne 125 ] && [ -s "$RAW_OUTPUT_FILE" ]; then
+  REFUSAL=$(jq -R 'fromjson? // empty' "$RAW_OUTPUT_FILE" 2> /dev/null \
+    | jq -rs '[.[] | select(.type == "error")] | last | if . then (.error.data.message // .error.name // "no reason given") else empty end' 2> /dev/null || echo "")
+  if [ -n "$REFUSAL" ]; then
+    EXIT_CODE=126
+    echo "opencode-adapter.sh: TOOL REFUSED - the run was ended by the tool itself, not by this adapter: ${REFUSAL}" >&2
+    echo "opencode-adapter.sh: this is exit 126, distinct from 124 (timed out, partial output worth salvaging) and 125 (never started, usually transient). Retrying immediately will hit the same wall." >&2
+    echo "opencode-adapter.sh: whatever the tool produced before refusing is still in $RAW_OUTPUT_FILE." >&2
+  fi
 fi
 
 exit "$EXIT_CODE"

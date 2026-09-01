@@ -124,7 +124,10 @@ FAKE_EXIT=1 \
   bash "$SCRIPT" "$PROMPT" opus xhigh "$OUT" 2> "$ERRTXT"
 BUDGET_EXIT=$?
 set -e
-[ "$BUDGET_EXIT" -eq 1 ] || fail "case 8c: the tool's exit code must propagate, got $BUDGET_EXIT"
+# Budget exhaustion is the tool refusing to continue, which is exactly what 126
+# means. It used to propagate the tool's bare 1, which told the caller nothing
+# about whether retrying could help — here it cannot, until the cap is raised.
+[ "$BUDGET_EXIT" -eq 126 ] || fail "case 8c: budget exhaustion must be exit 126 (tool refused), got $BUDGET_EXIT"
 grep -q "BUDGET EXHAUSTED" "$ERRTXT" || fail "case 8c: hitting the cap must be reported explicitly"
 grep -q "5.12" "$ERRTXT" || fail "case 8c: the actual spend should be named, not just the limit"
 grep -q "AK_REVIEW_MAX_BUDGET_USD=none" "$ERRTXT" || fail "case 8c: the message must say how to lift the cap"

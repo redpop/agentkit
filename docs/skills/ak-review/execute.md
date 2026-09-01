@@ -38,6 +38,18 @@ automatically (2 further attempts, `AK_REVIEW_STARTUP_RETRIES`, 60 s apart via
 `124` whose partial output is worth keeping. See the skill's Adapter Reference for the measurements
 behind this and for how to tell the two failures apart in OpenCode's own log.
 
+Two further signals exist, both added after a pair of real failed runs. **Exit `126` means the tool
+itself refused** — a usage quota exhausted mid-run, a spend cap reached, a model unavailable. The
+adapters read that out of the event stream and print the tool's own reason, because the exit code alone
+never carried it: one run spent 25 minutes before hitting a quota and reported only a bare failure.
+Unlike `125` it is not transient, so retrying immediately hits the same wall.
+
+**A report extractor exiting `3` means the output is real but unfinished** — it has no `findings[]`
+block, so it is the model's running narration rather than its review. The prose is still returned, but
+the skill skips the auto-fix phase and says the run was cut short. Before this, such a run passed the
+"is it empty?" check and was handed on as a finished report, which is the more dangerous failure: a
+review that is confidently wrong beats one that honestly stops.
+
 ## Usage
 
 ```text

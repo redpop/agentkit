@@ -190,4 +190,28 @@ if [ -s "$RAW_OUTPUT_FILE" ]; then
   fi
 fi
 
+# Did the TOOL refuse, as opposed to failing or timing out? Measured 2026-08-31:
+# a codex review ran 25 minutes and then hit the account's usage limit, saying so
+# plainly in the stream — while the adapter passed the tool's bare exit code
+# through, so the caller learned that something broke but never what.
+#
+# 126 is reserved for this: the tool declined to continue, and retrying now is
+# futile for a reason that is neither 124 (timed out, salvage) nor 125 (never
+# started, transient). A quota resets on a clock; a budget cap needs raising.
+#
+# Our own markers outrank this. 124/125 record what THIS adapter did to the
+# process and are certain; an error event only reports what the tool said, and a
+# timed-out run may carry both. Checked last, and only when nothing else claimed
+# the exit code.
+if [ "$EXIT_CODE" -ne 0 ] && [ "$EXIT_CODE" -ne 124 ] && [ "$EXIT_CODE" -ne 125 ] && [ -s "$RAW_OUTPUT_FILE" ]; then
+  REFUSAL=$(jq -R 'fromjson? // empty' "$RAW_OUTPUT_FILE" 2> /dev/null \
+    | jq -rs '[.[] | select(.type == "result" and (.is_error == true))] | last | if . then (.subtype // .terminal_reason // "no reason given") else empty end' 2> /dev/null || echo "")
+  if [ -n "$REFUSAL" ]; then
+    EXIT_CODE=126
+    echo "claude-adapter.sh: TOOL REFUSED - the run was ended by the tool itself, not by this adapter: ${REFUSAL}" >&2
+    echo "claude-adapter.sh: this is exit 126, distinct from 124 (timed out, partial output worth salvaging) and 125 (never started, usually transient). Retrying immediately will hit the same wall." >&2
+    echo "claude-adapter.sh: whatever the tool produced before refusing is still in $RAW_OUTPUT_FILE." >&2
+  fi
+fi
+
 exit "$EXIT_CODE"
