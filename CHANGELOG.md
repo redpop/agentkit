@@ -5,6 +5,43 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.30.2] - 2026-09-05
+
+### 🐛 Fixed
+
+- `ak-review:execute` — **the `claude` adapter reported a token count roughly two orders
+  of magnitude too low.** `claude-extract-cost.sh` summed the result event's own `usage`,
+  which covers the main agent only and leaves out the cache counters entirely. Anthropic
+  reports `cache_read_input_tokens` and `cache_creation_input_tokens` separately from
+  `input_tokens`, and a review prompt is mostly cached context — so this was not a rounding
+  error but the bulk of the figure. Measured on a one-sub-agent probe: **1308 tokens
+  reported against 155527 processed.** Tokens now come from `modelUsage`, summed across
+  models and including both cache counters.
+
+- `ak-review:execute` — **the `claude` preflight now checks authentication.** An
+  unauthenticated run does not fail legibly, contrary to what the script's own comment
+  claimed: measured, it exits 1 after writing 28 KB of stream with `subtype: "success"` and
+  `total_cost_usd: 0`, whereupon the report extractor blames a usage limit, a timeout or a
+  crash — three wrong places — and the cost extractor prints USD 0.00, which reads as a run
+  that was free rather than one that never happened. `claude auth status` prints JSON with
+  a boolean `loggedIn`, which is the machine-readable signal the adapter's rule required and
+  Claude Code did not offer when the rule was written. Only an explicit `false` blocks;
+  unparseable output passes, because being unable to answer the question is not the same as
+  answering it "no".
+
+### 📝 Documented
+
+- **Claude Code's `total_cost_usd` does include sub-agent spend** — measured, closing the
+  question 1.30.1 left open. `modelUsage`'s `costUSD` matched `total_cost_usd` to the cent
+  while covering tokens the top-level `usage` did not. The money was whole all along; only
+  the token count was not, which is the mirror image of the `opencode` problem and needed
+  the opposite fix. The spend cap is Claude Code's own `--max-budget-usd` and binds against
+  that same accounting.
+
+- `subagent_stats.spawned` is carried into the cost file as `subagents_spawned`, so a
+  claude run says how many sub-agents it used the way an opencode run now says how many it
+  could not price.
+
 ## [1.30.1] - 2026-09-05
 
 ### 🐛 Fixed
