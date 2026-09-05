@@ -18,16 +18,40 @@ Read `.claude-plugin/marketplace.json` and extract the current version from the 
 
 ### Step 2: Determine bump type
 
-If no explicit bump type was given via arguments, analyze commits since the last git tag:
+If no explicit bump type was given via arguments, analyze the commits since the last release.
 
-Run `git tag --sort=-v:refname` to find the latest tag, then `git log <tag>..HEAD --oneline` to get commits since that tag.
+**The boundary is the last release commit, not the last tag.** Every release this repo makes
+ends in a `chore: release vX.Y.Z` commit, and Step 8 tags it — but a tag can be missing while
+the release itself happened, and then "since the last tag" spans several releases and counts
+their commits again. Measured: four releases once went out untagged, after which the last tag
+was three versions behind and a `feat:` already shipped two versions earlier would have forced
+another minor. The release commit is the marker that always exists.
 
-Determine bump type from commit messages:
+```bash
+git log --format='%H %s' --grep='^chore: release v' -1
+```
+
+Take the commits after it:
+
+```bash
+git log <that hash>..HEAD --oneline
+```
+
+If no release commit exists at all, fall back to the last tag, and if there is none either,
+use the full history.
+
+Determine bump type from those commit messages:
 
 - If any commit contains `BREAKING CHANGE` in the body/footer or uses `!:` (e.g., `feat!:`) → **major**
 - If any commit starts with `feat:` or `feat(` → **minor**
 - Otherwise (`fix:`, `docs:`, `refactor:`, `chore:`, etc.) → **patch**
-- If no tags exist at all → **patch** (fallback)
+
+**If that range is empty, there is nothing to release.** Say so and stop — do not bump.
+An empty range means the working tree has been committed and the version already reflects it;
+bumping anyway produces a version whose changelog entry has nothing to describe. Check whether
+Step 8 is what is actually missing: `git tag --sort=-v:refname | head -1` against the current
+version tells you whether the last release was ever tagged, and `git status -sb` whether it was
+pushed. Offer to do that instead.
 
 ### Step 3: Calculate new version
 
@@ -95,7 +119,7 @@ After the summary, invoke the `/ak-meta:changelog` skill to update the CHANGELOG
 
 After the changelog is updated, invoke the `/ak-git:operations` skill to create a smart commit.
 
-### Step 8: Create git tag
+### Step 8: Create git tags
 
 After the commit is created, tag HEAD (the release commit) with an **annotated** tag:
 
@@ -107,10 +131,33 @@ For example: `git tag -a v1.1.3 -m "Release v1.1.3"`
 
 Use annotated tags (`-a -m`), not lightweight tags — they carry tagger, date, and message metadata, which GitLab/GitHub release UIs and `git show <tag>` rely on.
 
-Confirm the tag was created by showing the output of `git tag --sort=-v:refname | head -3`.
+**Then tag any earlier release that was never tagged.** This step is skipped whenever a release
+is made outside this command, and the gap does not heal on its own: every version has a
+changelog entry, so one without a tag is a release nobody can check out. List the release
+commits and tag each one that has no tag yet:
 
-Finally, push the commit and tag together:
+```bash
+git log --format='%H %s' --grep='^chore: release v' | while read -r hash subject; do
+  v="${subject##* }"
+  git rev-parse -q --verify "refs/tags/$v" > /dev/null || echo "untagged: $v $hash"
+done
+```
+
+Tag each one on **its own** release commit, never on HEAD — a tag on the wrong commit is worse
+than a missing one, because it looks correct:
+
+```bash
+git tag -a <version> -m "Release <version>" <that version's hash>
+```
+
+Confirm with `git tag --sort=-v:refname | head -5`, and check the tags are annotated
+(`git for-each-ref refs/tags/<v> --format='%(objecttype)'` prints `tag`, not `commit`).
+
+Finally, push the commit and tags together:
 
 ```bash
 git push --follow-tags
 ```
+
+`--follow-tags` pushes annotated tags reachable from what is being pushed, which covers the
+backfilled ones as well.
