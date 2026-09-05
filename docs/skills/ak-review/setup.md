@@ -34,7 +34,10 @@ writing anything, so looking is free of consequences.
 question, so the flags are opt-in shortcuts rather than a second mode.
 
 `--model` and `--effort` take the _adapter's_ format: `provider/model` for OpenCode, a bare model name
-for Codex.
+for Codex, an alias or full model name for Claude Code. For effort, the skill offers the values the
+chosen adapter actually declares rather than a list of its own — and where an adapter declares none
+(OpenCode), it says so instead of guessing. The chosen level is written keyed under that tool, so a
+later run for a different adapter adds an entry rather than overwriting one.
 
 ## Examples
 

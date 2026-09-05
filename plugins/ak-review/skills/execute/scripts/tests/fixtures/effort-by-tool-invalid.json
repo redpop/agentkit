@@ -1,0 +1,8 @@
+{
+  "external_review": {
+    "tool": "codex",
+    "model": "gpt-5.6-sol",
+    "effort": { "claude": "none" },
+    "fix_threshold": "high"
+  }
+}
