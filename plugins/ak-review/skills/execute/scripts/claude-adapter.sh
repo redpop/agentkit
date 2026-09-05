@@ -131,7 +131,8 @@ CLAUDE_ARGS=(
 # sub-agents only at the end — the same failure mode opencode has, and the
 # reason claude-extract-subagents.sh exists.
 
-# Claude Code's own enum: low, medium, high, xhigh, max.
+# Claude Code's own enum, listed in claude-efforts.sh — the single place
+# resolve-config.sh validates against, and not repeated here.
 if [ -n "$EFFORT" ]; then
   CLAUDE_ARGS+=(--effort "$EFFORT")
 fi

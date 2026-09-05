@@ -1,7 +1,8 @@
 #!/bin/bash
 # Lists the models this adapter can be pointed at, one per line.
 #
-# Part of the three-script adapter convention (adapter / preflight / models).
+# One of the optional adapter scripts; the full set is the Adapter Reference
+# table in the execute skill, which is the only registry there is.
 # `/ak-review:setup` calls this so the user picks from what the tool actually
 # offers — the plugin must never propose a model of its own.
 set -euo pipefail

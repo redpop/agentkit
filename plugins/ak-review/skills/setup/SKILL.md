@@ -24,7 +24,7 @@ Parse `$ARGUMENTS`:
 | `--project` | Skip the scope question; write `.claude/ak-review.local.json` |
 | `--tool <name>` | Use this adapter instead of asking |
 | `--model <model>` | Use this model instead of asking |
-| `--effort <level>` | Use this effort instead of asking |
+| `--effort <level>` | Use this effort instead of asking. Written keyed under the chosen tool |
 | `--fix-threshold <level>` | Use this threshold instead of asking |
 
 **Any value not supplied as a flag is still a question.** The values remain the user's choices, not
@@ -207,11 +207,17 @@ Ask, proposing `high`:
 ### Phase 6: Effort (optional; skip the question if `--effort` was passed)
 
 Ask whether to pin a reasoning-effort level for the adapter, offering to skip. Leaving it unset uses
-the tool's own default. The accepted values are the tool's, not this skill's:
+the tool's own default. The accepted values are the tool's, not this skill's — do not offer a level
+from memory, and do not carry one across from another adapter. Whatever is chosen is written **keyed
+under the tool** (see Phase 7), so an existing entry for a different adapter is kept rather than
+replaced:
 
-- `opencode` — becomes `--variant` (e.g. `high`).
-- `codex` — becomes `-c model_reasoning_effort=…`, one of `none`, `minimal`, `low`, `medium`, `high`,
-  `xhigh`, `max`.
+- If `${CLAUDE_PLUGIN_ROOT}/skills/execute/scripts/<tool>-efforts.sh` exists, run it and offer exactly
+  what it prints. That file is the same list `/ak-review:execute` validates against, so anything else
+  would be accepted here and refused there. `codex` and `claude` have one.
+- If it does not, the tool declares no fixed list — `opencode` is that case, because its `--variant`
+  levels come from the provider behind the model. Ask for a value and pass it through, mentioning that
+  a wrong one will not be caught before the run.
 
 ### Phase 7: Write and verify
 
@@ -222,11 +228,18 @@ Write the file:
   "external_review": {
     "tool": "<chosen>",
     "model": "<chosen>",
-    "effort": "<chosen, or omit the key entirely if skipped>",
+    "effort": { "<chosen tool>": "<chosen level>" },
     "fix_threshold": "<chosen>"
   }
 }
 ```
+
+**`effort` is keyed by tool, and the key is the tool chosen in this run.** Omit the whole key if the
+effort question was skipped. If the file already has an `effort` object, merge the new entry into it
+and keep the others — they belong to adapters this run did not ask about, and dropping one is exactly
+the silent loss described below. If the file has an `effort` **string** from an older version, convert
+it: it belonged to whatever `tool` stood beside it, so write it under that tool's name, then add the
+new entry. Say in the report that you converted it.
 
 **If the file already exists, preserve every key under `external_review` this skill did not ask
 about** — `timeout_secs` and `model_overrides` in particular. This skill asks four questions and
@@ -259,7 +272,9 @@ so which call proves the file just written depends on which file Phase 1 wrote:
   ```
 
 Show the resolved JSON. If it does not resolve, the file is wrong — fix it before reporting success.
-Writing a config without proving it resolves is how a typo ships.
+Writing a config without proving it resolves is how a typo ships. A rejected `effort` is the likeliest
+cause once the tool has changed: `resolve-config.sh` checks it against the adapter's declared values,
+so a level carried over from a previously configured adapter fails here rather than mid-run.
 
 ### Phase 8: Report
 

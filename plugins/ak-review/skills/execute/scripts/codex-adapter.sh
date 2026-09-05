@@ -112,9 +112,9 @@ run_with_watchdog() {
 set +e
 if [ -n "$EFFORT" ]; then
   # -c model_reasoning_effort=..., NOT --reasoning-effort: that flag was removed
-  # in codex v0.50. Valid values, per the API's own enum: none, minimal, low,
-  # medium, high, xhigh, max. (The "Ultra" shown in the interactive model picker
-  # is not one of them.)
+  # in codex v0.50. The accepted values are listed in codex-efforts.sh, which is
+  # where resolve-config.sh reads them from; they are deliberately not repeated
+  # here, so there is one list to keep current rather than two.
   run_with_watchdog codex exec --json --sandbox read-only --ignore-user-config \
     -m "$MODEL" -c "model_reasoning_effort=\"$EFFORT\"" -
 else

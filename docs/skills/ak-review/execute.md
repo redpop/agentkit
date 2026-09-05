@@ -67,12 +67,29 @@ review that is confidently wrong beats one that honestly stops.
 ```
 
 **Flags:** `--type all|committed|uncommitted` (default: all), `--base <ref>`, `--path <…>`, `--all`,
-`--tool <name>`, `--model <model>`, `--effort <level>`, `--fix-threshold critical|high|medium|low`
-(default: high), `--timeout-secs <n>`, `--report-only`
+`--tool <name>`, `--model <model>`, `--effort <level>`, `--no-effort`,
+`--fix-threshold critical|high|medium|low` (default: high), `--timeout-secs <n>`, `--report-only`
 
 `--model` and `--effort` take the _adapter's_ format, not a shared one: OpenCode wants `provider/model`
-and its own variant levels, Codex a bare model name with `none|minimal|low|medium|high|xhigh|max`, and
-Claude Code an alias such as `opus` (or a full model name) with `low|medium|high|xhigh|max`.
+and its own variant levels, Codex a bare model name, and Claude Code an alias such as `opus` or a full
+model name.
+
+Effort levels are the adapter's own vocabulary and do not overlap cleanly — Codex has `none` and
+`minimal` where Claude Code starts at `low`, and OpenCode's variants belong to the provider behind the
+model rather than to OpenCode. So `effort` is configured keyed by tool:
+
+```json
+"effort": { "codex": "xhigh", "claude": "high" }
+```
+
+The entry for the tool actually running applies; a tool the map does not name runs with no effort,
+which is always valid. A plain string still works and means "for the tool configured beside it" —
+switching to another tool then stops with an error instead of carrying the level across. Use
+`--no-effort` to drop it for one run. (`--effort ""` does not do that and says so; it used to be
+ignored silently.)
+
+Separately, Codex and Claude Code declare which values they accept at all, and a value outside that
+list is refused before the run. OpenCode declares none, because any list would be a guess.
 
 ## Configuration
 
@@ -83,7 +100,7 @@ Claude Code an alias such as `opus` (or a full model name) with `low|medium|high
   "external_review": {
     "tool": "opencode",
     "model": "opencode-go/glm-5.3",
-    "effort": "high",
+    "effort": { "opencode": "high" },
     "fix_threshold": "high",
     "timeout_secs": 1200,
     "model_overrides": {
@@ -101,7 +118,8 @@ makes a per-model timeout possible: a model that reliably runs longer than the a
 ceiling gets more time, while every other model keeps a ceiling short enough that a genuine hang is
 still noticed quickly. An entry may set `effort`, `fix_threshold` and `timeout_secs` — not `tool` or
 `model`, which would contradict the key it is stored under. A `--timeout-secs` flag still overrides it
-for a single run.
+for a single run. Setting a key to `null` unsets it instead of replacing it, which drops an inherited
+`effort` for one model permanently; `--no-effort` does the same for one run.
 
 `/ak-review:setup` writes this file interactively, guiding you to pick or type a model depending on
 what your tool supports — use it instead of hand-writing the JSON if you prefer being walked through it.

@@ -9,6 +9,10 @@ EMPTY="$DIR/fixtures/empty-config.json"
 OVERRIDES="$DIR/fixtures/model-overrides-config.json"
 OVERRIDES_BAD="$DIR/fixtures/model-overrides-bad-key.json"
 OVERRIDES_NULL="$DIR/fixtures/model-overrides-null-effort.json"
+CROSS_TOOL="$DIR/fixtures/cross-tool-effort-config.json"
+BY_TOOL="$DIR/fixtures/effort-by-tool-config.json"
+BY_TOOL_PROJECT="$DIR/fixtures/effort-by-tool-project.json"
+BY_TOOL_INVALID="$DIR/fixtures/effort-by-tool-invalid.json"
 
 # Case 1: global config only -> resolves global values, fix_threshold from global
 ACTUAL=$(bash "$SCRIPT" --global-config "$GLOBAL" --project-config "$EMPTY")
@@ -118,6 +122,175 @@ ACTUAL=$(bash "$SCRIPT" --global-config "$OVERRIDES_NULL" --project-config "$EMP
 EXPECTED='{"tool":"opencode","model":"opencode-go/glm-5.3-flash","effort":null,"fix_threshold":"high","timeout_secs":1800}'
 if [ "$ACTUAL" != "$EXPECTED" ]; then
   echo "FAIL case 11 (null override unsets effort): got $ACTUAL"
+  exit 1
+fi
+
+# --- effort is adapter-specific: cases 12-22 -------------------------------
+#
+# A plain-string `effort` says "this level, for my setup", and the setup is the
+# `tool` sitting beside it. `--tool` can be switched for one run and the string
+# cannot, so the string arrives under an adapter it was never written for. These
+# cases pin down that a switch is refused, and — just as important — that every
+# way of answering the refusal actually works.
+
+# Case 12: a bare string does not travel to another adapter. `none` is a real
+# codex level and not a claude one, but the check does not depend on that: it is
+# the mismatch between the tool the string was written beside and the tool now
+# running that decides.
+if bash "$SCRIPT" --global-config "$CROSS_TOOL" --project-config "$EMPTY" \
+  --tool claude --model opus 2>/tmp/resolve-config-err.txt; then
+  echo "FAIL case 12: a bare-string effort must not carry across a tool switch"
+  exit 1
+fi
+if ! grep -q "claude" /tmp/resolve-config-err.txt || ! grep -q "codex" /tmp/resolve-config-err.txt; then
+  echo "FAIL case 12: the message must name both the tool it was written for and the one running"
+  cat /tmp/resolve-config-err.txt
+  exit 1
+fi
+
+# Case 13: the same refusal for an adapter that declares NO value list. opencode
+# is that adapter, and this is the case originally reported: before the owner
+# check existed, a codex level reached `opencode run --variant` unchallenged,
+# because a declared-values check has nothing to compare against there. The value
+# used here is valid for codex, which is what makes it a silent failure rather
+# than a loud one.
+if bash "$SCRIPT" --global-config "$OVERRIDES_NULL" --project-config "$EMPTY" \
+  --tool opencode --model opencode-go/glm-5.3 2>/tmp/resolve-config-err.txt; then
+  echo "FAIL case 13: a bare-string effort must not reach opencode either"
+  exit 1
+fi
+if ! grep -q "opencode" /tmp/resolve-config-err.txt; then
+  echo "FAIL case 13: the message must name opencode as the running tool"
+  cat /tmp/resolve-config-err.txt
+  exit 1
+fi
+
+# Case 14: a value both enums happen to contain is refused just the same. Sharing
+# a spelling is not sharing a meaning — codex's `xhigh` and Claude Code's `xhigh`
+# name levels of unrelated scales — so agreeing to carry it across would be
+# guessing that they mean the same thing.
+if bash "$SCRIPT" --global-config "$OVERRIDES_NULL" --project-config "$EMPTY" \
+  --tool claude --model opus 2>/dev/null; then
+  echo "FAIL case 14: a shared spelling must not make a bare string transferable"
+  exit 1
+fi
+
+# Case 15: no switch, no refusal. The configured tool running its own configured
+# effort is the ordinary case and must stay untouched.
+ACTUAL=$(bash "$SCRIPT" --global-config "$CROSS_TOOL" --project-config "$EMPTY")
+EXPECTED='{"tool":"codex","model":"gpt-5.6-sol","effort":"none","fix_threshold":"high","timeout_secs":null}'
+if [ "$ACTUAL" != "$EXPECTED" ]; then
+  echo "FAIL case 15 (no tool switch, effort applies): got $ACTUAL"
+  exit 1
+fi
+
+# Case 16: --no-effort answers the refusal, and is the only way to drop an
+# inherited effort for a single run without editing a file.
+ACTUAL=$(bash "$SCRIPT" --global-config "$CROSS_TOOL" --project-config "$EMPTY" \
+  --tool claude --model opus --no-effort)
+EXPECTED='{"tool":"claude","model":"opus","effort":null,"fix_threshold":"high","timeout_secs":null}'
+if [ "$ACTUAL" != "$EXPECTED" ]; then
+  echo "FAIL case 16 (--no-effort clears an inherited effort): got $ACTUAL"
+  exit 1
+fi
+
+# Case 17: an explicit --effort answers it too. The user naming a level for the
+# tool they just named is the one case where no inference is involved at all.
+ACTUAL=$(bash "$SCRIPT" --global-config "$CROSS_TOOL" --project-config "$EMPTY" \
+  --tool claude --model opus --effort max)
+EXPECTED='{"tool":"claude","model":"opus","effort":"max","fix_threshold":"high","timeout_secs":null}'
+if [ "$ACTUAL" != "$EXPECTED" ]; then
+  echo "FAIL case 17 (--effort overrides an inherited one): got $ACTUAL"
+  exit 1
+fi
+
+# Case 18: a `model_overrides` entry with `effort: null` answers it as well, and
+# must not itself trip the check it exists to avoid.
+ACTUAL=$(bash "$SCRIPT" --global-config "$OVERRIDES_NULL" --project-config "$EMPTY" \
+  --tool opencode --model opencode-go/glm-5.3-flash)
+EXPECTED='{"tool":"opencode","model":"opencode-go/glm-5.3-flash","effort":null,"fix_threshold":"high","timeout_secs":1800}'
+if [ "$ACTUAL" != "$EXPECTED" ]; then
+  echo "FAIL case 18 (null override clears effort ahead of the check): got $ACTUAL"
+  exit 1
+fi
+
+# Case 19: the object form binds each level to its tool, so a switch needs no
+# answer at all — this is the form the refusal steers users towards.
+ACTUAL=$(bash "$SCRIPT" --global-config "$BY_TOOL" --project-config "$EMPTY")
+EXPECTED='{"tool":"codex","model":"gpt-5.6-sol","effort":"xhigh","fix_threshold":"high","timeout_secs":null}'
+if [ "$ACTUAL" != "$EXPECTED" ]; then
+  echo "FAIL case 19 (object form, configured tool): got $ACTUAL"
+  exit 1
+fi
+ACTUAL=$(bash "$SCRIPT" --global-config "$BY_TOOL" --project-config "$EMPTY" --tool claude --model opus)
+EXPECTED='{"tool":"claude","model":"opus","effort":"high","fix_threshold":"high","timeout_secs":null}'
+if [ "$ACTUAL" != "$EXPECTED" ]; then
+  echo "FAIL case 19 (object form, switched tool): got $ACTUAL"
+  exit 1
+fi
+
+# Case 20: an adapter the map does not mention gets no effort, silently and
+# correctly — there is nothing to inherit, so there is nothing to warn about.
+ACTUAL=$(bash "$SCRIPT" --global-config "$BY_TOOL" --project-config "$EMPTY" \
+  --tool opencode --model opencode-go/glm-5.3)
+EXPECTED='{"tool":"opencode","model":"opencode-go/glm-5.3","effort":null,"fix_threshold":"high","timeout_secs":null}'
+if [ "$ACTUAL" != "$EXPECTED" ]; then
+  echo "FAIL case 20 (object form, tool absent from the map): got $ACTUAL"
+  exit 1
+fi
+
+# Case 21: two object forms merge key by key, so a project file naming one
+# adapter's level keeps the global map's other entries — the same rule
+# model_overrides follows, and the reason the form scales to a shared global file
+# with per-project exceptions.
+ACTUAL=$(bash "$SCRIPT" --global-config "$BY_TOOL" --project-config "$BY_TOOL_PROJECT" \
+  --tool claude --model opus)
+EXPECTED='{"tool":"claude","model":"opus","effort":"max","fix_threshold":"high","timeout_secs":null}'
+if [ "$ACTUAL" != "$EXPECTED" ]; then
+  echo "FAIL case 21 (project map entry wins for its key): got $ACTUAL"
+  exit 1
+fi
+ACTUAL=$(bash "$SCRIPT" --global-config "$BY_TOOL" --project-config "$BY_TOOL_PROJECT")
+EXPECTED='{"tool":"codex","model":"gpt-5.6-sol","effort":"xhigh","fix_threshold":"high","timeout_secs":null}'
+if [ "$ACTUAL" != "$EXPECTED" ]; then
+  echo "FAIL case 21 (project map does not replace the global one): got $ACTUAL"
+  exit 1
+fi
+
+# Case 22: the declared-values check still fires on a value the owner check has
+# no reason to question — here the map names the running tool, so the level is
+# deliberate and simply wrong. Without this, the two checks could not be told
+# apart by their tests.
+if bash "$SCRIPT" --global-config "$BY_TOOL_INVALID" --project-config "$EMPTY" \
+  --tool claude --model opus 2>/tmp/resolve-config-err.txt; then
+  echo "FAIL case 22: a value the adapter does not accept must still be refused"
+  exit 1
+fi
+if ! grep -q "accepts" /tmp/resolve-config-err.txt; then
+  echo "FAIL case 22: this must be the declared-values message, not the cross-tool one"
+  cat /tmp/resolve-config-err.txt
+  exit 1
+fi
+
+# Case 23: `--effort ""` is an error naming --no-effort. It used to be silently
+# ignored — the flag merge dropped empty values, so the configured effort
+# survived a run that had explicitly asked for none. That dead end is the reason
+# --no-effort exists.
+if bash "$SCRIPT" --global-config "$GLOBAL" --project-config "$EMPTY" --effort "" 2>/tmp/resolve-config-err.txt; then
+  echo "FAIL case 23: an empty --effort must not be silently ignored"
+  exit 1
+fi
+if ! grep -q -- "--no-effort" /tmp/resolve-config-err.txt; then
+  echo "FAIL case 23: the message must point at --no-effort"
+  cat /tmp/resolve-config-err.txt
+  exit 1
+fi
+
+# Case 24: --effort and --no-effort together are refused rather than ranked. Any
+# order of precedence here would be a guess at which one the user meant.
+if bash "$SCRIPT" --global-config "$GLOBAL" --project-config "$EMPTY" \
+  --effort high --no-effort 2>/dev/null; then
+  echo "FAIL case 24: --effort and --no-effort together must be refused"
   exit 1
 fi
 

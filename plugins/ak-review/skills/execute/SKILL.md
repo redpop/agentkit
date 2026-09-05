@@ -26,7 +26,8 @@ Parse `$ARGUMENTS`:
 | `--all` | Review the entire project |
 | `--tool <name>` | External tool adapter to use (overrides config) |
 | `--model <model>` | Model passed to the adapter, in _that adapter's_ format (overrides config) |
-| `--effort <level>` | Reasoning-effort/variant passed to the adapter, in _that adapter's_ vocabulary (overrides config) |
+| `--effort <level>` | Reasoning-effort/variant passed to the adapter, in _that adapter's_ vocabulary (overrides config). Rejected before the run if the adapter declares its values and this is not one of them |
+| `--no-effort` | Run with no effort at all, ignoring any configured one. The way to switch adapters for a single run without editing a file. Contradicts `--effort` |
 | `--fix-threshold critical\|high\|medium\|low` | Minimum severity to auto-fix (overrides config; default `high`) |
 | `--timeout-secs <n>` | Per-attempt ceiling for this run, overriding config and the adapter's own default |
 | `--report-only` | Skip Phase 6–7 (fixing + validation); only report and verify |
@@ -46,11 +47,12 @@ Run (only pass flags the user actually supplied):
 
 ```bash
 ${CLAUDE_PLUGIN_ROOT}/skills/execute/scripts/resolve-config.sh \
-  [--tool <val>] [--model <val>] [--effort <val>] [--fix-threshold <val>] [--timeout-secs <val>]
+  [--tool <val>] [--model <val>] [--effort <val> | --no-effort] [--fix-threshold <val>] [--timeout-secs <val>]
 ```
 
 The script reads `.claude/ak-review.local.json` and `~/.claude/ak-review.local.json` itself. If it exits
-non-zero, print its stderr message verbatim and **stop** — do not guess a tool or model. On success it
+non-zero, print its stderr message verbatim and **stop** — do not guess a tool, model or effort, and
+in particular do not retry the call with the offending value dropped. On success it
 prints resolved JSON:
 `{"tool":..., "model":..., "effort":..., "fix_threshold":..., "timeout_secs":...}`.
 
@@ -351,6 +353,7 @@ registry: an adapter is the set of scripts named after its tool under `scripts/`
 | `<tool>-extract-cost.sh <raw-output-file>` | Prints `{"total_cost":…,"total_tokens":…}`. `total_cost` is `null` when the tool reports no money — never `0`, which would falsely claim the run was free. Extra keys are fine. Must degrade to zeros on a truncated stream rather than failing, so a salvaged report is not lost with it. | Yes |
 | `<tool>-extract-subagents.sh <raw-output-file>` | Recovers finished sub-agent output from a killed run. Only meaningful for tools that dispatch sub-agents and merge late. | Optional; omit when the tool has no such concept |
 | `<tool>-models.sh` | Prints one candidate per line, to stdout; the format is the tool's own and is not guaranteed. Used by `/ak-review:setup`. | Optional; setup asks the user to type a model if absent |
+| `<tool>-efforts.sh` | Prints the effort values the tool accepts, **one bare token per line**. `resolve-config.sh` refuses a resolved `effort` outside this list, so the list is a gate, not a hint: a value missing from it blocks a run the tool would have accepted. Ship one only when the vocabulary is genuinely the tool's own. | Optional; the effort is passed through unchecked if absent |
 
 **The extractors are part of the adapter, not shared infrastructure.** Each tool emits its own event
 schema, and pointing one tool's extractor at another's stream produces an empty report rather than an
@@ -363,6 +366,13 @@ below.
 ### `opencode`
 
 - `model` — `provider/model`, e.g. `opencode-go/glm-5.3` · `effort` — OpenCode's `--variant`
+- **No `opencode-efforts.sh`, deliberately.** `opencode run --help` declares `--variant` as a plain
+  `[string]` with no `[choices:]`, unlike `--format` and `--log-level` beside it, and calls it
+  "provider-specific" — the levels belong to the provider behind the model, not to opencode, so there
+  is no one list the adapter could declare, and any list it did declare would be a guess that
+  silently narrows valid runs. A value opencode does not understand therefore still reaches it. What
+  no longer does is a value written for _another_ adapter: that is caught by the tool an `effort` is
+  keyed or configured against, which needs no value list — see Configuration.
 - **Prerequisite:** an `opencode.jsonc` permission config that allows non-interactive bash for
   read-only/test/lint commands, with destructive ones gated to `"ask"`. This skill never passes
   `--auto`; if a run stalls, fix the permission config rather than reaching for it.
@@ -394,7 +404,8 @@ OpenAI's Codex CLI. Verified against `codex-cli 0.149.0`.
 
 - `model` — a bare name, e.g. `gpt-5.6-sol`. **No provider prefix**; a slashed value is rejected.
 - `effort` — passed as `-c model_reasoning_effort=…`, **not** as a flag (`--reasoning-effort` was removed
-  in v0.50). Values: `none`, `minimal`, `low`, `medium`, `high`, `xhigh`, `max`.
+  in v0.50). The accepted values live in `codex-efforts.sh` and are validated before the run; that file
+  is the only place they are written down, so a level codex gains is added there and nowhere else.
 - **Prerequisite: the working directory must be a git repository.** Codex refuses otherwise, and the
   adapter withholds `--skip-git-repo-check` on purpose: reviewing an untracked directory is almost always
   a wrong cwd. Only affects `--path`/`--all` runs aimed outside a repo.
@@ -415,7 +426,8 @@ OpenAI's Codex CLI. Verified against `codex-cli 0.149.0`.
 Anthropic's Claude Code, headless. Verified against `2.1.240`.
 
 - `model` — an alias (`opus`, `sonnet`) or full name (`claude-opus-5`) · `effort` — Claude Code's own
-  `--effort`: `low`…`max`
+  `--effort`, with the accepted values in `claude-efforts.sh`. It is **not** codex's enum: `none` and
+  `minimal` are missing from it, and are the values a config written for codex trips over here.
 - **Read-only rests on an allowlist, not the permission mode.** Measured: `--permission-mode plan` alone
   still allowed a file to be created. The adapter allows only reading tools plus four read-only `git`
   invocations, and denies `Write`/`Edit`/`NotebookEdit`. **Never grant `Bash` wholesale** — an
@@ -452,7 +464,7 @@ Resolved by `scripts/resolve-config.sh`, precedence CLI flags > project file > g
   "external_review": {
     "tool": "opencode",
     "model": "opencode-go/glm-5.3",
-    "effort": "high",
+    "effort": { "opencode": "high" },
     "fix_threshold": "high",
     "timeout_secs": 1200,
     "model_overrides": {
@@ -465,8 +477,34 @@ Resolved by `scripts/resolve-config.sh`, precedence CLI flags > project file > g
 `tool` and `model` are required (from some layer, or via flags) — there is no built-in default, so
 installing or updating this plugin never forces a specific tool or model on anyone. `fix_threshold`
 defaults to `high` if unset anywhere. `effort` has no default; if unresolved, the adapter is invoked
-without an effort flag. `timeout_secs` has no default here either — unset means the adapter's own
-ceiling applies, which keeps that number in exactly one place.
+without an effort flag. A resolved one is checked against the adapter's `<tool>-efforts.sh` before
+anything runs, and an unaccepted value stops the run — see below for why that check exists.
+
+### `effort` is keyed by tool
+
+`effort` is the one setting whose vocabulary belongs to the adapter rather than to this plugin, so it
+takes an object keyed by tool name:
+
+```json
+"effort": { "codex": "xhigh", "claude": "high" }
+```
+
+The entry for the resolved tool applies; a tool the map does not mention runs with no effort at all,
+which is always valid. **This is the form to write**, because it is the only one a `--tool` switch
+cannot misinterpret.
+
+A plain string — `"effort": "high"` — still works and means "this level, for the tool configured
+beside it". Running a _different_ tool then stops with an error rather than carrying the value across:
+`--tool` is overridable per run and a bare string is not, so the string would otherwise arrive under
+an adapter it was never written for. codex's `xhigh` and Claude Code's `xhigh` name levels of
+unrelated scales, and opencode's variants are the provider's, so sharing a spelling is not sharing a
+meaning. The error names both tools and offers the object form, `--effort`, and `--no-effort`.
+
+`--no-effort` is the escape hatch for a single run. Note that `--effort ""` is **not** — an empty flag
+value is refused with a pointer to `--no-effort`, because it used to be silently dropped and leave the
+configured effort in place, which is the opposite of what it looks like it does.
+`timeout_secs` has no default here either — unset means the adapter's own ceiling applies, which keeps
+that number in exactly one place.
 
 ### Per-model overrides
 
@@ -477,9 +515,9 @@ model's hang cost that much more to detect. The example above is that case — a
 everything else keeps 1200 s.
 
 An entry may set `effort`, `fix_threshold` and `timeout_secs`, and nothing else. Setting one to
-`null` **unsets** the inherited value rather than overriding it with a value — which is the only way
-to make a per-model entry safe across tools, because `effort` vocabularies are the adapter's own: a
-`codex` `xhigh` inherited by an `opencode` run becomes a `--variant` that tool never defined. `tool` and `model` are
+`null` **unsets** the inherited value rather than overriding it with a value — which is how a per-model
+entry is made safe across tools, because `effort` vocabularies are the adapter's own: a `codex` `xhigh`
+inherited by an `opencode` run becomes a `--variant` that tool never defined. `tool` and `model` are
 rejected with an error rather than ignored: the map is keyed on the model that has already been
 resolved, so an entry able to change it would mean the applied entry is not the one the resolved model
 points at. Precedence is global file < project file < matching `model_overrides` entry < CLI flags —
@@ -491,6 +529,12 @@ one.** `opencode` takes `provider/model` and its own `--variant` levels; `codex`
 name and the reasoning-effort enum; `claude` takes an alias (`opus`, `sonnet`) or a full model name,
 with Claude Code's own effort enum. Check the tool's entry in the Adapter Reference before writing
 either value, and note that a wrong `model` surfaces only when the adapter rejects it mid-run.
+
+For `effort` there are two separate checks, and they fail for different reasons. **Is this value from
+the right vocabulary at all?** — answered by the tool an `effort` is keyed or configured against, which
+covers every adapter including `opencode`. **Is it a value this tool accepts?** — answered by
+`<tool>-efforts.sh`, which only adapters with a fixed list can provide (`codex` and `claude`). A wrong
+`model`, by contrast, still surfaces only when the adapter rejects it mid-run.
 
 ### Environment variables
 
