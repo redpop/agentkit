@@ -185,7 +185,11 @@ that gets killed just short of finishing.
 - The OpenCode adapter needs a working, non-interactive-friendly OpenCode permission config first (see
   the skill's Adapter Reference) — this skill never passes `--auto`. The Codex adapter needs no such
   preparation: it runs with `--sandbox read-only`, which makes the report-only contract structural
-- Codex reports token counts but no monetary cost, so the run summary shows tokens only for that adapter
+- Codex reports token counts but no monetary cost, so the run summary shows tokens only for that
+  adapter — and a codex run killed by a timeout reports no figure at all, because its usage lives
+  only in the `turn.completed` event it never got to send
+- Across every adapter, a figure the stream never carried is reported as unavailable rather than as
+  zero. A run that was cut short before anything was counted is not a run that was free
 - **OpenCode does not report what its sub-agents cost.** They run in their own sessions and only the
   parent session's spend reaches the stream, so a run that dispatched sub-agents — which the delegate
   prompt asks for by default — has no total. Measured across two runs: USD 1.17 reported against

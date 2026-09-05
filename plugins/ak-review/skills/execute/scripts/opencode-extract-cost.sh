@@ -21,6 +21,10 @@
 # they are not written to opencode's local storage — so the amount cannot be
 # recovered, only declared unknown.
 #
+# A stream with no `step_finish` at all was never measured, so every figure is
+# `null` rather than 0 -- the same distinction, applied to a run that was killed
+# before it billed anything rather than to one whose sub-agents went uncounted.
+#
 # Zero and "not reported" are different claims and only one of them is true;
 # a partial sum presented as a total is the third and worst option, because it
 # is the one a reader acts on.
@@ -40,8 +44,8 @@ fi
 
 # See opencode-extract-report.sh for why this is two jq passes: a line-by-line
 # `fromjson? // empty` filter tolerates a stream truncated mid-line, where
-# `jq -s` would abort on the first malformed line instead of degrading to a
-# zeroed cost.
+# `jq -s` would abort on the first malformed line instead of degrading to an
+# unmeasured one.
 #
 # Sub-agents are counted by distinct session id rather than by `task` part,
 # because a retried or resumed task can appear more than once for one session,
@@ -59,10 +63,12 @@ jq -R 'fromjson? // empty' "$RAW_FILE" \
     | select(.state.status == "completed")
     | .state.metadata.sessionId // empty]
    | unique) as $subs
-  | ((map(select(.type == "step_finish") | .part.cost // 0) | add) // 0) as $parent_cost
+  | ([.[] | select(.type == "step_finish")]) as $steps
+  | ($steps | length > 0) as $measured
+  | (if $measured then ($steps | map(.part.cost // 0) | add) else null end) as $parent_cost
   | {
       total_cost: (if ($subs | length) > 0 then null else $parent_cost end),
-      total_tokens: ((map(select(.type == "step_finish") | .part.tokens.total // 0) | add) // 0),
+      total_tokens: (if $measured then ($steps | map(.part.tokens.total // 0) | add) else null end),
       parent_session_cost: $parent_cost,
       subagent_sessions: ($subs | length)
     }'

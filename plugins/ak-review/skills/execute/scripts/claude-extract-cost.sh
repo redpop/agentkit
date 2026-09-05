@@ -35,22 +35,24 @@ if [ ! -f "$RAW_FILE" ]; then
 fi
 
 # A run killed before its result event has no cost record at all. That reports
-# as null rather than 0: zero would claim the run was free, when the truth is
-# that it cost something nobody counted. Degrading rather than failing keeps a
+# as null rather than 0 -- and so do the token counts, for the same reason:
+# zero would claim the run consumed nothing, when the truth is that it consumed
+# something nobody counted. Degrading rather than failing keeps a
 # salvaged report from being lost alongside the missing figure.
 jq -R 'fromjson? // empty' "$RAW_FILE" \
   | jq -cs '
   ([.[] | select(.type == "result")] | last) as $r
   | ([($r.modelUsage // {}) | to_entries[] | .value]) as $m
+  | ($m | length > 0) as $measured
   | {
       total_cost: ($r.total_cost_usd // null),
-      total_tokens: (($m | map((.inputTokens // 0) + (.outputTokens // 0)
+      total_tokens: (if $measured then ($m | map((.inputTokens // 0) + (.outputTokens // 0)
                               + (.cacheReadInputTokens // 0)
-                              + (.cacheCreationInputTokens // 0)) | add) // 0),
-      input_tokens: (($m | map(.inputTokens // 0) | add) // 0),
-      output_tokens: (($m | map(.outputTokens // 0) | add) // 0),
-      cache_read_input_tokens: (($m | map(.cacheReadInputTokens // 0) | add) // 0),
-      cache_creation_input_tokens: (($m | map(.cacheCreationInputTokens // 0) | add) // 0),
+                              + (.cacheCreationInputTokens // 0)) | add) else null end),
+      input_tokens: (if $measured then ($m | map(.inputTokens // 0) | add) else null end),
+      output_tokens: (if $measured then ($m | map(.outputTokens // 0) | add) else null end),
+      cache_read_input_tokens: (if $measured then ($m | map(.cacheReadInputTokens // 0) | add) else null end),
+      cache_creation_input_tokens: (if $measured then ($m | map(.cacheCreationInputTokens // 0) | add) else null end),
       num_turns: ($r.num_turns // 0),
       subagents_spawned: ($r.subagent_stats.spawned // 0)
     }'

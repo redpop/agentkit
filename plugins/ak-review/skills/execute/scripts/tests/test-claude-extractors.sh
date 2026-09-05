@@ -71,7 +71,7 @@ echo "$COUT" | jq -e '.num_turns == 3' > /dev/null || fail "case 4: num_turns wa
 # would claim the run was free when the truth is that nobody counted it.
 TCOUT="$(bash "$COST" "$TRUNCATED")"
 echo "$TCOUT" | jq -e '.total_cost == null' > /dev/null || fail "case 5: an uncounted run must report null, not a number: $TCOUT"
-echo "$TCOUT" | jq -e '.total_tokens == 0' > /dev/null || fail "case 5: tokens should degrade to 0"
+echo "$TCOUT" | jq -e '.total_tokens == null' > /dev/null || fail "case 5: an uncounted run must report null tokens, not 0: $TCOUT"
 
 # --- subagents ------------------------------------------------------------
 

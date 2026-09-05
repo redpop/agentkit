@@ -36,12 +36,18 @@ if bash "$SCRIPT" "$DIR/fixtures/does-not-exist.jsonl" 2> /dev/null; then
   fail "case 3: a missing file must exit non-zero"
 fi
 
-# Case 4: a truncated stream degrades to zeroed tokens instead of dying. A run
-# killed before turn.completed genuinely has no usage record — reporting zeros
-# is correct, and crashing here would take the salvaged report down with it.
+# Case 4: a truncated stream degrades without dying, and reports `null` tokens
+# rather than zero. A run killed before turn.completed has no usage record and
+# codex puts usage nowhere else — verified on a real timed-out run, where no
+# token field appears in the stream from end to end. It consumed tokens; nobody
+# counted them. Since this adapter reports no money, the token count is the only
+# figure it contributes, so a zero here is not a rounded answer but a wrong one.
+# Exit status stays 0: degrading must not take the salvaged report down with it.
 TRUNCATED_ACTUAL="$(bash "$SCRIPT" "$TRUNCATED_FIXTURE")"
-echo "$TRUNCATED_ACTUAL" | jq -e '.total_tokens == 0' > /dev/null \
-  || fail "case 4: a truncated stream should report zero tokens, got: $TRUNCATED_ACTUAL"
+echo "$TRUNCATED_ACTUAL" | jq -e '.total_tokens == null' > /dev/null \
+  || fail "case 4: an unmeasured stream must report null tokens, not a number, got: $TRUNCATED_ACTUAL"
+echo "$TRUNCATED_ACTUAL" | jq -e '.input_tokens == null and .output_tokens == null' > /dev/null \
+  || fail "case 4: the breakdown must be null too, or it contradicts total_tokens: $TRUNCATED_ACTUAL"
 echo "$TRUNCATED_ACTUAL" | jq -e '.total_cost == null' > /dev/null \
   || fail "case 4: total_cost must stay null on a truncated stream"
 

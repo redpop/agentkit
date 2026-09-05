@@ -331,13 +331,16 @@ Produce one compact report, in the language of the invoking session:
 - What was skipped, one line each with the reason (false positive / below threshold / needs context / uncertain)
 - Validation result (tests/lint pass?), only if Phase 7 ran
 - Cost and tokens from `$COST_FILE`. **Report only what the file actually contains.** Zero and "not
-  reported" are different claims and only one is true — never print `USD 0.00` for a missing
-  figure. `total_cost` is `null` for two different reasons, needing different sentences:
-  - **The tool reports no money at all** (`codex`): say so. Token counts are all there is.
-  - **The run's cost is only partly known**: the file then also carries `parent_session_cost` and a
-    non-zero `subagent_sessions`. Report the partial figure **as** partial and name what is missing:
-    "at least USD 0.86; the cost of 2 sub-agent sessions is not reported by the tool" — never as
-    the run's cost. Measured, the difference has been a factor of 2.7
+  measured" are different claims and only one is true — never print `USD 0.00` or `0 tokens` for a
+  `null`. Say the figure is not available and why. There are three cases:
+  - **The tool reports no money at all** (`codex`): `total_cost` is `null` by design. Say so; the
+    token count is all there is, which is also why a `null` there leaves the run with no figure at all
+  - **Nothing was measured**: a run killed before it recorded usage reports `null` throughout, tokens
+    included. Say the run was cut short before anything was counted — not that it was free
+  - **The cost is only partly known**: the file then also carries `parent_session_cost` and a non-zero
+    `subagent_sessions`. Report the partial figure **as** partial and name what is missing: "at least
+    USD 0.86; the cost of 2 sub-agent sessions is not reported by the tool" — never as the run's cost.
+    Measured, the difference has been a factor of 2.7
 - The path to `$RAW_OUTPUT_FILE` — it is kept on disk after the run (see Notes) and this is the only place
   that path is surfaced to the user; without it, re-running `/ak-review:advise` against the kept output
   means hunting for a `/tmp/ak-review-execute/<timestamp>/` directory rather than reading it off the report
@@ -354,7 +357,7 @@ registry: an adapter is the set of scripts named after its tool under `scripts/`
 | `<tool>-adapter.sh <prompt-file> <model> [effort] <raw-output-file>` | Runs the review, writing the tool's raw output to the given file. Exits with the tool's own exit code, except for two reserved codes: `124` when its own ceiling fires (process group killed, partial stream salvageable) and `125` when the tool produced **no bytes at all** and never started (nothing to salvage). **Enforcing both is the adapter's job, not the caller's:** an unattended caller may lose the timer, and the two failures need opposite advice. | Yes |
 | `<tool>-preflight.sh` | Exit 0 = ready, _or not provably unready_. Non-zero = cannot run, with the reason and the concrete fix on stderr. **An adapter must not block on a check it cannot make reliably — it either drops the check or notes the gap on stderr.** See the `opencode` entry for why this matters. | Optional; skipped if absent |
 | `<tool>-extract-report.sh <raw-output-file>` | Prints the agent's report to stdout. Exit `1` = the stream carries no report at all; exit `3` = output exists but has no `findings[]` block, so it is narration from a run that was cut short. `3` still prints what it found — the caller must show it without treating it as findings. Neither is a parse failure, and neither may be smoothed into an empty report. | Yes |
-| `<tool>-extract-cost.sh <raw-output-file>` | Prints `{"total_cost":…,"total_tokens":…}`. `total_cost` is `null` when the tool reports no money, **and also when it reports only part of it** — never `0`, which would falsely claim the run was free, and never a partial sum under the name of a total. An adapter that can measure the known part reports it alongside, under a name that says so (`parent_session_cost`, `subagent_sessions`). Extra keys are fine. Must degrade to zeros on a truncated stream rather than failing, so a salvaged report is not lost with it. | Yes |
+| `<tool>-extract-cost.sh <raw-output-file>` | Prints `{"total_cost":…,"total_tokens":…}`. **`null` means "not measured" and applies to every figure, tokens included** — never `0`, which claims a run was free or consumed nothing when the truth is that nobody counted, and never a partial sum under the name of a total. `total_cost` is therefore `null` when the tool reports no money and when it reports only part of it; an adapter that can measure the known part reports it alongside, under a name that says so (`parent_session_cost`, `subagent_sessions`). Extra keys are fine. Must degrade rather than fail on a truncated stream, so a salvaged report is not lost with it — degrading means reporting nothing, not reporting zero. | Yes |
 | `<tool>-extract-subagents.sh <raw-output-file>` | Recovers finished sub-agent output from a killed run. Only meaningful for tools that dispatch sub-agents and merge late. | Optional; omit when the tool has no such concept |
 | `<tool>-models.sh` | Prints one candidate per line, to stdout; the format is the tool's own and is not guaranteed. Used by `/ak-review:setup`. | Optional; setup asks the user to type a model if absent |
 | `<tool>-efforts.sh` | Prints the effort values the tool accepts, **one bare token per line**. `resolve-config.sh` refuses a resolved `effort` outside this list, so the list is a gate, not a hint: a value missing from it blocks a run the tool would have accepted. Ship one only when the vocabulary is genuinely the tool's own. | Optional; the effort is passed through unchecked if absent |
@@ -432,7 +435,9 @@ OpenAI's Codex CLI. Verified against `codex-cli 0.149.0`.
   with a boolean); `opencode` still meets neither.
 - **No model listing** (`codex models` is not a subcommand), so `/ak-review:setup` asks for the name.
 - **Cost is not reported** — token counts only, so `total_cost` is `null`. Phase 8 must say the tool
-  reports no cost rather than printing a zero.
+  reports no cost rather than printing a zero. That makes the token count this adapter's only figure,
+  and a killed run has none: usage lives solely in `turn.completed`, verified absent end to end on a
+  real timed-out stream, so tokens come back `null` too and the run reports nothing at all.
 - **A killed run usually salvages nothing.** No sub-agents: the answer comes as one `agent_message` at the
   very end, so a killed run holds only reasoning and command output — scratch work, not findings, and it
   must never reach Phase 5 as though it were. The report extractor exits non-zero to say so.
