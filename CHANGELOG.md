@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.31.0] - 2026-09-05
+
+### ♻️ Changed
+
+- `ak-review:execute` — **a figure the stream never carried is now reported as unavailable
+  rather than as zero, across all three adapters.** The doctrine was already written down
+  for money — "zero and 'not reported' are different claims, and only one of them is true" —
+  but the adapter contract undercut it for everything else by requiring extractors to
+  "degrade to zeros on a truncated stream". That sentence was about robustness, not
+  meaning; both hold at once. Extractors still exit 0 so a salvaged report survives, and
+  now return `null` for what was never measured.
+
+  The case that prompted this: a codex run killed by a timeout. Its usage lives solely in
+  the `turn.completed` event it never sent — verified absent end to end on a real stream —
+  and codex reports no money, so the token count is the only figure it contributes. It was
+  reporting `0 tokens` for a run that had spent twenty minutes working. Not a rounded
+  answer, a wrong one.
+
+  The same now applies to `opencode` (no `step_finish` at all) and `claude` (no
+  `modelUsage`). **Measured runs are untouched** — every real stream on hand reports exactly
+  the figures it did before.
+
+  Phase 8 gains a third case to distinguish: the tool reports no money by design, nothing
+  was measured, or the cost is only partly known. Each needs a different sentence, and none
+  of them is `USD 0.00`.
+
 ## [1.30.2] - 2026-09-05
 
 ### 🐛 Fixed
