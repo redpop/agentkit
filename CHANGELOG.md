@@ -5,6 +5,47 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.30.1] - 2026-09-05
+
+### 🐛 Fixed
+
+- `ak-review:execute` — **OpenCode runs that used sub-agents no longer report a cost that
+  is only part of the truth.** Sub-agents run in their own sessions and opencode emits
+  `step_finish` only for the session that produced it, so summing the stream yields the
+  parent's spend alone. The delegate prompt asks for one sub-agent per review dimension by
+  default, which made the under-reporting the normal case rather than an edge one.
+
+  Measured on a four-dimension review: 23 `step_finish` events, all under a single session
+  id, against two completed sub-agents whose 32 KB of findings sat in the same stream. The
+  extractor reported USD 0.8589. Across the two runs in one provider billing window the
+  extractors reported USD 1.17 against USD 3.17 actually charged — a factor of 2.7, and the
+  user went over quota without the reported figure ever hinting at it.
+
+  `total_cost` is now `null` whenever a sub-agent ran, with the known part reported beside
+  it as `parent_session_cost` and the number of uncounted sessions as `subagent_sessions`.
+  Phase 8 reports that as "at least USD X, plus N sub-agent sessions the tool does not
+  price" rather than as the run's cost. Zero, "not reported" and "partly known" are three
+  different claims; presenting the third as the first was the failure here.
+
+  **A run without sub-agents is unaffected** and still reports a real total, so the fix
+  costs no accuracy where the sum was already complete.
+
+### 📝 Documented
+
+- The sub-agent session ids *are* in the stream, in the `task` part's
+  `state.metadata.sessionId` — enough to count what is missing, which is what makes the
+  partial figure honest instead of merely absent. The sessions themselves are not written
+  to opencode's local storage, so the amount cannot be recovered after the run.
+
+- Whether Claude Code's `total_cost_usd` includes sub-agent spend is recorded as
+  **unverified**: the probe run that would settle it failed on an expired OAuth session
+  before reaching the model. It matters less there than for opencode, because the spend cap
+  is Claude Code's own `--max-budget-usd` rather than anything computed from the reported
+  figure — both come from the same accounting, so the cap binds against exactly the number
+  that gets reported. The `result` event carries `subagent_stats` and a per-model
+  `modelUsage` breakdown, noted in the Adapter Reference as where to look if this needs
+  answering.
+
 ## [1.30.0] - 2026-09-05
 
 ### ✨ Added
