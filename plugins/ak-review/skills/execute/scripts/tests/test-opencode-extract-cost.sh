@@ -25,11 +25,14 @@ if bash "$SCRIPT" "$DIR/fixtures/does-not-exist.jsonl" 2>/dev/null; then
   exit 1
 fi
 
-# A stream truncated mid-line must degrade to a zeroed cost (exit 0) rather
-# than dying on the first malformed line -- SKILL.md documents this as the
-# salvage path after an external kill on a hung run.
+# A stream truncated mid-line must degrade (exit 0) rather than dying on the
+# first malformed line -- SKILL.md documents this as the salvage path after an
+# external kill on a hung run. Degrading means reporting nothing, not reporting
+# zero.
 TRUNCATED_ACTUAL="$(bash "$SCRIPT" "$TRUNCATED_FIXTURE")"
-TRUNCATED_EXPECTED='{"total_cost":0,"total_tokens":0,"parent_session_cost":0,"subagent_sessions":0}'
+# Nothing was measured here, so nothing is claimed: a stream with no step_finish
+# at all is a run killed before it billed anything, not a run that cost nothing.
+TRUNCATED_EXPECTED='{"total_cost":null,"total_tokens":null,"parent_session_cost":null,"subagent_sessions":0}'
 
 if [ "$TRUNCATED_ACTUAL" != "$TRUNCATED_EXPECTED" ]; then
   echo "FAIL: opencode-extract-cost.sh did not degrade gracefully on a truncated stream"
