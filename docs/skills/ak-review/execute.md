@@ -186,6 +186,12 @@ that gets killed just short of finishing.
   the skill's Adapter Reference) — this skill never passes `--auto`. The Codex adapter needs no such
   preparation: it runs with `--sandbox read-only`, which makes the report-only contract structural
 - Codex reports token counts but no monetary cost, so the run summary shows tokens only for that adapter
+- **OpenCode does not report what its sub-agents cost.** They run in their own sessions and only the
+  parent session's spend reaches the stream, so a run that dispatched sub-agents — which the delegate
+  prompt asks for by default — has no total. Measured across two runs: USD 1.17 reported against
+  USD 3.17 charged. The summary therefore reports the parent's spend as a partial figure and names how
+  many sub-agent sessions went uncounted, rather than presenting the part as the whole. Runs without
+  sub-agents are unaffected and report a real total.
 - The Claude Code adapter is by far the most expensive — roughly $0.26–0.61 for a trivial prompt against
   about $0.002 through OpenCode. It therefore ships with a **$5 spend cap on by default**; raise it with
   `AK_REVIEW_MAX_BUDGET_USD`, or remove it with `AK_REVIEW_MAX_BUDGET_USD=none` (not `0`). Hitting the cap
