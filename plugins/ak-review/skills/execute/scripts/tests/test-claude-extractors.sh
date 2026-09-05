@@ -56,7 +56,15 @@ fi
 # reports a dollar figure, so total_cost must NOT be null here.
 COUT="$(bash "$COST" "$FIXTURE")"
 echo "$COUT" | jq -e '.total_cost == 0.5152091' > /dev/null || fail "case 4: total_cost was not read from the result event: $COUT"
-echo "$COUT" | jq -e '.total_tokens == 523' > /dev/null || fail "case 4: total_tokens should be input+output: $COUT"
+# Tokens come from `modelUsage`, not from the result event's own `usage`, and
+# include the cache counters. Measured on a one-sub-agent probe: `usage` reported
+# input 30 where `modelUsage` reported 40 -- the difference being the sub-agent --
+# and omitting the cache counters turned 155527 processed tokens into 1308. The
+# fixture keeps `usage` deliberately smaller than `modelUsage` so a regression to
+# the old source fails here rather than passing with a plausible number.
+echo "$COUT" | jq -e '.total_tokens == 10614' > /dev/null || fail "case 4: total_tokens must sum modelUsage including cache: $COUT"
+echo "$COUT" | jq -e '.total_tokens != 523' > /dev/null || fail "case 4: total_tokens was read from the result event's usage, which excludes sub-agents and cache: $COUT"
+echo "$COUT" | jq -e '.subagents_spawned == 2' > /dev/null || fail "case 4: subagent_stats.spawned must be carried through: $COUT"
 echo "$COUT" | jq -e '.num_turns == 3' > /dev/null || fail "case 4: num_turns was not carried through"
 
 # Case 5: a truncated stream has no cost record. That is null, not 0 — zero

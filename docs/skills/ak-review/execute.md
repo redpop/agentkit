@@ -192,6 +192,10 @@ that gets killed just short of finishing.
   USD 3.17 charged. The summary therefore reports the parent's spend as a partial figure and names how
   many sub-agent sessions went uncounted, rather than presenting the part as the whole. Runs without
   sub-agents are unaffected and report a real total.
+- The Claude Code adapter reports full monetary cost including its sub-agents, but its token count had
+  to be taken from the per-model breakdown rather than the run summary — the latter covers only the
+  main agent and leaves out cached input entirely, which on a measured probe meant 1308 tokens
+  reported against 155527 processed
 - The Claude Code adapter is by far the most expensive — roughly $0.26–0.61 for a trivial prompt against
   about $0.002 through OpenCode. It therefore ships with a **$5 spend cap on by default**; raise it with
   `AK_REVIEW_MAX_BUDGET_USD`, or remove it with `AK_REVIEW_MAX_BUDGET_USD=none` (not `0`). Hitting the cap
@@ -208,7 +212,9 @@ that gets killed just short of finishing.
 - The external CLI for the adapter you configure, installed and authenticated:
   - `opencode` for the `opencode` adapter
   - `codex` for the `codex` adapter (verified against `codex-cli 0.149.0`)
-  - `claude` for the `claude` adapter (verified against Claude Code `2.1.240`)
+  - `claude` for the `claude` adapter (verified against Claude Code `2.1.240`), authenticated —
+    the preflight now checks this via `claude auth status` and stops the run rather than letting it
+    fail as something that looks like a timeout
 
 ## Related
 

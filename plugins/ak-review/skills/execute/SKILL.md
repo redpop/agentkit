@@ -380,8 +380,9 @@ below.
 - **Prerequisite:** an `opencode.jsonc` permission config that allows non-interactive bash for
   read-only/test/lint commands, with destructive ones gated to `"ask"`. This skill never passes
   `--auto`; if a run stalls, fix the permission config rather than reaching for it.
-- **Preflight checks PATH only, never authentication** — deliberately, and do not add it back without a
-  machine-readable signal. The script header records what the parsing attempt cost.
+- **Preflight checks PATH only, never authentication** — deliberately, and do not add it back
+  without a machine-readable signal. `codex` and `claude` both have one and both check; opencode
+  still does not. The script header records what the parsing attempt cost.
 - **Run it with the reviewed repository as the working directory.** Paths outside the cwd are
   **auto-rejected, not prompted**, in non-interactive mode, so the review silently proceeds without
   reading them and still exits 0. Those rejections appear only on stderr (as `auto-rejecting`), which
@@ -426,8 +427,9 @@ OpenAI's Codex CLI. Verified against `codex-cli 0.149.0`.
 - **Read-only is structural:** the adapter passes `--sandbox read-only`, so the agent cannot write even if
   told to. Never relax this. It also passes `--ignore-user-config`, which keeps MCP servers, hooks and
   plugins from crowding out the review's own context.
-- **Preflight checks authentication too** — legitimate here, unlike opencode, because `codex login status`
-  exits `0`/`1` rather than requiring output to be parsed.
+- **Preflight checks authentication too** — legitimate because `codex login status` exits `0`/`1`
+  rather than requiring output to be parsed. `claude` meets the same bar by a different route (JSON
+  with a boolean); `opencode` still meets neither.
 - **No model listing** (`codex models` is not a subcommand), so `/ak-review:setup` asks for the name.
 - **Cost is not reported** — token counts only, so `total_cost` is `null`. Phase 8 must say the tool
   reports no cost rather than printing a zero.
@@ -448,16 +450,24 @@ Anthropic's Claude Code, headless. Verified against `2.1.240`.
   unrestricted shell is a write path no deny-list can close.
 - **Sub-agents work headless**, so a `124` is salvageable via `claude-extract-subagents.sh`. They are
   identified solely by `parent_tool_use_id` being set.
-- **Preflight checks PATH only** — Claude Code exposes no machine-readable login status.
+- **Preflight checks authentication too**, via `claude auth status`, which prints JSON with a boolean
+  `loggedIn` — a machine-readable signal Claude Code did not offer when this adapter was written. Only
+  an explicit `false` blocks; unparseable output passes, because being unable to answer the
+  question is not the same as answering it "no". The check is worth having because an unauthenticated run does
+  **not** fail legibly: measured, it exits 1 after 28 KB of stream with `subtype: "success"` and
+  `total_cost_usd: 0`, and the report extractor then blames a usage limit, a timeout or a crash.
 - **No model listing**, so `/ak-review:setup` asks for the name.
-- **Cost is reported in money** (`total_cost_usd`), unlike codex. Whether that figure includes
-  sub-agent spend is **unverified** — the probe run that would settle it failed on an expired OAuth
-  session before reaching the model. It matters less here than it does for `opencode`, because the
-  spend cap is Claude Code's own `--max-budget-usd` rather than anything computed from this figure:
-  both come from the same accounting, so the cap binds against exactly the number that gets reported,
-  whatever that number counts. The `result` event also carries `subagent_stats` (`spawned`,
-  `completed`, `failed`) and a per-model `modelUsage` breakdown, so if this ever needs answering, those
-  are where to look — and `subagent_stats.spawned` is already enough to detect the case.
+- **Cost is reported in money** (`total_cost_usd`), unlike codex, and it **does** include sub-agent
+  spend — measured on a one-sub-agent probe, where `modelUsage`'s `costUSD` matched `total_cost_usd`
+  to the cent while covering tokens the top-level `usage` did not. So unlike `opencode`, this adapter
+  reports a whole number for money, and the spend cap (Claude Code's own `--max-budget-usd`) binds
+  against that same accounting.
+- **Tokens do not come from the result event's `usage`** — that field covers the main agent only, and
+  excludes the cache counters entirely. On the same probe it gave 1308 against 155527 actually
+  processed. `claude-extract-cost.sh` therefore sums `modelUsage` across models including
+  `cacheReadInputTokens` and `cacheCreationInputTokens`. A review prompt is mostly cached context, so
+  this is the normal case rather than an extreme one. `subagent_stats.spawned` is carried through as
+  `subagents_spawned`.
 - **By far the most expensive adapter, so a spend cap is on by default: USD 5.** Measured: USD 0.26–0.61
   for a single trivial prompt, against roughly USD 0.002 through opencode. Override with
   `AK_REVIEW_MAX_BUDGET_USD`; remove it with `=none`, **not** `0`, which means zero dollars and aborts
