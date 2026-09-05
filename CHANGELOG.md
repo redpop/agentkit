@@ -5,6 +5,67 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.30.0] - 2026-09-05
+
+### ✨ Added
+
+- `ak-review:execute` — **`effort` is now keyed by tool, because its vocabulary was never
+  this plugin's to share.**
+
+  ```json
+  "effort": { "codex": "xhigh", "claude": "high" }
+  ```
+
+  The entry for the tool actually running applies; a tool the map does not name runs with
+  no effort at all, which is valid under every adapter.
+
+  `effort` used to be one scalar for every adapter, and that held together only while
+  `tool` and `effort` came from the same config layer. `--tool` is overridable per run and
+  `effort` was not, so switching adapters for a single run — which the skill explicitly
+  invites — carried the configured level into a vocabulary that may not contain it. Nothing
+  complained: codex hands the value to the API as a config value, and `opencode run --help`
+  declares `--variant` as a plain string with no choices, so the review proceeded at a level
+  nobody chose and failed, if at all, pointing somewhere else entirely.
+
+  A plain string still works and now carries the meaning it always implied: "this level, for
+  the tool configured beside it". Running a different tool stops with an error naming both
+  tools and offering three ways out. Sharing a spelling is not sharing a meaning — codex's
+  `xhigh` and Claude Code's `xhigh` name levels of unrelated scales — so a value is refused
+  on a tool switch even when both enums contain it.
+
+- `ak-review:execute` — **`--no-effort`**, to run once with no effort at all. `--tool` could
+  be overridden per run and `effort` could not, and `--effort ""` looked like the way to
+  even that up while silently not being one: an empty flag value was discarded before the
+  merge and read as "not given", leaving the configured level in place. It is now an error
+  pointing at `--no-effort`, and `--effort` together with `--no-effort` is refused rather
+  than ranked — any precedence there would be a guess at what was meant.
+
+- `ak-review:execute` — **adapters may declare the effort values they accept**, via a new
+  optional `<tool>-efforts.sh` in the adapter contract. `resolve-config.sh` refuses anything
+  outside that list before work starts. `codex` and `claude` ship one; the near-miss it
+  exists for is `none` and `minimal`, real codex levels that Claude Code does not have,
+  where the two enums otherwise agree. This is a second, narrower check than the one above:
+  keying answers *is this value from the right vocabulary*, the list answers *is it one this
+  tool accepts*.
+
+### ♻️ Changed
+
+- `ak-review:setup` reads `<tool>-efforts.sh` instead of offering levels of its own — which
+  also fixes it never having mentioned the `claude` adapter — and writes `effort` keyed
+  under the chosen tool, merging into an existing map rather than replacing it. A string
+  left by an older version is converted, and the conversion is reported.
+
+- Effort values are no longer repeated in adapter comments, `SKILL.md` and the docs. Each
+  list now lives in exactly one file, the one the code actually reads.
+
+### 📝 Documented
+
+- `opencode` ships no `opencode-efforts.sh` and is not expected to: its `--variant` levels
+  belong to the provider behind the model rather than to opencode, so any list would be a
+  guess that silently narrows valid runs. A test asserts the file's absence. A value opencode
+  itself does not understand therefore still reaches it — what no longer does is a value
+  written for another adapter, which the tool-keying catches without needing a list.
+
 ## [1.29.0] - 2026-09-01
 
 ### ✨ Added

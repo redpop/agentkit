@@ -116,7 +116,7 @@ Wrapper format: `{"description": "...", "hooks": {...}}`. The `${CLAUDE_PLUGIN_R
 
 - Use conventional commits: `feat:`, `fix:`, `docs:`, `refactor:`
 - Scope by plugin when applicable: `feat(ak-react): add hydration mismatch rule`
-- Keep versions synchronized across `marketplace.json` and all `plugin.json` files (currently `1.29.0`)
+- Keep versions synchronized across `marketplace.json` and all `plugin.json` files (currently `1.30.0`)
 
 ## Task completion workflow
 
