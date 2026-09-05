@@ -5,6 +5,21 @@
 # `total_cost_usd` outright, so nothing has to be inferred from token counts and
 # a price list. Output keeps the two keys every adapter's cost file shares
 # (`total_cost`, `total_tokens`) and adds the breakdown.
+#
+# `total_cost_usd` covers sub-agents; the result event's own `usage` does not.
+# Measured on a one-sub-agent probe (haiku, subagent_stats.spawned=1): top-level
+# `usage` reported input 30, while `modelUsage` reported 40 -- the missing 10
+# being the sub-agent's, and `modelUsage`'s `costUSD` matching `total_cost_usd`
+# to the cent. So the money is whole and the token count taken from `usage` is
+# not, which is the opposite of the opencode adapter's problem and needs the
+# opposite fix: keep the cost, stop reading tokens from `usage`.
+#
+# Tokens therefore come from `modelUsage`, summed across models, and INCLUDE the
+# cache counters. Anthropic reports `cache_read_input_tokens` and
+# `cache_creation_input_tokens` separately from `input_tokens`, so omitting them
+# does not merely round the figure down -- on that same probe it reported 1308
+# tokens against 155527 actually processed, a factor of 119. A review prompt is
+# mostly cached context, so this is the normal case, not an extreme one.
 set -euo pipefail
 
 if [ $# -ne 1 ]; then
@@ -26,10 +41,16 @@ fi
 jq -R 'fromjson? // empty' "$RAW_FILE" \
   | jq -cs '
   ([.[] | select(.type == "result")] | last) as $r
+  | ([($r.modelUsage // {}) | to_entries[] | .value]) as $m
   | {
       total_cost: ($r.total_cost_usd // null),
-      total_tokens: (((($r.usage.input_tokens // 0) + ($r.usage.output_tokens // 0))) // 0),
-      input_tokens: ($r.usage.input_tokens // 0),
-      output_tokens: ($r.usage.output_tokens // 0),
-      num_turns: ($r.num_turns // 0)
+      total_tokens: (($m | map((.inputTokens // 0) + (.outputTokens // 0)
+                              + (.cacheReadInputTokens // 0)
+                              + (.cacheCreationInputTokens // 0)) | add) // 0),
+      input_tokens: (($m | map(.inputTokens // 0) | add) // 0),
+      output_tokens: (($m | map(.outputTokens // 0) | add) // 0),
+      cache_read_input_tokens: (($m | map(.cacheReadInputTokens // 0) | add) // 0),
+      cache_creation_input_tokens: (($m | map(.cacheCreationInputTokens // 0) | add) // 0),
+      num_turns: ($r.num_turns // 0),
+      subagents_spawned: ($r.subagent_stats.spawned // 0)
     }'
