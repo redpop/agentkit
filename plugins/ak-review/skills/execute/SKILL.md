@@ -330,10 +330,14 @@ Produce one compact report, in the language of the invoking session:
 - What was fixed, one line each with the reason it qualified
 - What was skipped, one line each with the reason (false positive / below threshold / needs context / uncertain)
 - Validation result (tests/lint pass?), only if Phase 7 ran
-- Cost and tokens from `$COST_FILE`. **Report only what the file actually contains.** `total_cost` is
-  `null` for an adapter whose tool does not report money — `codex` is one — and in that case say the
-  tool reports no cost, rather than printing `USD 0.00`. Zero and "not reported" are different claims,
-  and only one of them is true
+- Cost and tokens from `$COST_FILE`. **Report only what the file actually contains.** Zero and "not
+  reported" are different claims and only one is true — never print `USD 0.00` for a missing
+  figure. `total_cost` is `null` for two different reasons, needing different sentences:
+  - **The tool reports no money at all** (`codex`): say so. Token counts are all there is.
+  - **The run's cost is only partly known**: the file then also carries `parent_session_cost` and a
+    non-zero `subagent_sessions`. Report the partial figure **as** partial and name what is missing:
+    "at least USD 0.86; the cost of 2 sub-agent sessions is not reported by the tool" — never as
+    the run's cost. Measured, the difference has been a factor of 2.7
 - The path to `$RAW_OUTPUT_FILE` — it is kept on disk after the run (see Notes) and this is the only place
   that path is surfaced to the user; without it, re-running `/ak-review:advise` against the kept output
   means hunting for a `/tmp/ak-review-execute/<timestamp>/` directory rather than reading it off the report
@@ -350,7 +354,7 @@ registry: an adapter is the set of scripts named after its tool under `scripts/`
 | `<tool>-adapter.sh <prompt-file> <model> [effort] <raw-output-file>` | Runs the review, writing the tool's raw output to the given file. Exits with the tool's own exit code, except for two reserved codes: `124` when its own ceiling fires (process group killed, partial stream salvageable) and `125` when the tool produced **no bytes at all** and never started (nothing to salvage). **Enforcing both is the adapter's job, not the caller's:** an unattended caller may lose the timer, and the two failures need opposite advice. | Yes |
 | `<tool>-preflight.sh` | Exit 0 = ready, _or not provably unready_. Non-zero = cannot run, with the reason and the concrete fix on stderr. **An adapter must not block on a check it cannot make reliably — it either drops the check or notes the gap on stderr.** See the `opencode` entry for why this matters. | Optional; skipped if absent |
 | `<tool>-extract-report.sh <raw-output-file>` | Prints the agent's report to stdout. Exit `1` = the stream carries no report at all; exit `3` = output exists but has no `findings[]` block, so it is narration from a run that was cut short. `3` still prints what it found — the caller must show it without treating it as findings. Neither is a parse failure, and neither may be smoothed into an empty report. | Yes |
-| `<tool>-extract-cost.sh <raw-output-file>` | Prints `{"total_cost":…,"total_tokens":…}`. `total_cost` is `null` when the tool reports no money — never `0`, which would falsely claim the run was free. Extra keys are fine. Must degrade to zeros on a truncated stream rather than failing, so a salvaged report is not lost with it. | Yes |
+| `<tool>-extract-cost.sh <raw-output-file>` | Prints `{"total_cost":…,"total_tokens":…}`. `total_cost` is `null` when the tool reports no money, **and also when it reports only part of it** — never `0`, which would falsely claim the run was free, and never a partial sum under the name of a total. An adapter that can measure the known part reports it alongside, under a name that says so (`parent_session_cost`, `subagent_sessions`). Extra keys are fine. Must degrade to zeros on a truncated stream rather than failing, so a salvaged report is not lost with it. | Yes |
 | `<tool>-extract-subagents.sh <raw-output-file>` | Recovers finished sub-agent output from a killed run. Only meaningful for tools that dispatch sub-agents and merge late. | Optional; omit when the tool has no such concept |
 | `<tool>-models.sh` | Prints one candidate per line, to stdout; the format is the tool's own and is not guaranteed. Used by `/ak-review:setup`. | Optional; setup asks the user to type a model if absent |
 | `<tool>-efforts.sh` | Prints the effort values the tool accepts, **one bare token per line**. `resolve-config.sh` refuses a resolved `effort` outside this list, so the list is a gate, not a hint: a value missing from it blocks a run the tool would have accepted. Ship one only when the vocabulary is genuinely the tool's own. | Optional; the effort is passed through unchecked if absent |
@@ -392,6 +396,16 @@ below.
   processes and concurrent instances were each ruled out by measurement. It comes in windows of minutes
   during which everything stalls — **so any comparison without a control run in the same minute will
   produce a confident, wrong answer.** That has misled two investigations already.
+- **Sub-agent cost is not in the stream, so a run that used them has no total.** Sub-agents run in
+  their own sessions and opencode emits `step_finish` only for the session that produced it — summing
+  the stream yields the parent's spend alone. Measured on a four-dimension review: 23 `step_finish`
+  events under one session id, against two completed sub-agents whose 32 KB of findings were right
+  there in the stream. Across two runs the extractor reported USD 1.17 where the provider
+  charged USD 3.17. The `task` part's `state.metadata.sessionId` names each sub-session, enough
+  to count them but not to price them — they are not written to opencode's local storage, so the amount
+  cannot be recovered afterwards. `total_cost` is therefore `null` whenever a sub-agent ran, with the
+  parent's spend reported separately as `parent_session_cost`. **A run without sub-agents is unaffected
+  and still reports a real number.**
 - **On a `124`, run `opencode-extract-subagents.sh` first.** Sub-agent findings live in `tool_use` parts
   the report extractor cannot see. Measured on two stalled runs: the report held 91 and 416 characters
   of narration against 4085 and **31832** characters of unread sub-agent findings. A short `report.md`
@@ -436,7 +450,14 @@ Anthropic's Claude Code, headless. Verified against `2.1.240`.
   identified solely by `parent_tool_use_id` being set.
 - **Preflight checks PATH only** — Claude Code exposes no machine-readable login status.
 - **No model listing**, so `/ak-review:setup` asks for the name.
-- **Cost is reported in money** (`total_cost_usd`), unlike codex.
+- **Cost is reported in money** (`total_cost_usd`), unlike codex. Whether that figure includes
+  sub-agent spend is **unverified** — the probe run that would settle it failed on an expired OAuth
+  session before reaching the model. It matters less here than it does for `opencode`, because the
+  spend cap is Claude Code's own `--max-budget-usd` rather than anything computed from this figure:
+  both come from the same accounting, so the cap binds against exactly the number that gets reported,
+  whatever that number counts. The `result` event also carries `subagent_stats` (`spawned`,
+  `completed`, `failed`) and a per-model `modelUsage` breakdown, so if this ever needs answering, those
+  are where to look — and `subagent_stats.spawned` is already enough to detect the case.
 - **By far the most expensive adapter, so a spend cap is on by default: USD 5.** Measured: USD 0.26–0.61
   for a single trivial prompt, against roughly USD 0.002 through opencode. Override with
   `AK_REVIEW_MAX_BUDGET_USD`; remove it with `=none`, **not** `0`, which means zero dollars and aborts

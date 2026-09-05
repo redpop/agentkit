@@ -1,0 +1,7 @@
+{"type":"step_start","part":{"sessionID":"ses_parent"}}
+{"type":"step_finish","part":{"sessionID":"ses_parent","cost":0.5,"tokens":{"total":1000}}}
+{"type":"tool_use","part":{"type":"tool","tool":"task","sessionID":"ses_parent","state":{"status":"completed","title":"Correctness review","output":"FINDING-A","metadata":{"parentSessionId":"ses_parent","sessionId":"ses_sub1","model":{"modelID":"glm-5.3","providerID":"opencode-go"}}}}}
+{"type":"tool_use","part":{"type":"tool","tool":"task","sessionID":"ses_parent","state":{"status":"completed","title":"Test adequacy review","output":"FINDING-B","metadata":{"parentSessionId":"ses_parent","sessionId":"ses_sub2","model":{"modelID":"glm-5.3","providerID":"opencode-go"}}}}}
+{"type":"tool_use","part":{"type":"tool","tool":"task","sessionID":"ses_parent","state":{"status":"running","title":"Still going","metadata":{"parentSessionId":"ses_parent","sessionId":"ses_sub3"}}}}
+{"type":"tool_use","part":{"type":"tool","tool":"read","sessionID":"ses_parent","state":{"status":"completed","output":"file contents"}}}
+{"type":"step_finish","part":{"sessionID":"ses_parent","cost":0.25,"tokens":{"total":500}}}
