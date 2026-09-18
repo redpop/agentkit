@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.31.4] - 2026-09-18
+
+### 🐛 Fixed
+
+- `ak-review:coderabbit` — **the audit in 1.31.3 ran against CLI 0.7.6 while 0.7.8 had already
+  shipped.** The skill quoted `--uncommitted` as covering "staged changes and tracked edits"; 0.7.8
+  rewords it to "Review uncommitted Git changes", so the quote described text that no longer exists.
+  The claim holds and now rests on something steadier — the CLI ships a separate
+  `--include-untracked` flag for "files that have not been added to Git", which is what proves they
+  are outside the default scope.
+
+- `ak-review:coderabbit` — the 1.31.3 rewrite dropped the note that `0.7` removed `--prompt-only`
+  and `--type`, leaving no version reference at all. Both are back, as a *verified against* line in
+  the shape `execute` uses for its adapters, with the instruction to check `--help` before trusting
+  a flag named here. `--remote <owner/repo>` is named too, along with why this skill does not use
+  it: it reviews the working tree you are in, and the flag is GitHub-only.
+
 ## [1.31.3] - 2026-09-18
 
 ### 🐛 Fixed
