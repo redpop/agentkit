@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.31.3] - 2026-09-18
+
+### 🐛 Fixed
+
+- `ak-review:coderabbit` — **the skill reviewed less than it claimed.** Its default scope,
+  `--uncommitted`, covers "staged changes and tracked edits" in the CLI's own words, so a file
+  never added to Git was not reviewed at all. Every new file in a change was skipped silently, and
+  the result looked exactly like a clean review. `--include-untracked` now goes with it.
+
+- `ak-review:coderabbit` — findings were scraped from the plain-text rendering although the CLI
+  emits structured ones with `--agent` and says so unprompted when it detects an agent environment.
+  Phase 3 reads the structured output now, with the rendering as a declared fallback rather than
+  the silent primary path.
+
+### ♻️ Changed
+
+- `ak-review:coderabbit` — **Phase 1 checks who the CLI is before anything is spent.** The CLI
+  signs in per provider: a GitHub login does not see GitLab groups and vice versa, and a repository
+  belonging to neither runs on the free CLI allowance instead of the paid plan. That fallback is a
+  single line at the top of the output. Measured: two full reviews ran on it while a paid plan sat
+  unused under a different provider.
+
+- `ak-review:coderabbit` — new arguments, all verified against CLI 0.7.6: `--base-commit <sha>` for
+  a follow-up round that should only review what is new since the last one (the same reasoning
+  `execute` gained in 1.31.1), and `--dir <path>` for reviewing one plugin of a monorepo without
+  the rest. `coderabbit review findings` is documented as the way to reprint the last review
+  without paying for a second one, and `--use-credits` carries a warning: it turns a run that would
+  have stopped at the plan's limit into a billed one.
+
 ## [1.31.2] - 2026-09-18
 
 ### 🐛 Fixed
