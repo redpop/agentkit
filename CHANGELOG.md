@@ -5,6 +5,64 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.31.1] - 2026-09-18
+
+### 🐛 Fixed
+
+- `ak-review:execute` — **the completeness check let through the exact narration it was
+  built to stop.** It tested for the substring `"findings"`, so a model writing «I'll end
+  with a "findings" block as required» satisfied it and was handed on as a finished report:
+  Phase 5 verifies that narration against the code, Phase 6 writes fixes from it. The check
+  now parses the block and requires it to be **terminal** — the last non-whitespace thing in
+  the output, which delegate §8 already demanded. Position is what separates a report from
+  an announcement of one: a model that opens by echoing the schema and is then cut off has
+  emitted a valid `findings` block and no review at all.
+
+  The cost is accepted and pinned in tests: a finished report that appends anything after
+  its findings block — a reproduction snippet, a closing sentence — is now reported as
+  unfinished. That error is loud, keeps the prose and costs one run's auto-fix; the opposite
+  error is silent and fixes code from narration.
+
+- `ak-review:execute` — **the `opencode` adapter called a quota refusal a startup stall**
+  whenever the refusal arrived before the first token. Measured: HTTP 429
+  `Account.GoUsageLimit` after 74 ms with a `retry-after` of 9541 s, stdout empty, the
+  process still alive. The startup probe reads stdout alone and the `126` detection parses
+  the JSON stream, of which there was none — so the run came back as `125`, "transient, try
+  again soon", after burning two retries against a wall that stood for two and a half hours.
+  `125` and `126` exist precisely because they need opposite advice.
+
+  stderr is now read while the stream is empty; a refusal found there wins over the stall
+  heuristic, skips the retries and carries `retry-after` into the message. The pattern is
+  deliberately narrow, and not because stderr is quiet — with `--print-logs --log-level
+  DEBUG` a stalled run writes plenty. A bare `429` matches timestamps (`…:41.429Z`) and
+  durations (`+15429ms`) in ordinary log traffic, which would turn every stall into a false
+  refusal and invert the fix. Checked against real logs: **56 such substrings, none matched;
+  13 real refusals, all matched.**
+
+### 📝 Documentation
+
+- `ak-review:execute` — Phase 4 had no instruction for a report extractor exiting `1`. Only
+  exit `3` was described, so a paid run that produced no report at all continued to Phase 5
+  with an empty findings list and was summarised as a clean review. Measured: an opencode
+  run exited `0` after five tool calls and USD 0.006 with no report event in the stream.
+- `ak-review:execute` — Phase 3's salvage rule, read literally, sent **every** run down the
+  salvage path, including successful ones: it had been widened from "on `124`" to "not only
+  on `124`" without a sentence bounding it to runs that failed.
+- `ak-review:execute` — Phase 2 now says to review only the delta on a follow-up round.
+  `--base` auto-detects a branch point, not a review history, so leaving it unset re-reviews
+  everything each round. Measured on a sixth round over one ticket: 9 files and +2031/−88
+  against the ticket base where only 5 files and +362/−87 were new.
+- `ak-review:execute` — "no effort" reads as neutral but hands the level to the tool or its
+  provider, which can pick the lowest. Observed on `opencode` with no `--variant`:
+  `reasoningEffort: "low"`. Harmless for everyday runs, misleading when the result is being
+  compared against a tool running at `xhigh`.
+- `ak-review:execute` — the adapter contract still promised **two** reserved exit codes when
+  there have been three since `126` was added, and `125` was still described as the only
+  code that leaves nothing to salvage.
+- `ak-review:delegate` — §8 now states that the JSON block must be the last thing in the
+  response, with nothing after its closing fence, because `/ak-review:execute` checks that
+  position.
+
 ## [1.31.0] - 2026-09-05
 
 ### ♻️ Changed
