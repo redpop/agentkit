@@ -108,4 +108,54 @@ set -e
 [ "$EC" -eq 124 ] || fail "precedence: a timeout must stay 124 even with an error event present, got $EC"
 echo "  ok: 124 outranks 126"
 
+# --- opencode: a refusal that never reached the stream ---------------------
+# Measured 2026-09-18: opencode-go answered with HTTP 429 `Account.GoUsageLimit`
+# and a `retry-after` of 9541 s before the first token. stdout stayed empty, the
+# process stayed alive, and the startup probe called it a transient stall — so
+# the adapter burned two retries and then told the caller to come back soon,
+# against a wall that stood for two and a half hours. 125 and 126 exist because
+# they need OPPOSITE advice, and that run got the opposite one.
+cat > "$WORK/bin/opencode" <<'REFUSE'
+#!/bin/bash
+echo 'ERROR service=session statusCode=429 Account.GoUsageLimit "Go usage limit exceeded" retry-after=9541' >&2
+sleep 60
+REFUSE
+chmod +x "$WORK/bin/opencode"
+set +e
+AK_REVIEW_STARTUP_GRACE_SECS=1 AK_REVIEW_RETRY_WAIT_SECS=1 AK_REVIEW_TIMEOUT_SECS=30 \
+  bash "$DIR/../opencode-adapter.sh" "$PROMPT" some/model "$WORK/refused.jsonl" 2> "$WORK/refused.err"
+EC=$?
+set -e
+[ "$EC" -eq 126 ] || fail "opencode: a stderr-only refusal must be 126, not a startup stall, got $EC"
+grep -qi "refused" "$WORK/refused.err" || fail "opencode: the refusal must be named as such"
+grep -q "9541" "$WORK/refused.err" || fail "opencode: the tool's retry-after must reach the caller"
+grep -qi "stalled at startup" "$WORK/refused.err" && fail "opencode: a refusal must not be retried as a stall"
+echo "  ok: stderr-only refusal -> 126, no retries"
+
+# The other direction, and the case that keeps the stderr check honest: a GENUINE
+# startup stall is NOT quiet. The adapter runs opencode with `--print-logs
+# --log-level DEBUG`, so a stalled run writes ordinary log traffic here — and an
+# earlier version of this check matched a bare `429`, which those lines carry in
+# timestamps (`…:41.429Z`) and durations (`+15429ms`). Verified against this
+# machine's own logs: 56 such substrings, none of them a refusal. The fixture
+# therefore reproduces that noise; a pattern loose enough to match it turns every
+# stall into a false refusal, which is this fix inverted.
+cat > "$WORK/bin/opencode" <<'STALL'
+#!/bin/bash
+echo 'timestamp=2026-09-18T15:02:41.429Z level=INFO run=3425765b message=init' >&2
+echo 'INFO  2026-09-18T15:02:41 +15429ms service=server method=GET path=/config/providers' >&2
+sleep 60
+STALL
+chmod +x "$WORK/bin/opencode"
+set +e
+AK_REVIEW_STARTUP_GRACE_SECS=1 AK_REVIEW_RETRY_WAIT_SECS=1 AK_REVIEW_TIMEOUT_SECS=30 \
+  bash "$DIR/../opencode-adapter.sh" "$PROMPT" some/model "$WORK/stalled.jsonl" 2> "$WORK/stalled.err"
+EC=$?
+set -e
+[ "$EC" -eq 125 ] || fail "opencode: a stall with ordinary log noise must still be 125, got $EC"
+grep -qi "refused" "$WORK/stalled.err" && fail "opencode: log noise must not be read as a refusal"
+[ "$(grep -c 'stalled at startup' "$WORK/stalled.err")" -eq 2 ] \
+  || fail "opencode: a stall must still be retried twice"
+echo "  ok: stall with log noise still 125, still retried"
+
 echo "PASS: test-adapter-error-events.sh"

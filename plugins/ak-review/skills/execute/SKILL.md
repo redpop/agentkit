@@ -108,6 +108,18 @@ ceiling that applies, and — when the scope is plainly large — offer to split
 group) before starting rather than after failing. Do not silently rescale the timeout: a limit that
 moves on its own is worse than one the user chose knowing the size.
 
+**On a follow-up round, review the delta, not the whole change again.** When this skill has already
+run against the same work and its findings were addressed, the scope is what happened _since that
+run_: set `--base` to the last reviewed revision instead of the ticket's base. Nothing does this on
+its own — `--base` auto-detects a branch point, not a review history, so an unset `--base`
+silently re-reviews everything every time. Measured on a sixth round over one ticket:
+`git diff <ticket-base>` gave 9 files and +2031/−88 where `git diff <last-reviewed>` gave
+5 files and +362/−87, and the run
+consumed a full ChatGPT Plus quota re-reviewing five sixths of a change whose findings were already
+closed. Report both figures when they differ, so the user can see what is new against what is being
+paid for. The prompt legitimately grows across rounds (prior findings, so nothing is re-reported);
+the scope must shrink, and only the caller can make it.
+
 ### Phase 3: Execute
 
 Look up the resolved `tool` in the Adapter Reference below and run its adapter:
@@ -135,17 +147,23 @@ treat the exit code as definitive:
 |------|---------|------------|
 | `124` | Ran, then hung. A partial stream exists | **Salvage** — see below |
 | `125` | Produced nothing; never reached the model | **Stop.** Nothing to salvage, and the extractors would only confirm the emptiness. Report the adapter's stderr verbatim. Do not call it "the review found nothing" — no review took place |
-| `126` | **The tool refused** — quota exhausted, budget cap hit, model unavailable | **Stop, and say why.** The adapter prints the tool's own reason. Retrying now hits the same wall; unlike `125` this is not transient. Whatever was produced first is still worth salvaging if the adapter has a sub-agent extractor |
+| `126` | **The tool refused** — quota exhausted, budget cap hit, model unavailable | **Stop, and say why.** The adapter prints the tool's own reason, and any `retry-after` it gave. Retrying now hits the same wall; unlike `125` this is not transient. Whatever was produced first is worth salvaging if the adapter has a sub-agent extractor — but a tool that refused before its first token leaves an empty file, so check rather than assume |
 | other | The tool's own failure | Report it and stop |
 
 **Never retry a `125` yourself.** An adapter whose failure is transient retries internally, so a
 surfaced `125` already means every attempt stalled. Coming back later is the user's call.
 
-**Salvage path.** Attempt it whenever the adapter has a `<tool>-extract-subagents.sh` **and** the raw
+**Salvage path.** This is the path for a run that did **not** finish — an exit of `124`, `126` or
+any other failure. A run that exited `0` goes to Phase 4 and is parsed normally, whatever
+extractors the adapter happens to own.
+
+Within that, attempt it whenever the adapter has a `<tool>-extract-subagents.sh` **and** the raw
 file is non-empty — not only on `124`. The exit code says how the run ended; only the extractor's
 existence says whether anything survived it. A quota refusal (`126`) or an ordinary crash can leave
 just as many finished sub-agents behind as a timeout, and the old rule silently discarded them.
-The one exception is `125`: the file is empty by definition, so there is nothing to run.
+`125` never qualifies — the file is empty by definition — and neither does a `126` that arrived
+before the first token, which is why the rule is written as "non-empty file" rather than as a list
+of codes.
 
 Kill the process if it still runs — `$RAW_OUTPUT_FILE` is written as the run goes, so it survives. Do
 **not** fall through to Phase 4. Run every extractor the adapter provides, sub-agents **first**:
@@ -279,6 +297,15 @@ hit a usage limit after 25 minutes left 1441 bytes of _"I'll review this as a re
 which the old empty-check passed as a finished report. Verifying narration against code produces
 confident nonsense; that is the failure this code exists to prevent.
 
+**A report extractor exiting `1` means there is no report at all** — the stream carries none of
+the event type the report lives in, so `$REPORT_FILE` is empty. This is not "the review found
+nothing", and it must never be reported as one: nothing was reviewed. **Stop here.** Do not
+continue to Phase 5 with an empty findings list, and do not let Phase 8 present the run as
+clean. Report that the tool
+produced no report, name the cost the run still incurred, and point at `$RAW_OUTPUT_FILE`. Measured
+2026-09-18: an opencode run exited `0` after five tool calls and USD 0.006 with not a single text
+event in the stream — a paid run, a clean exit, and no review.
+
 Read only `$REPORT_FILE` and `$COST_FILE` — never read `$RAW_OUTPUT_FILE` directly, it carries the
 adapter's full internal event trace and is far larger than what's needed. From `$REPORT_FILE`, take the
 trailing ` ```json ` findings block (delegate's schema: `findings[]` with `id, title, severity, category,
@@ -354,11 +381,11 @@ registry: an adapter is the set of scripts named after its tool under `scripts/`
 
 | Script | Contract | Required? |
 |--------|----------|-----------|
-| `<tool>-adapter.sh <prompt-file> <model> [effort] <raw-output-file>` | Runs the review, writing the tool's raw output to the given file. Exits with the tool's own exit code, except for two reserved codes: `124` when its own ceiling fires (process group killed, partial stream salvageable) and `125` when the tool produced **no bytes at all** and never started (nothing to salvage). **Enforcing both is the adapter's job, not the caller's:** an unattended caller may lose the timer, and the two failures need opposite advice. | Yes |
+| `<tool>-adapter.sh <prompt-file> <model> [effort] <raw-output-file>` | Runs the review, writing the tool's raw output to the given file. Exits with the tool's own exit code, except for three reserved codes: `124` when its own ceiling fires (process group killed, partial stream salvageable), `125` when the tool produced **no bytes at all** and never started (nothing to salvage, usually transient), and `126` when the tool itself refused (not transient; may or may not have produced output first). **Enforcing both is the adapter's job, not the caller's:** an unattended caller may lose the timer, and the two failures need opposite advice. | Yes |
 | `<tool>-preflight.sh` | Exit 0 = ready, _or not provably unready_. Non-zero = cannot run, with the reason and the concrete fix on stderr. **An adapter must not block on a check it cannot make reliably — it either drops the check or notes the gap on stderr.** See the `opencode` entry for why this matters. | Optional; skipped if absent |
-| `<tool>-extract-report.sh <raw-output-file>` | Prints the agent's report to stdout. Exit `1` = the stream carries no report at all; exit `3` = output exists but has no `findings[]` block, so it is narration from a run that was cut short. `3` still prints what it found — the caller must show it without treating it as findings. Neither is a parse failure, and neither may be smoothed into an empty report. | Yes |
+| `<tool>-extract-report.sh <raw-output-file>` | Prints the agent's report to stdout. Exit `1` = the stream carries no report at all; exit `3` = output exists but has no `findings[]` block, so it is narration from a run that was cut short. `3` still prints what it found — the caller must show it without treating it as findings. Neither is a parse failure, and neither may be smoothed into an empty report. **The block must be parsed and terminal**, not grepped for: `findings` must actually be an array, in the last non-whitespace thing the output contains. A substring test passes narration that merely quotes the key; accepting a block anywhere passes a model that echoed the schema and was then cut off. | Yes |
 | `<tool>-extract-cost.sh <raw-output-file>` | Prints `{"total_cost":…,"total_tokens":…}`. **`null` means "not measured" and applies to every figure, tokens included** — never `0`, which claims a run was free or consumed nothing when the truth is that nobody counted, and never a partial sum under the name of a total. `total_cost` is therefore `null` when the tool reports no money and when it reports only part of it; an adapter that can measure the known part reports it alongside, under a name that says so (`parent_session_cost`, `subagent_sessions`). Extra keys are fine. Must degrade rather than fail on a truncated stream, so a salvaged report is not lost with it — degrading means reporting nothing, not reporting zero. | Yes |
-| `<tool>-extract-subagents.sh <raw-output-file>` | Recovers finished sub-agent output from a killed run. Only meaningful for tools that dispatch sub-agents and merge late. | Optional; omit when the tool has no such concept |
+| `<tool>-extract-subagents.sh <raw-output-file>` | Recovers finished sub-agent output from a killed run. Only meaningful for tools that dispatch sub-agents and merge late. Exit `1` = nothing was recoverable, with stdout empty — an ordinary outcome, not an error: a run may stall before any sub-agent finished, or the model may never have dispatched one. | Optional; omit when the tool has no such concept |
 | `<tool>-models.sh` | Prints one candidate per line, to stdout; the format is the tool's own and is not guaranteed. Used by `/ak-review:setup`. | Optional; setup asks the user to type a model if absent |
 | `<tool>-efforts.sh` | Prints the effort values the tool accepts, **one bare token per line**. `resolve-config.sh` refuses a resolved `effort` outside this list, so the list is a gate, not a hint: a value missing from it blocks a run the tool would have accepted. Ship one only when the vocabulary is genuinely the tool's own. | Optional; the effort is passed through unchecked if absent |
 
@@ -391,10 +418,23 @@ below.
   reading them and still exits 0. Those rejections appear only on stderr (as `auto-rejecting`), which
   the adapter captures to `<raw-output-file>.stderr` and warns about. **Check that warning before
   trusting a report** — a silently uninformed review is this adapter's most dangerous failure.
-- **Two distinct failures, opposite advice.** Exit `124` = ran, then hung: a partial stream exists and is
-  worth salvaging. Exit `125` = produced nothing at all: it never reached the model, so there is nothing
-  to recover. Reserved codes are the adapter's own; a `125` from opencode itself is remapped to `1`, and
-  a `125` from the adapter always means an empty output file.
+- **Three distinct failures, and they need different advice.** Exit `124` = ran, then hung: a
+  partial stream exists and is worth salvaging. Exit `125` = produced nothing at all: it never
+  reached the model, nothing to recover, and it is usually transient. Exit `126` = the tool
+  declined.
+  Reserved codes are the adapter's own; a `125` from opencode itself is remapped to `1`, and a `125`
+  from the adapter always means an empty output file.
+- **A refusal is read from stderr too, not only from the stream.** The other adapters find a refusal
+  as an event; opencode can refuse _before the first token_, and then there is no stream to read.
+  Measured 2026-09-18: HTTP 429 `Account.GoUsageLimit` after 74 ms, `retry-after` 9541 s, stdout
+  empty, the process still alive — which the startup probe read as a transient stall, so the run
+  was retried twice, then reported as "come back soon" against a wall that stood two and a half
+  hours.
+  stderr is therefore consulted while the stream is empty, and a refusal found there wins over the
+  stall heuristic, skips the retries and carries `retry-after` into the message. It cannot outrank
+  `124` or a refusal in the stream: with any output present, those are the better evidence. This is
+  safe only because a genuine stall writes **nothing** to stderr either — the same silence that
+  made the stall so hard to diagnose is what makes stderr usable as a signal.
 - **The startup stall is transient and retried automatically** (2 attempts, 60s apart). Exit `125`
   therefore means every attempt stalled. Upstream bug, unidentified; database, config, plugins, stale
   processes and concurrent instances were each ruled out by measurement. It comes in windows of minutes
@@ -513,7 +553,8 @@ Resolved by `scripts/resolve-config.sh`, precedence CLI flags > project file > g
 `tool` and `model` are required (from some layer, or via flags) — there is no built-in default, so
 installing or updating this plugin never forces a specific tool or model on anyone. `fix_threshold`
 defaults to `high` if unset anywhere. `effort` has no default; if unresolved, the adapter is invoked
-without an effort flag. A resolved one is checked against the adapter's `<tool>-efforts.sh` before
+without an effort flag — which hands the choice to the tool or its provider, see below.
+A resolved one is checked against the adapter's `<tool>-efforts.sh` before
 anything runs, and an unaccepted value stops the run — see below for why that check exists.
 
 ### `effort` is keyed by tool
@@ -528,6 +569,14 @@ takes an object keyed by tool name:
 The entry for the resolved tool applies; a tool the map does not mention runs with no effort at all,
 which is always valid. **This is the form to write**, because it is the only one a `--tool` switch
 cannot misinterpret.
+
+**"No effort" is not "the model's normal setting".** It means this plugin passes no level and
+whoever is behind the tool picks one — which can be the lowest. Observed on `opencode` with no
+`--variant`: the provider logged `reasoningEffort: "low"`. Harmless for everyday runs, and the
+reason omission stays allowed. Not harmless when the result is being compared: a run with no level
+against one at `xhigh` is not a comparison between models. **Set the level explicitly for anything
+you intend to measure**, and note that `opencode` has no `opencode-efforts.sh` to check it against
+(see its entry), so the value has to come from the provider's own documentation.
 
 A plain string — `"effort": "high"` — still works and means "this level, for the tool configured
 beside it". Running a _different_ tool then stops with an error rather than carrying the value across:

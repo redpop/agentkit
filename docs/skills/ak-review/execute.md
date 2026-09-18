@@ -30,8 +30,9 @@ OpenCode here: it dispatches sub-agents too, so a killed run leaves recoverable 
 
 A run that never starts is treated as its own failure, separate from a timeout. The OpenCode adapter
 also caps _startup_ (90 s, override with `AK_REVIEW_STARTUP_GRACE_SECS`) and exits `125` when the tool
-has produced no output at all by then — because that means it never reached the model, so there is no
-partial stream and nothing to salvage. Reporting it as a timeout sent readers after output that could
+has produced no output at all by then — usually because it never reached the model, so there is no
+partial stream and nothing to salvage. An empty stream does not prove that on its own, though; see
+the refusal case below. Reporting it as a timeout sent readers after output that could
 not exist, and cost a full ceiling per attempt. Since that failure is transient, the adapter retries it
 automatically (2 further attempts, `AK_REVIEW_STARTUP_RETRIES`, 60 s apart via
 `AK_REVIEW_RETRY_WAIT_SECS`), so a short stall window passes unnoticed; only `125` is retried, never a
@@ -43,6 +44,14 @@ itself refused** — a usage quota exhausted mid-run, a spend cap reached, a mod
 adapters read that out of the event stream and print the tool's own reason, because the exit code alone
 never carried it: one run spent 25 minutes before hitting a quota and reported only a bare failure.
 Unlike `125` it is not transient, so retrying immediately hits the same wall.
+
+OpenCode can refuse _before the first token_, and then there is no event stream to read it
+from. That run used to be indistinguishable from a startup stall — same empty output — so it
+came back as `125`, "transient, try again soon", after two pointless retries; measured, the
+tool had asked for 9541 seconds. The adapter therefore also reads its stderr while the stream
+is empty, reports such a run as `126`, skips the retries and passes any `retry-after` on, so
+the answer is "not before 14:40" rather than "your call". A refusal found in the stream, or a
+`124`, still wins: with output present, those are better evidence.
 
 When a salvaged run has recovered its dimension output but lost only the merge, the skill now runs a
 short **consolidation pass**: the same adapter, a prompt built from the recovered text, no
@@ -59,6 +68,20 @@ block, so it is the model's running narration rather than its review. The prose 
 the skill skips the auto-fix phase and says the run was cut short. Before this, such a run passed the
 "is it empty?" check and was handed on as a finished report, which is the more dangerous failure: a
 review that is confidently wrong beats one that honestly stops.
+
+The block is parsed rather than searched for, and it has to be the last thing in the output.
+A plain text search for the key let the very narration this check exists for walk through it
+— a model that writes _"I'll end with a `findings` block as required"_ satisfied the search
+and was passed on as finished. Position matters for the same reason: a model that opens by
+echoing the schema and is then cut off has produced a valid block and no review. The cost is
+that a report which appends anything after its findings block — a snippet, a closing sentence
+— is reported as unfinished. That error is loud and keeps the prose; the opposite one is
+silent and auto-fixes code from narration.
+
+**A report extractor exiting `1` means there is no report at all** — not an empty review, no
+review. The skill stops there and says so, including what the run cost, instead of continuing
+with an empty findings list and reporting a clean pass. Measured: an OpenCode run exited `0`
+after five tool calls and USD 0.006 with no report event in the stream at all.
 
 ## Usage
 
@@ -179,6 +202,15 @@ that gets killed just short of finishing.
 
 ## Best Practices
 
+- **On a second or third round over the same work, point `--base` at the last reviewed revision.**
+  `--base` auto-detects a branch point, not a review history, so leaving it unset re-reviews
+  everything each round. Measured on a sixth round over one ticket: 9 files and +2031/−88 against
+  the ticket base, where only 5 files and +362/−87 were new — the run spent a full quota
+  re-reviewing findings that were already closed
+- **Set an effort level explicitly when you intend to compare results.** No level does not mean the
+  model's usual setting; it means the tool or its provider picks one, and that can be the lowest.
+  Observed on OpenCode with no `--variant`: the provider logged `reasoningEffort: "low"`. Fine for
+  everyday runs, misleading when the number is going into a comparison
 - Run once with `--report-only` on a new tool/model pairing before trusting the default auto-fix behavior
 - Keep the global config (`~/.claude/ak-review.local.json`) for your personal default, and only add a
   project-local override when a specific repo genuinely needs a different tool or model

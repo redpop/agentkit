@@ -51,6 +51,16 @@ cat > "$WORK/claude-narration.jsonl" <<'EOF'
 {"type":"assistant","parent_tool_use_id":null,"message":{"content":[{"type":"text","text":"Starting the review, dispatching sub-agents."}]}}
 EOF
 
+# Builds one fixture line in a given adapter's schema, so a case added below is
+# written once instead of three times.
+wrap() {
+  case "$1" in
+    codex)    jq -cn --arg t "$2" '{type:"item.completed",item:{type:"agent_message",text:$t}}' ;;
+    opencode) jq -cn --arg t "$2" '{type:"text",part:{text:$t}}' ;;
+    claude)   jq -cn --arg t "$2" '{type:"result",subtype:"success",result:$t}' ;;
+  esac
+}
+
 for tool in codex opencode claude; do
   SCRIPT="$DIR/../${tool}-extract-report.sh"
 
@@ -80,6 +90,72 @@ for tool in codex opencode claude; do
   EC=$?
   set -e
   [ "$EC" -eq 1 ] || fail "$tool: an empty stream must still exit 1 (not 3), got $EC"
+
+  # REGRESSION (measured 2026-09-18): the check used to be `grep -q '"findings"'`,
+  # so narration that merely QUOTES the schema key satisfied it and was handed on
+  # as a finished report — the exact failure this whole file exists to prevent,
+  # walking through the guard built against it. The check is structural now.
+  wrap "$tool" 'I will review this as a report-only audit and end with a "findings" block as required.' \
+    > "$WORK/$tool-quoted.jsonl"
+  set +e
+  OUT="$(bash "$SCRIPT" "$WORK/$tool-quoted.jsonl" 2> /dev/null)"
+  EC=$?
+  set -e
+  [ "$EC" -eq 3 ] || fail "$tool: narration that only quotes \"findings\" must exit 3, got $EC"
+  [ -n "$OUT" ] || fail "$tool: exit 3 must still emit what was produced"
+
+  # The block must be TERMINAL, not merely present. A model that announces its
+  # output format, echoes the schema and is then cut off has emitted a valid
+  # findings block and no review — accepting a block anywhere would pass that as
+  # finished, which is this file's failure mode wearing a fence.
+  wrap "$tool" 'I will produce the report in this format:
+
+```json
+{"findings":[]}
+```
+
+Now reading the diff, starting with the security dimen' > "$WORK/$tool-echoed.jsonl"
+  set +e
+  bash "$SCRIPT" "$WORK/$tool-echoed.jsonl" > /dev/null 2>&1
+  EC=$?
+  set -e
+  [ "$EC" -eq 3 ] || fail "$tool: an echoed schema followed by narration must exit 3, got $EC"
+
+  # The accepted cost of that rule, pinned so it is a decision and not a
+  # surprise: a finished review that appends anything after its findings block
+  # is reported as unfinished. Loud and recoverable — the prose is still
+  # returned — where the opposite error is silent and fixes code from narration.
+  wrap "$tool" '## Findings
+
+One issue.
+
+```json
+{"findings":[{"id":"F1"}]}
+```
+
+Reproduce with:
+
+```bash
+npm test
+```' > "$WORK/$tool-trailing.jsonl"
+  set +e
+  OUT="$(bash "$SCRIPT" "$WORK/$tool-trailing.jsonl" 2> /dev/null)"
+  EC=$?
+  set -e
+  [ "$EC" -eq 3 ] || fail "$tool: a findings block that is not terminal must exit 3, got $EC"
+  [ -n "$OUT" ] || fail "$tool: exit 3 must still emit what was produced"
+
+  # Trailing blank lines are whitespace, not content.
+  wrap "$tool" '```json
+{"findings":[{"id":"F1"}]}
+```
+
+' > "$WORK/$tool-padded.jsonl"
+  set +e
+  bash "$SCRIPT" "$WORK/$tool-padded.jsonl" > /dev/null 2>&1
+  EC=$?
+  set -e
+  [ "$EC" -eq 0 ] || fail "$tool: trailing blank lines must not make a report unfinished, got $EC"
 
   echo "  ok: $tool"
 done
