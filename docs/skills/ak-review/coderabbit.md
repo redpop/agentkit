@@ -69,9 +69,12 @@ Reviews both committed and uncommitted changes in one pass for a full sweep of e
 
 - Expect anything from a few minutes to well over half an hour, depending on scope -- the skill
   sets a 60-minute timeout
-- **New files need `--include-untracked`, and the skill now passes it.** `--uncommitted` alone
-  covers "staged changes and tracked edits", so a file never added to Git was skipped -- a review that
-  silently omits every new file in a change, looking exactly like a clean one
+- **New files need `--include-untracked`, and the skill now passes it.** A file never added to Git
+  is not part of `--uncommitted`, so it was skipped -- a review that silently omits every new file
+  in a change, looking exactly like a clean one
+- Verified against CodeRabbit CLI **0.7.8**. The flags move between releases: `0.7` dropped
+  `--prompt-only`/`--type`, `0.7.8` reworded `--uncommitted` and added a GitHub-only `--remote` for
+  reviewing a repository without a local checkout
 - The skill asks the CLI for structured findings (`--agent`) instead of scraping the plain-text
   rendering. The CLI itself recommends this when it detects an agent environment
 - `coderabbit review findings` reprints the last review's findings without paying for a second run
