@@ -7,6 +7,12 @@ description: This skill should be used when the user asks for "code review", "ru
 
 Execute CodeRabbit CLI review with critical evaluation, systematic fixes, and project consistency validation.
 
+Verified against **CodeRabbit CLI 0.7.8**. The CLI moves, and it has moved under this skill before:
+`0.7` dropped `--prompt-only` and `--type` in favour of separate scope flags and made plain text the
+default output, and `0.7.8` reworded `--uncommitted` and added `--remote`. Check `coderabbit review
+--help` before trusting a flag named here — and when one has changed, fix this file rather than
+working around it.
+
 ## Arguments
 
 Parse arguments: `$ARGUMENTS`
@@ -69,10 +75,11 @@ Scope flags per `--type`:
 | `committed` | `--committed` |
 | `all` | `--include-untracked` (no scope flag; the full diff against the base) |
 
-**`--include-untracked` is not optional.** `--uncommitted` covers "staged changes and tracked edits"
-— a file that has never been `git add`ed is **not** reviewed without it. A review that silently
-skips every new file in the change is exactly the failure this skill exists to prevent, and it looks
-identical to a clean one.
+**`--include-untracked` is not optional.** A file that has never been `git add`ed is not part of
+`--uncommitted`; that the CLI ships a separate flag for "files that have not been added to Git" is
+the proof, and it is a steadier one than the scope flag's own description, which was reworded in
+0.7.8. A review that silently skips every new file in a change is exactly the failure this skill
+exists to prevent, and it looks identical to a clean one.
 
 **`--agent` is how the findings come back structured** rather than as prose to be scraped. The CLI
 asks for it by name when it detects this environment. Read the findings it emits as they are; do not
@@ -85,7 +92,11 @@ Two flags worth knowing, not defaults:
   cost. Never pass it unprompted — it converts a run that would have stopped into a billed one
 
 If the review has already run and the findings are needed again, `coderabbit review findings` reprints
-the stored ones without paying for a second review.
+the stored ones without paying for a second review; `coderabbit review findings --clear` forgets them.
+
+`--remote <owner/repo>` reviews a repository server-side without a local checkout. This skill does not
+use it: it reviews the working tree you are sitting in, and `--remote` is GitHub-only — named here so
+the omission reads as a decision rather than an oversight.
 
 ### Phase 3: Parse Results
 
