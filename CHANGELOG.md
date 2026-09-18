@@ -5,6 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.31.2] - 2026-09-18
+
+### 🐛 Fixed
+
+- `ak-review:execute` — **all three cost extractors could still report `0` for a figure
+  nobody counted.** The "null, never 0" rule was enforced for the case of no source events
+  at all, and undercut one level down: the sums are written `map(.field // 0) | add`, so a
+  field absent from *every* event summed to 0 and was reported as a measurement — a run
+  presented as free. `// 0` is still right for one absent field among present ones, which
+  really is a zero contribution; what it cannot see is the field being absent everywhere,
+  which is an absence. An explicit `0` in the stream is a measurement and stays `0`.
+
+  A **mixed** stream — some events carrying the field, others not — is left alone
+  deliberately. It has never been observed, and a branch for it would be a guess at which
+  of the two the tool meant.
+
+### ♻️ Changed
+
+- `ak-review:execute` — **the completeness check is now one shared script**,
+  `report-findings-check.sh`, instead of a copy in each of the three report extractors.
+  Extractors are per-adapter because each tool emits its own event schema, and that reason
+  ends where the schema does: by the time a report reaches this check it is plain markdown,
+  and what counts as *finished* is delegate §8 — the same contract for every tool. Three
+  copies meant one idea in three places; it was wrong in all three at once, then changed in
+  all three on the same day. A copy left behind fails silently and in the direction that
+  auto-fixes code from a model's narration. Each extractor keeps its own exit codes and
+  messages. The Adapter Reference now states the split: anything that reads the tool's
+  events belongs to the adapter, anything that judges the text those events carried does not.
+
+- `ak-review:delegate` — **the prompt template now says what to do when sub-agents are not
+  available.** §4 told every reviewer to dispatch one per dimension and said nothing about a
+  tool that cannot — Codex has no sub-agents at all, and the instruction lands in its prompt
+  too. The fallback is named: work the dimensions in sequence and say so in the report,
+  rather than dropping any of them.
+
 ## [1.31.1] - 2026-09-18
 
 ### 🐛 Fixed
