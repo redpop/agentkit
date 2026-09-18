@@ -65,9 +65,14 @@ rm -f "$TIMEOUT_MARKER"
 # and goes in windows of minutes, during which EVERYTHING stalls — so any single
 # comparison is worthless unless paired with a control run in the same minute.
 #
-# What the adapter can do is fail honestly and fast. A run that has emitted
-# nothing has not started, and burning the full 20-minute ceiling on it wastes
-# the caller's time and tells them the wrong thing.
+# What the adapter can do is fail honestly and fast. Burning the full 20-minute
+# ceiling on a run that has emitted nothing wastes the caller's time and tells
+# them the wrong thing.
+#
+# An empty stream does NOT prove a stall, though — that inference cost a wrong
+# verdict once already. A tool that refuses before its first token also writes
+# nothing here, and it needs the opposite advice. stderr is consulted first for
+# exactly that case; see the refusal check in the attempt loop below.
 STARTUP_GRACE_SECS="${AK_REVIEW_STARTUP_GRACE_SECS:-90}"
 NEVER_STARTED_MARKER="${RAW_OUTPUT_FILE}.never-started"
 rm -f "$NEVER_STARTED_MARKER"
@@ -120,6 +125,10 @@ run_with_watchdog() {
   # `-s` on the raw output file is the whole test, and it is deliberately not a
   # check for well-formed JSON: any byte proves the run started, and parsing
   # here would just be a second thing that can be wrong.
+  #
+  # The converse does not hold: no byte does NOT prove it never started, only
+  # that nothing came out. Which of the two it was is decided after the attempt,
+  # where stderr can be read as well.
   (
     sleep "$STARTUP_GRACE_SECS"
     if [ ! -s "$RAW_OUTPUT_FILE" ]; then
@@ -210,6 +219,46 @@ while :; do
   EXIT_CODE=$?
   set -e
 
+  # A refusal the tool reported ONLY on stderr. Neither of the other two checks
+  # can see it: the startup probe looks at stdout alone, and the 126 detection
+  # below parses the JSON stream, of which there is none.
+  #
+  # Measured 2026-09-18: opencode-go answered a review with HTTP 429
+  # `Account.GoUsageLimit` after 74 ms and a `retry-after` of 9541 s, kept the
+  # process alive without writing a byte to stdout, and this adapter called it a
+  # transient startup stall — telling the caller to come back soon, against a
+  # wall that stood for two and a half hours, after burning two retries on it.
+  # 125 and 126 exist precisely because they need opposite advice; that run got
+  # the opposite one.
+  #
+  # Consulted ONLY while the stream is empty, so it can never outrank 124 or the
+  # stdout-based 126 — with a stream present those are the better evidence.
+  #
+  # The pattern has to be narrow, and NOT because stderr is quiet: with
+  # `--print-logs --log-level DEBUG` (set below, deliberately) a stalled run
+  # writes plenty here. It is ordinary log traffic, and a loose pattern reads a
+  # refusal into it — a bare `429` alone matches timestamps (`…:41.429Z`) and
+  # durations (`+15429ms`), which would turn every stall into a false refusal and
+  # invert this fix. Each alternative below therefore carries refusal wording or a
+  # structured status field. Checked against this machine's own logs: 56 bare
+  # `429` substrings, of which the pattern matches none, and 13 real refusals, all
+  # of which it matches.
+  #
+  # Known limit: opencode also calls a small model for the session title before
+  # the review streams, so a refusal aimed at THAT call is indistinguishable here.
+  # Both are usually the same account-wide quota, so the advice holds either way.
+  REFUSAL_PATTERN='usage limit|quota exceeded|insufficient balance|rate limit|ratelimit|too many requests|GoUsageLimit|statusCode=429|statusCode": *429|HTTP 429'
+  REFUSAL_STDERR=""
+  if [ ! -s "$RAW_OUTPUT_FILE" ] && [ -s "$STDERR_FILE" ]; then
+    # Matched from the keyword rather than the start of the line: these lines are
+    # long, and truncating from column 1 cuts the payload off before the reason.
+    REFUSAL_STDERR=$(grep -Eio -m1 "(${REFUSAL_PATTERN}).{0,200}" "$STDERR_FILE" 2> /dev/null \
+      | head -1 || true)
+  fi
+
+  # Not retried, and that is the point: a refusal fails identically every time.
+  [ -z "$REFUSAL_STDERR" ] || break
+
   # Retry only a CONFIRMED empty stall. The marker alone is not enough: output
   # can land between the probe's empty check and the process actually dying
   # (a tool flushing on SIGTERM does exactly this), and the next attempt's `>`
@@ -226,12 +275,29 @@ done
 # parsing text. Reported before the stderr dump below, because on a timeout the
 # stderr file is usually empty and silence would read as "nothing happened".
 #
-# The never-started case is checked FIRST and reported as 125, not 124. Both are
+# A stderr-reported refusal is checked FIRST, ahead of the never-started case:
+# both leave an empty stream, so the heuristic would otherwise claim the exit
+# code and hand back the opposite advice. A reason the tool actually stated
+# outranks a conclusion drawn from silence.
+#
+# The never-started case is checked next and reported as 125, not 124. Both are
 # "it did not finish", but they need opposite advice: 124 has a partial stream
 # worth salvaging, 125 has an empty file and nothing to recover. Telling the
 # reader to run the salvage path on an empty stream sends them after output that
 # cannot exist, which is how a whole day went into this.
-if [ -f "$NEVER_STARTED_MARKER" ] && [ ! -s "$RAW_OUTPUT_FILE" ]; then
+# `$REFUSAL_STDERR` is only ever set while the raw file is empty, so this branch
+# cannot claim a run that produced output.
+if [ -n "$REFUSAL_STDERR" ]; then
+  rm -f "$NEVER_STARTED_MARKER" "$TIMEOUT_MARKER"
+  EXIT_CODE=126
+  echo "opencode-adapter.sh: TOOL REFUSED before producing any output - this is NOT a startup stall: ${REFUSAL_STDERR}" >&2
+  RETRY_AFTER_SECS=$(grep -Eio 'retry[-_ ]?after[^0-9]{0,6}[0-9]+' "$STDERR_FILE" 2> /dev/null \
+    | grep -Eo '[0-9]+$' | head -1 || true)
+  if [ -n "$RETRY_AFTER_SECS" ]; then
+    echo "opencode-adapter.sh: the tool asked for ${RETRY_AFTER_SECS}s (~$((RETRY_AFTER_SECS / 60)) min) before the next attempt; retrying sooner hits the same wall." >&2
+  fi
+  echo "opencode-adapter.sh: this is exit 126 (the tool declined), NOT 125 (never started, transient, worth retrying soon). The stream is empty, so there is nothing to salvage either." >&2
+elif [ -f "$NEVER_STARTED_MARKER" ] && [ ! -s "$RAW_OUTPUT_FILE" ]; then
   rm -f "$NEVER_STARTED_MARKER" "$TIMEOUT_MARKER"
   EXIT_CODE=125
   echo "opencode-adapter.sh: STALLED AT STARTUP - opencode never produced any output within ${STARTUP_GRACE_SECS}s, across ${ATTEMPT} attempt(s), and was killed." >&2

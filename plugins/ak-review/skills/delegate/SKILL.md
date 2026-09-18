@@ -181,6 +181,9 @@ Each finding: `**F-NNN** — <title>` / `file:line` / severity / category /
 rationale / suggested fix.
 
 ### JSON (append verbatim at the end, fenced as ```json)
+This block must be the **last** thing in the response — nothing after its closing fence, not
+even a closing sentence. `/ak-review:execute` checks that position to tell a finished report
+from a model that only announced one, and treats anything after it as an unfinished run.
 {
   "task": "code_review_findings",
   "repo": "[REPO_NAME]",
