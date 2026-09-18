@@ -55,6 +55,20 @@ fi
 # what is missing.
 jq -R 'fromjson? // empty' "$RAW_FILE" \
   | jq -cs '
+  # A figure is "measured" only if the stream actually carried it. `// 0` inside
+  # the sum is for a single absent field among present ones; this guards the case
+  # it cannot see — the field absent from EVERY event, where summing yields 0 and
+  # claims a run was free or consumed nothing. That is the one claim this file
+  # exists to prevent, and it was reachable here.
+  #
+  # Not handled, deliberately: a MIXED stream, where some events carry the field
+  # and others do not. The sum is then a partial presented as a total. It has
+  # never been observed, and inventing a branch for it would mean guessing which
+  # of the two the tool meant. If it ever shows up, the shape to use is the one
+  # the sub-agent case already uses: `total_cost: null` plus what is known under
+  # a name that says so.
+  def sum_or_null(f): . as $xs
+    | if any($xs[]; (f) | type == "number") then ($xs | map((f) // 0) | add) else null end;
   ([.[]
     | select(.type == "tool_use")
     | select((.part | type) == "object")
@@ -64,11 +78,10 @@ jq -R 'fromjson? // empty' "$RAW_FILE" \
     | .state.metadata.sessionId // empty]
    | unique) as $subs
   | ([.[] | select(.type == "step_finish")]) as $steps
-  | ($steps | length > 0) as $measured
-  | (if $measured then ($steps | map(.part.cost // 0) | add) else null end) as $parent_cost
+  | ($steps | sum_or_null(.part.cost)) as $parent_cost
   | {
       total_cost: (if ($subs | length) > 0 then null else $parent_cost end),
-      total_tokens: (if $measured then ($steps | map(.part.tokens.total // 0) | add) else null end),
+      total_tokens: ($steps | sum_or_null(.part.tokens.total)),
       parent_session_cost: $parent_cost,
       subagent_sessions: ($subs | length)
     }'

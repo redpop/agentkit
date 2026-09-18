@@ -386,6 +386,7 @@ registry: an adapter is the set of scripts named after its tool under `scripts/`
 | `<tool>-extract-report.sh <raw-output-file>` | Prints the agent's report to stdout. Exit `1` = the stream carries no report at all; exit `3` = output exists but has no `findings[]` block, so it is narration from a run that was cut short. `3` still prints what it found — the caller must show it without treating it as findings. Neither is a parse failure, and neither may be smoothed into an empty report. **The block must be parsed and terminal**, not grepped for: `findings` must actually be an array, in the last non-whitespace thing the output contains. A substring test passes narration that merely quotes the key; accepting a block anywhere passes a model that echoed the schema and was then cut off. | Yes |
 | `<tool>-extract-cost.sh <raw-output-file>` | Prints `{"total_cost":…,"total_tokens":…}`. **`null` means "not measured" and applies to every figure, tokens included** — never `0`, which claims a run was free or consumed nothing when the truth is that nobody counted, and never a partial sum under the name of a total. `total_cost` is therefore `null` when the tool reports no money and when it reports only part of it; an adapter that can measure the known part reports it alongside, under a name that says so (`parent_session_cost`, `subagent_sessions`). Extra keys are fine. Must degrade rather than fail on a truncated stream, so a salvaged report is not lost with it — degrading means reporting nothing, not reporting zero. | Yes |
 | `<tool>-extract-subagents.sh <raw-output-file>` | Recovers finished sub-agent output from a killed run. Only meaningful for tools that dispatch sub-agents and merge late. Exit `1` = nothing was recoverable, with stdout empty — an ordinary outcome, not an error: a run may stall before any sub-agent finished, or the model may never have dispatched one. | Optional; omit when the tool has no such concept |
+| `report-findings-check.sh` | **Shared, not per-adapter.** Reads a report on stdin and decides whether it is finished: exit `0` = a terminal `findings` array is present, exit `1` = not. Prints nothing; each extractor keeps its own exit codes and messages. Called by every `<tool>-extract-report.sh` — do not re-implement it in a new adapter. | Shared |
 | `<tool>-models.sh` | Prints one candidate per line, to stdout; the format is the tool's own and is not guaranteed. Used by `/ak-review:setup`. | Optional; setup asks the user to type a model if absent |
 | `<tool>-efforts.sh` | Prints the effort values the tool accepts, **one bare token per line**. `resolve-config.sh` refuses a resolved `effort` outside this list, so the list is a gate, not a hint: a value missing from it blocks a run the tool would have accepted. Ship one only when the vocabulary is genuinely the tool's own. | Optional; the effort is passed through unchecked if absent |
 
@@ -393,6 +394,14 @@ registry: an adapter is the set of scripts named after its tool under `scripts/`
 schema, and pointing one tool's extractor at another's stream produces an empty report rather than an
 error — a silent failure that looks exactly like a clean review. They were unprefixed while `opencode`
 was the only adapter; the names now carry the tool.
+
+**That reason ends where the schema does.** Once a report has been lifted out of the stream it is
+plain markdown, and what counts as a _finished_ one is delegate §8 — the same contract for every
+tool. Judging it lives in `report-findings-check.sh`, unprefixed because it belongs to no adapter,
+the way `resolve-config.sh` does. It was three copies once, which was wrong in all three at once and
+then changed in all three on the same day; a copy left behind fails silently and in the dangerous
+direction. The rule of thumb for a new adapter: anything that reads the tool's events is yours,
+anything that judges the text those events carried is not.
 
 Adding a tool means adding those scripts plus a subsection here, following the shape of the entries
 below.

@@ -38,13 +38,29 @@ fi
 # input_tokens, not an addition to it, so adding it would double-count.
 jq -R 'fromjson? // empty' "$RAW_FILE" \
   | jq -cs '
+  # A figure is "measured" only if the stream actually carried it. `// 0` inside
+  # the sum is for a single absent field among present ones; this guards the case
+  # it cannot see — the field absent from EVERY event, where summing yields 0 and
+  # claims a run was free or consumed nothing. That is the one claim this file
+  # exists to prevent, and it was reachable here.
+  #
+  # Not handled, deliberately: a MIXED stream, where some events carry the field
+  # and others do not. The sum is then a partial presented as a total. It has
+  # never been observed, and inventing a branch for it would mean guessing which
+  # of the two the tool meant. If it ever shows up, the shape to use is the one
+  # the sub-agent case already uses: `total_cost: null` plus what is known under
+  # a name that says so.
+  def sum_or_null(f): . as $xs
+    | if any($xs[]; (f) | type == "number") then ($xs | map((f) // 0) | add) else null end;
   map(select(.type == "turn.completed") | select((.usage | type) == "object") | .usage) as $u
-  | ($u | length > 0) as $measured
   | {
       total_cost: null,
-      total_tokens: (if $measured then ($u | map((.input_tokens // 0) + (.output_tokens // 0)) | add) else null end),
-      input_tokens: (if $measured then ($u | map(.input_tokens // 0) | add) else null end),
-      cached_input_tokens: (if $measured then ($u | map(.cached_input_tokens // 0) | add) else null end),
-      output_tokens: (if $measured then ($u | map(.output_tokens // 0) | add) else null end),
-      reasoning_output_tokens: (if $measured then ($u | map(.reasoning_output_tokens // 0) | add) else null end)
+      total_tokens: (if ($u | any(.[]; (.input_tokens | type == "number")
+                                    or (.output_tokens | type == "number")))
+                     then ($u | map((.input_tokens // 0) + (.output_tokens // 0)) | add)
+                     else null end),
+      input_tokens: ($u | sum_or_null(.input_tokens)),
+      cached_input_tokens: ($u | sum_or_null(.cached_input_tokens)),
+      output_tokens: ($u | sum_or_null(.output_tokens)),
+      reasoning_output_tokens: ($u | sum_or_null(.reasoning_output_tokens))
     }'

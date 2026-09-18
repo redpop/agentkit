@@ -77,7 +77,12 @@ printing it.
 - Keep report-only for hand-off workflows; use `--fix` only when you want direct edits
 - The foreign agent's output uses a Markdown + JSON format consumable by `/ak-review:advise`
 - The generated prompt instructs the foreign agent to dispatch one sub-agent per review
-  dimension (Security, Performance, Tests, …) and merge findings before the final report
+  dimension (Security, Performance, Tests, …) and merge findings before the final report.
+  Not every tool can do that — Codex has no sub-agents at all — so the prompt also says what
+  to do instead: work the dimensions in sequence and declare it, rather than dropping any of them
+- The JSON block must be the last thing in the response, with nothing after its closing
+  fence. `/ak-review:execute` uses that position to tell a finished report from a model that
+  only announced one
 - Requirements context (Jira tickets, spec files, or commit summary) is discovered
   automatically — no flags needed
 
