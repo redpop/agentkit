@@ -41,18 +41,36 @@ fi
 # salvaged report from being lost alongside the missing figure.
 jq -R 'fromjson? // empty' "$RAW_FILE" \
   | jq -cs '
+  # A figure is "measured" only if the stream actually carried it. `// 0` inside
+  # the sum is for a single absent field among present ones; this guards the case
+  # it cannot see — the field absent from EVERY event, where summing yields 0 and
+  # claims a run was free or consumed nothing. That is the one claim this file
+  # exists to prevent, and it was reachable here.
+  #
+  # Not handled, deliberately: a MIXED stream, where some events carry the field
+  # and others do not. The sum is then a partial presented as a total. It has
+  # never been observed, and inventing a branch for it would mean guessing which
+  # of the two the tool meant. If it ever shows up, the shape to use is the one
+  # the sub-agent case already uses: `total_cost: null` plus what is known under
+  # a name that says so.
+  def sum_or_null(f): . as $xs
+    | if any($xs[]; (f) | type == "number") then ($xs | map((f) // 0) | add) else null end;
   ([.[] | select(.type == "result")] | last) as $r
   | ([($r.modelUsage // {}) | to_entries[] | .value]) as $m
-  | ($m | length > 0) as $measured
   | {
       total_cost: ($r.total_cost_usd // null),
-      total_tokens: (if $measured then ($m | map((.inputTokens // 0) + (.outputTokens // 0)
+      total_tokens: (if ($m | any(.[]; (.inputTokens | type == "number")
+                                    or (.outputTokens | type == "number")
+                                    or (.cacheReadInputTokens | type == "number")
+                                    or (.cacheCreationInputTokens | type == "number")))
+                     then ($m | map((.inputTokens // 0) + (.outputTokens // 0)
                               + (.cacheReadInputTokens // 0)
-                              + (.cacheCreationInputTokens // 0)) | add) else null end),
-      input_tokens: (if $measured then ($m | map(.inputTokens // 0) | add) else null end),
-      output_tokens: (if $measured then ($m | map(.outputTokens // 0) | add) else null end),
-      cache_read_input_tokens: (if $measured then ($m | map(.cacheReadInputTokens // 0) | add) else null end),
-      cache_creation_input_tokens: (if $measured then ($m | map(.cacheCreationInputTokens // 0) | add) else null end),
+                              + (.cacheCreationInputTokens // 0)) | add)
+                     else null end),
+      input_tokens: ($m | sum_or_null(.inputTokens)),
+      output_tokens: ($m | sum_or_null(.outputTokens)),
+      cache_read_input_tokens: ($m | sum_or_null(.cacheReadInputTokens)),
+      cache_creation_input_tokens: ($m | sum_or_null(.cacheCreationInputTokens)),
       num_turns: ($r.num_turns // 0),
       subagents_spawned: ($r.subagent_stats.spawned // 0)
     }'

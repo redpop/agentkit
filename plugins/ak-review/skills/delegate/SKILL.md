@@ -149,6 +149,11 @@ Dispatch one sub-agent per review dimension (Security, Performance, Tests, …),
 findings, then produce the final report. Each sub-agent reads only the files relevant to
 its dimension.
 
+If you cannot dispatch sub-agents — your tool has no such concept, or the attempt fails —
+review the dimensions one after another in the same session instead, and say so in the
+report. Do not drop dimensions to compensate, and do not stop to ask: this review runs
+unattended. The required output in §8 is the same either way.
+
 ## 5. Scope — review exactly this
 [Concrete file list OR exact git commands to run, e.g. `git diff origin/main...HEAD`]
 

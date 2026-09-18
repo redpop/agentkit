@@ -83,6 +83,11 @@ review. The skill stops there and says so, including what the run cost, instead 
 with an empty findings list and reporting a clean pass. Measured: an OpenCode run exited `0`
 after five tool calls and USD 0.006 with no report event in the stream at all.
 
+Lifting the report out of the stream is per-adapter, because each tool's events differ.
+Judging whether it is finished is not: that contract is the same for every tool and lives in
+one shared script the three extractors call. It was three copies until it turned out to be
+wrong in all three at once.
+
 ## Usage
 
 ```text
