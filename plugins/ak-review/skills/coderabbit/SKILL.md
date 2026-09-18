@@ -11,43 +11,90 @@ Execute CodeRabbit CLI review with critical evaluation, systematic fixes, and pr
 
 Parse arguments: `$ARGUMENTS`
 
-- `--type`: uncommitted (default) | committed | all
-- `--base`: Base branch (intelligently determined if not specified)
+| Flag | Effect |
+| ------ | -------- |
+| `--type uncommitted\|committed\|all` | What to review. Default `uncommitted` |
+| `--base <branch>` | Base branch for comparison (detected if omitted) |
+| `--base-commit <sha>` | Base **commit** instead of a branch — the way to review only what is new since a previous round |
+| `--dir <path>` | Review only changes under this directory. For a monorepo, this is how one plugin is reviewed without the rest |
 
 ## Workflow
 
-### Phase 1: Base Branch Detection
+### Phase 1: Check Who the CLI Is, Then Resolve Scope
 
-1. Check current branch: `git rev-parse --abbrev-ref HEAD`
-2. Check unpushed commits: `git rev-list --count @{u}..HEAD 2>/dev/null`
-3. If `--base` explicit: use that. If ahead of origin: use `origin/<branch>`. Otherwise: "main"
+**Run this first, and read the answer:**
+
+```bash
+coderabbit auth status
+```
+
+It prints the account, the **provider**, the active **organization**, the **plan** and whether a seat
+is assigned. This matters before anything is spent: the CLI signs in per provider, so a GitHub login
+does not see GitLab groups and vice versa, and a repository that belongs to neither runs on the free
+CLI allowance instead of the paid plan. That fallback is announced in one line at the top of the
+output and is easy to read past — measured: two full reviews ran on the free allowance while a paid
+plan sat unused under a different provider.
+
+If the plan or organization is not the expected one, say so and stop. Switching is
+`coderabbit auth org`, or `coderabbit auth logout` and `coderabbit auth login` for a different
+provider.
+
+Then resolve the base:
+
+1. Current branch: `git rev-parse --abbrev-ref HEAD`
+2. Unpushed commits: `git rev-list --count @{u}..HEAD 2>/dev/null`
+3. `--base-commit` given → use it. `--base` given → use it. Ahead of origin → `origin/<branch>`.
+   Otherwise → `main`
+
+**On a follow-up round, prefer `--base-commit`.** When this repository has been reviewed before and
+those findings were addressed, the scope is what happened since that revision, not since the branch
+point. Nothing detects this — a base branch is a branch point, not a review history, so an unset
+base re-reviews everything every round. Measured on a sixth round over one ticket: 9 files and
++2220/−88 against the ticket base where only 5 files and +557/−93 were new.
 
 ### Phase 2: Execute Review
 
-Run synchronously (takes 7-30+ minutes). CodeRabbit CLI ≥ 0.7 dropped `--prompt-only`/`--type`
-in favor of separate scope flags (plain text is the default output now); map `[type]` to:
-
-- `uncommitted` (default) → `--uncommitted`
-- `committed` → `--committed`
-- `all` → no scope flag (reviews the full diff against `--base`)
+Run synchronously. Set a timeout of 3600000ms (60 minutes) and tell the user it will take a while —
+small diffs come back in a few minutes, a large scope can take well over half an hour.
 
 ```bash
-coderabbit review --base [base]        # type: all
-coderabbit review --uncommitted --base [base]
-coderabbit review --committed --base [base]
+coderabbit review --agent [scope flags] [--base <branch> | --base-commit <sha>] [--dir <path>]
 ```
 
-Set timeout to 3600000ms (60 minutes). Inform user about expected duration.
+Scope flags per `--type`:
+
+| `--type` | Flags |
+| ---------- | ------- |
+| `uncommitted` (default) | `--uncommitted --include-untracked` |
+| `committed` | `--committed` |
+| `all` | `--include-untracked` (no scope flag; the full diff against the base) |
+
+**`--include-untracked` is not optional.** `--uncommitted` covers "staged changes and tracked edits"
+— a file that has never been `git add`ed is **not** reviewed without it. A review that silently
+skips every new file in the change is exactly the failure this skill exists to prevent, and it looks
+identical to a clean one.
+
+**`--agent` is how the findings come back structured** rather than as prose to be scraped. The CLI
+asks for it by name when it detects this environment. Read the findings it emits as they are; do not
+re-parse the plain-text rendering.
+
+Two flags worth knowing, not defaults:
+
+- `--light` runs a cheaper review with less context work
+- `--use-credits` allows a review to continue past the plan's included limits, at usage-based
+  cost. Never pass it unprompted — it converts a run that would have stopped into a billed one
+
+If the review has already run and the findings are needed again, `coderabbit review findings` reprints
+the stored ones without paying for a second review.
 
 ### Phase 3: Parse Results
 
-Extract issues from CodeRabbit output:
+Take the findings from the `--agent` output: file, line, severity/category, the claim, and the
+proposed fix. Create a todo list with one item per finding.
 
-- File path, line numbers
-- Issue type (potential_issue, suggestion)
-- Fix description
-
-Create todo list with one item per issue.
+If the structured output is missing or unreadable, fall back to `coderabbit review findings` and read
+the rendered findings — but say that the fallback was used, because a parse that silently yields
+nothing is indistinguishable from a review that found nothing.
 
 ### Phase 4: Critical Evaluation & Fix
 
