@@ -1,0 +1,96 @@
+# CodeRabbit configuration for the AgentKit marketplace.
+#
+# Deliberately thin. The project's conventions are NOT repeated here: CodeRabbit
+# discovers `**/AGENTS.md` and `**/CLAUDE.md` on its own through its knowledge
+# base defaults, so a copy in this file would be a second source that drifts —
+# the defect AGENTS.md itself warns about most.
+#
+# What belongs here is only what AGENTS.md cannot express: which files are worth
+# paying to review, and what deserves extra attention in a given directory.
+
+reviews:
+  # `chill` is the default, pinned so that changing it is a decision rather than
+  # a drift. `quiet` for only the most important feedback, `assertive` for more
+  # (which tends to feel nitpicky).
+  profile: chill
+
+  # Usage-based reviews bill per reviewed file, so anything excluded here is
+  # both noise and money. Measured 2026-09-19: of 38,032 markdown lines in the
+  # repository, the four exclusions below account for 25,894 — 68%, none of it
+  # logic.
+  path_filters:
+    # Written by the release step, every release, and already reviewed as part
+    # of the change it describes. 1,663 lines and growing.
+    - "!CHANGELOG.md"
+
+    # Curated domain reference — 62 files across five plugins, of which
+    # ak-security alone contributes 43; 14,918 markdown lines. It changes
+    # rarely, and when it does it is prose curation rather than logic. Touching
+    # one file would otherwise put the whole corpus in scope.
+    #
+    # To review knowledge deliberately, scope the run instead of removing this
+    # filter: `coderabbit review --dir plugins/ak-security/knowledge`
+    - "!plugins/*/knowledge/**"
+
+    # Planning and working documents, kept for history. They describe what was
+    # going to be built; the built thing is reviewed on its own.
+    - "!.docs/**"
+    - "!docs/superpowers/plans/**"
+
+  path_instructions:
+    - path: "plugins/*/skills/**/SKILL.md"
+      instructions: >-
+        These files are instructions executed by an AI agent, not prose. Read
+        them as a contract.
+
+        The highest-value finding here is a STALE CLAIM: a behaviour that gained
+        a second case while some sentence still describes only the first. Check
+        the whole file, not just the changed lines — a contract table near the
+        top, a phase description in the middle, and an adapter note at the
+        bottom often describe the same thing, and a change usually reaches only
+        one of them. This is the most frequent defect in this repository's
+        history.
+
+        Also flag: an instruction that cannot be followed because it names a
+        flag, field or output the tool no longer produces; a rule stated in one
+        phase and contradicted in another; and any exit code or failure mode
+        described without saying what the caller must do about it.
+
+        Arguments are `--` prefixed by convention.
+
+    - path: "plugins/*/skills/execute/scripts/*.sh"
+      instructions: >-
+        Adapter scripts with a documented contract in the execute skill's
+        Adapter Reference. Reserved exit codes: 124 (ran, then hung, partial
+        output salvageable), 125 (produced nothing, never started), 126 (the
+        tool itself refused). Check that a new failure path picks the code whose
+        advice matches, since the three carry opposite instructions.
+
+        Cost and token extractors must report `null` for a figure the stream
+        never carried, never `0` — a zero claims a run was free or consumed
+        nothing when the truth is that nobody counted. Watch for `// 0` in jq
+        filters reintroducing exactly that.
+
+        These must stay shellcheck-clean and must work under both bash and zsh.
+
+    - path: "plugins/*/hooks/*.sh"
+      instructions: >-
+        Hook scripts must always `exit 0`. A non-zero exit from a hook blocks
+        the tool call that triggered it, which turns a formatting nicety into a
+        broken session.
+
+    - path: "**/.claude-plugin/*.json"
+      instructions: >-
+        Versions are synchronized across 11 files: `.claude-plugin/marketplace.json`
+        (9 entries), the nine `plugins/*/.claude-plugin/plugin.json`, and the
+        version reference in AGENTS.md. A change to one of them that is not
+        matched in the others ships a marketplace whose entries disagree with
+        the plugins they point at. Flag any partial bump.
+
+    - path: "docs/**/*.md"
+      instructions: >-
+        This tree mirrors the plugins. When a skill, agent or hook changes, the
+        corresponding page under `docs/` and the plugin table in the root
+        README.md change with it, in the same commit. Flag a documentation page
+        that still describes the previous behaviour of something the same change
+        touched.
