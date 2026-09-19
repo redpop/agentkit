@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.33.0] - 2026-09-19
+
+### ✨ Added
+
+- `ak-review:coderabbit` — **a ticket can now reach the review, through `-c`.** CodeRabbit sees the
+  diff and the repository; it does not see what the change was supposed to achieve. A review can
+  therefore confirm that the code is correct and miss that it does the wrong thing — a defect class
+  no amount of reading the diff finds.
+
+  `/ak-review:delegate` closes this for the external-agent path by writing the requirements into the
+  prompt it builds. This skill has no such prompt: it hands the CLI a scope and reads findings back,
+  which left the same gap open on the path most reviews take here. `-c` accepts several files, so
+  the acceptance criteria go in beside `AGENTS.md` as a file the session writes.
+
+  The session is what fetches those requirements, from a ticket system or a spec, exactly as
+  `delegate` does. Recorded with it, because the alternative looks tempting: CodeRabbit's platform
+  can be given its own Jira connection, and that serves the hosted merge-request reviewer only — it
+  does nothing for a review run from the terminal.
+
 ## [1.32.1] - 2026-09-19
 
 ### 🐛 Fixed
