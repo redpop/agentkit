@@ -43,6 +43,15 @@ python3 -m json.tool plugins/ak-review/.claude-plugin/plugin.json > /dev/null
 shellcheck plugins/ak-review/hooks/markdown-format.sh
 ```
 
+**Validate the CodeRabbit config:**
+
+```bash
+coderabbit config validate
+```
+
+`.coderabbit.yaml` holds review scope and path-specific instructions. It deliberately does not
+repeat the conventions in this file — CodeRabbit discovers `AGENTS.md` on its own.
+
 ## Monorepo structure
 
 This is a monorepo — each plugin directory can contain its own AGENTS.md for plugin-specific context. The closest AGENTS.md to the edited file takes precedence.
