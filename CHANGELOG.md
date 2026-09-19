@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.31.8] - 2026-09-19
+
+### 🐛 Fixed
+
+- `ak-review:coderabbit` — **five corrections taken from CodeRabbit's own review skill**, which the
+  vendor maintains as open source at `coderabbitai/skills`. The second is the failure class this
+  plugin has spent a day closing elsewhere:
+
+  - `--agent` emits **NDJSON**, one object per line. Phase 3 named no format, and a whole-file parse
+    fails — after which the natural move is to fall back to the rendered text and throw away the
+    structure the flag exists for.
+  - **A `complete` event with `status: review_skipped` and zero findings means no review ran.** Not
+    that the code is clean. A heartbeat says the process is alive, not that it finished. With a
+    non-zero exit and a partial run, that is four ways to end with no findings for reasons that have
+    nothing to do with the code — and two of them were unknown here.
+  - **Severities are the CLI's scale** (`critical`, `major`, `minor`, `trivial`, `info`, `none`) and
+    are passed through unrelabelled, so a reported finding traces back to what the tool said.
+  - **Scope flags do not combine freely.** `--committed` and `--uncommitted` conflict,
+    `--include-untracked` never goes with `--committed`, and it works standalone rather than
+    requiring `--uncommitted`. The table was valid by luck; it now says what each row covers and
+    why. A file-limit failure is reported rather than silently retried with a narrower scope.
+  - **The CLI uploads the diff to CodeRabbit's API**, which this skill never mentioned. The resolved
+    scope is checked for credentials before a run, and review output is treated as untrusted text
+    rather than as instructions.
+
+  Also corrected: `-t/--type` is hidden compatibility syntax, not a removed flag.
+
+  Unchanged and still unique to this skill — the vendor's reference on authentication and accounts
+  is 27 lines and mentions none of it: the entitlement preflight, the stale-login remedy, and the
+  free-allowance fallback.
+
 ## [1.31.7] - 2026-09-19
 
 ### 🐛 Fixed
