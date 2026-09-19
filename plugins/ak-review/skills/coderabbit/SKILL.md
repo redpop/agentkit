@@ -218,15 +218,25 @@ what Phase 1 turned up — acceptance criteria, the ticket's summary, the constr
 change necessary — is written to a file and passed in:
 
 ```bash
-coderabbit review --agent -c AGENTS.md -c /tmp/ak-review-coderabbit/<timestamp>/requirements.md \
-  [scope flags]
+REQ_DIR=$(mktemp -d)
+# write the requirements to "$REQ_DIR/requirements.md", then:
+coderabbit review --agent -c AGENTS.md -c "$REQ_DIR/requirements.md" [scope flags]
 ```
 
-**Write it outside the working tree, and nowhere else.** A requirements file placed in the repository
-is untracked, `--include-untracked` is mandatory above, and the file therefore joins the change it
-was meant to describe: CodeRabbit reviews the scratch file, comments on it, bills it as a reviewed
-file, and leaves it behind in the working tree. `/tmp/ak-review-coderabbit/<timestamp>/` keeps it out
-of every scope the review can see, and matches where `/ak-review:execute` puts its own artifacts.
+**Let the system choose the location; do not place this file in the repository.** In the working
+tree it is untracked, `--include-untracked` is mandatory above, and it therefore joins the very
+change it was written to describe — reviewed, commented on, billed as a reviewed file, and left
+behind for someone to commit by accident later.
+
+`mktemp -d` is the right kind of elsewhere, and a fixed path under `/tmp` is not: it creates a
+per-user directory with mode 700, where `/tmp` is world-readable at 1777, and a ticket's acceptance
+criteria from a private tracker do not belong somewhere every account on the machine can read. It
+also cannot collide with a second run in the same second, and the system reclaims it.
+
+This deliberately differs from `/ak-review:execute`, which keeps its artifacts at a predictable path
+because they are evidence — a raw stream and a report worth re-examining without paying for the run
+again. A requirements file is an input, reconstructed from the ticket in seconds and of no use
+afterwards, so the one argument for a predictable path does not apply and only its costs remain.
 
 The session running this skill is what fetches those requirements, from a ticket system or a spec
 file, exactly as `delegate` does. CodeRabbit needs no access of its own — and giving it one would

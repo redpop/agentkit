@@ -102,10 +102,12 @@ Reviews both committed and uncommitted changes in one pass for a full sweep of e
   miss that it does the wrong thing. `/ak-review:delegate` closes this for the external-agent path
   by writing requirements into the prompt it builds; this skill has no such prompt, so the
   acceptance criteria go in as a file: `-c AGENTS.md -c <requirements-file>`. The session fetches
-  them, from a ticket system or a spec; CodeRabbit needs no access of its own. That file is written
-  **outside** the working tree -- in the repository it would be untracked, and since
-  `--include-untracked` is mandatory it would join the very change it describes, get reviewed,
-  commented on, billed as a reviewed file, and left behind
+  them, from a ticket system or a spec; CodeRabbit needs no access of its own. The file goes into a
+  directory from `mktemp -d`, never into the repository -- there it would be untracked, and since
+  `--include-untracked` is mandatory it would join the very change it describes: reviewed,
+  commented on, billed as a reviewed file, and left behind for someone to commit later. `mktemp -d`
+  also beats a fixed path under `/tmp`, which is world-readable; a private tracker's acceptance
+  criteria should not be
 - **The requirements are looked for, not waited for.** Phase 1 follows `delegate`'s Phase 2.5 rather
   than repeating it -- ticket IDs from the branch name and the commits in scope, spec files where no
   ticket system is reachable. Reaching that system is the session's job: without an Atlassian MCP
