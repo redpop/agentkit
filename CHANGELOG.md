@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.33.4] - 2026-09-19
+
+### 🐛 Fixed
+
+- `ak-review:coderabbit` — **a full consistency pass over the skill, after several hours of
+  additions to it.** Six findings, four of them introduced by those additions, and the first is the
+  defect this repository names as its own most frequent.
+
+  - **A count went stale.** Phase 3 claimed "four different ways for a run to produce no findings
+    for reasons that have nothing to do with the code" and counted a heartbeat among them — which is
+    not such a way, but a way to mistake liveness for completion. Phase 1 had meanwhile added a
+    fifth, a scope cut down by the configuration's `path_filters`, which Phase 6 already treated as
+    one. The count is now a list, introduced as one that keeps growing: a number is a promise the
+    next addition breaks. The same sentence stood on the documentation page and was corrected there
+    too — it was in two places, and the first fix reached only one.
+  - **Phase 1's heading named two of the four things it does**, after requirements discovery and
+    configuration detection were added to it. It names all four now.
+  - **The requirements step claimed to run "before resolving anything else"** while sitting third.
+    It runs before the base, and says that instead.
+  - **Phase 3 contradicted itself about the rendered-output fallback** — warned against it at the
+    top, prescribed it at the bottom. Both are right in different situations, which is now the
+    distinction drawn: a failed whole-file parse looks like absent output and is not.
+  - This skill's own `--type` argument and the CLI's hidden `-t/--type` are different things, and
+    sat two paragraphs apart unremarked.
+  - `coderabbit config validate` was recommended in one section while another noted it has dropped
+    out of `config --help`. The recommendation carries that caveat and a fallback now.
+
 ## [1.33.3] - 2026-09-19
 
 ### 🐛 Fixed
