@@ -187,6 +187,24 @@ not documented — the existence of `-c`, with `claude.md` as its example, sugge
 the file explicitly costs a few kilobytes of context and settles the question, so pass it when the
 repository has one.
 
+**`-c` takes several files, which is how a ticket reaches the review.** CodeRabbit sees the diff and
+the repository; it does not see what the change was supposed to achieve. A review without that can
+confirm the code is correct and still miss that it does the wrong thing — a class of defect no
+amount of reading the diff finds.
+
+`/ak-review:delegate` solves this for the external-agent path by writing the requirements into the
+prompt it builds. This skill has no such prompt: it hands the CLI a scope and gets findings back. So
+when the change belongs to a ticket or a spec, write what it has to satisfy — acceptance criteria,
+the ticket's summary, the constraint that made the change necessary — into a file and pass it:
+
+```bash
+coderabbit review --agent -c AGENTS.md -c <requirements-file> [scope flags]
+```
+
+The session running this skill is what fetches those requirements, from a ticket system or a spec
+file, exactly as `delegate` does. CodeRabbit needs no access of its own — and giving it one would
+only serve the hosted reviewer, not this path.
+
 ### Phase 3: Parse Results
 
 **`--agent` emits NDJSON — one JSON object per line, not one document.** Parse it line by line; a

@@ -97,6 +97,12 @@ Reviews both committed and uncommitted changes in one pass for a full sweep of e
   both, because "no findings" and "never got there" are different answers that look alike
 - **Unverified findings are a separate class** since CLI 0.7.8, and the skill will not auto-apply
   one. It is a lead to confirm against the code, not a defect the tool stood behind
+- **A ticket reaches the review through `-c` as well.** CodeRabbit sees the diff and the repository,
+  never what the change was supposed to achieve -- so a review can confirm the code is correct and
+  miss that it does the wrong thing. `/ak-review:delegate` closes this for the external-agent path
+  by writing requirements into the prompt it builds; this skill has no such prompt, so the
+  acceptance criteria go in as a file: `-c AGENTS.md -c <requirements-file>`. The session fetches
+  them, from a ticket system or a spec; CodeRabbit needs no access of its own
 - **Project conventions go in, not through a filter afterwards.** The skill passes `-c AGENTS.md`
   when the repository has one. CodeRabbit's hosted reviewer already discovers `**/AGENTS.md` and
   `**/CLAUDE.md` via its knowledge-base defaults; whether the CLI applies the same defaults is
