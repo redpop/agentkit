@@ -1,6 +1,6 @@
 ---
 name: coderabbit
-description: This skill should be used when the user asks for "code review", "run CodeRabbit", "review my changes", or needs automated code review with fix application and critical evaluation.
+description: This skill should be used when the user asks for "code review", "run CodeRabbit", "review my changes", needs automated code review with fix application and critical evaluation, or wants to set up a `.coderabbit.yaml` for a project.
 ---
 
 # CodeRabbit Review
@@ -237,4 +237,51 @@ After all fixes, validate project consistency:
 
 ### Phase 6: Summary
 
-Report: issues found, fixes applied, items skipped (with reasons), validation results, testing recommendations.
+Report: issues found, fixes applied, items skipped (with reasons), validation results, testing
+recommendations. Report severities in the CLI's own vocabulary, and say plainly when a run was
+partial, skipped or failed rather than letting a short finding list imply clean code.
+
+## Setting Up a Project Configuration
+
+A separate task from running a review, and one that is easy to get wrong in the same direction every
+time: by writing too much.
+
+**Most projects do not need a `.coderabbit.yaml`.** CodeRabbit reads `**/AGENTS.md` and
+`**/CLAUDE.md` on its own, through the `code_guidelines` defaults of its knowledge base. Copying
+those conventions into a config file produces a second source that drifts from the first — and a
+config that only restates them buys nothing at all.
+
+Create one when at least one of these is true, and put only that in it:
+
+| Condition | What it earns |
+| ----------- | --------------- |
+| Files exist that should never be reviewed | `path_filters` — generated output, vendored code, lockfiles, a changelog. Usage-based reviews bill per reviewed file, so this is noise and money at once |
+| Different areas need different attention | `path_instructions` — a glob plus what a reviewer should look for there |
+| The volume of nitpicks is wrong | `profile` — `quiet`, `chill` (default) or `assertive` |
+
+**Start from the repository, not from a template.** Ask the CLI what it sees:
+
+```bash
+coderabbit config --agent
+```
+
+That is a read-only inspection. It reports the repository root, whether a config already exists,
+which format currently has authority, a `baseHash` for safe overwriting, and the URL of the schema
+in force. **Read the schema from there rather than from any description in this file** — it is
+versioned, this file is not.
+
+Then derive the content from *this* repository: its AGENTS.md, its directory layout, and the
+mistakes its history actually records. A `path_instruction` earns its place by naming something a
+general-purpose reviewer would miss here — not by repeating what good code looks like everywhere.
+A configuration copied from another project is worse than none, because it looks considered.
+
+Finish by checking it:
+
+```bash
+coderabbit config validate
+```
+
+**One trap worth knowing:** a `.coderabbit.yaml` takes precedence over a `.coderabbit.config.ts`
+when both exist. Adding the TypeScript form beside an existing YAML file produces something that
+silently does nothing. The TypeScript form is for PR-aware conditions and fragments shared across
+repositories; a single project does not need it.
