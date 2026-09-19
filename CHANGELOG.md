@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.33.2] - 2026-09-19
+
+### 🐛 Fixed
+
+- `ak-review:coderabbit` — **the requirements file ended up inside the review it described.** 1.33.0
+  said it was "written to a file" and named no location, so the obvious place is the repository —
+  where it is untracked, and where `--include-untracked` is mandatory two paragraphs earlier. The
+  file joined the change it was meant to describe: reviewed, commented on, billed as a reviewed file
+  under usage-based pricing, and left behind in the working tree.
+
+  It goes to `/tmp/ak-review-coderabbit/<timestamp>/` now — out of every scope the review can see,
+  and beside where `/ak-review:execute` already writes its artifacts.
+
 ## [1.33.1] - 2026-09-19
 
 ### 🐛 Fixed
