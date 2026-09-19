@@ -35,6 +35,11 @@ Parse arguments: `$ARGUMENTS`
 
 ## Workflow
 
+**This skill covers two different jobs.** If the request is about setting up or changing a
+project's CodeRabbit configuration, go straight to *Setting Up a Project Configuration* at the end
+of this file and do not run a review — the phases below are the review, and running one to answer a
+setup question spends a review on nothing.
+
 ### Phase 1: Check Who the CLI Is, Then Resolve Scope
 
 **Run this first, and read the answer:**
@@ -70,6 +75,20 @@ announces there when it is falling back to the free allowance or cannot reach th
 **Stop if that appears** rather than letting the run continue or starting another. The allowance is
 small — measured at three reviews before a rate limit, with the message that the plan was never in
 play arriving only on the fourth.
+
+**Check whether the repository carries a CodeRabbit configuration**, and read its `path_filters` if
+it does:
+
+```bash
+ls .coderabbit.yaml .coderabbit.yml .coderabbit.config.ts 2> /dev/null
+```
+
+A configuration is a **silent scope limitation**. Its `path_filters` remove whole trees from the
+review, and the run then completes cleanly with nothing to say about them — indistinguishable from
+having looked and found nothing. Carry what it excludes into Phase 6, the same way a partial run or
+a `review_skipped` is carried there. Nothing needs passing to the CLI: it reads the file itself.
+
+Then resolve the base:
 
 1. Current branch: `git rev-parse --abbrev-ref HEAD`
 2. Unpushed commits: `git rev-list --count @{u}..HEAD 2>/dev/null`
@@ -241,6 +260,17 @@ Report: issues found, fixes applied, items skipped (with reasons), validation re
 recommendations. Report severities in the CLI's own vocabulary, and say plainly when a run was
 partial, skipped or failed rather than letting a short finding list imply clean code.
 
+**Name what the configuration kept out.** If the repository has `path_filters`, say which paths were
+outside the review's scope by configuration — "`docs/**` and `vendor/**` were excluded by
+`.coderabbit.yaml`" — so that a quiet result is read as a bounded review rather than a clean
+codebase.
+
+If the project has **no** configuration and this run made a case for one — most findings came from
+generated or vendored files, or one area kept producing noise another would not — say so in one
+sentence and stop there. Do not create the file: that decision belongs to the separate task
+described below, and it needs judgment about the repository rather than the aftermath of a single
+review.
+
 ## Setting Up a Project Configuration
 
 A separate task from running a review, and one that is easy to get wrong in the same direction every
@@ -280,6 +310,9 @@ Finish by checking it:
 ```bash
 coderabbit config validate
 ```
+
+When a review run makes a case for a configuration — Phase 6 raises it, without acting on it — this
+is the task it points at. Start it deliberately, not as the tail end of a review.
 
 **One trap worth knowing:** a `.coderabbit.yaml` takes precedence over a `.coderabbit.config.ts`
 when both exist. Adding the TypeScript form beside an existing YAML file produces something that
