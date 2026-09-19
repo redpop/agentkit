@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.31.6] - 2026-09-19
+
+### 🐛 Fixed
+
+- `ak-review:coderabbit` — **1.31.5 recorded a symptom as a version difference.** It stated that
+  0.7.8 had removed `Plan` and `Seat` from `coderabbit auth status` and rewrote Phase 1 around
+  their absence. 0.7.8 prints both. They were missing because the stored login had gone stale under
+  the CLI upgrade — and the conclusion was drawn from a single observation on that broken session.
+
+  `coderabbit auth logout && coderabbit auth login` restores all of it at once: the two lines,
+  `coderabbit usage`, and the plan itself. Throughout, the organization's trial had been running
+  and the seat had been assigned; reviews were silently spending the free CLI allowance anyway.
+
+  Phase 1 therefore reads plan and seat again, and now treats a missing line as a symptom with a
+  one-command remedy. `coderabbit doctor` is documented as no help here — nine checks passed,
+  authentication included, on a CLI with no entitlement. The check added in 1.31.5 stays as
+  defence in depth: a run that announces a fallback to the free allowance is stopped, because a
+  session can go stale between one run and the next.
+
 ## [1.31.5] - 2026-09-19
 
 ### 🐛 Fixed
