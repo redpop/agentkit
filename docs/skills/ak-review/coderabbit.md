@@ -122,8 +122,14 @@ Reviews both committed and uncommitted changes in one pass for a full sweep of e
 
 ## Project Configuration
 
-The skill also covers setting up a `.coderabbit.yaml`, which is a different task from running a
-review and is usually overdone. Most projects need none: CodeRabbit reads `AGENTS.md` and
+A review run now notices whether the repository has a `.coderabbit.yaml` and says in the summary
+which paths its `path_filters` kept out. A configuration is a silent scope limitation: it removes
+whole trees from the review, after which the run completes cleanly with nothing to say about them —
+indistinguishable from having looked and found nothing. If a project has no configuration and the
+run made a case for one, the summary says so in a sentence and stops there; it does not create the
+file.
+
+Setting one up is a different task from running a review, and it is usually overdone. Most projects need none: CodeRabbit reads `AGENTS.md` and
 `CLAUDE.md` on its own through its knowledge-base defaults, so a config that restates the
 conventions buys nothing and creates a second source that drifts.
 
