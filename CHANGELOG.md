@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.32.1] - 2026-09-19
+
+### 🐛 Fixed
+
+- `ak-review:coderabbit` — **a review ignored the configuration that bounded it.** The section added
+  in 1.32.0 sat behind the workflow, and nothing in phases 1 to 6 referred to it, so a review in a
+  project with a `.coderabbit.yaml` behaved as though the file were not there.
+
+  `path_filters` remove whole trees from a review. The run then completes cleanly with nothing to
+  say about them — indistinguishable from having looked and found nothing, which is the failure
+  class this plugin keeps closing. Phase 1 checks for the file and reads what it excludes; Phase 6
+  names those paths in the summary, the same treatment a partial run or a `review_skipped` already
+  gets.
+
+  Phase 6 also raises the opposite case: no configuration, and the run argued for one. It says so in
+  a sentence and stops. Creating the file as a side effect of a review request would be a repository
+  change nobody asked for, and it contradicts the section's own position — most projects need none,
+  and the decision takes judgment about the repository rather than the aftermath of one review.
+
+- `ak-review:coderabbit` — the skill states its **two jobs** at the top of the workflow. Its
+  description has covered both since 1.32.0, and a review-shaped workflow followed by a setup
+  section is otherwise an invitation to start reviewing when the question was about configuration.
+
 ## [1.32.0] - 2026-09-19
 
 ### ✨ Added
