@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.33.1] - 2026-09-19
+
+### 🐛 Fixed
+
+- `ak-review:coderabbit` — **the requirements had to be noticed before they could be passed.**
+  1.33.0 said to send a change's acceptance criteria through `-c` "when the change belongs to a
+  ticket or a spec" — a condition with no trigger. Nothing about a diff announces what it was meant
+  to achieve, so an agent reviewing a repository it had not just written would never find out one
+  existed.
+
+  Phase 1 runs the discovery now, by pointing at `delegate`'s Phase 2.5 rather than repeating it:
+  ticket IDs by pattern from the branch name and the commits in scope, deduplicated and capped, then
+  summary, status, description and acceptance criteria; spec and task Markdown where no ticket
+  system is reachable. One method, one place.
+
+  Two limits belong to the calling session rather than to the tool, and are stated: reaching a
+  ticket system needs an Atlassian MCP, and without one only the spec path is available — which
+  Phase 6 reports, because a review that ran without requirements is not one that found nothing to
+  say about them. And a long-lived branch carries several ticket IDs in its commits, most of them
+  history rather than the requirement this change answers to.
+
 ## [1.33.0] - 2026-09-19
 
 ### ✨ Added
