@@ -7,11 +7,13 @@ description: This skill should be used when the user asks for "code review", "ru
 
 Execute CodeRabbit CLI review with critical evaluation, systematic fixes, and project consistency validation.
 
-Verified against **CodeRabbit CLI 0.7.8**. The CLI moves, and it has moved under this skill before:
-`0.7` dropped `--prompt-only` and `--type` in favour of separate scope flags and made plain text the
-default output, and `0.7.8` reworded `--uncommitted` and added `--remote`. Check `coderabbit review
---help` before trusting a flag named here — and when one has changed, fix this file rather than
-working around it.
+Verified against **CodeRabbit CLI 0.7.8**: both `coderabbit review --help` and
+`coderabbit auth status`, because checking only one of them is how this file last went wrong. The CLI
+moves, and it has moved under this skill repeatedly: `0.7` dropped `--prompt-only` and `--type` in
+favour of separate scope flags and made plain text the default, and `0.7.8` reworded `--uncommitted`,
+added `--remote`, and **removed the `Plan` and `Seat` lines from `auth status`** that Phase 1 used to
+rely on. Check the output you are about to depend on before trusting a description here — and when it
+has changed, fix this file rather than working around it.
 
 ## Arguments
 
@@ -34,18 +36,24 @@ Parse arguments: `$ARGUMENTS`
 coderabbit auth status
 ```
 
-It prints the account, the **provider**, the active **organization**, the **plan** and whether a seat
-is assigned. This matters before anything is spent: the CLI signs in per provider, so a GitHub login
-does not see GitLab groups and vice versa, and a repository that belongs to neither runs on the free
-CLI allowance instead of the paid plan. That fallback is announced in one line at the top of the
-output and is easy to read past — measured: two full reviews ran on the free allowance while a paid
-plan sat unused under a different provider.
+It prints the account, the **provider** and the active **organization**. Check both: the CLI signs in
+per provider, so a GitHub login does not see GitLab groups and vice versa, and a repository belonging
+to neither runs on the free CLI allowance instead of the paid plan. If the provider or organization
+is not the expected one, say so and stop — `coderabbit auth org` switches organization,
+`coderabbit auth logout` then `coderabbit auth login` switches provider.
 
-If the plan or organization is not the expected one, say so and stop. Switching is
-`coderabbit auth org`, or `coderabbit auth logout` and `coderabbit auth login` for a different
-provider.
+**What this check cannot tell you is whether the paid plan actually applies**, and the gap is the
+expensive one. 0.7.6 printed `Plan` and `Seat` here; **0.7.8 prints neither**, in the rendered output
+or under `--agent`. `coderabbit usage` may answer — or fail with "Check your connection and
+organization access", which is a hint and not a verdict. `coderabbit doctor` is no help at all: it
+passed nine checks, authentication included, on a CLI with no entitlement.
 
-Then resolve the base:
+So the only reliable signal arrives **when the review starts**, in its first lines: the CLI says
+there that it is falling back to the free allowance, or that the repository is not connected to an
+organization you can access. **Read those lines and stop if they appear.** Do not let the run
+continue, and do not start another. The free allowance is small — measured at three reviews before a
+rate limit, and the message that the plan was never in play came only with the fourth. Four reviews
+were spent before anyone noticed, on two separate occasions and under two different CLI versions.
 
 1. Current branch: `git rev-parse --abbrev-ref HEAD`
 2. Unpushed commits: `git rev-list --count @{u}..HEAD 2>/dev/null`
