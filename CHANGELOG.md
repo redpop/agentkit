@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.31.5] - 2026-09-19
+
+### 🐛 Fixed
+
+- `ak-review:coderabbit` — **Phase 1 told the agent to read two fields the CLI no longer prints.**
+  It checked the plan and the seat from `coderabbit auth status` and stopped if they were wrong;
+  0.7.8 prints neither, in the rendered output or under `--agent`. The check was unfollowable, and
+  an agent following it spent the free CLI allowance believing a paid plan applied.
+
+  The previous release claimed the skill was verified against 0.7.8. Only `review --help` was
+  re-run — `auth status` was not, and that was the surface that had changed. The *verified against*
+  line now names both, and says why checking one of them is not enough.
+
+  **Whether the paid plan applies cannot be established up front on 0.7.8 at all.** `coderabbit
+  usage` may fail with an org-access error, which is a hint rather than a verdict, and `coderabbit
+  doctor` passed nine checks, authentication included, on a CLI with no entitlement. The provider
+  and organization are still printed and still worth checking, so that part stays; for the rest,
+  the skill now reads the review's own opening lines and stops when a run announces the free
+  allowance. Measured: the allowance is three reviews, and the message that the plan was never in
+  play arrived only with the fourth.
+
 ## [1.31.4] - 2026-09-18
 
 ### 🐛 Fixed
