@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.32.0] - 2026-09-19
+
+### ✨ Added
+
+- `ak-review:coderabbit` — **a section on setting up a project's `.coderabbit.yaml`.** A different
+  task from running a review, and one reliably overdone in the same direction: by writing too much.
+  CodeRabbit already reads `AGENTS.md` and `CLAUDE.md` through its knowledge-base defaults, so a
+  config that restates the conventions buys nothing and creates a second source that drifts.
+
+  The section names the three conditions that earn a config — files that should never be reviewed,
+  areas needing different attention, a wrong volume of nitpicks — and says to put only those in it.
+  Usage-based reviews bill per reviewed file, which makes `path_filters` a cost lever rather than a
+  tidiness one.
+
+  **The schema is deliberately absent.** `coderabbit config --agent` is a read-only inspection that
+  reports what exists, which format has authority, a `baseHash` for safe overwriting, and the URL of
+  the schema in force — so it is read from there, in the version that applies, rather than from a
+  copy that ages. On one day this CLI reworded a flag description, dropped a subcommand from its
+  help and appeared to remove two fields it had not removed.
+
+  What the section does carry is the part no generator can: derive the content from the repository
+  at hand — its AGENTS.md, its layout, the mistakes its history records. A configuration copied from
+  another project is worse than none, because it looks considered.
+
+  Recorded with it: a `.coderabbit.yaml` takes precedence over a `.coderabbit.config.ts` when both
+  exist, so adding the TypeScript form beside an existing YAML file produces something that silently
+  does nothing.
+
 ## [1.31.8] - 2026-09-19
 
 ### 🐛 Fixed
