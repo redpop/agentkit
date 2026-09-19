@@ -120,9 +120,11 @@ Reviews both committed and uncommitted changes in one pass for a full sweep of e
 - **Keep one base per round.** Changing the comparison base resets the saved review context, so
   alternating between two bases pays for a full review each time
 - **`--agent` output is NDJSON**, one object per line — parsed line by line, not as one document
-- **A `complete` event with `status: review_skipped` and no findings means no review ran.** It is
-  not a clean bill of health, and neither is a heartbeat, a non-zero exit or a partial run. Four
-  ways to end with zero findings for reasons that have nothing to do with the code
+- **An empty finding list is the ambiguous result here**, and the reasons for one that have nothing
+  to do with the code keep accumulating: a `complete` event carrying `status: review_skipped`, a
+  non-zero exit, an interrupted run reported as partial, and a scope the configuration's
+  `path_filters` cut down before the review saw the files. A heartbeat is not completion either.
+  The skill rules each one out before writing "no issues found", and names the one that applied
 - **Severities stay in the CLI's own vocabulary** -- `critical`, `major`, `minor`, `trivial`,
   `info`, `none` -- so a reported finding can be traced back to what the tool actually said
 - **The CLI uploads the diff to CodeRabbit's API.** The skill checks the resolved scope for

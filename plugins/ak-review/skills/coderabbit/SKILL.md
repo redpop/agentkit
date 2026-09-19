@@ -13,7 +13,9 @@ moves: `0.7` retired `--plain`, `--fast`, `--interactive`, `--cwd` and `--prompt
 `--light`, `--dir`, `--agent`), replaced `--type` with the separate scope flags and made plain text
 the default; `0.7.8` reworded `--uncommitted` and added `--remote`. `-t/--type` survives as hidden
 compatibility syntax — it is not gone, it is merely unlisted, and new commands use the named scope
-flags. Check the output you are about to depend on before trusting a description here.
+flags. (The `--type` in this skill's own Arguments below is unrelated: it is this skill's argument,
+which the phases translate into the CLI's scope flags.) Check the output you are about to depend on
+before trusting a description here.
 
 The published changelog is a lead, not a source: `coderabbit config validate` appears there as a
 0.7.1 feature and no longer appears in `config --help` on 0.7.8, though it still runs.
@@ -40,7 +42,15 @@ project's CodeRabbit configuration, go straight to *Setting Up a Project Configu
 of this file and do not run a review — the phases below are the review, and running one to answer a
 setup question spends a review on nothing.
 
-### Phase 1: Check Who the CLI Is, Then Resolve Scope
+### Phase 1: Preconditions and Scope
+
+Four things, in this order — the first two decide whether a review is worth starting, the last two
+decide what it covers:
+
+1. **Who the CLI is**, and whether the paid plan applies
+2. **Whether a project configuration** already bounds the review
+3. **What the change answers to** — a ticket, a spec, or nothing
+4. **The base** to compare against
 
 **Run this first, and read the answer:**
 
@@ -88,7 +98,7 @@ review, and the run then completes cleanly with nothing to say about them — in
 having looked and found nothing. Carry what it excludes into Phase 6, the same way a partial run or
 a `review_skipped` is carried there. Nothing needs passing to the CLI: it reads the file itself.
 
-**Find out whether this change answers to a ticket or a spec**, before resolving anything else.
+**Find out whether this change answers to a ticket or a spec**, before the base is resolved.
 Nothing about a diff announces what it was supposed to achieve, so this has to be looked for rather
 than waited for.
 
@@ -251,8 +261,13 @@ structure this flag exists for.
 **Read the terminal event before reading the findings.** A `complete` event carrying
 `status: review_skipped` with zero findings means **no review ran**. It is not evidence that the code
 is clean, and it must never be reported as one. A heartbeat likewise says the process is alive, not
-that it finished. Together with a non-zero exit and a partial run, these are four different ways for
-a run to produce no findings for reasons that have nothing to do with the code.
+that it finished — waiting for one is not waiting for completion.
+
+**An empty finding list is the ambiguous result in this whole skill**, and the list of reasons for
+one that have nothing to do with the code keeps growing. So far: a `review_skipped` status, a
+non-zero exit, an interrupted run reported as partial, and a scope cut down by the configuration's
+`path_filters` before the review ever saw the files. Rule out every one of them before the words
+"no issues found" are written, and name the one that applied when it did.
 
 Then take the findings: `fileName`, line, severity, the comment, and — where present —
 `codegenInstructions` and `suggestions`, which carry the fix guidance. Fall back to the comment when
@@ -271,9 +286,11 @@ what the tool actually said about it.
 - **Whether the review completed.** A partial or failed run covered less than it was asked to, so an
   absent finding says nothing about the code it never reached
 
-If the structured output is missing or unreadable, fall back to `coderabbit review findings` and read
-the rendered findings — but say that the fallback was used, because a parse that silently yields
-nothing is indistinguishable from a review that found nothing.
+If the structured output is genuinely absent — not merely awkward to parse — fall back to
+`coderabbit review findings` and read the rendered findings, and say that the fallback was used: a
+parse that silently yields nothing is indistinguishable from a review that found nothing. The
+distinction matters, because the failed whole-file parse warned about above *looks* like absent
+output and is not. Confirm the stream really carries no structured events before giving up on them.
 
 ### Phase 4: Critical Evaluation & Fix
 
@@ -365,6 +382,10 @@ Finish by checking it:
 ```bash
 coderabbit config validate
 ```
+
+It still works on 0.7.8 although `config --help` no longer lists it, so check that it still runs
+before relying on it in a script — and fall back to `coderabbit config --agent`, which reports the
+active configuration and would fail on a file the CLI cannot read.
 
 When a review run makes a case for a configuration — Phase 6 raises it, without acting on it — this
 is the task it points at. Start it deliberately, not as the tail end of a review.
