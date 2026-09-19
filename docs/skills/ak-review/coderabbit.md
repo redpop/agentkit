@@ -120,6 +120,27 @@ Reviews both committed and uncommitted changes in one pass for a full sweep of e
 - When in doubt, skip and flag for manual review -- false positives happen
 - Run validation after fixes to ensure project consistency
 
+## Project Configuration
+
+The skill also covers setting up a `.coderabbit.yaml`, which is a different task from running a
+review and is usually overdone. Most projects need none: CodeRabbit reads `AGENTS.md` and
+`CLAUDE.md` on its own through its knowledge-base defaults, so a config that restates the
+conventions buys nothing and creates a second source that drifts.
+
+Create one when files exist that should never be reviewed (`path_filters` — and usage-based reviews
+bill per reviewed file, so this is noise and money at once), when different areas need different
+attention (`path_instructions`), or when the volume of nitpicks is wrong (`profile`).
+
+The starting point is `coderabbit config --agent`, a read-only inspection that reports what exists,
+which format has authority, and the URL of the schema in force — read the schema from there rather
+than from any copy. The content is then derived from the repository at hand: its AGENTS.md, its
+layout, the mistakes its history records. A configuration copied from another project is worse than
+none, because it looks considered. `coderabbit config validate` checks the result.
+
+One trap: a `.coderabbit.yaml` takes precedence over a `.coderabbit.config.ts` when both exist, so
+adding the TypeScript form beside an existing YAML file produces something that silently does
+nothing.
+
 ## Related
 
 - [finalize](./finalize.md) -- full task completion workflow that includes CodeRabbit
