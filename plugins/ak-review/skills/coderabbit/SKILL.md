@@ -9,9 +9,13 @@ Execute CodeRabbit CLI review with critical evaluation, systematic fixes, and pr
 
 Verified against **CodeRabbit CLI 0.7.8**: both `coderabbit review --help` and
 `coderabbit auth status`, because checking only one of them is how this file went wrong once. The CLI
-moves: `0.7` dropped `--prompt-only` and `--type` in favour of separate scope flags and made plain
-text the default, and `0.7.8` reworded `--uncommitted` and added `--remote`. Check the output you are
-about to depend on before trusting a description here.
+moves: `0.7` retired `--plain`, `--fast`, `--interactive`, `--cwd` and `--prompt-only` (use
+`--light`, `--dir`, `--agent`), replaced `--type` with the separate scope flags and made plain text
+the default; `0.7.8` reworded `--uncommitted` and added `--remote`. Check the output you are about to
+depend on before trusting a description here.
+
+The published changelog is a lead, not a source: `coderabbit config validate` appears there as a
+0.7.1 feature and no longer appears in `config --help` on 0.7.8, though it still runs.
 
 And check it on a **healthy session**. A missing field here was once read as "0.7.8 removed it" when
 the login had simply gone stale — a wrong claim, written into this file and released, from a single
@@ -104,6 +108,22 @@ exists to prevent, and it looks identical to a clean one.
 asks for it by name when it detects this environment. Read the findings it emits as they are; do not
 re-parse the plain-text rendering.
 
+**Check the exit code.** A failed review exits non-zero (`1`), and the skill must not read that as
+"no findings" — nothing was reviewed. Findings and checkpoints from the attempt are preserved, so a
+repeat run resumes rather than starting over. Report the failure and stop.
+
+**A partial review is not a short one.** A run interrupted mid-flight still writes what it had and
+declares itself partial. Say so when passing it on, and do not let Phase 4 fix from it as though the
+scope had been covered.
+
+**Two scope details that are easy to get wrong:**
+
+- `--type all` compares **net** changes across committed and uncommitted work; `--committed` reads a
+  Git snapshot instead. The two answer different questions on a dirty tree
+- **Changing the base resets the saved review context.** Alternating between `--base` and
+  `--base-commit`, or between two different commits, discards the checkpoints each time and pays for
+  a full review again. Pick the base for a round and keep it
+
 Two flags worth knowing, not defaults:
 
 - `--light` runs a cheaper review with less context work
@@ -117,10 +137,33 @@ the stored ones without paying for a second review; `coderabbit review findings 
 use it: it reviews the working tree you are sitting in, and `--remote` is GitHub-only — named here so
 the omission reads as a decision rather than an oversight.
 
+**Project conventions: pass them, do not filter for them afterwards.** `-c <files...>` takes
+additional instruction files — the CLI's own help names `claude.md` as the example. Giving CodeRabbit
+the project's own rules up front prevents findings that contradict them, which is cheaper than
+sorting those out in Phase 4.
+
+```bash
+coderabbit review --agent -c AGENTS.md [scope flags]
+```
+
+CodeRabbit's hosted reviewer already discovers `**/AGENTS.md` and `**/CLAUDE.md` on its own, through
+the `code_guidelines` defaults of its knowledge base. Whether the CLI applies those same defaults is
+not documented — the existence of `-c`, with `claude.md` as its example, suggests it may not. Passing
+the file explicitly costs a few kilobytes of context and settles the question, so pass it when the
+repository has one.
+
 ### Phase 3: Parse Results
 
 Take the findings from the `--agent` output: file, line, severity/category, the claim, and the
 proposed fix. Create a todo list with one item per finding.
+
+**Carry two qualifiers through to Phase 4, because they change what a finding is worth:**
+
+- **Verified vs unverified.** Since 0.7.8 the CLI surfaces unverified findings alongside verified
+  ones and counts them separately. An unverified finding is a claim the tool did not stand behind;
+  treat it as a lead to check, never as a defect to fix on sight
+- **Whether the review completed.** A partial or failed run covered less than it was asked to, so an
+  absent finding says nothing about the code it never reached
 
 If the structured output is missing or unreadable, fall back to `coderabbit review findings` and read
 the rendered findings — but say that the fallback was used, because a parse that silently yields
@@ -140,6 +183,10 @@ Decision framework:
 - **Apply**: Valid and appropriate — implement
 - **Adapt**: Core idea valid, adjust for project — implement modified version
 - **Skip**: False positive or unnecessary — mark completed with justification
+
+**An unverified finding does not reach Apply on its own.** Confirm it against the code first; if that
+confirmation is not possible, it is a Skip with the reason recorded, not a fix applied on the tool's
+word.
 
 Guidelines:
 
