@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.33.3] - 2026-09-19
+
+### 🐛 Fixed
+
+- `ak-review:coderabbit` — **the requirements file now goes where the system says, not where the
+  skill says.** 1.33.2 moved it out of the repository to a fixed path under `/tmp`, which fixed the
+  part that could be committed and left two smaller problems.
+
+  `/tmp` is world-readable (1777), and the file holds a ticket's summary and acceptance criteria
+  from a private tracker — readable by every account on the machine. `mktemp -d` creates a per-user
+  directory at mode 700 instead, verified here as `drwx------` under `/var/folders`. It also cannot
+  collide with a second run in the same second, and the system reclaims it rather than letting
+  timestamped directories pile up until a reboot.
+
+  The divergence from `/ak-review:execute` is deliberate, and the reason is the point: that skill
+  keeps artifacts at a predictable path because they are **evidence** — a raw stream and a report
+  worth re-examining without paying for the run again. A requirements file is an **input**,
+  reconstructed from the ticket in seconds and of no use afterwards, so the one argument for a
+  predictable path does not apply and only its costs remain.
+
 ## [1.33.2] - 2026-09-19
 
 ### 🐛 Fixed
