@@ -5,6 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.31.7] - 2026-09-19
+
+### 🐛 Fixed
+
+- `ak-review:coderabbit` — **a failed or interrupted review could be read as a clean one.** Phase 2
+  said nothing about exit codes, so a review that exits non-zero — the CLI's signal since 0.7.7 that
+  it failed — was indistinguishable from one that found nothing. An interrupted run is a second
+  case: it writes what it had and declares itself partial, and an absent finding then says nothing
+  about code the run never reached. Both are now named, along with the fact that findings and
+  checkpoints survive a failed attempt, so a repeat resumes instead of starting over.
+
+- `ak-review:coderabbit` — **unverified findings went through the same gate as verified ones.** The
+  CLI has surfaced and counted them separately since 0.7.8. An unverified finding is a lead the tool
+  did not stand behind; it can no longer reach *Apply* without confirmation against the code.
+
+### ♻️ Changed
+
+- `ak-review:coderabbit` — **project conventions are passed in rather than filtered out
+  afterwards.** `-c <files...>` takes additional instruction files — the CLI's own help names
+  `claude.md` as the example — so the skill passes `-c AGENTS.md` when the repository has one.
+  Preventing a finding that contradicts the project's rules is cheaper than sorting it out in
+  Phase 4. With the caveat stated: CodeRabbit's hosted reviewer already discovers `**/AGENTS.md`
+  and `**/CLAUDE.md` through its knowledge-base defaults, and whether the CLI applies the same
+  defaults is undocumented.
+
+- `ak-review:coderabbit` — three corrections from the same pass: `--type all` compares **net**
+  changes while `--committed` reads a Git snapshot; **changing the comparison base resets the saved
+  review context**, so alternating between two bases pays for a full review each time; and `0.7`
+  retired five flags (`--plain`, `--fast`, `--interactive`, `--cwd`, `--prompt-only`), not the two
+  this skill named.
+
+  Recorded with them: the published changelog is a lead, not a source. `coderabbit config validate`
+  appears there as a 0.7.1 feature and is gone from `config --help` on 0.7.8, though it still runs.
+  Every item above was checked against the installed CLI before being written down.
+
 ## [1.31.6] - 2026-09-19
 
 ### 🐛 Fixed
