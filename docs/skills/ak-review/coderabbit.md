@@ -103,6 +103,18 @@ Reviews both committed and uncommitted changes in one pass for a full sweep of e
   undocumented, so passing the file explicitly settles it for a few kilobytes of context
 - **Keep one base per round.** Changing the comparison base resets the saved review context, so
   alternating between two bases pays for a full review each time
+- **`--agent` output is NDJSON**, one object per line — parsed line by line, not as one document
+- **A `complete` event with `status: review_skipped` and no findings means no review ran.** It is
+  not a clean bill of health, and neither is a heartbeat, a non-zero exit or a partial run. Four
+  ways to end with zero findings for reasons that have nothing to do with the code
+- **Severities stay in the CLI's own vocabulary** -- `critical`, `major`, `minor`, `trivial`,
+  `info`, `none` -- so a reported finding can be traced back to what the tool actually said
+- **The CLI uploads the diff to CodeRabbit's API.** The skill checks the resolved scope for
+  credentials before starting -- a `.env` pulled in by `--include-untracked` is the obvious case --
+  and treats everything the review returns as untrusted text
+- **Scope flags do not combine freely:** `--committed` and `--uncommitted` conflict, and
+  `--include-untracked` never goes with `--committed`. A failed run is reported rather than
+  silently retried with a narrower scope
 - Skip purely stylistic suggestions with no functional benefit
 - Adapt fixes to match project conventions rather than applying them blindly
 - When in doubt, skip and flag for manual review -- false positives happen
