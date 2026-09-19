@@ -93,6 +93,16 @@ Reviews both committed and uncommitted changes in one pass for a full sweep of e
 - The skill asks the CLI for structured findings (`--agent`) instead of scraping the plain-text
   rendering. The CLI itself recommends this when it detects an agent environment
 - `coderabbit review findings` reprints the last review's findings without paying for a second run
+- **A failed review exits non-zero, and an interrupted one declares itself partial.** The skill checks
+  both, because "no findings" and "never got there" are different answers that look alike
+- **Unverified findings are a separate class** since CLI 0.7.8, and the skill will not auto-apply
+  one. It is a lead to confirm against the code, not a defect the tool stood behind
+- **Project conventions go in, not through a filter afterwards.** The skill passes `-c AGENTS.md`
+  when the repository has one. CodeRabbit's hosted reviewer already discovers `**/AGENTS.md` and
+  `**/CLAUDE.md` via its knowledge-base defaults; whether the CLI applies the same defaults is
+  undocumented, so passing the file explicitly settles it for a few kilobytes of context
+- **Keep one base per round.** Changing the comparison base resets the saved review context, so
+  alternating between two bases pays for a full review each time
 - Skip purely stylistic suggestions with no functional benefit
 - Adapt fixes to match project conventions rather than applying them blindly
 - When in doubt, skip and flag for manual review -- false positives happen
