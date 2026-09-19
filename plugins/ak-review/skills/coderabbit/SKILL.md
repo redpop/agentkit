@@ -8,12 +8,14 @@ description: This skill should be used when the user asks for "code review", "ru
 Execute CodeRabbit CLI review with critical evaluation, systematic fixes, and project consistency validation.
 
 Verified against **CodeRabbit CLI 0.7.8**: both `coderabbit review --help` and
-`coderabbit auth status`, because checking only one of them is how this file last went wrong. The CLI
-moves, and it has moved under this skill repeatedly: `0.7` dropped `--prompt-only` and `--type` in
-favour of separate scope flags and made plain text the default, and `0.7.8` reworded `--uncommitted`,
-added `--remote`, and **removed the `Plan` and `Seat` lines from `auth status`** that Phase 1 used to
-rely on. Check the output you are about to depend on before trusting a description here — and when it
-has changed, fix this file rather than working around it.
+`coderabbit auth status`, because checking only one of them is how this file went wrong once. The CLI
+moves: `0.7` dropped `--prompt-only` and `--type` in favour of separate scope flags and made plain
+text the default, and `0.7.8` reworded `--uncommitted` and added `--remote`. Check the output you are
+about to depend on before trusting a description here.
+
+And check it on a **healthy session**. A missing field here was once read as "0.7.8 removed it" when
+the login had simply gone stale — a wrong claim, written into this file and released, from a single
+observation on a broken session. One sample is not a version difference.
 
 ## Arguments
 
@@ -36,24 +38,33 @@ Parse arguments: `$ARGUMENTS`
 coderabbit auth status
 ```
 
-It prints the account, the **provider** and the active **organization**. Check both: the CLI signs in
-per provider, so a GitHub login does not see GitLab groups and vice versa, and a repository belonging
-to neither runs on the free CLI allowance instead of the paid plan. If the provider or organization
-is not the expected one, say so and stop — `coderabbit auth org` switches organization,
-`coderabbit auth logout` then `coderabbit auth login` switches provider.
+It prints the account, the **provider**, the active **organization**, and — under *Review access* —
+the **plan** and whether a **seat** is assigned. All four matter. The CLI signs in per provider,
+so a GitHub login does not see GitLab groups and vice versa, and entitlement hangs on an assigned
+seat rather than on the organization owning a plan.
 
-**What this check cannot tell you is whether the paid plan actually applies**, and the gap is the
-expensive one. 0.7.6 printed `Plan` and `Seat` here; **0.7.8 prints neither**, in the rendered output
-or under `--agent`. `coderabbit usage` may answer — or fail with "Check your connection and
-organization access", which is a hint and not a verdict. `coderabbit doctor` is no help at all: it
-passed nine checks, authentication included, on a CLI with no entitlement.
+**A missing `Plan` or `Seat` line is not a version difference. It means the stored login has gone
+stale, and the usual cause is a CLI upgrade underneath it.** Measured: after an upgrade from 0.7.6 to
+0.7.8, `auth status` stopped printing both lines, `coderabbit usage` failed with "Check your
+connection and organization access", and reviews fell back to the free allowance while the
+organization's trial was running and the seat was assigned the whole time. The remedy is one
+command pair:
 
-So the only reliable signal arrives **when the review starts**, in its first lines: the CLI says
-there that it is falling back to the free allowance, or that the repository is not connected to an
-organization you can access. **Read those lines and stop if they appear.** Do not let the run
-continue, and do not start another. The free allowance is small — measured at three reviews before a
-rate limit, and the message that the plan was never in play came only with the fourth. Four reviews
-were spent before anyone noticed, on two separate occasions and under two different CLI versions.
+```bash
+coderabbit auth logout && coderabbit auth login
+```
+
+After that, all three recovered at once. Do not read the absence of those lines as "this version does
+not report it" — that inference cost a release here.
+
+**`coderabbit doctor` will not catch this.** It passed nine checks, authentication included, on a CLI
+with no entitlement; it does not test the plan at all.
+
+Because the check can go stale between runs, read the **review's own first lines** as well: the CLI
+announces there when it is falling back to the free allowance or cannot reach the organization.
+**Stop if that appears** rather than letting the run continue or starting another. The allowance is
+small — measured at three reviews before a rate limit, with the message that the plan was never in
+play arriving only on the fourth.
 
 1. Current branch: `git rev-parse --abbrev-ref HEAD`
 2. Unpushed commits: `git rev-list --count @{u}..HEAD 2>/dev/null`

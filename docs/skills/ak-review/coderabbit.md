@@ -20,13 +20,20 @@ organization. The CLI signs in per provider, so a GitHub login does not see GitL
 versa — and a repository that belongs to neither runs on the free CLI allowance rather than the paid
 plan.
 
-**Whether the paid plan applies cannot be checked up front on 0.7.8.** 0.7.6 printed `Plan` and
-`Seat` in that output; 0.7.8 prints neither, there or under `--agent`. `coderabbit usage` may fail
-with an org-access error, which is a hint rather than an answer, and `coderabbit doctor` passes every
-check regardless — nine of them, authentication included, on a CLI with no entitlement. The one
-reliable signal is in the review's own opening lines, so the skill reads those and stops if the run
-announces the free allowance. That matters because the allowance is small: measured at three reviews
-before a rate limit, with the message that the plan was never in play arriving only on the fourth.
+`auth status` also reports, under *Review access*, the plan and whether a seat is assigned —
+entitlement hangs on the seat, not on the organization owning a plan.
+
+**If those two lines are missing, the stored login has gone stale**, and the usual cause is a CLI
+upgrade underneath it. Measured: after upgrading 0.7.6 → 0.7.8, both lines vanished, `coderabbit
+usage` failed with an org-access error, and reviews fell back to the free allowance — while the
+organization's trial was running and the seat had been assigned the whole time.
+`coderabbit auth logout && coderabbit auth login` restored all three at once. `coderabbit doctor`
+does not catch it: nine checks passed, authentication included, on a CLI with no entitlement.
+
+The skill reads the review's own opening lines as well, and stops if a run announces the free
+allowance — the session can go stale between one run and the next. That matters because the
+allowance is small: measured at three reviews before a rate limit, with the message that the plan
+was never in play arriving only on the fourth.
 
 ## Examples
 
@@ -79,10 +86,10 @@ Reviews both committed and uncommitted changes in one pass for a full sweep of e
 - **New files need `--include-untracked`, and the skill now passes it.** A file never added to Git
   is not part of `--uncommitted`, so it was skipped -- a review that silently omits every new file
   in a change, looking exactly like a clean one
-- Verified against CodeRabbit CLI **0.7.8**, both `review --help` and `auth status`. The surfaces
-  move between releases: `0.7` dropped `--prompt-only`/`--type`, and `0.7.8` reworded
-  `--uncommitted`, added a GitHub-only `--remote`, and removed the `Plan`/`Seat` lines from
-  `auth status` that this skill had been relying on
+- Verified against CodeRabbit CLI **0.7.8**, both `review --help` and `auth status`, and on a
+  healthy session: `0.7` dropped `--prompt-only`/`--type`, and `0.7.8` reworded `--uncommitted` and
+  added a GitHub-only `--remote`. A field missing from a stale session was once mistaken here for a
+  field the version had removed -- one sample is not a version difference
 - The skill asks the CLI for structured findings (`--agent`) instead of scraping the plain-text
   rendering. The CLI itself recommends this when it detects an agent environment
 - `coderabbit review findings` reprints the last review's findings without paying for a second run
