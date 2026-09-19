@@ -88,6 +88,26 @@ review, and the run then completes cleanly with nothing to say about them — in
 having looked and found nothing. Carry what it excludes into Phase 6, the same way a partial run or
 a `review_skipped` is carried there. Nothing needs passing to the CLI: it reads the file itself.
 
+**Find out whether this change answers to a ticket or a spec**, before resolving anything else.
+Nothing about a diff announces what it was supposed to achieve, so this has to be looked for rather
+than waited for.
+
+Follow `/ak-review:delegate`'s Phase 2.5 exactly — it already does this, and the method lives there:
+ticket IDs by `[A-Z]{2,}-\d+` in the branch name and the commits in scope, deduplicated and capped,
+then the ticket's summary, status, description and acceptance criteria; spec and task Markdown files
+where no ticket system is reachable. Do not restate that procedure here; a second copy is a second
+thing to keep true.
+
+Two things the calling session owns, not the tool:
+
+- **Reaching the ticket system is the session's job.** `delegate`'s ticket step needs an Atlassian
+  MCP; without one, only the spec-file path is available. Say so in Phase 6 when it happens — a
+  review that ran without requirements is not the same as one that found nothing to say about them
+- **Found is not the same as relevant.** A long-lived branch carries several ticket IDs in its
+  commits, and most of them are history rather than the requirement this change answers to
+
+Carry whatever this turns up into Phase 2, where it goes in through `-c`.
+
 Then resolve the base:
 
 1. Current branch: `git rev-parse --abbrev-ref HEAD`
@@ -194,8 +214,8 @@ amount of reading the diff finds.
 
 `/ak-review:delegate` solves this for the external-agent path by writing the requirements into the
 prompt it builds. This skill has no such prompt: it hands the CLI a scope and gets findings back. So
-when the change belongs to a ticket or a spec, write what it has to satisfy — acceptance criteria,
-the ticket's summary, the constraint that made the change necessary — into a file and pass it:
+what Phase 1 turned up — acceptance criteria, the ticket's summary, the constraint that made the
+change necessary — is written to a file and passed in:
 
 ```bash
 coderabbit review --agent -c AGENTS.md -c <requirements-file> [scope flags]

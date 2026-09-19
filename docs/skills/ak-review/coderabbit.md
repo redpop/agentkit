@@ -103,6 +103,11 @@ Reviews both committed and uncommitted changes in one pass for a full sweep of e
   by writing requirements into the prompt it builds; this skill has no such prompt, so the
   acceptance criteria go in as a file: `-c AGENTS.md -c <requirements-file>`. The session fetches
   them, from a ticket system or a spec; CodeRabbit needs no access of its own
+- **The requirements are looked for, not waited for.** Phase 1 follows `delegate`'s Phase 2.5 rather
+  than repeating it -- ticket IDs from the branch name and the commits in scope, spec files where no
+  ticket system is reachable. Reaching that system is the session's job: without an Atlassian MCP
+  only the spec path is available, and the summary says so, because a review that ran without
+  requirements is not one that found nothing to say about them
 - **Project conventions go in, not through a filter afterwards.** The skill passes `-c AGENTS.md`
   when the repository has one. CodeRabbit's hosted reviewer already discovers `**/AGENTS.md` and
   `**/CLAUDE.md` via its knowledge-base defaults; whether the CLI applies the same defaults is
