@@ -218,8 +218,15 @@ what Phase 1 turned up — acceptance criteria, the ticket's summary, the constr
 change necessary — is written to a file and passed in:
 
 ```bash
-coderabbit review --agent -c AGENTS.md -c <requirements-file> [scope flags]
+coderabbit review --agent -c AGENTS.md -c /tmp/ak-review-coderabbit/<timestamp>/requirements.md \
+  [scope flags]
 ```
+
+**Write it outside the working tree, and nowhere else.** A requirements file placed in the repository
+is untracked, `--include-untracked` is mandatory above, and the file therefore joins the change it
+was meant to describe: CodeRabbit reviews the scratch file, comments on it, bills it as a reviewed
+file, and leaves it behind in the working tree. `/tmp/ak-review-coderabbit/<timestamp>/` keeps it out
+of every scope the review can see, and matches where `/ak-review:execute` puts its own artifacts.
 
 The session running this skill is what fetches those requirements, from a ticket system or a spec
 file, exactly as `delegate` does. CodeRabbit needs no access of its own — and giving it one would
