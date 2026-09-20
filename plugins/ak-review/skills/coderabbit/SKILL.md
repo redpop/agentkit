@@ -373,6 +373,38 @@ sentence and stop there. Do not create the file: that decision belongs to the se
 described below, and it needs judgment about the repository rather than the aftermath of a single
 review.
 
+## The Same Repository, Reviewed Twice
+
+A project that uses CodeRabbit on merge requests **and** from the terminal is reviewed by two
+different things. They share a vendor and almost nothing else, and the difference decides where a
+rule has to live.
+
+| | CLI, driven by an agent | Hosted merge-request review |
+| --- | --- | --- |
+| Project conventions | passed in with `-c AGENTS.md` | discovered on its own — `**/AGENTS.md`, `**/CLAUDE.md` and friends are `code_guidelines` defaults |
+| Scope | git and `--dir`: what is committed, staged, or bounded by `--base-commit` | `path_filters`, which **do** bind here |
+| Rules for one area | text in a config, not enforced | `path_instructions`, enforced |
+| Requirements | a file the session writes, handed over with `-c` | the merge-request description, or a ticket-system connection |
+| Memory across reviews | none; every run starts cold | learnings accumulate per repository |
+
+**Put durable guidance in an `AGENTS.md`, not in `.coderabbit.yaml`.** It is the one file both
+surfaces read — the hosted reviewer by default, a CLI run because this skill passes it. A monorepo
+can place one per package, and the nearest one wins; that reaches the hosted reviewer through the
+same `**/AGENTS.md` pattern without any configuration. A rule written into `path_instructions`
+instead works on one surface and silently does nothing on the other.
+
+**When opening a merge request, put the ticket and the intent in the description.** This is the
+non-obvious one. A CLI review gets its requirements from the session, through `-c`; a hosted review
+has no session, no `-c`, and — unless a ticket-system connection is configured — no way to reach the
+ticket at all. It sees the diff, the repository and the guidelines files. A description that names
+what the change had to achieve is the only channel there is, and without it the reviewer checks the
+code against nothing.
+
+**Do not expect the two to agree.** A change reviewed locally and then again on its merge request
+gets different context: the hosted side sees the whole repository and its learnings, the local side
+saw a scope you chose. Duplicate findings are not a malfunction, and findings the local run missed
+are not a failure of this skill.
+
 ## Setting Up a Project Configuration
 
 A separate task from running a review, and one that is easy to get wrong in the same direction every

@@ -69,7 +69,7 @@ plugins/{plugin-name}/
 
 | Plugin | Skills | Agents | Extras |
 | -------- | -------- | -------- | -------- |
-| `ak-review` | 9 | - | hooks, markdownlint config, knowledge/ (4 files) |
+| `ak-review` | 9 | - | hooks, markdownlint config, knowledge/ (4 files), own AGENTS.md |
 | `ak-git` | 1 | 2 | |
 | `ak-meta` | 4 | 2 | |
 | `ak-improve` | - | 2 | knowledge/ (1 file) |
