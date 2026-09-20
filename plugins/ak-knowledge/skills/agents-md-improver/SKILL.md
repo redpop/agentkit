@@ -23,6 +23,12 @@ Also check for package-specific files in monorepo setups (e.g., `packages/*/AGEN
 
 If both `AGENTS.md` and `CLAUDE.md` exist at the same level, note this — ideally only one should be used.
 
+**Then look for the other files that are read as instructions**, because a code reviewer may apply
+all of them at once: `.cursorrules`, `.github/copilot-instructions.md`,
+`.github/instructions/*.instructions.md`, `GEMINI.md`, `.cursor/rules/*`, `.windsurfrules`,
+`.clinerules/*`, `.rules/*`. They are usually left over from a tool the project no longer uses, and
+nobody updates them — see _Instruction files are review criteria_ below for why that now matters.
+
 ## Phase 2: Quality Assessment
 
 For each file found, evaluate against these criteria:
@@ -35,6 +41,7 @@ For each file found, evaluate against these criteria:
 | Conciseness | 15 pts | No verbose explanations or obvious info? Each line earns its place? |
 | Currency | 15 pts | Does it reflect the current codebase state? Are referenced files/commands valid? |
 | Actionability | 15 pts | Are instructions executable, not vague? Paths real, commands working? |
+| Reviewability | — | Would a code reviewer applying this file produce useful findings, or noise? See below |
 
 **Validation steps:**
 
@@ -42,6 +49,31 @@ For each file found, evaluate against these criteria:
 - Check that referenced file paths actually exist
 - Confirm architecture descriptions match the current directory structure
 - Look for TODO items that were never completed
+
+### Instruction Files Are Review Criteria
+
+**This file is no longer read only by an agent that can ask questions.** CodeRabbit's knowledge base
+discovers `**/AGENTS.md` and `**/CLAUDE.md` by default and applies them as review criteria, and the
+`ak-review:coderabbit` skill hands the same file to a CLI review with `-c`. Every line in it becomes
+something a reviewer acts on, silently, on every change.
+
+That raises the bar on what belongs in the file, and it is a different bar from readability:
+
+- **A vague line produces vague findings.** "Keep the code clean" is harmless as advice and useless
+  as a criterion — it yields a comment on every merge request and teaches the team to ignore the
+  reviewer. Flag aspirational lines that state no checkable condition.
+- **A rule a linter already enforces produces duplicate findings.** If `biome`, `ruff` or
+  `shellcheck` already fails the build on it, the file should not repeat it.
+- **Contradictions between instruction files reach the reviewer as contradictions.** A stale
+  `.cursorrules` next to a current `AGENTS.md` means both sets of criteria are applied. Compare the
+  files found in Phase 1 against each other and flag disagreements; recommend deleting what the
+  project no longer uses rather than keeping it "just in case".
+
+**In a monorepo, placement is now a decision with consequences.** A file at `packages/x/AGENTS.md`
+is discovered by the same `**/AGENTS.md` pattern and scopes its criteria to that package — the
+portable equivalent of a reviewer configuration's per-path instructions, except that it also reaches
+every coding agent working in that directory. Where the root file carries a rule that only holds for
+one package, recommend moving it there rather than qualifying it in place.
 
 ### Task Completion Workflow Check
 
@@ -172,3 +204,10 @@ After user approval, apply changes. Preserve existing content structure.
 7. **Duplicate CLAUDE.md + AGENTS.md** — should be consolidated
 8. **Missing symlink notice** — if `CLAUDE.md` is a symlink to `AGENTS.md`, the notice `> \`CLAUDE.md\` is a symlink pointing to this file.` must appear at the top of `AGENTS.md`
 9. **Missing or outdated task completion workflow** — section absent entirely, or references commands/skills/agents that no longer exist (delegate to `/ak-review:workflow` or `/ak-review:workflow --audit`)
+10. **Leftover instruction files from unused tools** — a `.cursorrules`, `.windsurfrules` or
+    `GEMINI.md` the project abandoned, still discovered and still applied as review criteria
+    alongside the current file
+11. **Aspirational lines that cannot be checked** — guidance that reads well and gives a reviewer
+    nothing to decide on, producing a comment on every change
+12. **A root-level rule that only holds for one package** — in a monorepo it belongs in that
+    package's own instruction file, where it is scoped for both agents and reviewers
