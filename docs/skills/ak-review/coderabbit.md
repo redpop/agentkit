@@ -26,12 +26,15 @@ plan.
 `auth status` also reports, under *Review access*, the plan and whether a seat is assigned —
 entitlement hangs on the seat, not on the organization owning a plan.
 
-**If those two lines are missing, the stored login has gone stale**, and the usual cause is a CLI
-upgrade underneath it. Measured: after upgrading 0.7.6 → 0.7.8, both lines vanished, `coderabbit
-usage` failed with an org-access error, and reviews fell back to the free allowance — while the
-organization's trial was running and the seat had been assigned the whole time.
-`coderabbit auth logout && coderabbit auth login` restored all three at once. `coderabbit doctor`
-does not catch it: nine checks passed, authentication included, on a CLI with no entitlement.
+**If those two lines are missing on an OAuth session, the browser session behind them has
+expired** — on its own schedule, measured daily and sometimes twice, with no upgrade in between.
+Two credentials with two lifetimes sit behind one login: a bearer token, measured 83 days from
+expiry, which keeps identity and the review itself alive, and a cookie session that the seat and
+usage endpoints require and that lives hours. Nothing renews the cookie; only the browser callback
+during `auth login` mints one, which is why `coderabbit auth logout && coderabbit auth login`
+repairs it and why it has to be repeated. **For unattended work, an API key removes the cookie from
+the path entirely.** `coderabbit doctor` catches none of this: nine checks passed, authentication
+included, on a CLI with no entitlement.
 
 The skill reads the review's own opening lines as well, and stops if a run announces the free
 allowance — the session can go stale between one run and the next. That matters because the
@@ -125,9 +128,11 @@ Reviews both committed and uncommitted changes in one pass for a full sweep of e
 - **`--agent` output is NDJSON**, one object per line — parsed line by line, not as one document
 - **An empty finding list is the ambiguous result here**, and the reasons for one that have nothing
   to do with the code keep accumulating: a `complete` event carrying `status: review_skipped`, a
-  non-zero exit, an interrupted run reported as partial, and a scope the configuration's
-  `path_filters` cut down before the review saw the files. A heartbeat is not completion either.
-  The skill rules each one out before writing "no issues found", and names the one that applied
+  non-zero exit, an interrupted run reported as partial, and a scope that never contained the work
+  -- `--committed` on a change not committed yet, or a `--base` that puts it behind the comparison
+  point. A heartbeat is not completion either. The skill rules each one out before writing "no
+  issues found", and names the one that applied. (`path_filters` belong in that list for a hosted
+  review; in a CLI run they exclude nothing -- measured)
 - **Severities stay in the CLI's own vocabulary** -- `critical`, `major`, `minor`, `trivial`,
   `info`, `none` -- so a reported finding can be traced back to what the tool actually said
 - **The CLI uploads the diff to CodeRabbit's API.** The skill checks the resolved scope for

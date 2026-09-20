@@ -52,46 +52,47 @@ decide what it covers:
 3. **The base** to compare against
 4. **What the change answers to** — a ticket, a spec, or nothing
 
-**Run this first, and read the answer:**
+**Ask how the session is authenticated first.** The answer decides whether the rest of this check
+applies at all:
+
+```bash
+coderabbit auth status --agent
+```
+
+**`authType: api_key`** — the whole output is
+`{"authenticated":true,"authType":"api_key","region":"us"}`. No organization, no plan, no seat: that
+block is absent **by design**, not by failure. The checks below do not apply and must not be run;
+they would report a stale login on every single invocation and send the caller into a
+re-authentication that changes nothing. `coderabbit usage` is no help either — it fails with
+`Authorization header not found`, because the CLI does not send the key on that request. Under an
+API key the only entitlement signal is the review's own opening lines, further down. Skip ahead to
+the configuration check.
+
+**Any other `authType`** — an OAuth session. Then read the rendered output:
 
 ```bash
 coderabbit auth status
 ```
 
 It prints the account, the **provider**, the active **organization**, and — under *Review access* —
-the **plan** and whether a **seat** is assigned. All four matter. The CLI signs in per provider,
-so a GitHub login does not see GitLab groups and vice versa, and entitlement hangs on an assigned
-seat rather than on the organization owning a plan.
+the **plan** and whether a **seat** is assigned. The CLI signs in per provider, so a GitHub login
+does not see GitLab groups and vice versa, and entitlement hangs on an assigned seat rather than on
+the organization owning a plan.
 
-**First, check *how* you are signed in — the answer changes what the rest of this means:**
-
-```bash
-coderabbit auth status --agent
-```
-
-An `authType` of `api_key` reports **no organization, no plan and no seat at all** — the *Review
-access* block is absent by design, not by failure. Measured: the whole output is
-`{"authenticated":true,"authType":"api_key","region":"us"}`. Under an API key, the checks below do
-not apply and must not be run: they would report a stale login on every single invocation and send
-the caller into a re-authentication that changes nothing. `coderabbit usage` is no help there either
-— it fails with `Authorization header not found`, because the CLI does not send the key on that
-request. The only entitlement signal left is the review's own opening lines, further down.
-
-**Everything below applies to an OAuth session (`authType` other than `api_key`).**
-
-**A missing `Plan` or `Seat` line is not a version difference. It means the stored login has gone
-stale.** Measured: after an upgrade from 0.7.6 to
-0.7.8, `auth status` stopped printing both lines, `coderabbit usage` failed with "Check your
-connection and organization access", and reviews fell back to the free allowance while the
-organization's trial was running and the seat was assigned the whole time. The remedy is one
-command pair:
+**A missing `Plan` or `Seat` line means the browser session behind them has expired**, and it does
+that on its own schedule — measured daily, sometimes twice, with no upgrade in between. Two
+credentials with two lifetimes sit behind one OAuth login: a bearer token, measured 83 days from
+expiry, which keeps identity and the review itself alive, and a **cookie session** that the seat and
+usage endpoints require and that lives hours. Nothing renews the cookie; only the browser callback
+during `auth login` mints one. So this:
 
 ```bash
 coderabbit auth logout && coderabbit auth login
 ```
 
-After that, all three recovered at once. Do not read the absence of those lines as "this version does
-not report it" — that inference cost a release here.
+repairs it, and is the only thing that can — which is why it has to be repeated. **A repair that
+must be reapplied on a schedule is describing its own cause.** For anything unattended, use an API
+key instead and the cookie leaves the picture entirely; the full account is in `docs/solutions/`.
 
 **`coderabbit doctor` will not catch this.** It passed nine checks, authentication included, on a CLI
 with no entitlement; it does not test the plan at all.
@@ -294,9 +295,13 @@ that it finished — waiting for one is not waiting for completion.
 
 **An empty finding list is the ambiguous result in this whole skill**, and the list of reasons for
 one that have nothing to do with the code keeps growing. So far: a `review_skipped` status, a
-non-zero exit, an interrupted run reported as partial, and a scope cut down by the configuration's
-`path_filters` before the review ever saw the files. Rule out every one of them before the words
-"no issues found" are written, and name the one that applied when it did.
+non-zero exit, an interrupted run reported as partial, and a scope that never contained the work —
+`--committed` on a change that is not committed yet, or a `--base` that puts it behind the
+comparison point. Rule out every one of them before the words "no issues found" are written, and
+name the one that applied when it did.
+
+(On a hosted review, `path_filters` belong in that list too. In a CLI run they do not: measured,
+they exclude nothing.)
 
 Then take the findings: `fileName`, line, severity, the comment, and — where present —
 `codegenInstructions` and `suggestions`, which carry the fix guidance. Fall back to the comment when
