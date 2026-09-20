@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.33.6] - 2026-09-20
+
+### 🐛 Fixed
+
+- `ak-review:coderabbit` — **a configuration does not bound a CLI review, and this plugin claimed
+  twice in two days that it does.** Measured over the same 14-file diff, twice: every file was
+  reviewed, `CHANGELOG.md` included, with `!CHANGELOG.md`, `!**/CHANGELOG.md` and `!docs/**` all
+  present in the repository's `.coderabbit.yaml`. Neither the root-file form nor the directory form
+  — CodeRabbit's own documented example — excluded anything.
+
+  The reason is in the CLI reference: a local review reads `.coderabbit.yaml` as *additional
+  instructions*, the role the `-c` flag fills, whose help names `coderabbit.yaml` as an example of
+  what to pass it. There is no enforcement layer on that path, only a model reading text. Filters
+  state an intention that only the hosted reviewer acts on; `path_instructions` and `profile` arrive
+  the same way, and whether the model follows a given instruction is a question of review quality
+  rather than of configuration.
+
+  With that goes the claim that filtering saves money on per-file billing: a CLI run pays for every
+  changed file whatever the filters say. The condition table in the configuration section gains a
+  column for where each key works, and says plainly that a terminal-only workflow loses the
+  strongest reason to keep a configuration at all.
+
 ## [1.33.5] - 2026-09-20
 
 ### 🐛 Fixed
