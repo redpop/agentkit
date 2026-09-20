@@ -5,8 +5,23 @@
 # base defaults, so a copy in this file would be a second source that drifts —
 # the defect AGENTS.md itself warns about most.
 #
-# What belongs here is only what AGENTS.md cannot express: which files are worth
-# paying to review, and what deserves extra attention in a given directory.
+# What belongs here is only what AGENTS.md cannot express: what deserves extra
+# attention in a given directory.
+#
+# MEASURED 2026-09-20 — read this before trusting the filters below.
+# `path_filters` do NOT bound a CLI review. Two runs over the same 14-file diff
+# reviewed all 14 files, CHANGELOG.md included, with "!CHANGELOG.md",
+# "!**/CHANGELOG.md" and "!docs/**" all present here. Neither pattern form
+# excluded anything.
+#
+# The reason is in CodeRabbit's own CLI reference: a local review reads this
+# file as *additional instructions*, the same role the -c flag fills. There is
+# no enforcement layer on that path, only a model reading text — so the filters
+# below state an intention, and only the hosted reviewer acts on it.
+#
+# They are kept for that hosted case and because they document what is not worth
+# reviewing. They are not a cost control for terminal runs: a CLI review pays
+# for every changed file whatever is written here.
 
 reviews:
   # `chill` is the default, pinned so that changing it is a decision rather than
@@ -14,10 +29,10 @@ reviews:
   # (which tends to feel nitpicky).
   profile: chill
 
-  # Usage-based reviews bill per reviewed file, so anything excluded here is
-  # both noise and money. Measured 2026-09-19: of 38,032 markdown lines in the
-  # repository, the four exclusions below account for 25,894 — 68%, none of it
-  # logic.
+  # For the hosted reviewer, anything excluded here is both noise and money —
+  # it bills per reviewed file. Measured 2026-09-19: of 38,032 markdown lines in
+  # the repository, the four exclusions below account for 25,894 — 68%, none of
+  # it logic. For CLI runs the saving does not materialise; see the note above.
   path_filters:
     # Written by the release step, every release, and already reviewed as part
     # of the change it describes. 1,663 lines and growing.

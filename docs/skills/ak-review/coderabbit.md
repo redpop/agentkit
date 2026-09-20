@@ -143,12 +143,16 @@ Reviews both committed and uncommitted changes in one pass for a full sweep of e
 
 ## Project Configuration
 
-A review run notices whether the repository has a `.coderabbit.yaml` and compares what its
-`path_filters` claim to exclude against the files the run reports as reviewed. **Measured
-2026-09-20, they did not match:** a 14-file diff came back as 14 files reviewed, `CHANGELOG.md`
-among them, with `!CHANGELOG.md` standing in the configuration. A CLI review is therefore not
-necessarily bounded by the filters, and the reviewed-files list is the evidence where the
-configuration is only the intention. If a project has no configuration and the
+**A configuration does not bound a CLI review.** CodeRabbit's CLI reference describes a local
+review as reading `.coderabbit.yaml` for *additional instructions* — the role the `-c` flag fills,
+whose own help names `coderabbit.yaml` as an example. There is no enforcement layer on that path,
+only a model reading text.
+
+Measured 2026-09-20, twice: a 14-file diff came back as 14 files reviewed with `!CHANGELOG.md`,
+`!**/CHANGELOG.md` and `!docs/**` all present in the configuration. Neither the root-file form nor
+the directory form excluded anything. The skill therefore treats a configuration as information:
+it compares what the filters claim against the `reviewedFiles` the run reports, and says which of
+the two is true. If a project has no configuration and the
 run made a case for one, the summary says so in a sentence and stops there; it does not create the
 file.
 
