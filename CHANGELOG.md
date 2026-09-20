@@ -5,6 +5,48 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.35.0] - 2026-09-20
+
+### ✨ Added
+
+- `ak-knowledge:agents-md-improver` — **instruction files are audited as review criteria now, not
+  only as instructions.** CodeRabbit's knowledge base discovers `**/AGENTS.md` and `**/CLAUDE.md` by
+  default and applies them as review criteria; `ak-review:coderabbit` hands the same file to a CLI
+  review with `-c`. Every line becomes something a reviewer acts on, silently, on every change.
+
+  A vague line therefore produces vague findings — "keep the code clean" is harmless as advice and
+  useless as a criterion, yielding a comment on every merge request and teaching the team to ignore
+  the reviewer. A rule a linter already enforces produces duplicates instead. Discovery also looks
+  for the other files a reviewer applies at the same time — `.cursorrules`,
+  `.github/copilot-instructions.md`, `GEMINI.md`, `.windsurfrules`, `.clinerules/*`, `.rules/*` —
+  which are usually left over from an abandoned tool and contradict the current file. And in a
+  monorepo a rule that only holds for one package belongs in that package's own file, where it is
+  scoped for agents and reviewers alike.
+
+### 🐛 Fixed
+
+- `ak-review:workflow` — **the template shipped a dead command to other projects.** It generated
+  `coderabbit review --prompt-only --type uncommitted`; both flags were removed in CLI `0.7`. This
+  repository's own workflow had been corrected and the template it hands to others had not — the
+  exact failure `agents-md-improver`'s dogfooding check warns about, committed by the repository
+  that wrote the warning.
+
+- `ak-review:coderabbit` — **the cause of the daily re-login was still wrong here**, in the skill and
+  on its documentation page: both blamed a CLI upgrade. Two credentials with two lifetimes sit
+  behind one OAuth login — a bearer token measured 83 days from expiry, which keeps identity and the
+  review alive, and a cookie session that the seat and usage endpoints require and that lives hours.
+  Nothing renews the cookie; only the browser callback during `auth login` mints one. The re-login
+  repairs it and must be repeated, and a repair that has to be reapplied on a schedule is describing
+  its own cause. An API key removes the cookie from the path.
+
+- `ak-review:coderabbit` — Phase 1 said "first" twice, telling the reader to read the plan and seat
+  lines and only afterwards that under an API key they do not exist. The authentication type is
+  asked first now and decides whether the rest of the check applies.
+
+- `ak-review:coderabbit` — `path_filters` are out of the list of reasons a CLI review comes back
+  empty; measured, they exclude nothing there. What belongs in that list is a scope that never
+  contained the work.
+
 ## [1.34.0] - 2026-09-20
 
 ### ✨ Added
