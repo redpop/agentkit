@@ -109,16 +109,20 @@ it does:
 ls .coderabbit.yaml .coderabbit.yml .coderabbit.config.ts 2> /dev/null
 ```
 
-**Do not assume `path_filters` bound a CLI review.** Measured 2026-09-20 on a run under an API key:
-a diff of 14 files was reviewed as 14 files, `CHANGELOG.md` among them, while `!CHANGELOG.md` stood
-in the repository's `.coderabbit.yaml`. Nothing was excluded. Whether that holds for every auth mode
-and every CLI version is unverified — the one measurement says the filters did not apply here.
+**A configuration does not bound a CLI review.** The CLI documents its own use of the file as
+*additional instructions* — the same role `-c` fills, and `-c`'s own help names `coderabbit.yaml` as
+an example of what to pass it. There is no enforcement layer on this path, only a model reading
+text, so `path_filters` describe an intention rather than a scope.
 
-So treat a configuration as **information, not as a boundary**. Note that it exists and what it
-claims to exclude, and in Phase 6 compare that claim against the files the run reports as reviewed.
-Where the two disagree, say which one is true — the reviewed-files list is the evidence, the
-configuration is the intention. `path_instructions` and `profile` are a separate question this
-measurement says nothing about.
+Measured 2026-09-20, twice: a 14-file diff came back as 14 files reviewed with `!CHANGELOG.md`,
+`!**/CHANGELOG.md` and `!docs/**` all present in the configuration. Neither the root-file form nor
+the directory form excluded anything.
+
+So read a configuration as **information**. Note what it claims to exclude, and in Phase 6 compare
+that claim against the files the run reports as reviewed — where the two disagree, the reviewed-files
+list is the evidence and the configuration is the intention. `path_instructions` and `profile` reach
+the model as text by the same mechanism; whether it follows a given instruction is a question of
+review quality, not of configuration.
 
 Then resolve the base:
 
@@ -381,11 +385,15 @@ config that only restates them buys nothing at all.
 
 Create one when at least one of these is true, and put only that in it:
 
-| Condition | What it earns |
-| ----------- | --------------- |
-| Files exist that should never be reviewed | `path_filters` — generated output, vendored code, lockfiles, a changelog. Usage-based reviews bill per reviewed file, so this is noise and money at once |
-| Different areas need different attention | `path_instructions` — a glob plus what a reviewer should look for there |
-| The volume of nitpicks is wrong | `profile` — `quiet`, `chill` (default) or `assertive` |
+| Condition | What it earns | Where it works |
+| ----------- | --------------- | ---------------- |
+| Files exist that should never be reviewed | `path_filters` — generated output, vendored code, lockfiles, a changelog | **Hosted reviews only.** Measured: they do not bound a CLI run |
+| Different areas need different attention | `path_instructions` — a glob plus what a reviewer should look for there | Both, as text the model reads |
+| The volume of nitpicks is wrong | `profile` — `quiet`, `chill` (default) or `assertive` | Both, same way |
+
+**If reviews here happen in the terminal, the first row does not apply to you.** That removes the
+strongest reason to keep a configuration at all, and with it the argument that filtering saves money
+on per-file billing — a CLI run pays for every changed file whatever the filters say.
 
 **Start from the repository, not from a template.** Ask the CLI what it sees:
 
