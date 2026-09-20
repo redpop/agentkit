@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.33.5] - 2026-09-20
+
+### 🐛 Fixed
+
+- `ak-review:coderabbit` — **three corrections, produced by the first real CodeRabbit run against
+  this repository.** All three are to text shipped in the preceding two days.
+
+  - **The ordering bug, found by CodeRabbit itself.** Phase 1 searched "the commits in scope" for
+    ticket references *before* resolving the base — and what is in scope is exactly what the base
+    decides, so the search ran against a range that did not exist yet. Introduced a day earlier
+    while correcting a different claim about that paragraph's position. The base is resolved first
+    now, and the step says why it comes second.
+  - **API-key authentication reports no organization, plan or seat at all.** The entire output is
+    `{"authenticated":true,"authType":"api_key","region":"us"}` — the *Review access* block is
+    absent by design. Phase 1's staleness check would have fired on every run and sent the caller
+    into a re-authentication that changes nothing. It is gated on the auth type now, with the
+    companion gap named: `coderabbit usage` fails there with `Authorization header not found`,
+    because the CLI does not send the key on that request.
+  - **`path_filters` did not bound the review.** Measured: a 14-file diff came back as 14 files
+    reviewed, `CHANGELOG.md` among them, with `!CHANGELOG.md` standing in the repository's
+    `.coderabbit.yaml`. Whether that holds for every auth mode and CLI version is unverified, but
+    the claim that a configuration silently limits a CLI review's scope cannot stand on this
+    evidence. A configuration is information now, not a boundary: Phase 6 compares what the filters
+    claim against the `reviewedFiles` the run reports and says which of the two is true.
+
 ## [1.33.4] - 2026-09-19
 
 ### 🐛 Fixed
