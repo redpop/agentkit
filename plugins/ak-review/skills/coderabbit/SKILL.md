@@ -48,9 +48,9 @@ Four things, in this order — the first two decide whether a review is worth st
 decide what it covers:
 
 1. **Who the CLI is**, and whether the paid plan applies
-2. **Whether a project configuration** already bounds the review
-3. **What the change answers to** — a ticket, a spec, or nothing
-4. **The base** to compare against
+2. **Whether a project configuration** applies at all
+3. **The base** to compare against
+4. **What the change answers to** — a ticket, a spec, or nothing
 
 **Run this first, and read the answer:**
 
@@ -63,8 +63,24 @@ the **plan** and whether a **seat** is assigned. All four matter. The CLI signs 
 so a GitHub login does not see GitLab groups and vice versa, and entitlement hangs on an assigned
 seat rather than on the organization owning a plan.
 
+**First, check *how* you are signed in — the answer changes what the rest of this means:**
+
+```bash
+coderabbit auth status --agent
+```
+
+An `authType` of `api_key` reports **no organization, no plan and no seat at all** — the *Review
+access* block is absent by design, not by failure. Measured: the whole output is
+`{"authenticated":true,"authType":"api_key","region":"us"}`. Under an API key, the checks below do
+not apply and must not be run: they would report a stale login on every single invocation and send
+the caller into a re-authentication that changes nothing. `coderabbit usage` is no help there either
+— it fails with `Authorization header not found`, because the CLI does not send the key on that
+request. The only entitlement signal left is the review's own opening lines, further down.
+
+**Everything below applies to an OAuth session (`authType` other than `api_key`).**
+
 **A missing `Plan` or `Seat` line is not a version difference. It means the stored login has gone
-stale, and the usual cause is a CLI upgrade underneath it.** Measured: after an upgrade from 0.7.6 to
+stale.** Measured: after an upgrade from 0.7.6 to
 0.7.8, `auth status` stopped printing both lines, `coderabbit usage` failed with "Check your
 connection and organization access", and reviews fell back to the free allowance while the
 organization's trial was running and the seat was assigned the whole time. The remedy is one
@@ -93,12 +109,34 @@ it does:
 ls .coderabbit.yaml .coderabbit.yml .coderabbit.config.ts 2> /dev/null
 ```
 
-A configuration is a **silent scope limitation**. Its `path_filters` remove whole trees from the
-review, and the run then completes cleanly with nothing to say about them — indistinguishable from
-having looked and found nothing. Carry what it excludes into Phase 6, the same way a partial run or
-a `review_skipped` is carried there. Nothing needs passing to the CLI: it reads the file itself.
+**Do not assume `path_filters` bound a CLI review.** Measured 2026-09-20 on a run under an API key:
+a diff of 14 files was reviewed as 14 files, `CHANGELOG.md` among them, while `!CHANGELOG.md` stood
+in the repository's `.coderabbit.yaml`. Nothing was excluded. Whether that holds for every auth mode
+and every CLI version is unverified — the one measurement says the filters did not apply here.
 
-**Find out whether this change answers to a ticket or a spec**, before the base is resolved.
+So treat a configuration as **information, not as a boundary**. Note that it exists and what it
+claims to exclude, and in Phase 6 compare that claim against the files the run reports as reviewed.
+Where the two disagree, say which one is true — the reviewed-files list is the evidence, the
+configuration is the intention. `path_instructions` and `profile` are a separate question this
+measurement says nothing about.
+
+Then resolve the base:
+
+1. Current branch: `git rev-parse --abbrev-ref HEAD`
+2. Unpushed commits: `git rev-list --count @{u}..HEAD 2>/dev/null`
+3. `--base-commit` given → use it. `--base` given → use it. Ahead of origin → `origin/<branch>`.
+   Otherwise → `main`
+
+**On a follow-up round, prefer `--base-commit`.** When this repository has been reviewed before and
+those findings were addressed, the scope is what happened since that revision, not since the branch
+point. Nothing detects this — a base branch is a branch point, not a review history, so an unset
+base re-reviews everything every round. Measured on a sixth round over one ticket: 9 files and
++2220/−88 against the ticket base where only 5 files and +557/−93 were new.
+
+**Only now, find out whether this change answers to a ticket or a spec.** This step comes *after*
+the base and not before it: it searches the commits **in scope**, and what is in scope is exactly
+what the base just decided. Run it earlier and it searches a range that does not exist yet.
+
 Nothing about a diff announces what it was supposed to achieve, so this has to be looked for rather
 than waited for.
 
@@ -117,19 +155,6 @@ Two things the calling session owns, not the tool:
   commits, and most of them are history rather than the requirement this change answers to
 
 Carry whatever this turns up into Phase 2, where it goes in through `-c`.
-
-Then resolve the base:
-
-1. Current branch: `git rev-parse --abbrev-ref HEAD`
-2. Unpushed commits: `git rev-list --count @{u}..HEAD 2>/dev/null`
-3. `--base-commit` given → use it. `--base` given → use it. Ahead of origin → `origin/<branch>`.
-   Otherwise → `main`
-
-**On a follow-up round, prefer `--base-commit`.** When this repository has been reviewed before and
-those findings were addressed, the scope is what happened since that revision, not since the branch
-point. Nothing detects this — a base branch is a branch point, not a review history, so an unset
-base re-reviews everything every round. Measured on a sixth round over one ticket: 9 files and
-+2220/−88 against the ticket base where only 5 files and +557/−93 were new.
 
 ### Phase 2: Execute Review
 
@@ -332,10 +357,11 @@ Report: issues found, fixes applied, items skipped (with reasons), validation re
 recommendations. Report severities in the CLI's own vocabulary, and say plainly when a run was
 partial, skipped or failed rather than letting a short finding list imply clean code.
 
-**Name what the configuration kept out.** If the repository has `path_filters`, say which paths were
-outside the review's scope by configuration — "`docs/**` and `vendor/**` were excluded by
-`.coderabbit.yaml`" — so that a quiet result is read as a bounded review rather than a clean
-codebase.
+**Compare what the configuration claimed to exclude against what was actually reviewed.** The
+`complete` event carries `reviewedFiles`; the configuration carries `path_filters`. If a path the
+filters exclude appears in that list, the filter did not apply — say so, because the next reader
+will otherwise assume a bounded review. If filtered paths are genuinely absent, name them, so a
+quiet result is read as a bounded review rather than a clean codebase.
 
 If the project has **no** configuration and this run made a case for one — most findings came from
 generated or vendored files, or one area kept producing noise another would not — say so in one
