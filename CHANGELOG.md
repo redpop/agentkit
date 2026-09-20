@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.34.0] - 2026-09-20
+
+### ✨ Added
+
+- `ak-review` — **a plugin-level `AGENTS.md`**, carrying the adapter contract: the three reserved
+  exit codes and their opposite advice, the `null`-never-`0` rule for cost and token figures, and
+  the standing suspicion that an empty result has causes unrelated to the code. The root
+  `AGENTS.md` already anticipated this file ("each plugin directory can contain its own
+  AGENTS.md"); CodeRabbit's knowledge base discovers `**/AGENTS.md` by default, so it reaches the
+  hosted reviewer without configuration, a CLI run through `-c`, and any agent working in that
+  directory by simply being there.
+
+- `ak-review:coderabbit` — **a section on the same repository being reviewed twice.** Conventions
+  reach the hosted reviewer on their own and a CLI run through `-c AGENTS.md`; scope is the
+  opposite, with `path_filters` binding on the hosted side and nowhere else. Durable guidance
+  therefore belongs in an `AGENTS.md` rather than in `path_instructions`, which work on one surface
+  and silently do nothing on the other.
+
+  With it, the instruction that is genuinely non-obvious: **when opening a merge request, put the
+  ticket and the intent in the description.** A CLI review gets its requirements from the session
+  through `-c`; a hosted review has no session and, without a ticket-system connection, no way to
+  reach a ticket at all. The description is the only channel, and without it the reviewer checks
+  the code against nothing.
+
+### ♻️ Changed
+
+- **`.coderabbit.yaml` loses its `path_instructions`.** Checking them against the root `AGENTS.md`
+  showed four of five repeating it almost verbatim — hooks `exit 0`, the eleven-file version sync,
+  `docs/` moving with the plugin, hunting stale claims — in the same file whose own header states
+  that conventions are not repeated in it. The hosted reviewer had been reading them all along.
+  The fifth moved to `plugins/ak-review/AGENTS.md`. What remains in the configuration is what only
+  it can do: review scope for the hosted reviewer, and the profile.
+
 ## [1.33.6] - 2026-09-20
 
 ### 🐛 Fixed
