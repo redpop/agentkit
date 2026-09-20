@@ -15,9 +15,12 @@ Executes a CodeRabbit CLI review against uncommitted, committed, or all changes.
 **Flags:** `--type uncommitted|committed|all` (default: uncommitted), `--base <branch>`,
 `--base-commit <sha>`, `--dir <path>`
 
-Before spending a review, the skill runs `coderabbit auth status` and checks the provider and the
-organization. The CLI signs in per provider, so a GitHub login does not see GitLab groups and vice
-versa — and a repository that belongs to neither runs on the free CLI allowance rather than the paid
+Before spending a review, the skill checks **how** the session is authenticated. Under an API key
+(`authType: api_key`) there is no organization, plan or seat in the output at all — that block is
+absent by design, so the staleness checks below do not apply and would otherwise fire on every run.
+Under an OAuth session it checks the provider and the organization. The CLI signs in per
+provider, so a GitHub login does not see GitLab groups and vice versa — and a repository that
+belongs to neither runs on the free CLI allowance rather than the paid
 plan.
 
 `auth status` also reports, under *Review access*, the plan and whether a seat is assigned —
@@ -140,11 +143,12 @@ Reviews both committed and uncommitted changes in one pass for a full sweep of e
 
 ## Project Configuration
 
-A review run now notices whether the repository has a `.coderabbit.yaml` and says in the summary
-which paths its `path_filters` kept out. A configuration is a silent scope limitation: it removes
-whole trees from the review, after which the run completes cleanly with nothing to say about
-them —
-indistinguishable from having looked and found nothing. If a project has no configuration and the
+A review run notices whether the repository has a `.coderabbit.yaml` and compares what its
+`path_filters` claim to exclude against the files the run reports as reviewed. **Measured
+2026-09-20, they did not match:** a 14-file diff came back as 14 files reviewed, `CHANGELOG.md`
+among them, with `!CHANGELOG.md` standing in the configuration. A CLI review is therefore not
+necessarily bounded by the filters, and the reviewed-files list is the evidence where the
+configuration is only the intention. If a project has no configuration and the
 run made a case for one, the summary says so in a sentence and stops there; it does not create the
 file.
 
