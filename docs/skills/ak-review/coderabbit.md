@@ -141,6 +141,22 @@ Reviews both committed and uncommitted changes in one pass for a full sweep of e
 - When in doubt, skip and flag for manual review -- false positives happen
 - Run validation after fixes to ensure project consistency
 
+## The Same Repository, Reviewed Twice
+
+A project reviewed both on merge requests and from the terminal is reviewed by two different
+things, and the difference decides where a rule has to live. Conventions reach the hosted reviewer
+on their own -- `**/AGENTS.md` and `**/CLAUDE.md` are among CodeRabbit's `code_guidelines` defaults
+-- and reach a CLI run because the skill passes `-c AGENTS.md`. Scope is the opposite: `path_filters`
+bind on the hosted side and not in the CLI, where git and `--dir` decide it.
+
+So durable guidance belongs in an `AGENTS.md`, per package in a monorepo if need be, rather than in
+`path_instructions` that work on one surface and silently do nothing on the other.
+
+The non-obvious part is requirements. A CLI review gets them from the session through `-c`; a hosted
+review has no session and, without a ticket-system connection, no way to reach a ticket at all. **The
+merge-request description is the only channel there is** -- without it, the hosted reviewer checks
+the code against nothing.
+
 ## Project Configuration
 
 **A configuration does not bound a CLI review.** CodeRabbit's CLI reference describes a local

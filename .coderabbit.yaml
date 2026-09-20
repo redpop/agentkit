@@ -5,8 +5,12 @@
 # base defaults, so a copy in this file would be a second source that drifts —
 # the defect AGENTS.md itself warns about most.
 #
-# What belongs here is only what AGENTS.md cannot express: what deserves extra
-# attention in a given directory.
+# What belongs here is only what AGENTS.md cannot express and what no other file
+# can carry: review scope for the hosted reviewer, and the review profile.
+# Everything that is guidance now lives in an AGENTS.md — the root one for the
+# repository, plugins/ak-review/AGENTS.md for that plugin — because CodeRabbit's
+# knowledge base discovers `**/AGENTS.md` by default and a CLI run can be handed
+# the same file with -c.
 #
 # MEASURED 2026-09-20 — read this before trusting the filters below.
 # `path_filters` do NOT bound a CLI review. Two runs over the same 14-file diff
@@ -52,60 +56,16 @@ reviews:
     - "!.docs/**"
     - "!docs/superpowers/plans/**"
 
-  path_instructions:
-    - path: "plugins/*/skills/**/SKILL.md"
-      instructions: >-
-        These files are instructions executed by an AI agent, not prose. Read
-        them as a contract.
-
-        The highest-value finding here is a STALE CLAIM: a behaviour that gained
-        a second case while some sentence still describes only the first. Check
-        the whole file, not just the changed lines — a contract table near the
-        top, a phase description in the middle, and an adapter note at the
-        bottom often describe the same thing, and a change usually reaches only
-        one of them. This is the most frequent defect in this repository's
-        history.
-
-        Also flag: an instruction that cannot be followed because it names a
-        flag, field or output the tool no longer produces; a rule stated in one
-        phase and contradicted in another; and any exit code or failure mode
-        described without saying what the caller must do about it.
-
-        Arguments are `--` prefixed by convention.
-
-    - path: "plugins/*/skills/execute/scripts/*.sh"
-      instructions: >-
-        Adapter scripts with a documented contract in the execute skill's
-        Adapter Reference. Reserved exit codes: 124 (ran, then hung, partial
-        output salvageable), 125 (produced nothing, never started), 126 (the
-        tool itself refused). Check that a new failure path picks the code whose
-        advice matches, since the three carry opposite instructions.
-
-        Cost and token extractors must report `null` for a figure the stream
-        never carried, never `0` — a zero claims a run was free or consumed
-        nothing when the truth is that nobody counted. Watch for `// 0` in jq
-        filters reintroducing exactly that.
-
-        These must stay shellcheck-clean and must work under both bash and zsh.
-
-    - path: "plugins/*/hooks/*.sh"
-      instructions: >-
-        Hook scripts must always `exit 0`. A non-zero exit from a hook blocks
-        the tool call that triggered it, which turns a formatting nicety into a
-        broken session.
-
-    - path: "**/.claude-plugin/*.json"
-      instructions: >-
-        Versions are synchronized across 11 files: `.claude-plugin/marketplace.json`
-        (9 entries), the nine `plugins/*/.claude-plugin/plugin.json`, and the
-        version reference in AGENTS.md. A change to one of them that is not
-        matched in the others ships a marketplace whose entries disagree with
-        the plugins they point at. Flag any partial bump.
-
-    - path: "docs/**/*.md"
-      instructions: >-
-        This tree mirrors the plugins. When a skill, agent or hook changes, the
-        corresponding page under `docs/` and the plugin table in the root
-        README.md change with it, in the same commit. Flag a documentation page
-        that still describes the previous behaviour of something the same change
-        touched.
+  # path_instructions stehen NICHT mehr hier.
+  #
+  # Vier der fünf wiederholten wörtlich, was die Wurzel-AGENTS.md ohnehin sagt
+  # (Hooks exit 0, Versionsgleichlauf, docs/ wandert mit, veraltete Aussagen
+  # jagen) — in derselben Datei, deren Kopf erklärt, dass Konventionen hier
+  # nicht wiederholt werden. CodeRabbits Wissensbasis liest `**/AGENTS.md`
+  # ohnehin, der gehostete Reviewer kannte sie also längst.
+  #
+  # Die fünfte war echtes Wissen und steht jetzt in plugins/ak-review/AGENTS.md:
+  # der Adapter-Vertrag mit seinen drei reservierten Exit-Codes und der Regel
+  # "null, niemals 0". Dort wird sie vom gehosteten Reviewer automatisch
+  # gefunden, von einem CLI-Lauf über -c mitgegeben und von jedem Agent
+  # gelesen, der in dem Verzeichnis arbeitet. Eine Quelle, alle Oberflächen.
