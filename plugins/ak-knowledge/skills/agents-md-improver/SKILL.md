@@ -80,12 +80,12 @@ one package, recommend moving it there rather than qualifying it in place.
 
 **Always verify the file contains a "Task completion workflow" section** (typically near the end). Every project benefits from documented post-implementation steps so coding agents know what to run after changes.
 
-**If the section is missing:** flag as a high-priority gap. The fix is to invoke `/ak-review:workflow`, which analyzes project tooling (build, test, lint, format, review, changelog) and generates an appropriate workflow tailored to the detected stack, in pointer form (see below).
+**If the section is missing:** flag as a high-priority gap. The fix is `/ak-review:workflow`, which analyzes project tooling (build, test, lint, format, review, changelog) and generates an appropriate workflow tailored to the detected stack, in pointer form (see below) — **but only if that skill is actually installed**; see _Every `/ak-review:workflow` invocation is conditional_ below.
 
 **If the section exists, first check its shape:**
 
 - **Pointer form** — the section is a short paragraph referencing `.claude/skills/task-completion/SKILL.md`. This passes the presence check on its own merits (it keeps AGENTS.md/CLAUDE.md lean, which the Conciseness criterion rewards); audit the referenced file's content as described below.
-- **Inline form** — the full numbered step list is written directly into the instruction file. This is a **Conciseness** finding: the file is resent in full on every prompt, so the steps belong in `.claude/skills/task-completion/SKILL.md` (lazy-loaded, only read when the skill is invoked) with a single pointer line left in its place. The fix is `/ak-review:workflow --audit`, which now offers this exact migration.
+- **Inline form** — the full numbered step list is written directly into the instruction file. This is a **Conciseness** finding: the file is resent in full on every prompt, so the steps belong in `.claude/skills/task-completion/SKILL.md` (lazy-loaded, only read when the skill is invoked) with a single pointer line left in its place. The fix is `/ak-review:workflow --audit`, which now offers this exact migration — subject to the same installation check.
 
 **Then audit the content** (the skill file's body in pointer form, or the section body in inline form):
 
@@ -94,7 +94,26 @@ one package, recommend moving it there rather than qualifying it in place.
 - Have tools been renamed or replaced (e.g., `prettier` → `biome`, `eslint` → `oxlint`)?
 - Have new tools been added that should be incorporated (e.g., a type checker, new formatter, additional review skill)?
 - Are any steps redundant, duplicated, or no longer applicable to the current project?
-- **Always invoke `/ak-review:workflow --audit`** — it detects template drift (e.g., new optional steps, changed bullet structure, pointer/skill-file mismatch) that manual command checks cannot catch, including pointer-vs-skill-file step-name drift. Do not rely on reading commands alone or re-deriving checks it already performs.
+- **If `/ak-review:workflow` is installed, always invoke `/ak-review:workflow --audit`** — it detects template drift (e.g., new optional steps, changed bullet structure, pointer/skill-file mismatch) that manual command checks cannot catch, including pointer-vs-skill-file step-name drift. Do not rely on reading commands alone or re-deriving checks it already performs.
+- **If it is not installed, the bullets above are the whole audit** — and the report has to say
+  so: the section was verified for stale commands only, its structure not at all.
+
+#### Every `/ak-review:workflow` Invocation Is Conditional
+
+**Check the available-skills listing before recommending or invoking it; do not invoke it on the
+assumption that it is there.** That skill ships in the `ak-review` plugin and this one in
+`ak-knowledge` — the two are installed independently, so a session that has this audit available
+frequently does not have the skill it delegates to. The failure is invisible to whoever writes this
+file, because a marketplace developer has every plugin installed.
+
+Where it is absent, the recommendation becomes _install `ak-review`, then run it_, and the report
+names template drift as the coverage that is missing rather than implying the manual checks are
+equivalent — they are not, which is the whole reason the delegation exists. Writing a workflow
+section by hand here is the last resort, taken only if the user asks for it after hearing that, and
+it is reported as not validated against the template.
+
+This is the same discipline the bullet above applies to the audited project's own file: a skill
+reference is only worth something if the skill is there.
 
 ### Commit Message Convention Check
 
@@ -217,7 +236,7 @@ The "Task completion workflow" section gets special handling because the `/ak-re
 - **Missing section** → recommend `/ak-review:workflow` (generate mode) and offer to invoke it as a follow-up
 - **Stale section** (broken commands, removed skills, renamed tools) → recommend `/ak-review:workflow --audit` and offer to invoke it
 
-For both cases, **always delegate to that skill** rather than manually patching the workflow section. Do not invent workflow steps inside this skill — let `/ak-review:workflow` analyze the project tooling and propose the structure. Manual inspection of commands cannot detect template drift (new optional steps, changed bullet structure, renamed sub-bullets).
+For both cases, **always delegate to that skill when it is installed** rather than manually patching the workflow section. Do not invent workflow steps inside this skill — let `/ak-review:workflow` analyze the project tooling and propose the structure. Manual inspection of commands cannot detect template drift (new optional steps, changed bullet structure, renamed sub-bullets). When it is not installed, follow _Every `/ak-review:workflow` invocation is conditional_ in Phase 2 instead: recommend the `ak-review` plugin and report the structural check as not performed.
 
 **Dogfooding check:** If the project being audited _is_ AgentKit itself (or another project that maintains workflow templates for third parties), also verify that the project's own `AGENTS.md` workflow reflects the latest template it publishes. Improvements made to a project's own workflow (e.g., new skip clauses, corrected agent invocations, additional release-cycle rules) should be back-ported into the templates that project ships to others — otherwise the project recommends practices it no longer follows itself.
 
@@ -259,7 +278,7 @@ After user approval, apply changes. Preserve existing content structure.
 6. **Undocumented gotchas** — non-obvious patterns not captured
 7. **Duplicate CLAUDE.md + AGENTS.md** — should be consolidated
 8. **Missing symlink notice** — if `CLAUDE.md` is a symlink to `AGENTS.md`, the notice `> \`CLAUDE.md\` is a symlink pointing to this file.` must appear at the top of `AGENTS.md`
-9. **Missing or outdated task completion workflow** — section absent entirely, or references commands/skills/agents that no longer exist (delegate to `/ak-review:workflow` or `/ak-review:workflow --audit`)
+9. **Missing or outdated task completion workflow** — section absent entirely, or references commands/skills/agents that no longer exist (delegate to `/ak-review:workflow` or `/ak-review:workflow --audit` where the `ak-review` plugin is installed; otherwise report the gap and name the plugin)
 10. **Leftover instruction files from unused tools** — a `.cursorrules`, `.windsurfrules` or
     `GEMINI.md` the project abandoned, still discovered and still applied as review criteria
     alongside the current file

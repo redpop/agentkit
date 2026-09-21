@@ -46,7 +46,12 @@ targeted improvements; there are no arguments, so discovery is automatic and sco
 - Keep instructions actionable with real paths and copy-paste ready commands
 - Consolidate if both CLAUDE.md and AGENTS.md exist at the same level
 - If `CLAUDE.md` is a symlink to `AGENTS.md`, the skill checks that `AGENTS.md` carries the symlink notice at the top; flags it as a common issue if missing
-- The skill always checks for a "Task completion workflow" section and **always invokes `/ak-review:workflow --audit`** when the section exists — manual command checks cannot detect template drift (new optional steps, changed bullet structure, pointer/skill-file mismatch)
+- The skill always checks for a "Task completion workflow" section and **invokes `/ak-review:workflow --audit`** when the section exists — manual command checks cannot detect template drift (new optional steps, changed bullet structure, pointer/skill-file mismatch)
+- **Every delegation to `/ak-review:workflow` is gated on it being installed.** It ships in the
+  `ak-review` plugin, which is installed independently of `ak-knowledge`, so the skill checks the
+  available-skills listing first. Without it, the workflow section is audited for stale commands
+  only, the report says the structural check was not performed, and the recommendation becomes
+  installing `ak-review`
 - A workflow section with its steps inlined directly in AGENTS.md/CLAUDE.md is flagged as a Conciseness finding -- the fix is extracting it to `.claude/skills/task-completion/SKILL.md` with a short pointer line left behind, which `/ak-review:workflow --audit` can do automatically
 - The commit-message check measures the project first (ticket prefix, subject lines over 72
   characters, median and maximum body length) and fills those numbers into a four-bullet block. That
@@ -60,4 +65,4 @@ targeted improvements; there are no arguments, so discovery is automatic and sco
 
 - [agents-md](./agents-md.md) -- convert CLAUDE.md to AGENTS.md with symlinks
 - [refresh](./refresh.md) -- maintain solution docs (complementary maintenance skill)
-- [/ak-review:workflow](../ak-review/workflow.md) -- generate or audit the Task completion workflow section (this skill delegates to it)
+- [/ak-review:workflow](../ak-review/workflow.md) -- generate or audit the Task completion workflow section (this skill delegates to it when the `ak-review` plugin is installed)
