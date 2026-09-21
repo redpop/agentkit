@@ -4,7 +4,11 @@
 
 ## Overview
 
-Performs a multi-phase quality assessment of `AGENTS.md` (or `CLAUDE.md`) files, scoring them against six weighted criteria. Presents a detailed quality report with grades (A through F), then proposes and applies targeted improvements with user approval. Can write directly to AGENTS.md files after confirmation.
+Performs a multi-phase quality assessment of `AGENTS.md` (or `CLAUDE.md`) files, scoring them
+against six weighted criteria plus two presence checks -- the Task completion workflow and the
+commit-message convention. Presents a detailed quality report with grades (A through F), then
+proposes and applies targeted improvements with user approval. Can write directly to AGENTS.md
+files after confirmation.
 
 ## Usage
 
@@ -30,6 +34,8 @@ targeted improvements; there are no arguments, so discovery is automatic and sco
 - Setting up a new project and want optimal AI agent instructions
 - After major refactors that may have made instructions stale
 - When AI sessions seem to miss important project context
+- When agent-written commit messages have grown long enough to be unreadable -- the skill adds the
+  convention that bounds them
 - Periodic maintenance of project instruction quality
 
 ## Best Practices
@@ -42,6 +48,13 @@ targeted improvements; there are no arguments, so discovery is automatic and sco
 - If `CLAUDE.md` is a symlink to `AGENTS.md`, the skill checks that `AGENTS.md` carries the symlink notice at the top; flags it as a common issue if missing
 - The skill always checks for a "Task completion workflow" section and **always invokes `/ak-review:workflow --audit`** when the section exists — manual command checks cannot detect template drift (new optional steps, changed bullet structure, pointer/skill-file mismatch)
 - A workflow section with its steps inlined directly in AGENTS.md/CLAUDE.md is flagged as a Conciseness finding -- the fix is extracting it to `.claude/skills/task-completion/SKILL.md` with a short pointer line left behind, which `/ak-review:workflow --audit` can do automatically
+- The commit-message check measures the project first (ticket prefix, subject lines over 72
+  characters, median and maximum body length) and fills those numbers into a four-bullet block. That
+  block stays inline and stays short on purpose -- the reasoning behind each bullet lives in the
+  skill, not in the instruction file, which is resent on every prompt
+- Unlike the workflow section, the commit-message block is not a review criterion: reviewers see
+  diffs, not commit messages, so the block carries a scoping line that keeps it out of their
+  findings
 
 ## Related
 
