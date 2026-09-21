@@ -5,6 +5,49 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.36.0] - 2026-09-21
+
+### ✨ Added
+
+- `ak-git:operations` — **a `--release` flag, and with it a release procedure this repository
+  ships instead of only running.** `/bump-version` lived in `.claude/commands/` and never left
+  here, so AgentKit cut its releases with a command no installing project could use. The portable
+  half is now the skill's `--release` operation — boundary, bump type, version files, changelog,
+  one commit, annotated tag, backfill, push — and `bump-version` keeps only what is true here: the
+  marketplace's version files and the `chore: release v` commit pattern.
+
+  Two pieces of hard-won knowledge travel with it. **The release range is measured from the last
+  release commit, not the last tag**, because a release can happen untagged and the range then
+  spans several versions and counts their commits a second time — measured here, four untagged
+  releases once left the last tag three versions behind, and a `feat:` that had shipped two
+  versions earlier would have forced another minor bump. **And the files carrying a version are
+  discovered rather than listed**, with "none found" a legitimate answer: Go and most Composer
+  packages release from the tag alone, and a skill that insists on bumping a file there invents a
+  wrong edit.
+
+- `ak-meta:changelog` — **`--version` and `--since`, so a caller that has already decided can say
+  so.** `ak-git:operations --release` writes the new version into the project's version files
+  before invoking this skill; deriving the version a second time here would read those freshly
+  bumped files back and answer with the number just written, over a tag-based range the caller had
+  explicitly rejected. Both flags are final when given and skip the corresponding derivation.
+
+- `ak-knowledge:agents-md-improver` — **a commit-message convention check, because nothing else in
+  a toolchain bounds what an agent writes into `git log`.** No linter reads a commit message and
+  no reviewer sees it before it lands, so the instruction file is the only place the bound can
+  live. An agent writes one in nearly every session, has no reader in front of it, and spends
+  everything it knows — measurements, test output, rebase history, rejected options.
+
+  The check measures the project first (ticket prefix, subject lines over 72 characters, median
+  and maximum body length) and fills those numbers into a four-bullet block. The operative rule is
+  the exclusion list rather than the line ceiling, and the ceiling is calibrated rather than
+  guessed: applying the exclusions to the two longest messages in a real project took them from
+  411 and 401 words to 161 and 148, with every load-bearing reason intact. Two properties are
+  recorded in the skill so a later audit does not undo them — the block stays inline because it
+  must be in context when the message is written, and it carries a scoping line because reviewers
+  act on diffs, not on commit messages.
+
+
+
 ## [1.35.0] - 2026-09-20
 
 ### ✨ Added
