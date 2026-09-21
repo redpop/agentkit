@@ -93,7 +93,8 @@ Reviews both committed and uncommitted changes in one pass for a full sweep of e
   is not part of `--uncommitted`, so it was skipped -- a review that silently omits every new file
   in a change, looking exactly like a clean one
 - Verified against CodeRabbit CLI **0.7.8**, both `review --help` and `auth status`, and on a
-  healthy session: `0.7` dropped `--prompt-only`/`--type`, and `0.7.8` reworded `--uncommitted` and
+  healthy session: `0.7` dropped `--prompt-only` and replaced `--type` with the named scope flags
+  (`--type` itself still parses, merely unlisted), and `0.7.8` reworded `--uncommitted` and
   added a GitHub-only `--remote`. A field missing from a stale session was once mistaken here for a
   field the version had removed -- one sample is not a version difference
 - The skill asks the CLI for structured findings (`--agent`) instead of scraping the plain-text

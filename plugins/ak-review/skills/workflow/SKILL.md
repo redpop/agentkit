@@ -147,7 +147,8 @@ Add a skip clause for this step: `Skip step N for docs-only or internal config c
        - **Local review**: invoke `/ak-review:coderabbit` for immediate inline feedback (default)
        - **Delegated review** — Ask the user whether to also invoke `/ak-review:delegate` to generate a self-contained review prompt for external agents (Kimi, Codex, etc.) — useful for comprehensive cross-check or second opinions
        - **Other tools**: run `coderabbit review --uncommitted --include-untracked`
-         (`0.7` removed `--prompt-only`, `--type`, `--plain`, `--fast`, `--interactive` and `--cwd`;
+         (`0.7` removed `--prompt-only`, `--plain`, `--fast`, `--interactive` and `--cwd`, and
+         replaced `--type` with the named scope flags — `--type` itself still parses, unlisted;
          without `--include-untracked` a file never `git add`ed is not reviewed at all)
        - **Critically evaluate review results** — not all suggestions are correct or relevant. Accept only changes that genuinely improve the code; dismiss false positives and overly pedantic findings.
     ```
