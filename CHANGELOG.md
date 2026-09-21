@@ -5,6 +5,47 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.37.0] - 2026-09-21
+
+### ♻️ Changed
+
+- `ak-git:operations` — **a commit-message convention stated in the project's own instruction file
+  now outranks the plugin's defaults.** The skill hardcoded Conventional Commits and
+  `git-workflow-specialist` restated it unconditionally, so a repository whose `AGENTS.md` mandates
+  a different subject shape received commits contradicting the very file its code reviewer reads as
+  criteria. Both shapes are legitimate in their own repository; the plugin has no standing to pick
+  one.
+
+  Precedence is the instruction file, then the prefix style detected from branch history, then
+  Conventional Commits — **applied point by point rather than source by source.** A section that
+  fixes the subject shape while saying nothing about ticket prefixes has not decided the prefix
+  question; reading that silence as a prohibition would drop a branch's ticket from its commits.
+  The convention is copied into the dispatch prompt rather than referenced there, because whether a
+  Task-dispatched subagent inherits the instruction files is not something a skill should depend on
+  either way.
+
+### 🐛 Fixed
+
+- `ak-knowledge:agents-md-improver` — **the skill ordered an unconditional invocation of a skill
+  that may not be installed.** "Always invoke `/ak-review:workflow --audit`", and three further
+  delegations, assumed a plugin that installs independently of this one: the audit ships in
+  `ak-knowledge`, the skill it delegates to in `ak-review`. Every invocation is now gated on the
+  available-skills listing.
+
+  The gap was invisible to whoever wrote the file, because a marketplace developer has every plugin
+  installed and never meets the missing case. The fallback does not pass quietly either — where the
+  skill is absent, the manual checks are **not** equivalent, so the report states that the workflow
+  section was verified for stale commands only and its structure not at all. The audit already
+  demanded this discipline of the project it audits; it now holds itself to it.
+
+- `ak-review` — **three files claimed the CodeRabbit CLI rejects `--type`; it does not.**
+  `--prompt-only` is genuinely gone, but `0.7` replaced `--type` with the named scope flags and
+  left it parsing — unlisted in `--help` and with its value unvalidated. The `coderabbit` skill had
+  this right; the claim had been copied into `ak-review:workflow`, the repository's own
+  task-completion skill and the `coderabbit` doc page in the wrong form, where it sends a reader
+  looking for a failure that never happens. Verified against the installed CLI rather than its help
+  output, which is exactly where the two disagree.
+
 ## [1.36.0] - 2026-09-21
 
 ### ✨ Added
