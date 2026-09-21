@@ -123,9 +123,21 @@ Wrapper format: `{"description": "...", "hooks": {...}}`. The `${CLAUDE_PLUGIN_R
 
 ## Commit and PR guidelines
 
-- Use conventional commits: `feat:`, `fix:`, `docs:`, `refactor:`
-- Scope by plugin when applicable: `feat(ak-react): add hydration mismatch rule`
-- Keep versions synchronized across `marketplace.json` and all `plugin.json` files (currently `1.36.0`)
+Rules for `git log`, not review criteria for diffs.
+
+- Subject: conventional commits (`feat:`, `fix:`, `docs:`, `refactor:`), scoped by plugin where one
+  applies — `feat(ak-react): add hydration mismatch rule`. Imperative, **72 characters max**, which
+  is about 55 after a `feat(ak-knowledge):` prefix. Readable on its own — `git log --oneline`
+  shows nothing else.
+- Body: blank line, wrapped at 72, answers **why**; the diff is the what. A mechanical change gets
+  no body at all.
+- **Never in a body**: measurements, test output, rebase archaeology, rejected alternatives,
+  session narration ("as requested"). Correcting an earlier commit's claim is why, and stays.
+- One reason per paragraph, about 15 lines. More belongs in `docs/solutions/`, linked from one line
+  in the body.
+
+Versions stay synchronized across `marketplace.json` and all `plugin.json` files (currently
+`1.36.0`) — that one **is** checkable in a diff.
 
 ## Task completion workflow
 
