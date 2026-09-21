@@ -42,6 +42,7 @@ For each file found, evaluate against these criteria:
 | Currency | 15 pts | Does it reflect the current codebase state? Are referenced files/commands valid? |
 | Actionability | 15 pts | Are instructions executable, not vague? Paths real, commands working? |
 | Reviewability | — | Would a code reviewer applying this file produce useful findings, or noise? See below |
+| Commit-message convention | — | Does the file bound what an agent writes into `git log`? See below |
 
 **Validation steps:**
 
@@ -94,6 +95,60 @@ one package, recommend moving it there rather than qualifying it in place.
 - Have new tools been added that should be incorporated (e.g., a type checker, new formatter, additional review skill)?
 - Are any steps redundant, duplicated, or no longer applicable to the current project?
 - **Always invoke `/ak-review:workflow --audit`** — it detects template drift (e.g., new optional steps, changed bullet structure, pointer/skill-file mismatch) that manual command checks cannot catch, including pointer-vs-skill-file step-name drift. Do not rely on reading commands alone or re-deriving checks it already performs.
+
+### Commit Message Convention Check
+
+**Always verify the file bounds what an agent writes into `git log`.** A coding agent writes a commit message in nearly every session, has no reader in front of it, and will spend everything it knows — measurements, test output, rebase history, rejected options. The result is accurate, unreadable and permanent. No linter catches it and no reviewer sees it before it lands, so the instruction file is the only place the bound can live.
+
+**If the section is missing:** flag it as a high-priority gap and propose the template below.
+
+**This section stays inline, and that is deliberate.** Unlike the task completion workflow, it does not move into a lazy-loaded skill file: it has to be in context at the moment the message is written, which is usually not a moment when a git skill was invoked. That is affordable only because the block is kept to four bullets — **the reasoning behind each one lives here, in this skill, and is never copied into the project file.** The instruction file is resent on every prompt, so a rule that argues its own case there costs the project a paragraph per session forever. Do not raise the block as a Conciseness finding on a later audit, and do not let it grow either.
+
+**It is not a review criterion.** CodeRabbit and the CLI reviews apply every line of this file to diffs, and a commit-message rule gives them nothing to decide on — exactly the case _Instruction Files Are Review Criteria_ warns about. The scoping line at the top of the template exists for that reason; keep it.
+
+**Derive the project's own numbers before proposing anything:**
+
+```bash
+# Ticket prefix in use?
+git log -200 --pretty=format:'%s' | grep -oE '^[A-Z][A-Z0-9]+-[0-9]+ ' | sort -u | head
+# Subjects over the 72-character cap
+git log -200 --pretty=format:'%s' | awk 'length($0) > 72 { print length($0)"  "$0 }'
+# Body length: median and maximum in words
+git log -100 --pretty=format:'%H' | while read h; do git log -1 --pretty=format:'%b' "$h" | wc -w; done \
+  | sort -n | awk '{a[NR]=$1} END { print "median", a[int(NR/2)], "max", a[NR] }'
+```
+
+- A ticket prefix shortens the subject: `<BUDGET>` is `72 − length(prefix)` as a number, `<PREFIX>` the pattern as a reader recognises it (`SKP-XXXX `). Name both instead of the generic 72.
+- If no prefix pattern appears, drop the prefix from the template and use the plain 72.
+- Report the measured median, the maximum and the subjects over 72 as concrete findings. They make the case for the section far better than the rule itself does.
+
+**Reconcile before appending.** The convention is often already stated elsewhere: a git or commit skill under `.claude/skills/`, a `.gitmessage` template, a `commit-msg` hook, `CONTRIBUTING.md`. Read those first and keep a single authority — the instruction file, with the other places pointing at it. Two versions of the rule reach both the agent and the reviewer as a contradiction.
+
+**Template.** Fill the placeholders from the measurements, keep the wording and the length, and write it in the language of the surrounding file. Resist adding examples or justifications to it — everything a reader might want explained is in this file instead:
+
+```markdown
+## Commit Messages
+
+A rule for `git log`, not a review criterion for diffs.
+
+- Subject: `<TICKET> Capitalized description`, imperative, **72 characters max** (`<BUDGET>` after
+  the prefix), readable on its own — `git log --oneline` shows nothing else.
+- Body: blank line, wrapped at 72, answers **why**; the diff is the what. A mechanical change gets
+  no body at all.
+- **Never in a body**: measurements, test output, rebase archaeology, rejected alternatives, notes
+  to another ticket, session narration ("as requested"). Correcting an earlier commit's claim is
+  why, and stays.
+- One reason per paragraph, about 15 lines. More belongs in `<DOCS-LOCATION>` or the ticket, linked
+  from one line in the body.
+```
+
+**The ceiling is calibrated, not guessed.** Applying the exclusion list to the two worst messages in
+the MOP-S history this template came from took 411 words down to 161 and 401 down to 148 — four
+paragraphs and about 15 lines each, with every load-bearing reason intact. A tighter ceiling would
+have cut reasoning rather than noise, which is why the escape clause is in the rule. Recalibrate the
+same way in a project whose commits look different: cut a real example, then count.
+
+The exclusion list is the operative rule, not the line ceiling. The ceiling is a backstop that makes the rule checkable; the exclusions are what a message actually has to be cut by, and stripping them usually brings an overlong message inside the ceiling without losing anything a reader needs.
 
 **Quality grades:**
 
@@ -191,6 +246,7 @@ After user approval, apply changes. Preserve existing content structure.
 - **Environment** — required vars, setup steps
 - **Testing** — commands, patterns, conventions
 - **Gotchas** — quirks, common mistakes, ordering dependencies
+- **Commit messages** — subject format, body budget, what never belongs in one
 - **Task completion workflow** — post-implementation validation steps
 
 ## Common Issues to Flag
@@ -211,3 +267,9 @@ After user approval, apply changes. Preserve existing content structure.
     nothing to decide on, producing a comment on every change
 12. **A root-level rule that only holds for one package** — in a monorepo it belongs in that
     package's own instruction file, where it is scoped for both agents and reviewers
+13. **No commit-message convention** — nothing bounds what an agent writes into `git log`, and
+    nothing else in the toolchain will: no linter reads a commit message and no reviewer sees it
+    before it lands
+14. **The convention stated in more than one place** — an instruction file, a git skill, a
+    `.gitmessage` and a `CONTRIBUTING.md` that drift apart; keep one authority and point the rest
+    at it
