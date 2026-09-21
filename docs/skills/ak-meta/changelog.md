@@ -68,7 +68,8 @@ Updates CHANGELOG.md, commits it, and pushes the commit to the remote in one ste
 
 ## Related
 
-- [ak-git:operations](../ak-git/operations.md) -- commit with conventional commit messages; its
+- [ak-git:operations](../ak-git/operations.md) -- commit with conventional commit messages, unless
+  the project's instruction file states a different convention; its
   `--release` flag invokes this skill with `--no-commit --version --since` and folds the changelog
   into the release commit
 - [handoff](./handoff.md) -- capture session state for the next AI session

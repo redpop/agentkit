@@ -53,7 +53,8 @@ git branch --show-current
 
 - Match common patterns: `ABC-1234`, `fix/ABC-1234`, `feature/FOO-99_description`, `FOO-123_description`, etc.
 - Regex: extract first match of `[A-Z][A-Z0-9]+-[0-9]+` from branch name
-- If no ticket pattern is found, use standard Conventional Commits without prefix
+- If no ticket pattern is found, use standard Conventional Commits without prefix — unless the
+  project states its own rule on this point, which then outranks it; see *Message Convention* below
 
 **If a ticket is found**, detect the commit style already used on this branch:
 
@@ -75,6 +76,37 @@ fi
 
 Pass the detected ticket and style to the git-workflow-specialist.
 
+## Message Convention
+
+**A commit-message convention stated in the project's own instruction file wins on every point it
+states.** Read `AGENTS.md`, `CLAUDE.md` or `.claude/CLAUDE.md` and look for a section that governs
+commit messages — a heading naming commits, or rules about subject shape, subject length, or what a
+body may contain.
+
+Projects genuinely disagree here and both answers are correct in their own repository: one mandates
+Conventional Commits (`feat(scope): description`), the next mandates `TICKET Capitalized
+description` and treats a `feat(scope):` subject as wrong. A skill that hardcodes one of them makes
+the other project violate its own instruction file — which is also what its code reviewer reads as
+criteria.
+
+Precedence, highest first:
+
+1. **The project's instruction file** — its commit-message section, taken verbatim
+2. **The style detected from branch history** — bracket vs. plain, as detected above; this settles
+   how the prefix is written, not the subject shape
+3. **Conventional Commits** — the fallback when neither of the above says anything
+
+**Precedence applies point by point, not source by source.** A section that fixes the subject shape
+and says nothing about ticket prefixes has not decided the prefix question — that one still falls
+through to 2, then 3. Silence is not a prohibition, and reading it as one is how a branch's own
+ticket disappears from its commits.
+
+**Copy the section into the dispatch prompt; do not point at it.** Whether a Task-dispatched
+subagent inherits the project's instruction files is not something this skill should depend on
+either way — the same reason `--pr` builds a self-contained description rather than assuming
+shared context. Reading the file costs one tool call; a message that silently ignored the
+convention costs a rewritten commit.
+
 ## Execution: --commit, --review, --resolve
 
 Use Task tool with subagent_type="git-workflow-specialist":
@@ -82,11 +114,15 @@ Use Task tool with subagent_type="git-workflow-specialist":
 
 **IMPORTANT**: NEVER include Co-Authored-By lines in commit messages.
 
+0. **Project Convention**: [paste the project's commit-message section here verbatim, or the
+   literal word `none` when the instruction files state no convention]. Where it is present it
+   overrides steps 1 and 2 on any point they disagree on — including the subject shape.
 1. **Ticket Prefix**: Apply the style detected above:
    - Bracket: `[ABC-1234] feat(config): add feature`
    - Plain: `ABC-1234 feat(config): add feature`
    - No ticket detected: standard Conventional Commits without prefix
-2. **Convention Analysis**: Apply standard commit conventions
+2. **Convention Analysis**: Apply standard commit conventions, unless step 0 supplied the
+   project's own
 3. **Change Analysis**: Analyze changes with full codebase context
 4. **Message Generation**: Create professional commit messages with proper formatting
 5. **Execution**: Create commits, handle conflicts, or perform code review

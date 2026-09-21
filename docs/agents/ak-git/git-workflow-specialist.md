@@ -5,7 +5,7 @@
 ## Overview
 
 Creates professional commits by analyzing staged and unstaged changes, categorizing them by type,
-and generating Conventional Commits messages. Automatically detects ticket identifiers from branch
+and generating commit messages. Automatically detects ticket identifiers from branch
 names and prefixes commit messages accordingly.
 
 ## Usage
@@ -28,7 +28,7 @@ Part of the **ak-git** plugin. Uses Read, Grep, and Bash(git:\*) tools.
 
 1. **Change Analysis** -- Review changes, categorize (feat, fix, refactor, docs, test, chore), assess scope
 2. **Ticket Detection** -- Extract ticket IDs from branch name (e.g., `ABC-1234`) and prefix commits
-3. **Commit Message Generation** -- Conventional Commits format, concise subjects (< 72 chars), body for larger changes
+3. **Commit Message Generation** -- Conventional Commits format, concise subjects (< 72 chars), body for larger changes. A convention handed over in the dispatch prompt is the project's own and overrides these defaults, subject shape included
 4. **Commit Strategy** -- Single commit for focused changes, atomic commits for multi-concern changes
 5. **Quality Checks** -- Verify no secrets, debug code, or temporary files; validate format
 
