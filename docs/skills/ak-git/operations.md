@@ -6,7 +6,7 @@
 ## Overview
 
 Analyzes your changes, detects scope (small/medium/large), extracts ticket identifiers from branch
-names, and generates professional commit messages using Conventional Commits. Automatically detects
+names, and generates professional commit messages. Automatically detects
 the commit-prefix style already used on the branch — bracket (`[ABC-1234] feat: ...`) or plain
 (`ABC-1234 feat: ...`) — and continues it consistently. Delegates execution to the
 `git-workflow-specialist` agent for commit creation, conflict resolution, and code review.
@@ -95,6 +95,14 @@ The same, with the bump type given explicitly instead of derived.
 - Let the skill detect scope automatically -- it adjusts messaging based on change size
 - Use ticket-prefixed branches (e.g., `feature/ABC-1234`, `ABC-1234_description`) for automatic ticket extraction
 - Commit-prefix style is auto-detected from branch history: bracket (`[ABC-1234]`) or plain (`ABC-1234`)
+- **A commit-message convention in the project's `AGENTS.md`/`CLAUDE.md` wins over the skill's
+  defaults**, subject shape included -- the skill reads it and copies it into the agent's dispatch
+  prompt rather than assuming the subagent inherits it. Precedence is instruction file, then the
+  style detected from branch history, then Conventional Commits as the fallback — applied point by
+  point, so a section that fixes the subject shape but is silent on ticket prefixes leaves the
+  prefix to branch-history detection rather than suppressing it. State the
+  convention in one place so a repository that does not use Conventional Commits does not get
+  commits that contradict its own file
 - For 10+ file changes, consider splitting into atomic commits as suggested
 - Use `--force-push` only when necessary -- it uses `--force-with-lease` for safety
 - Never include Co-Authored-By lines in commit messages
