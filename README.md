@@ -6,7 +6,7 @@ Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/
 
 | Plugin | Skills | Agents | Description |
 |--------|--------|--------|-------------|
-| [**ak-git**](#ak-git--smart-git-operations) | 1 | 2 | Smart commits, change analysis, conflict resolution |
+| [**ak-git**](#ak-git--smart-git-operations) | 1 | 2 | Smart commits, change analysis, conflict resolution, releases |
 | [**ak-improve**](#ak-improve--code-improvement) | — | 2 | Code refactoring and performance optimization agents |
 | [**ak-js**](#ak-js--javascript-config-doctor) | 1 | 1 | JS config validation, 11 cross-file rules, monorepo-aware |
 | [**ak-knowledge**](#ak-knowledge--solution-documentation) | 4 | 1 | Solution docs, knowledge maintenance, AGENTS.md tools |
@@ -59,13 +59,13 @@ Detailed documentation for all components is available in the [`docs/`](docs/) d
 ### ak-git — Smart Git Operations
 
 Intelligent Git workflow assistance with smart commit messages, change
-analysis, and conflict resolution.
+analysis, conflict resolution, and releases.
 
 #### Skills
 
 | Skill | Purpose | Example |
 |-------|---------|---------|
-| [`/ak-git:operations`](docs/skills/ak-git/operations.md) | Smart commits, PR/MR creation, conflict resolution, change review | `/ak-git:operations --ship` |
+| [`/ak-git:operations`](docs/skills/ak-git/operations.md) | Smart commits, PR/MR creation, conflict resolution, change review, releases | `/ak-git:operations --ship` |
 
 #### Agents
 

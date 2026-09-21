@@ -1,12 +1,12 @@
 # ak-git
 
-Git operations and workflow management plugin for AgentKit.
+Git operations, release management, and workflow automation plugin for AgentKit.
 
 ## Skills
 
-| Skill | Description |
-|-------|-------------|
-| `operations` | Smart Git operations with scope detection and commit pattern learning |
+| Skill        | Description                                                                      |
+| ------------ | -------------------------------------------------------------------------------- |
+| `operations` | Smart Git operations with scope detection, commit pattern learning, and releases |
 
 ## Agents
 
@@ -15,8 +15,12 @@ Git operations and workflow management plugin for AgentKit.
 
 ## Usage
 
+All arguments are `--`-prefixed flags; with no flag the skill runs `--commit`.
+
 ```bash
-/ak-git:operations commit --smart
-/ak-git:operations review --uncommitted
-/ak-git:operations resolve
+/ak-git:operations
+/ak-git:operations --review
+/ak-git:operations --resolve
+/ak-git:operations --ship
+/ak-git:operations --release
 ```

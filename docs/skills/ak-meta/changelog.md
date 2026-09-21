@@ -4,18 +4,30 @@
 
 ## Overview
 
-Analyzes repository state -- commits since the last tag, staged and unstaged changes, and conventional commit types -- to determine the appropriate version bump (major, minor, or patch). Generates categorized changelog entries with emoji prefixes, updates or creates CHANGELOG.md following the Keep a Changelog format, and optionally commits and pushes.
+Analyzes repository state -- commits since the last tag (or since `--since`), staged and unstaged
+changes, and conventional commit types -- to determine the appropriate version bump (major, minor,
+or patch), unless `--version` supplies one. Generates categorized changelog entries with emoji
+prefixes, updates or creates CHANGELOG.md following the Keep a Changelog format, and optionally
+commits and pushes.
 
 ## Usage
 
 ```text
-/ak-meta:changelog [--no-commit] [--push]
+/ak-meta:changelog [--no-commit] [--push] [--version=X.Y.Z] [--since=<ref>]
 ```
 
 **Flags:**
 
 - `--no-commit` — skip the automatic commit (default: the skill commits the changelog automatically)
 - `--push` — push the commit to the remote after committing
+- `--version=X.Y.Z` — use this version instead of deriving one; version detection and bump-type
+  detection are skipped
+- `--since=<ref>` — take the commit range from `<ref>..HEAD` instead of from the last version tag
+
+`--version` and `--since` exist for callers that have already decided, `/ak-git:operations --release`
+above all: it writes the new version into the project's version files before invoking this skill, so
+a second derivation here would read those freshly bumped files back and answer with the version that
+was just written.
 
 ## Examples
 
@@ -23,7 +35,8 @@ Analyzes repository state -- commits since the last tag, staged and unstaged cha
 /ak-meta:changelog
 ```
 
-Analyzes commits since the last tag, updates CHANGELOG.md with categorized entries, and commits the change
+Analyzes commits since the last tag, updates CHANGELOG.md with categorized entries, and commits
+the change
 automatically (the default behavior with no flags).
 
 ```text
@@ -55,5 +68,7 @@ Updates CHANGELOG.md, commits it, and pushes the commit to the remote in one ste
 
 ## Related
 
-- [ak-git:operations](../ak-git/operations.md) -- commit with conventional commit messages
+- [ak-git:operations](../ak-git/operations.md) -- commit with conventional commit messages; its
+  `--release` flag invokes this skill with `--no-commit --version --since` and folds the changelog
+  into the release commit
 - [handoff](./handoff.md) -- capture session state for the next AI session
