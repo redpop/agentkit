@@ -1,6 +1,6 @@
 ---
 name: operations
-description: This skill should be used when the user asks to "commit changes", "smart commit", "resolve conflicts", "review changes", "create PR", "open merge request", "ship this", or needs Git workflow assistance with intelligent commit messages and PR creation.
+description: This skill should be used when the user asks to "commit changes", "smart commit", "resolve conflicts", "review changes", "create PR", "open merge request", "ship this", "cut a release", "bump the version", "tag a release", or needs Git workflow assistance with intelligent commit messages, PR creation, or the version-bump-changelog-tag release flow.
 ---
 
 # Git Operations
@@ -23,8 +23,12 @@ All arguments use `--` prefix:
 | `--pr` or `--ship` | Commit → Push → Create PR/MR in one flow |
 | `--push` | Push after commit |
 | `--force-push` | Force push with lease after commit |
+| `--release` | Version bump → changelog → one commit → annotated tag → push. Optional `major`/`minor`/`patch` |
 
 ## Scope Detection
+
+**Scope and ticket detection below apply to the commit-producing operations. `--release` skips both**
+— a release commit carries no ticket and its scope is fixed; see *Execution: --release*.
 
 Before executing, analyze change scope:
 
@@ -170,6 +174,153 @@ When updating an existing PR/MR description:
 4. Show summary of changes to user, ask for confirmation
 5. Apply update via CLI
 
+## Execution: --release
+
+Cuts a release: version bump → changelog → **one** commit → annotated tag → push.
+
+Ticket detection does not apply here — a release commit carries no ticket, and its subject follows
+the project's own release pattern rather than the branch name.
+
+**The release commit must be the last commit of the cycle.** If the working tree is dirty, run the
+`commit` operation on those changes first and release afterwards. Otherwise `git checkout
+v<version>` does not match what was released and `git log vA..vB` describes the wrong range.
+
+### Step 1: Find the boundary — the last release commit, not the last tag
+
+```bash
+git log --format='%H %s' --grep='^chore: release v' -1   # adjust the pattern, see below
+git log <that hash>..HEAD --oneline
+```
+
+The release-commit subject is a convention, not a law. Read the project's own pattern out of its
+history before assuming one:
+
+```bash
+git log --oneline -200 | grep -iE 'release|bump|version' | head
+```
+
+If no release commit exists, fall back to the last tag; if there is no tag either, use the full
+history.
+
+**Do not use `git describe --tags` as the boundary.** A release can happen without ever being
+tagged, and then "since the last tag" spans several releases and counts their commits a second
+time. Measured in AgentKit's own history: four releases went out untagged, the last tag ended up
+three versions behind, and a `feat:` that had already shipped two versions earlier would have
+forced another minor bump. The release commit is the marker that always exists.
+
+**If that range is empty, there is nothing to release — say so and stop.** An empty range means the
+version already describes HEAD, and bumping anyway produces a version whose changelog entry has
+nothing to describe. Check whether tagging or pushing is what is actually missing and offer that
+instead:
+
+```bash
+git tag --sort=-v:refname | head -1   # is the current version tagged?
+git status -sb                        # was the last release pushed?
+```
+
+### Step 2: Determine the bump type
+
+An explicit argument wins: `--release major`, `--release minor`, `--release patch`. Any other value
+is an error — stop rather than guessing.
+
+Otherwise derive it from the commit subjects in the range:
+
+- `BREAKING CHANGE` in a body or footer, or a `!` before the colon (`feat!:`) → **major**
+- any `feat:` / `feat(` → **minor**
+- otherwise (`fix:`, `docs:`, `refactor:`, `chore:`) → **patch**
+
+Projects that do not use Conventional Commits get no automatic answer: report what the range
+contains and ask for the bump type.
+
+### Step 3: Discover which files carry the version — never hardcode a list
+
+A hardcoded list silently skips a file added after the list was written, and that file stays
+stranded on the old version.
+
+| Marker in the repository | Version lives in |
+| --- | --- |
+| `package.json` | its `version` field; refresh the lockfile if one is tracked |
+| `Cargo.toml` | `[package] version`, plus `Cargo.lock` |
+| `pyproject.toml` | `[project] version`, or the build backend's own field |
+| `.claude-plugin/marketplace.json` | every entry of the `plugins` array **and** every `plugins/*/.claude-plugin/plugin.json` — glob them, do not count from memory |
+| `composer.json` | usually **nothing** — Packagist reads the tag. Only bump a `version` key that is already there |
+| none of the above | **tag-only release.** CHANGELOG and tag, no file edits. Go projects and most Composer packages belong here |
+
+Also update a version stated in prose (a README badge, an `AGENTS.md` line such as
+`currently X.Y.Z`) — grep the old version string across the repository to find those.
+
+### Step 4: Verify that nothing was missed
+
+Every file discovered in Step 3 must now report the same, new version:
+
+```bash
+grep -rho '"version"[[:space:]]*:[[:space:]]*"[^"]*"' <the discovered files> \
+  | grep -o '[^"]*"$' | sort -u
+```
+
+Exactly one distinct value must come back. Compare the **values**, not whole lines — a nested entry
+and a top-level one differ by indentation alone and would report a false mismatch. Where one file
+enumerates the others (a marketplace manifest and its plugins), check the counts match too.
+
+### Step 5: Changelog
+
+Invoke `/ak-meta:changelog --no-commit --version=<new-version> --since=<boundary commit>`.
+
+All three flags are required, and each removes a specific failure:
+
+- `--no-commit` — that skill commits by default, and a separate changelog commit would split the
+  release across two commits, leaving the tag on only one of them.
+- `--version` — it would otherwise derive a version of its own by reading the very files Step 4 just
+  bumped, and answer with the version that was already written.
+- `--since` — it would otherwise measure the range from the last version **tag**, which is exactly
+  the boundary Step 1 rejected. An untagged release would make the changelog list commits that
+  earlier versions already documented.
+
+### Step 6: Commit
+
+One commit carrying the version files and the CHANGELOG, with the subject in the project's detected
+release format (`chore: release v<new-version>` where no other pattern is in use). No ticket prefix,
+no `Co-Authored-By`.
+
+### Step 7: Tag — annotated, on the right commit
+
+```bash
+git tag -a v<new-version> -m "Release v<new-version>"
+```
+
+Annotated (`-a -m`), never lightweight: the tagger, date and message are what `git show <tag>` and
+the GitHub/GitLab release UIs read.
+
+**Then backfill any earlier release that was never tagged.** The gap does not heal on its own — every
+version has a changelog entry, so one without a tag is a release nobody can check out:
+
+```bash
+git log --format='%H %s' --grep='^chore: release v' | while read -r hash subject; do
+  v="${subject##* }"
+  git rev-parse -q --verify "refs/tags/$v" > /dev/null || echo "untagged: $v $hash"
+done
+```
+
+Tag each one on **its own** release commit, never on HEAD — a tag on the wrong commit is worse
+than a missing one, because it looks correct:
+
+```bash
+git tag -a <version> -m "Release <version>" <that version's hash>
+```
+
+Confirm with `git tag --sort=-v:refname | head -5`, and that they are annotated:
+`git for-each-ref refs/tags/<v> --format='%(objecttype)'` prints `tag`, not `commit`.
+
+### Step 8: Push
+
+```bash
+git push --follow-tags
+```
+
+`--follow-tags` pushes the annotated tags reachable from what is being pushed, which covers the
+backfilled ones as well. Publishing a provider-side release (`gh release create`) is **not** part of
+this operation — offer it, do not do it unasked.
+
 ## Output Summary
 
 After completing operations, provide:
@@ -195,3 +346,18 @@ If `--push` was used: confirm push success with remote branch info.
 If `--force-push` was used: execute `git push --force-with-lease` and confirm push success with remote branch info.
 
 If `pr` / `ship` was used: report the PR/MR URL.
+
+If `release` was used, report instead:
+
+```markdown
+## Release Summary
+
+**Version**: X.Y.Z → A.B.C (<bump type>) — <why that bump type>
+**Range**: <boundary commit>..HEAD (<N> commits)
+
+**Version files updated:** <the files discovered in Step 3, or "none — tag-only release">
+**Changelog**: <N> entries added under [A.B.C]
+**Commit**: `abc1234` chore: release vA.B.C
+**Tags**: `vA.B.C`<, plus any backfilled tags>
+**Pushed**: yes / no
+```
