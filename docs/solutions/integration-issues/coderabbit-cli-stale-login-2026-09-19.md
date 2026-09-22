@@ -11,6 +11,8 @@ symptoms:
   - "`Failed to fetch seat status: HTTP 403` in `~/.coderabbit/logs/`"
   - "Reviews fall back to the free allowance (`isProUser: false`) while a paid plan is active"
   - "`coderabbit doctor` passes every check, authentication included"
+  - "`Review failed: Review organization does not match the authenticated session` under an API key
+    (the remedy below, blocked since 2026-09-22)"
 root_cause: wrong_api
 resolution_type: config_change
 severity: high
@@ -68,6 +70,10 @@ automated work for a credential the CLI otherwise holds for months.
 
 ## Solution
 
+> **Blocked as of 2026-09-22.** This remedy is correct but did not work when last tested — the
+> API-key sessions tried that day were refused with an organization mismatch. Read _The Remedy Is
+> Currently Blocked_ below, and re-test, before following the steps here.
+
 Authenticate with an **Agentic API key** instead of the browser flow. Create it at
 `app.coderabbit.ai` under _Account → API keys_, choose the longest expiry offered, then:
 
@@ -83,10 +89,10 @@ whole output is:
 ```
 
 That absence is by design, not a failure, and anything checking for those lines must branch on
-`authType` first. `coderabbit usage` does not work either, failing with
-`Authorization header not found` because the CLI does not send the key on that request. The one
-remaining entitlement signal is the review's own opening lines — which announce a fallback to the
-free allowance when one happens.
+`authType` first. On CLI 0.7.8 `coderabbit usage` did not work either, failing with
+`Authorization header not found` because the CLI did not send the key on that request; `0.8.0`
+changed this and the command now answers under an API key, reporting the included-review allowance
+and `billingPeriod: {"state":"unavailable","reason":"api_key"}`.
 
 Verified 2026-09-20: three reviews ran under the API key, on the paid plan, with no free-allowance
 notice in the stream.
@@ -108,18 +114,51 @@ because it is the only path that opens a browser.
 
 An API key removes the cookie from the picture entirely rather than renewing it.
 
+## The Remedy Is Currently Blocked (2026-09-22)
+
+The diagnosis above still holds; the fix it recommends did not work when tested. On 2026-09-22,
+every review started from an API-key session failed within seconds at
+`connecting_to_review_service`, where the same setup had reviewed successfully two days earlier:
+
+```text
+Review failed: Review organization does not match the authenticated session.
+```
+
+The CLI log names the call: `vsCode.requestFullReview` over `wss://ide.coderabbit.ai/ws`, answered
+with `FORBIDDEN`, HTTP 403.
+
+The decisive case is a GitLab repository installed in the key's own organization. Ruled out there:
+the CLI version (0.7.8 and 0.8.0 fail identically), the key itself (three separate keys, one of
+them minutes old), and the obvious misconfiguration — the dashboard shows the key in the same
+organization that owns the repository, on a plan that organization holds, with the key's "last
+used" timestamp matching the failed runs. `coderabbit usage` answered normally for that repository
+in the same session, and an OAuth login in the same minute reviewed the same working tree
+successfully.
+
+A GitHub repository failed the same way, but proves nothing: it is connected to none of the
+account's CodeRabbit organizations. An API key's organization is fixed — `coderabbit auth org`
+refuses to switch it — where a browser login searches all the organizations it can reach, so a
+repository outside the key's organization is expected to fail on this path.
+
+Nothing local explains the GitLab case; it is a matter for CodeRabbit support. **Until it is
+resolved, use the browser login and accept the daily repair** — which means the unattended path this
+document exists to enable is unavailable. Re-test with an API key after a CLI or service update
+rather than assuming; the failure is immediate and did not consume included-review quota.
+
 ## Prevention
 
-- **Use an API key for any CLI work that must run unattended.** The browser flow cannot be
-  automated by design, and that is the actual constraint, not a bug in the setup.
+- **Use an API key for any CLI work that must run unattended** — once the failure above is resolved.
+  The browser flow cannot be automated by design, and that is the actual constraint, not a bug in
+  the setup.
 - **Do not treat a missing `Plan` or `Seat` line as staleness without checking `authType` first.**
   Under an API key they are never present, and a check that ignores that fires on every run. This is
   encoded in the `ak-review:coderabbit` skill's Phase 1.
 - **Do not use `coderabbit doctor` as an entitlement check.** It is a connectivity and installation
   check and passes regardless.
 - **Read the first lines of a review run.** The CLI announces there when it falls back to the free
-  allowance. That allowance is three reviews, and the message that the plan was never in play
-  arrives only with the fourth — by which point the quota is gone.
+  allowance, and the message that the plan was never in play arrives only after the quota is
+  already spent. Since `0.8.0`, `coderabbit usage` states the allowance up front — ask it rather
+  than counting runs.
 - **When a fix works but has to be repeated, the cause is not found yet.** Re-authenticating daily
   was treated as friction for weeks. A repair that has to be reapplied on a schedule is describing
   its own cause; the schedule is the clue.

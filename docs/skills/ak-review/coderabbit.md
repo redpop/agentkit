@@ -18,6 +18,10 @@ Executes a CodeRabbit CLI review against uncommitted, committed, or all changes.
 Before spending a review, the skill checks **how** the session is authenticated. Under an API key
 (`authType: api_key`) there is no organization, plan or seat in the output at all — that block is
 absent by design, so the staleness checks below do not apply and would otherwise fire on every run.
+The skill asks `coderabbit usage --agent` instead, which answers under an API key since CLI `0.8.0`
+— with a quota, not an entitlement: it names the included-review allowance and nothing beyond it.
+Plan and seat stay unknown on that path (`billingPeriod: unavailable, reason: api_key`) even when
+the key's organization holds one.
 Under an OAuth session it checks the provider and the organization. The CLI signs in per
 provider, so a GitHub login does not see GitLab groups and vice versa — and a repository that
 belongs to neither runs on the free CLI allowance rather than the paid
@@ -33,13 +37,18 @@ expiry, which keeps identity and the review itself alive, and a cookie session t
 usage endpoints require and that lives hours. Nothing renews the cookie; only the browser callback
 during `auth login` mints one, which is why `coderabbit auth logout && coderabbit auth login`
 repairs it and why it has to be repeated. **For unattended work, an API key removes the cookie from
-the path entirely.** `coderabbit doctor` catches none of this: nine checks passed, authentication
-included, on a CLI with no entitlement.
+the path entirely** — when the key path works at all, which on 2026-09-22 it did not: every
+review started from an API-key session that day failed immediately with `Review organization does
+not match the authenticated session`, measured on CLI 0.7.8 and 0.8.0, with three keys, in a
+repository installed in the key's own organization. The skill recognises that message, stops, and
+asks you to sign in through the browser instead of hunting for a local cause. `coderabbit doctor`
+catches none of this: nine checks passed, authentication included, on a CLI with no entitlement.
 
 The skill reads the review's own opening lines as well, and stops if a run announces the free
-allowance — the session can go stale between one run and the next. That matters because the
-allowance is small: measured at three reviews before a rate limit, with the message that the plan
-was never in play arriving only on the fourth.
+allowance — the session can go stale between one run and the next. That notice is a late signal,
+not a free exit: measured once, the message that the plan was never in play arrived only on the run
+after the allowance was already gone. The check *before* a run is `coderabbit usage`, which since
+`0.8.0` states the current allowance rather than leaving it to be counted by hand.
 
 ## Examples
 
@@ -92,11 +101,14 @@ Reviews both committed and uncommitted changes in one pass for a full sweep of e
 - **New files need `--include-untracked`, and the skill now passes it.** A file never added to Git
   is not part of `--uncommitted`, so it was skipped -- a review that silently omits every new file
   in a change, looking exactly like a clean one
-- Verified against CodeRabbit CLI **0.7.8**, both `review --help` and `auth status`, and on a
-  healthy session: `0.7` dropped `--prompt-only` and replaced `--type` with the named scope flags
-  (`--type` itself still parses, merely unlisted), and `0.7.8` reworded `--uncommitted` and
-  added a GitHub-only `--remote`. A field missing from a stale session was once mistaken here for a
-  field the version had removed -- one sample is not a version difference
+- Verified against CodeRabbit CLI **0.8.0** -- `review --help`, `usage --agent` and `auth status`,
+  on a healthy session: `0.7` dropped `--prompt-only` and replaced `--type` with the named scope
+  flags (`--type` itself still parses, merely unlisted), `0.7.8` reworded `--uncommitted` and
+  added a GitHub-only `--remote`, and `0.8.0` added `--deep` while demoting `--light` to a hidden
+  alias that runs an ordinary review. A field missing from a stale session was once mistaken here
+  for a field the version had removed -- one sample is not a version difference
+- **`--light` no longer buys anything.** It was the cheaper mode until `0.8.0` made it an alias for
+  the normal review, so a script still passing it pays full price under a flag that says otherwise
 - The skill asks the CLI for structured findings (`--agent`) instead of scraping the plain-text
   rendering. The CLI itself recommends this when it detects an agent environment
 - `coderabbit review findings` reprints the last review's findings without paying for a second run

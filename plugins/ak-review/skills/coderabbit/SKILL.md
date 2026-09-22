@@ -7,18 +7,21 @@ description: This skill should be used when the user asks for "code review", "ru
 
 Execute CodeRabbit CLI review with critical evaluation, systematic fixes, and project consistency validation.
 
-Verified against **CodeRabbit CLI 0.7.8**: both `coderabbit review --help` and
-`coderabbit auth status`, because checking only one of them is how this file went wrong once. The CLI
-moves: `0.7` retired `--plain`, `--fast`, `--interactive`, `--cwd` and `--prompt-only` (use
-`--light`, `--dir`, `--agent`), replaced `--type` with the separate scope flags and made plain text
-the default; `0.7.8` reworded `--uncommitted` and added `--remote`. `-t/--type` survives as hidden
-compatibility syntax — it is not gone, it is merely unlisted, and new commands use the named scope
-flags. (The `--type` in this skill's own Arguments below is unrelated: it is this skill's argument,
-which the phases translate into the CLI's scope flags.) Check the output you are about to depend on
-before trusting a description here.
+Verified against **CodeRabbit CLI 0.8.0**: `coderabbit review --help`, `coderabbit usage --agent`
+and `coderabbit auth status`, because checking only one of them is how this file went wrong once. The
+CLI moves: `0.7` retired `--plain`, `--fast`, `--interactive`, `--cwd` and `--prompt-only` (`--dir`
+and `--agent` took over the last two, `--light` took over `--fast`), replaced `--type` with the
+separate scope flags and made plain text the default; `0.7.8` reworded `--uncommitted` and added
+`--remote`; `0.8.0` added `--deep`, demoted `--light` to a hidden alias that runs an ordinary review
+— so the cheaper mode has no successor at all — and gave `coderabbit usage` an included-review
+report that answers under an API key. `-t/--type` survives as hidden compatibility syntax — it is not
+gone, it is merely unlisted, and new commands use the named scope flags. (The `--type` in this
+skill's own Arguments below is unrelated: it is this skill's argument, which the phases translate
+into the CLI's scope flags.) Check the output you are about to depend on before trusting a
+description here.
 
 The published changelog is a lead, not a source: `coderabbit config validate` appears there as a
-0.7.1 feature and no longer appears in `config --help` on 0.7.8, though it still runs.
+0.7.1 feature and is listed in no `config --help` since, though it still runs on 0.8.0.
 
 And check it on a **healthy session**. A missing field here was once read as "0.7.8 removed it" when
 the login had simply gone stale — a wrong claim, written into this file and released, from a single
@@ -63,10 +66,35 @@ coderabbit auth status --agent
 `{"authenticated":true,"authType":"api_key","region":"us"}`. No organization, no plan, no seat: that
 block is absent **by design**, not by failure. The checks below do not apply and must not be run;
 they would report a stale login on every single invocation and send the caller into a
-re-authentication that changes nothing. `coderabbit usage` is no help either — it fails with
-`Authorization header not found`, because the CLI does not send the key on that request. Under an
-API key the only entitlement signal is the review's own opening lines, further down. Skip ahead to
-the configuration check.
+re-authentication that changes nothing.
+
+Ask `coderabbit usage --agent` instead. Until 0.8.0 it refused the key outright; now it answers —
+with a quota, not an entitlement:
+
+```bash
+coderabbit usage --agent
+```
+
+It names the included-review allowance — `limit`, `remaining` and `rollingWindowMs` — and nothing
+beyond it: `billingPeriod` reads `{"state":"unavailable","reason":"api_key"}`. **Plan and seat stay
+unknown on this path even when the key's own organization holds one**, so a missing billing period
+is not evidence of a missing plan. Then skip ahead to the configuration check.
+
+**An API-key session can be fully entitled and still be refused.** Measured 2026-09-22 on CLI 0.7.8
+and 0.8.0, with three separate keys: every review died within seconds at
+`connecting_to_review_service` with `Review organization does not match the authenticated session` —
+in a repository installed in the key's own organization, on a plan that organization holds, while
+`coderabbit usage` answered normally for that same repository and the dashboard recorded the key
+being used. An OAuth login in the same minute reviewed the same working tree successfully.
+
+**Rule out the expected case first.** The same message is no fault at all when the repository
+belongs to a different organization than the key: a key's organization is fixed — `coderabbit auth
+org` refuses to switch it — while a browser login searches every organization it can reach. A
+repository the key's organization has not connected fails on this path by design.
+
+Otherwise there is nothing local to fix. Stop, say that the key path is refused, and ask the
+user to sign in through the browser with `coderabbit auth login` — an interactive step that needs
+them, not one to run on their behalf. Do not burn further runs proving the refusal again.
 
 **Any other `authType`** — an OAuth session. Then read the rendered output:
 
@@ -91,17 +119,21 @@ coderabbit auth logout && coderabbit auth login
 ```
 
 repairs it, and is the only thing that can — which is why it has to be repeated. **A repair that
-must be reapplied on a schedule is describing its own cause.** For anything unattended, use an API
-key instead and the cookie leaves the picture entirely; the full account is in `docs/solutions/`.
+must be reapplied on a schedule is describing its own cause.** An API key takes the cookie out of
+the picture entirely and is the answer for unattended work — but only once the refusal described
+above is resolved; while it stands, the browser login and its daily repair are the only path that
+reviews at all. The full account is in `docs/solutions/`.
 
 **`coderabbit doctor` will not catch this.** It passed nine checks, authentication included, on a CLI
 with no entitlement; it does not test the plan at all.
 
 Because the check can go stale between runs, read the **review's own first lines** as well: the CLI
 announces there when it is falling back to the free allowance or cannot reach the organization.
-**Stop if that appears** rather than letting the run continue or starting another. The allowance is
-small — measured at three reviews before a rate limit, with the message that the plan was never in
-play arriving only on the fourth.
+**Stop if that appears** rather than letting the run continue or starting another. It is a late
+signal, not a free exit: measured once, the message that the plan was never in play arrived only
+on the run after the allowance was already gone, so it protects the next run rather than this one.
+The check before a run is `coderabbit usage`, which since 0.8.0 states the current `limit`,
+`remaining` and rolling window — trust that over any number written down here.
 
 **Check whether the repository carries a CodeRabbit configuration**, and read its `path_filters` if
 it does:
@@ -221,9 +253,14 @@ scope had been covered.
 
 Two flags worth knowing, not defaults:
 
-- `--light` runs a cheaper review with less context work
+- `--deep` runs the full pull-request review policy instead of the faster local one. It reaches for
+  more context and costs accordingly; a routine round does not need it
 - `--use-credits` allows a review to continue past the plan's included limits, at usage-based
   cost. Never pass it unprompted — it converts a run that would have stopped into a billed one
+
+**`--light` is not a third one.** It was the cheaper mode until `0.8.0` made it a hidden alias for
+an ordinary review, so passing it today buys nothing its name promises — and a script still passing
+it is paying full price under a flag that says otherwise.
 
 If the review has already run and the findings are needed again, `coderabbit review findings` reprints
 the stored ones without paying for a second review; `coderabbit review findings --clear` forgets them.
@@ -454,7 +491,7 @@ Finish by checking it:
 coderabbit config validate
 ```
 
-It still works on 0.7.8 although `config --help` no longer lists it, so check that it still runs
+It still works on 0.8.0 although `config --help` does not list it, so check that it still runs
 before relying on it in a script — and fall back to `coderabbit config --agent`, which reports the
 active configuration and would fail on a file the CLI cannot read.
 
