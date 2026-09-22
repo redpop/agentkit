@@ -87,8 +87,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   must be in context when the message is written, and it carries a scoping line because reviewers
   act on diffs, not on commit messages.
 
-
-
 ## [1.35.0] - 2026-09-20
 
 ### ✨ Added
@@ -812,7 +810,7 @@ still happened, through the salvage path, but the way there exposed six defects.
 ### 🐛 Fixed
 
 - `ak-review:execute` — **A cut-short run could hand its narration on as a finished
-  report.** The extractors checked only whether output was _empty_. A model's running
+  report.** The extractors checked only whether output was *empty*. A model's running
   commentary ("I'll review this as a report-only audit…") is emitted as the same event
   type as the report itself, so a quota abort left 1441 bytes of narration passing as a
   review: exit 0, no error, no cost. Phase 5 would have verified narration against the
@@ -829,8 +827,8 @@ still happened, through the salvage path, but the way there exposed six defects.
   broke but never what. All three adapters now inspect their stream and exit **`126`**,
   reserved for "the tool refused", printing the tool's own words. Distinct from `125` on
   purpose: a stall is transient and worth retrying, a spent quota is not. The adapter's
-  own markers still outrank it, since `124`/`125` record what it _did_, while an error
-  event only reports what the tool _said_.
+  own markers still outrank it, since `124`/`125` record what it *did*, while an error
+  event only reports what the tool *said*.
 
 - `ak-review:execute` — **Salvage was keyed on exit `124` instead of on whether anything
   survived.** Harmless for codex, which has no sub-agents, but wrong in general: a quota
@@ -954,7 +952,7 @@ still happened, through the salvage path, but the way there exposed six defects.
   finding out what knobs exist meant reading all three. A table in Configuration now names every
   variable with its real default (read from the adapters, not from memory), which adapters honour it,
   and what it does — including the two facts a table cannot carry on its own: that the timeout bounds
-  one _attempt_ rather than the invocation, and that the budget cap is a ceiling that can be exceeded
+  one *attempt* rather than the invocation, and that the budget cap is a ceiling that can be exceeded
   by up to one turn.
 
 ### ✨ Added
@@ -983,16 +981,16 @@ still happened, through the salvage path, but the way there exposed six defects.
 - `ak-review:execute` — **Hitting the cap looked like a review that found nothing.** Claude Code ends
   such a run with `terminal_reason: budget_exhausted` and `result: null` — no report at all — so the
   extractor could only report that none was found, never that the cap was the reason. The adapter now
-  detects it and says so, naming the _actual_ spend, how to lift it, and that sub-agents finishing
+  detects it and says so, naming the *actual* spend, how to lift it, and that sub-agents finishing
   before the cap are still recoverable from the stream.
 
 ### 📝 Documented
 
 - `ak-review:execute` — **The spend cap is a ceiling, not a guarantee, and now says so.** Claude Code
-  checks spend _between_ turns rather than before committing to one, so a run stops once it has already
+  checks spend *between* turns rather than before committing to one, so a run stops once it has already
   gone over. The overshoot is bounded by a single turn, not open-ended: measured, a `$0.01` cap ended a
   run at `$0.28` — after `turns=1`, so one turn, not a runaway. A cap therefore bounds spend to roughly
-  _itself plus one turn_, which is worth knowing before setting one at the exact figure you cannot
+  *itself plus one turn*, which is worth knowing before setting one at the exact figure you cannot
   exceed. A cap below the price of one turn cannot bind at all, and the adapter now flags that rather
   than letting it look like protection. For a genuinely hard limit, the Anthropic Console's spend
   controls are the only thing outside both this plugin and the tool.
@@ -1003,14 +1001,14 @@ still happened, through the salvage path, but the way there exposed six defects.
 
 - `ak-review:execute` — **A `claude` adapter, for running reviews through Claude Code headless.** It is
   the only adapter that combines both qualities the other two split between them: sub-agents per review
-  dimension (which `codex` lacks) _and_ monetary cost reporting straight from the tool (which `codex`
+  dimension (which `codex` lacks) *and* monetary cost reporting straight from the tool (which `codex`
   also lacks), without `opencode`'s startup stall. On SWE-Atlas-QnA — the public benchmark closest to
   reviewing, since it measures multi-file code comprehension rather than patch-writing — Opus 5 scores
   63.2 against GPT-5.6-Sol's 46.0, a gap outside the confidence intervals. Verified against Claude Code
   `2.1.240`, including a live end-to-end run.
 
 - `ak-review:execute` — **Read-only is enforced by an allowlist here, and the reason is a measurement,
-  not a preference.** A probe run with `--permission-mode plan` alone _successfully created a file_:
+  not a preference.** A probe run with `--permission-mode plan` alone *successfully created a file*:
   plan mode governs how Claude Code works, not what it may touch. The adapter therefore grants an
   explicit allowlist — `Read`, `Glob`, `Grep`, `Task`, `WebFetch` and four read-only `git` invocations —
   and denies `Write`/`Edit`/`NotebookEdit`. `Bash` is never granted wholesale, because an unrestricted
@@ -1045,8 +1043,8 @@ still happened, through the salvage path, but the way there exposed six defects.
 - `ak-review:setup` — **`--show`: see what is configured and what is on offer, without changing
   anything.** Until now the only way to find out which models a tool exposes was to start a setup that
   always ends in a write — the wrong instrument for a look, so people read the JSON by hand instead
-  and lost the precedence rules in the process. `--show` reports the resolved configuration _and which
-  layer each value came from_, the installed adapters (discovered from the filesystem, never a list
+  and lost the precedence rules in the process. `--show` reports the resolved configuration *and which
+  layer each value came from*, the installed adapters (discovered from the filesystem, never a list
   kept in prose), and the available models for every adapter that can list them. It writes nothing,
   asks nothing, and closes with the two commands that turn a listed value into a one-off run or a
   permanent default.
@@ -1078,7 +1076,7 @@ codex adapter and verified against the code before being applied.
 - `ak-review:execute` — **`SKILL.md` still told the calling agent that a startup stall is "not
   something to retry automatically", which `1.24.2` had just made false.** The adapter had gained a
   retry loop while the instruction describing the old behaviour stayed put — precisely the defect
-  `AGENTS.md` warns about. Phase 3 now explains that a transient failure is retried _inside_ the
+  `AGENTS.md` warns about. Phase 3 now explains that a transient failure is retried *inside* the
   adapter, so a surfaced `125` already means every attempt stalled and retrying again would repeat a
   failed strategy.
 
@@ -1091,7 +1089,7 @@ codex adapter and verified against the code before being applied.
 - `ak-review:execute` — **A run killed at the startup probe could lose output it had just produced.**
   The probe checks for an empty file and then signals the process; a tool that flushes while being
   signalled lands in that gap, and the next attempt's `>` truncated it. Worse, the run could end as
-  `125` with a _non-empty_ file, contradicting exactly what that code promises. Retry now requires the
+  `125` with a *non-empty* file, contradicting exactly what that code promises. Retry now requires the
   marker **and** a still-empty stream, and a killed run that did produce output is reported as `124`
   so the partial stream is salvaged.
 
@@ -1147,9 +1145,9 @@ codex adapter and verified against the code before being applied.
   that sent the reader after output which could not exist.** `opencode run` intermittently produces
   nothing at all and never returns; the adapter reported that as its ordinary 20-minute timeout, so
   every layer above it said "timed out — run the salvage path" against an empty file. It now caps
-  _startup_ separately (90s, `AK_REVIEW_STARTUP_GRACE_SECS`) and exits **`125`** instead of `124` when
+  *startup* separately (90s, `AK_REVIEW_STARTUP_GRACE_SECS`) and exits **`125`** instead of `124` when
   no bytes have arrived, stating plainly that the run never reached the model and there is nothing to
-  salvage. A run that produces output and _then_ hangs is unchanged: still `124`, still salvageable.
+  salvage. A run that produces output and *then* hangs is unchanged: still `124`, still salvageable.
 
 - `ak-review:execute` — **The adapter discarded the only diagnostic that exists for that failure.** On
   a stall, opencode's stderr is empty, which reads as "nothing went wrong" when in fact nothing
@@ -1160,12 +1158,12 @@ codex adapter and verified against the code before being applied.
 ### 📝 Documented
 
 - `ak-review:execute` — **Where the opencode stall actually happens**, which was previously unknown and
-  is now pinned by measurement. The evidence is opencode's _own_ log
+  is now pinned by measurement. The evidence is opencode's *own* log
   (`~/.local/share/opencode/log/opencode.log`), not the event stream: a healthy run logs `init` then
   immediately `created id=ses_…`; a stalled one logs `init` and stops forever. It therefore dies inside
   **session creation**, before the model is ever called — and `opencode serve` started during a stall
   failed with `database is locked`, pointing the same way. The root cause is upstream in opencode
-  (seen on `1.18.21`) and is _not_ fixed here. Ruled out by measurement, each with a paired control:
+  (seen on `1.18.21`) and is *not* fixed here. Ruled out by measurement, each with a paired control:
   the database, config and plugins, stale processes, run cadence, and a concurrent instance holding
   the DB. The Adapter Reference also records the methodological trap — the failure comes in windows of
   minutes during which everything stalls, so an unpaired comparison produces a confident wrong answer.
@@ -1188,7 +1186,7 @@ codex adapter and verified against the code before being applied.
   it structurally: the agent cannot write to the repository even if something told it to. The adapter
   also passes `--ignore-user-config`, because a real `~/.codex/config.toml` drags MCP servers, hooks and
   plugins into the run — measured on one, that meant failing auth handshakes and the review's own
-  context being crowded out by _"skill descriptions were shortened to fit the skills context budget"_.
+  context being crowded out by *"skill descriptions were shortened to fit the skills context budget"*.
 
 - `ak-review:execute` — **`codex-preflight.sh` checks authentication, which `opencode-preflight.sh`
   deliberately does not.** That is not an inconsistency. opencode's auth check was removed in 1.17.1
@@ -1213,8 +1211,8 @@ codex adapter and verified against the code before being applied.
   different claims and only one of them is true.
 
 - `ak-review:setup` — **The model and effort prompts no longer describe only `opencode`'s formats.**
-  Phase 4 presented `provider/model` as _the_ shape a model identifier has, and Phase 6 named
-  `--variant` as _the_ effort mechanism. Both are per-adapter: codex takes a bare model name and one of
+  Phase 4 presented `provider/model` as *the* shape a model identifier has, and Phase 6 named
+  `--variant` as *the* effort mechanism. Both are per-adapter: codex takes a bare model name and one of
   `none|minimal|low|medium|high|xhigh|max`. Codex has no non-interactive model listing, so it uses the
   existing typed-entry fallback rather than shipping a `codex-models.sh` that could not work.
 
@@ -1251,7 +1249,7 @@ codex adapter and verified against the code before being applied.
   unresolved problem", explicitly discarded anything already resolved, and had nothing to say about a
   session that simply ended. That covers the rarest case and misses the ordinary one — a session that
   reached its goal, or stopped half-way, and whose successor needs to know what was settled just as much
-  as what is open. The skill now captures a _session_, not a problem, and detects which of three states
+  as what is open. The skill now captures a *session*, not a problem, and detects which of three states
   it is in: `Blocked` (a problem that resisted several attempts), `In Progress` (moving but unfinished),
   or `Complete` (goal reached). The state shifts the document's emphasis; `--blocked`, `--wip` and
   `--done` override the detection when it guesses wrong. Resolved work is now recorded rather than
@@ -1265,10 +1263,10 @@ codex adapter and verified against the code before being applied.
 
 ### ✨ Added
 
-- `ak-meta:handoff` — **Three sections that answer what a fresh session actually asks first.** _Current
-  State_ records the Git side — branch, uncommitted changes, commits made this session — which is the
-  most common blind spot on a session switch: what sits on disk versus what is committed. _Files
-  Touched_ names each file with one sentence on why. _Decisions & Assumptions_ separates a deliberate
+- `ak-meta:handoff` — **Three sections that answer what a fresh session actually asks first.** *Current
+  State* records the Git side — branch, uncommitted changes, commits made this session — which is the
+  most common blind spot on a session switch: what sits on disk versus what is committed. *Files
+  Touched* names each file with one sentence on why. *Decisions & Assumptions* separates a deliberate
   choice from an unverified premise, so the next agent neither re-litigates a settled question nor
   trusts something that was never checked.
 
@@ -1314,7 +1312,7 @@ codex adapter and verified against the code before being applied.
 
 - `ak-review` docs — **How to override the Markdown rules per project.** The hook has always deferred
   to a project's own markdownlint config, but nothing said so. The hook documentation now covers the
-  resolution order, the valid config file names, and the fact that a project config _replaces_ the
+  resolution order, the valid config file names, and the fact that a project config *replaces* the
   plugin config rather than merging with it — including why `extends` cannot be used to inherit the
   AgentKit defaults.
 
@@ -1333,7 +1331,7 @@ All three findings come from the first real run of `--audit` against a project w
 dependency skill predates the generator.
 
 - `ak-review:deps` — **The audit could only see changes, never standing gaps.** Every check compared
-  the project against what the skill already recorded, so a package that was _never_ pinned looked
+  the project against what the skill already recorded, so a package that was *never* pinned looked
   identical on every run and stayed invisible. The real run showed this exactly: Biome and Playwright
   were pinned exactly in both installs while TypeScript carried a caret in both — a compiler, whose
   version decides the result rather than merely what installs, and precisely what the methodology
@@ -1365,14 +1363,14 @@ dependency skill predates the generator.
   procedure that does.
 
   The reason it generates rather than generalizes: a generic dependency skill can say "take a
-  baseline", but not _which_ baseline — and that is where the safety lives. A dependency bump can
+  baseline", but not *which* baseline — and that is where the safety lives. A dependency bump can
   pass every behavioural test and still be wrong, because tests assert behaviour and a CSS
   framework bump that moves a border leaves a full E2E suite green. Only a project that knows it
   has a pixel comparison can be told to run it.
 
   Detection covers four axes the existing tooling scan did not: **install boundaries** (manifests
   with their own lockfiles are separate projects), **the baseline** including a deliberate hunt for
-  a _second_ kind of baseline (visual regression, bundle-size budget, benchmark, structural
+  a *second* kind of baseline (visual regression, bundle-size budget, benchmark, structural
   snapshot, Lighthouse budget) together with what each one fails to cover, **exact pins** versus
   ranges, and **couplings** — the same version string duplicated across manifests, CI config,
   Dockerfiles and documentation.
@@ -1441,7 +1439,7 @@ dependency skill predates the generator.
   not check authentication** — that check existed and was removed after three attempts. `opencode auth
   list` exits 0 in both states, so only its ANSI-decorated output distinguishes them, and three
   successive escape-stripping patterns were each defeated by a different escape class, every time by
-  wrongly hard-blocking a _correctly authenticated_ user. Deriving a gate from human-readable TUI
+  wrongly hard-blocking a *correctly authenticated* user. Deriving a gate from human-readable TUI
   output is unbounded. An unauthenticated tool fails instantly and for free and says so itself, so the
   check bought a nicer message at the cost of the worst failure mode there is.
 
@@ -1636,7 +1634,7 @@ dependency skill predates the generator.
 - `ak-review:workflow` + `AGENTS.md` — Review workflow bullet renamed from
   **"Optional delegated review"** to **"Delegated review"**: the "Optional" label caused
   agents to skip the entire bullet (including the mandatory user prompt) rather than just
-  making the _execution_ optional. Asking the user is now framed as a required step.
+  making the *execution* optional. Asking the user is now framed as a required step.
 - `ak-knowledge:agents-md-improver` — Added Common Issues item 8: checks that `AGENTS.md`
   carries the symlink notice when `CLAUDE.md` is a symlink pointing to it. Removed a
   redundant prose block in Phase 1 that duplicated the same rule already expressed in
