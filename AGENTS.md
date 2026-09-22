@@ -137,7 +137,7 @@ Rules for `git log`, not review criteria for diffs.
   in the body.
 
 Versions stay synchronized across `marketplace.json` and all `plugin.json` files (currently
-`1.37.0`) — that one **is** checkable in a diff.
+`1.37.1`) — that one **is** checkable in a diff.
 
 ## Task completion workflow
 

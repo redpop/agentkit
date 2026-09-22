@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.37.1] - 2026-09-22
+
+### 🐛 Fixed
+
+- `ak-review:coderabbit` — **CodeRabbit CLI 0.8.0 made two of the skill's claims false.**
+  `--light` was listed as the cheaper review; 0.8.0 turned it into a hidden alias for an ordinary
+  one, so a script still passing it pays full price under a flag that promises otherwise. The skill
+  also held that an API-key session has no signal short of starting a review, because
+  `coderabbit usage` refused the key; it now answers, with the included-review allowance — a quota,
+  not an entitlement, since plan and seat stay invisible on that path. `--deep` is documented, and
+  the skill is verified against 0.8.0.
+
+- `ak-review:coderabbit` — **the skill and its solution doc offered the API key as the cure for the
+  daily re-login, and on 2026-09-22 API-key sessions were refused.** Every review started from a key
+  session that day failed with `Review organization does not match the authenticated session`, even
+  where key, repository and plan shared one organization, while a browser login in the same minute
+  reviewed the same tree. Both now say the path is blocked until a re-test shows otherwise. The skill stops and asks for a browser login rather
+  than running `coderabbit auth login` itself — it opens a browser, which only the user can answer —
+  and first rules out the case where the message is no fault at all: a key's organization is fixed,
+  so a repository outside it fails on this path by design.
+
+  The allowance notice at the top of a review is described as what it is: a late signal that can
+  arrive only after the allowance is spent, not a free exit. The check before a run is
+  `coderabbit usage`.
+
 ## [1.37.0] - 2026-09-21
 
 ### ♻️ Changed
