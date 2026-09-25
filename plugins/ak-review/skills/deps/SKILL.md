@@ -35,7 +35,7 @@ translated in either case.
 Parse `$ARGUMENTS` for mode:
 
 | Argument | Mode |
-|---|---|
+| --- | --- |
 | _(none)_ | **Generate** — Scan project, interview the gaps, write the skill |
 | `--audit` | **Audit** — Check an existing skill against the project's current state |
 
@@ -52,6 +52,12 @@ findings — replacing it throws those away. Recommend the audit unless the user
 Also locate the project instruction file (`AGENTS.md`, then `CLAUDE.md`, then `.claude/CLAUDE.md`) — Step 7 writes
 traps there, not into the generated skill.
 
+Read the project's commit rules while you are there: the instruction file, `CONTRIBUTING*`, a commitlint config
+(`commitlint.config.*`, `.commitlintrc*`) and a commit template (`.gitmessage`, `git config commit.template`).
+Record the subject format, whether a ticket key is required, whether a mechanical change gets a body, where measured
+numbers belong, and whether changes merge through a PR/MR with CI or a review bot. The generator has no commit shape
+of its own — §4 of the generated skill states the project's.
+
 ### Step 2: Detect ecosystem and install boundaries
 
 Read `${CLAUDE_PLUGIN_ROOT}/knowledge/project-tooling-detection.md` for the manifest, config and lockfile tables,
@@ -64,7 +70,7 @@ a request that touches both is really two.
 **Which update commands does this manager offer?** Record the actual invocations, not the generic ones:
 
 | Manager | Inspect outdated | Update |
-|---|---|---|
+| --- | --- | --- |
 | pnpm | `pnpm outdated` | `pnpm update <pkg>@<ver>` / `pnpm add -D <pkg>@<ver>` |
 | npm | `npm outdated` | `npm install <pkg>@<ver>` |
 | Yarn | `yarn outdated` | `yarn up <pkg>@<ver>` |
@@ -87,7 +93,7 @@ Then look specifically for a **second kind of baseline** — one that catches wh
 the highest-value detection in this skill, because a dependency can pass every behavioural test and still be wrong:
 
 | Signal | Second baseline |
-|---|---|
+| --- | --- |
 | `toHaveScreenshot` / `toMatchSnapshot` on images, `*-snapshots/`, `__image_snapshots__/` | Visual regression |
 | `percy`, `chromatic`, `backstopjs`, `reg-suit`, `loki` in dependencies | Visual regression (hosted or local) |
 | `size-limit`, `bundlesize`, `bundlewatch`, `.size-limit.*` | Bundle size budget |
@@ -139,7 +145,7 @@ Ask as grouped sets rather than one question per message — `AskUserQuestion` t
 triggered questions means two rounds. Six is the ceiling; if more triggers fired, drop the least consequential.
 
 | Fired when | Ask |
-|---|---|
+| --- | --- |
 | A second baseline was found (Step 3) | What does it cover, at what tolerance, and which packages influence its output? |
 | A second baseline was found | Which engine and platform does it run on, versus where the product actually runs — and does CI run it, or only a developer machine? |
 | UI-affecting dependencies present (CSS framework, component library, charting, icon set) but **no** second baseline | Is there anything that would catch a purely visual regression? If not, this is recorded as a known gap, not glossed over. |
@@ -148,6 +154,7 @@ triggered questions means two rounds. Six is the ceiling; if more triggers fired
 | 2+ independent installs (Step 2) | Which packages must stay in version-sync across them, and which may legitimately differ? |
 | Always | Which commands in this project exit non-zero without being broken, or fail for a reason unrelated to the code? |
 | Always | Do dependency updates follow a ticket or issue convention here, and does the skill start from an existing ticket or create one? |
+| Step 1 found no rule for where measured numbers go | Where should an update's measurements go — commit body, ticket comment, PR description — and does a plain version bump get a commit body at all? |
 
 Two rules for handling answers:
 
@@ -217,6 +224,10 @@ If the baseline is already red or noisy, stop and report that first.
 
 {Ordering rules, naming what in this project can move the test harness itself.}
 
+{Commit shape as the project's rules state it (Step 1): subject format, ticket key, whether a plain bump gets a body,
+where the measured numbers go. If changes merge through a PR/MR with CI or a review bot: every review thread is fixed
+or answered before the merge.}
+
 ## 5. Couplings — check these every time
 
 {Table: package, why it matters, how many places hold the version.}
@@ -228,18 +239,21 @@ this skill. Add what you find there rather than to this file.
 
 ## 7. Finish
 
-{Handoff to the task completion workflow, if one exists.}
+{Handoff to the task completion workflow, if one exists — by file, with its steps named as the workflow names them.
+Skip only what the workflow itself allows to skip for this kind of change.}
 
 {Changelog rules from the interview: which changes get an entry and which do not, and why.}
 
 ## 8. Fold the observations back in
 
-{Methodology §7, with the project's instruction file named.}
+{Methodology §7, with the project's instruction file named and the story sent where the project's commit rules put
+it.}
 
 ## Checklist
 
 {One numbered item per value: baseline numbers, tiering, per-bump coverage, verified claims, unfiltered output,
-{second baseline result}, final state versus baseline, observations folded in.}
+{second baseline result}, final state versus baseline and where it was recorded, {PR/MR and each review thread},
+observations folded in.}
 ````
 
 **Write no claim that expires on its own.** A ticket number, a milestone or a release named as the _current_ one is
@@ -253,7 +267,9 @@ Then:
 
 1. Show the user the written file.
 2. If a task completion workflow exists (`.claude/skills/task-completion/SKILL.md` or a workflow section in the
-   instruction file), confirm the handoff in §7 names it correctly.
+   instruction file), confirm the handoff in §7 names it correctly, cites each step as the workflow numbers or names
+   it — read, not recalled — and skips nothing the workflow does not itself allow to skip. An exception the
+   workflow does not grant is a rule the generator invented.
 3. **Optional**: if `skill-creator` is installed, offer to run it against the new file as a structural quality pass.
    Skip silently if unavailable; do not suggest installing it for this.
 
@@ -272,13 +288,15 @@ the flag.
 
 ### Step 2: Re-run detection
 
-Repeat Generate Steps 2-4. Do not repeat Step 5 — an audit must not re-interview the user about answers the skill
-already records. Ask only where a _new_ trigger fired that the skill has no answer for.
+Repeat Generate Steps 2-4, and re-read the two sources Step 3 below compares against: the project's commit rules
+(Generate Step 1) and the task completion workflow (Generate Step 7). Do not repeat Step 5 — an audit must not
+re-interview the user about answers the skill already records. Ask only where a _new_ trigger fired that the skill
+has no answer for.
 
 ### Step 3: Compare
 
 | Check | Finding |
-|---|---|
+| --- | --- |
 | A command in the skill no longer exists | Script renamed or removed |
 | A detected check is not in the baseline | Baseline incomplete — new tooling was added |
 | A second baseline exists that the skill does not mention | The most costly gap; report first |
@@ -289,6 +307,8 @@ already records. Ask only where a _new_ trigger fired that the skill has no answ
 | A version string now appears in more files than the skill states | Coupling grew |
 | An install was added or removed | Scope statement stale |
 | An automated update source appeared | Renovate/Dependabot now opens the PRs |
+| The skill prescribes a commit shape the project's rules contradict — subject format, ticket key, what goes in a body | The project's rules win; check where the skill sends measured numbers |
+| The skill cites a workflow step the workflow does not have, or skips one the workflow does not let it skip | Handoff stale — the workflow was renumbered, or the generator invented an exception |
 | The skill names a ticket, issue or milestone as the _current_ one | Check whether it is still open. A named "current" ticket is a claim with an expiry date, and it expires silently |
 
 ### Step 4: Report

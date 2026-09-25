@@ -83,7 +83,8 @@ to settle it — never as an invented rule.
 
 ### Generate (default)
 
-1. Check for an existing skill — offer `--audit` instead of replacing, to preserve accumulated findings
+1. Check for an existing skill — offer `--audit` instead of replacing, to preserve accumulated findings — and read
+   the project's commit rules, which the generated skill adopts rather than prescribing its own
 2. Detect ecosystem, install boundaries and update commands
 3. Detect the baseline, including any second baseline and its documented limits
 4. Detect exact pins, multi-file version strings and cross-install couplings
@@ -94,10 +95,11 @@ to settle it — never as an invented rule.
 ### Audit (`--audit`)
 
 1. Read the existing skill
-2. Re-run detection (no re-interview)
+2. Re-run detection and re-read the commit rules and completion workflow (no re-interview)
 3. Compare, separating project drift from skill drift — including two checks that a
    before/after comparison cannot reach: a result-determining package that has _always_ carried a range, and a
-   ticket the skill names as the current one but which has since closed
+   ticket the skill names as the current one but which has since closed. The skill's commit shape is checked
+   against the project's commit rules, and its handoff against the steps the completion workflow actually has
 4. Report, project drift first
 5. Offer to fix the document; report project drift for the user to decide on
 
