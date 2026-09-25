@@ -36,7 +36,7 @@ Assumptions about packages are cheap to make and expensive to be wrong about. A 
 authoritative where a blog post or a changelog summary is not.
 
 | Question | Command |
-|---|---|
+| --- | --- |
 | Why is this installed, and who needs it? | `pnpm why <pkg>` / `npm ls <pkg>` / `composer why <pkg>` / `cargo tree -i <crate>` / `go mod why <module>` / `pip show <pkg>` |
 | Does X support Y? | `npm view <pkg>@<ver> peerDependencies engines` / `composer why-not <pkg> <ver>` / `cargo add <crate>@<ver> --dry-run` |
 | What does this tool actually do? | Read its source in the install directory (`node_modules/`, `vendor/`, `site-packages/`) |
@@ -56,7 +56,8 @@ Four rules that hold in every ecosystem:
 ## 4. One logical step per commit, verified in between
 
 Four packages bumped at once means a red test points at four suspects. Commit per step and run the relevant checks
-before moving on. It is also what lets a commit message state what was measured rather than what was hoped.
+before moving on. It is also what lets each step report what was measured rather than what was hoped — in the place
+the project's own rules keep such numbers (commit body, ticket comment, PR description), never in one they forbid.
 
 **Order matters when a change can move the test harness itself.** A fix that keeps the suite runnable goes first and
 alone, even if it is inert until the bump lands. Anything that changes how output is produced or rendered goes
@@ -104,8 +105,8 @@ Keep a note while working and place each entry before reporting done:
 
 Two rules keep this from turning the skill into a changelog. **Prefer editing an existing line over adding a new
 one** — a document that only grows stops being read, and an unread skill guards nothing. And **write the correction,
-not the anecdote**: the next reader needs the rule, not the story of how it was found. The story belongs in the
-commit message.
+not the anecdote**: the next reader needs the rule, not the story of how it was found. The story belongs wherever
+the project records why a change was made — commit body, ticket or PR — not in the skill.
 
 ## 8. Ask for values, not ticks
 
