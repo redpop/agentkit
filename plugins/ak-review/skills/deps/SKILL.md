@@ -154,7 +154,7 @@ triggered questions means two rounds. Six is the ceiling; if more triggers fired
 | --- | --- |
 | A second baseline was found (Step 3) | What does it cover, at what tolerance, and which packages influence its output? |
 | A second baseline was found | Which engine and platform does it run on, versus where the product actually runs — and does CI run it, or only a developer machine? |
-| UI-affecting dependencies present (CSS framework, component library, charting, icon set) but **no** second baseline | Is there anything that would catch a purely visual regression? If not, this is recorded as a known gap, not glossed over. |
+| UI-affecting dependencies present (CSS framework, component library, charting, icon set) but **no** second baseline | Is there anything that would catch a purely visual regression? If not, this is recorded as a known gap with a per-run procedure next to it (Step 7), not glossed over. |
 | `CHANGELOG.md` exists | Does an entry there have an effect outside the repository — a release feed, an auto-updater, store notes? Which changes deserve no entry at all? |
 | A version string was found in 2+ files (Step 4) | Is this the complete list, and must they always move together? |
 | 2+ independent installs (Step 2) | Which packages must stay in version-sync across them, and which may legitimately differ? |
@@ -174,7 +174,8 @@ Two rules for handling answers:
 Show the user:
 
 1. **The detected baseline** — every command, and which of them CI runs
-2. **The second baseline and its limits**, or an explicit "none found" with the gap it leaves
+2. **The second baseline and its limits**, or an explicit "none found" with the gap it leaves and the per-run
+   procedure proposed to cover it
 3. **The couplings**, with the file count per version string
 4. **What the interview added** that detection could not have found
 
@@ -210,7 +211,12 @@ Every item asks for a value rather than a tick, because a tick can be given with
 Write the result down including warning, hint and info counts — not pass/fail. The counts are what later
 distinguishes "this bump caused it" from "that was already there". Read the output; do not pipe it through `grep`.
 
-{Second baseline block: command, what it covers, tolerance, which packages influence it, and its limits verbatim.}
+{Second baseline block: command, what it covers, tolerance, which packages influence it, and its limits verbatim.
+Or, when none exists: the gap stated as one, plus a per-run procedure matched to the UI libraries detected — for
+example screenshots with a pixel diff that reports magnitude for a component library, a per-element DOM snapshot
+(tag, class, inline SVG) for class-merging and icon libraries, a rule-level diff of the compiled CSS for a CSS
+framework, an A/B of the patterns actually used for a formatting library. Propose what the detected libraries can
+change; none of these is required.}
 
 If the baseline is already red or noisy, stop and report that first.
 

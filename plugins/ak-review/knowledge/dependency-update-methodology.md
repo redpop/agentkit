@@ -19,6 +19,11 @@ correct while being visually, structurally or operationally wrong. Where a proje
 pixel comparison, snapshot, bundle size, benchmark — it belongs in the baseline run, and its limits (which engine,
 which platform, whether CI runs it) belong written next to it.
 
+Where none exists, build one for the run rather than only noting the gap: capture before and after with a
+comparison that reports how much changed, not just whether anything did, capture the old state twice to prove it
+repeats, and name what is expected to differ. What to capture follows from what the bump can change — screens,
+rendered markup, compiled CSS, the output of the formatting calls the code makes.
+
 If the baseline is already red or noisy, stop and report that first. Updating on top of a broken baseline makes
 attribution impossible for everyone after you.
 
