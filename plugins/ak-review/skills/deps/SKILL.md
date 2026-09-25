@@ -61,7 +61,7 @@ of its own — §4 of the generated skill states the project's.
 ### Step 2: Detect ecosystem and install boundaries
 
 Read `${CLAUDE_PLUGIN_ROOT}/knowledge/project-tooling-detection.md` for the manifest, config and lockfile tables,
-and apply them. Then answer three questions this skill needs beyond that:
+and apply them. Then answer four questions this skill needs beyond that:
 
 **How many independent installs are there?** Count manifests that each have their own lockfile. Two manifests with
 two lockfiles are two projects that share a repository: they install separately, they can be updated separately, and
@@ -84,6 +84,40 @@ the one that moves only the named package:
 **Is there an automated update source?** Check for `.github/dependabot.yml`, `renovate.json`, `.renovaterc*`, or a
 Renovate config block in `package.json`. If one exists, the generated skill starts from its PRs rather than from
 `outdated`, and should say so.
+
+**Is there a release-age gate?** A minimum age for new versions changes what "the newest version" means, and the
+tools on one machine disagree about it. The gate often lives outside the repository, so look in the repository, the
+user's and global config, and the update bot's config, and read the files themselves. Neither a config listing nor
+a file is proof on its own: pnpm 10 prints `undefined` for `config get minimumReleaseAge` while a gate from
+`~/.npmrc` is in effect, and it silently ignores the same setting spelled `minimumReleaseAge` in its ini `rc` file.
+
+| Source | Setting | Where it is read from |
+| --- | --- | --- |
+| pnpm ≥ 10.16 | `minimumReleaseAge` (minutes) | pnpm 10: `pnpm-workspace.yaml`; in ini files (`.npmrc`, `~/.npmrc`) spelled `minimum-release-age`. pnpm ≥ 11: `pnpm-workspace.yaml`, global `config.yaml` only — `.npmrc` and `rc` are ignored for it; built-in default 1440 |
+| npm ≥ 11.10 | `min-release-age` (days), or `before` (date) | project, user (`~/.npmrc`) and global `npmrc` |
+| Yarn ≥ 4.10 | `npmMinimalAgeGate` (duration) | `.yarnrc.yml`; default `1d` since 4.15 |
+| Bun ≥ 1.3 | `install.minimumReleaseAge` (seconds) | `bunfig.toml`, global `~/.bunfig.toml` |
+| uv | `exclude-newer` (timestamp or duration) | `pyproject.toml` `[tool.uv]`, `uv.toml`, user `~/.config/uv/uv.toml` |
+| Poetry ≥ 2.4 | `solver.min-release-age` (days) | `poetry.toml`, global Poetry config |
+| Bundler | `cooldown` (days) | `bundle config`, per `source` in the `Gemfile` |
+| Renovate | `minimumReleaseAge` | Renovate config; pending releases get a status check or no PR |
+| Dependabot | `cooldown` | `dependabot.yml`; version updates only, 3-day default even when unset |
+
+For a manager not listed, check its documentation for the version in use rather than concluding there is none.
+Defaults count: a manager can gate without any file saying so.
+
+Then probe the behaviour, which does not depend on where the gate is configured: for a **direct** dependency,
+compare the manager's own "latest" (e.g. `pnpm outdated`, which respects the gate since pnpm 10.18) with the same
+package's newest release queried from its registry directly (`npm view <pkg> version` for the npm registry — the
+`latest` dist-tag, which is also what the manager starts from). A difference proves a gate is in effect. No
+difference proves nothing — perhaps no direct dependency has a release younger than the gate right now — so only the
+file search counts then, and if that found nothing either, the generated skill carries an open question, not "no
+gate". The probe shows _that_ a gate acts, not _where_ it is set: to locate it, rerun the probe with one source
+disabled (`npm_config_userconfig=/dev/null` hides `~/.npmrc` from npm and pnpm) — never by editing the user's files.
+
+Record the value, where it lives — a gate in user config does not apply in CI, where it only matters without a
+frozen lockfile — which display respects it, and which shows versions the manager will not install (registry
+queries, editor plugins).
 
 ### Step 3: Detect the baseline
 
@@ -158,6 +192,7 @@ triggered questions means two rounds. Six is the ceiling; if more triggers fired
 | UI-affecting dependencies present (CSS framework, component library, charting, icon set) but **no** second baseline | Is there anything that would catch a purely visual regression? If not, this is recorded as a known gap with a per-run procedure next to it (Step 7), not glossed over. |
 | `CHANGELOG.md` exists | Does an entry there have an effect outside the repository — a release feed, an auto-updater, store notes? Which changes deserve no entry at all? |
 | A version string was found in 2+ files (Step 4) | Is this the complete list, and must they always move together? |
+| The release-age probe was inconclusive and no gate was found in any file (Step 2) | Does a minimum release age apply anywhere — your user config, CI, a registry proxy, the update bot? |
 | 2+ independent installs (Step 2) | Which packages must stay in version-sync across them, and which may legitimately differ? |
 | Always | Which commands in this project exit non-zero without being broken, or fail for a reason unrelated to the code? |
 | Always | Do dependency updates follow a ticket or issue convention here, and does the skill start from an existing ticket or create one? |
@@ -197,6 +232,12 @@ description: Dependency updates for {project} — baseline{, second baseline}, t
 # Dependency updates
 
 {Scope: which install this covers, and that a request touching both is really two. What is out of scope.}
+
+{Starting point: the update bot's PRs, or the manager's outdated command. The release-age gate, if any: its value,
+where it lives and whether CI sees it, which display is binding and which shows versions that will not install — and
+that a target taken from a ticket or an editor is first checked against the gate by its publish date
+(`npm view <pkg> time --json` or the ecosystem's equivalent). An undetermined gate is written as the open question
+it is.}
 
 **Open an observations note now** (one file, scratchpad) and add to it whenever something in this skill turns out
 wrong, missing, or slower than it needed to be. The last step folds it back in. Doing it at the end from memory
@@ -332,6 +373,8 @@ has no answer for.
 | A version string now appears in more files than the skill states | Coupling grew |
 | An install was added or removed | Scope statement stale |
 | An automated update source appeared | Renovate/Dependabot now opens the PRs |
+| A release-age gate is in effect that the skill does not mention | Targets from a ticket or an editor may not install, and "latest" means two things |
+| The skill describes a gate, or a tool's view of it, differently from what detection finds or the probe measures | A tool claim nobody verified — correct it from the file and the measurement, not from another guess |
 | The skill prescribes a commit shape the project's rules contradict — subject format, ticket key, what goes in a body | The project's rules win; check where the skill sends measured numbers |
 | The skill cites a workflow step the workflow does not have, or skips one the workflow does not let it skip | Handoff stale — the workflow was renumbered, or the generator invented an exception |
 | The skill names a ticket, issue or milestone as the _current_ one | Check whether it is still open. A named "current" ticket is a claim with an expiry date, and it expires silently |

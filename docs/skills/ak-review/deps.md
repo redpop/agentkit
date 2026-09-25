@@ -61,7 +61,7 @@ read by whoever picks up the next update.
 
 | Axis | What it finds |
 |---|---|
-| Ecosystem and installs | Package manager (via lockfile), update commands, how many independent installs share the repo, whether Renovate/Dependabot opens the PRs |
+| Ecosystem and installs | Package manager (via lockfile), update commands that move only the named package, how many independent installs share the repo, whether Renovate/Dependabot opens the PRs, and any release-age gate — in the repo, the user's own config or the bot — with which tools respect it |
 | Baseline | Type check, lint, test, build commands, and which of them CI runs |
 | Second baseline | Visual regression, bundle-size budget, benchmark, structural snapshot, Lighthouse budget — plus what each one does _not_ cover, or, where none exists, a per-run procedure matched to the UI libraries found |
 | Pins and couplings | What is already pinned exactly, what determines the result but carries a range anyway, which versions appear in more than one file, which packages form a family that moves together, and where CI masks a drift |
@@ -85,7 +85,8 @@ to settle it — never as an invented rule.
 
 1. Check for an existing skill — offer `--audit` instead of replacing, to preserve accumulated findings — and read
    the project's commit rules, which the generated skill adopts rather than prescribing its own
-2. Detect ecosystem, install boundaries and update commands
+2. Detect ecosystem, install boundaries, update commands and release-age gates — reading user and global config
+   files, not only the repository, and probing the manager's "latest" against the registry
 3. Detect the baseline, including any second baseline and its documented limits
 4. Detect exact pins, multi-file version strings, package families and cross-install couplings
 5. Interview the gaps (max six triggered questions)
@@ -99,7 +100,8 @@ to settle it — never as an invented rule.
 3. Compare, separating project drift from skill drift — including two checks that a
    before/after comparison cannot reach: a result-determining package that has _always_ carried a range, and a
    ticket the skill names as the current one but which has since closed. The skill's commit shape is checked
-   against the project's commit rules, and its handoff against the steps the completion workflow actually has
+   against the project's commit rules, its handoff against the steps the completion workflow actually has, and
+   its description of a release-age gate against what the config files and the probe show
 4. Report, project drift first
 5. Offer to fix the document; report project drift for the user to decide on
 
