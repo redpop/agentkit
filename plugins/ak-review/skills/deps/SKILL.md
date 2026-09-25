@@ -133,6 +133,12 @@ the skill — never pin anything as a side effect of generating a document.
 Report the count per version string. A toolchain version that appears in five files is five chances to disagree, and
 that number is exactly what the generated skill needs to state.
 
+**Which packages form a family?** Direct dependencies that share a scope _and_ share internal packages in the
+lockfile — a component library published as many `@scope/*` packages on common `@scope/*` internals, Radix for
+example. Confirm by asking the manager why one of the shared internals is installed (`pnpm why`, `npm ls`); several
+direct dependencies of the family should appear. Each confirmed family is named in §2 of the generated skill, since
+it moves in one step whatever the tiers of its members.
+
 **Where does CI mask a drift?** If CI activates a fixed toolchain version for every job, a mismatch between two
 projects in the repo only ever appears locally. Note it.
 
@@ -210,8 +216,13 @@ If the baseline is already red or noisy, stop and report that first.
 
 ## 2. Classify each package into one of three tiers
 
-- **Patch, same minor** — update together in one step.
-- **Minor** — update, then run the regression that actually covers that package, named per package.
+- **Patch, same minor** — update together in one step, unless a peer range pulls in a minor (read the update
+  command's output, not its exit code) or the package belongs to a family below.
+- **Minor** — update, then run the regression that actually covers that package, named per package{; examples only
+  where the imports were traced}.
+
+{Families from Step 4: which packages move in one step whatever their tiers, and how to check the lockfile for
+duplicates afterwards.}
 - **Major** — do not bundle. {Ticket convention, if any — the rule, never a specific open ticket number.}
 
 ## 3. Verify claims instead of assuming
@@ -255,6 +266,13 @@ it.}
 {second baseline result}, final state versus baseline and where it was recorded, {PR/MR and each review thread},
 observations folded in.}
 ````
+
+**Name coverage only after tracing it.** A per-package example in §2 ("`<pkg>` → `<test file>`") is written only
+after following the imports: which files import the package, whether any of them is itself imported, and which test
+imports that chain. A package whose only importer is unreachable is exercised by nothing but the type check — the
+example says exactly that and names no test, and the dead importer is worth reporting on its own. Without the trace,
+write the rule and the trace command instead — an untraced example reads as verified coverage, and the next update
+trusts it.
 
 **Write no claim that expires on its own.** A ticket number, a milestone or a release named as the _current_ one is
 true on the day it is written and silently false afterwards — the generated skill has no way to notice, and the
