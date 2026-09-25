@@ -67,18 +67,19 @@ and apply them. Then answer three questions this skill needs beyond that:
 two lockfiles are two projects that share a repository: they install separately, they can be updated separately, and
 a request that touches both is really two.
 
-**Which update commands does this manager offer?** Record the actual invocations, not the generic ones:
+**Which update commands does this manager offer?** Record the actual invocations, not the generic ones — and pick
+the one that moves only the named package:
 
 | Manager | Inspect outdated | Update |
 | --- | --- | --- |
-| pnpm | `pnpm outdated` | `pnpm update <pkg>@<ver>` / `pnpm add -D <pkg>@<ver>` |
+| pnpm | `pnpm outdated` | `pnpm add [-D] <pkg>@^<ver>` (`--filter <project>` or `-w` in a workspace) — or `@<ver>` for an exact pin: keep the manifest's operator; before pnpm 11.23, `pnpm update <pkg>` could re-resolve unrelated packages |
 | npm | `npm outdated` | `npm install <pkg>@<ver>` |
-| Yarn | `yarn outdated` | `yarn up <pkg>@<ver>` |
-| Composer | `composer outdated` | `composer require <pkg>:<ver>` |
-| Poetry / uv | `poetry show --outdated` / `uv lock --upgrade-package` | `poetry add <pkg>@<ver>` / `uv add` |
+| Yarn | `yarn outdated` | `yarn up <pkg>@<ver>` (not `-R`, which re-resolves every range of the package) |
+| Composer | `composer outdated` | `composer require <pkg>:<ver>` (without `-w`/`-W`, which also update its dependencies) |
+| Poetry / uv | `poetry show --outdated` / `uv tree --outdated` | `poetry add <pkg>@<ver>` / `uv add <pkg>==<ver>` |
 | Cargo | `cargo outdated` | `cargo update -p <crate> --precise <ver>` |
-| Go | `go list -m -u all` | `go get <module>@<ver>` |
-| Bundler | `bundle outdated` | `bundle update <gem>` |
+| Go | `go list -m -u all` | `go get <module>@<ver>` (may raise modules it requires — by design, read the `go.mod` diff) |
+| Bundler | `bundle outdated` | `bundle update --conservative <gem>` (plain `bundle update <gem>` also updates its dependencies) |
 
 **Is there an automated update source?** Check for `.github/dependabot.yml`, `renovate.json`, `.renovaterc*`, or a
 Renovate config block in `package.json`. If one exists, the generated skill starts from its PRs rather than from

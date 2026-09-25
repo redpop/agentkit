@@ -57,6 +57,11 @@ authoritative where a blog post or a changelog summary is not.
 | Does X support Y? | `npm view <pkg>@<ver> peerDependencies engines` / `composer why-not <pkg> <ver>` / `cargo add <crate>@<ver> --dry-run` |
 | What does this tool actually do? | Read its source in the install directory (`node_modules/`, `vendor/`, `site-packages/`) |
 
+**The update command moves only the package it names.** Read the lockfile diff after each step: anything that
+changed and is neither that package nor something it requires is a second change in the same commit, and it breaks
+the attribution this method exists for. Where a manager offers several ways to bump one package, some re-resolve
+more than they name — choose the one that does not.
+
 Four rules that hold in every ecosystem:
 
 - **A/B swap a version to test whether a message is new.** Install the old version, run the check, install the new
