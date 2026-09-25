@@ -27,8 +27,19 @@ attribution impossible for everyone after you.
 - **Patch, same minor** — update together in one step.
 - **Minor** — update, then run the regression that actually covers that package. Name it per package: "the suite is
   green" is not the same as "the thing this package does was exercised". Tracing the coverage is cheap and often
-  turns a vague "check visually" into a specific command.
+  turns a vague "check visually" into a specific command. Trace it through the imports — who imports the package, is
+  that importer itself reachable, which test imports it — because an importer can be dead code, leaving only the
+  type check to touch the package.
 - **Major** — do not bundle. Its own change, its own verification, and if the project tracks tickets, its own ticket.
+
+Two things override the tier:
+
+- **A family moves together.** Packages that share internal dependencies go in one step whatever their tiers.
+  Bumping only some leaves the rest on old copies of every shared internal, duplicated in the lockfile — check for
+  duplicates afterwards.
+- **A peer range can couple a patch to a minor.** A patch that requires a newer peer pulls that peer's minor into the
+  same step. Read the update command's output, not its exit code: pnpm, for one, reports an unmet peer as a warning
+  and exits 0.
 
 ## 3. Verify claims instead of assuming
 
@@ -44,7 +55,10 @@ authoritative where a blog post or a changelog summary is not.
 Four rules that hold in every ecosystem:
 
 - **A/B swap a version to test whether a message is new.** Install the old version, run the check, install the new
-  one, compare. Two commands, and it settles "did this bump cause the warning" instead of leaving it open.
+  one, compare. Two commands, and it settles "did this bump cause the warning" instead of leaving it open — provided
+  the A side really runs the old version. Check the resolved version or the binary the check invokes, not the
+  manifest, and reinstall from scratch when they disagree: reverting manifest and lockfile can leave a stale binary
+  link to the new version, and then both sides measure the same thing.
 - **Never run a migration command blindly** (`biome migrate --write`, `eslint --migrate-config`, `rector process`
   and their kind). Run it on a copy, read the result, and verify the _effect_, not the exit code.
 - **A non-zero exit is not automatically a failure, and a failure is not automatically real.** A build that stops at

@@ -64,7 +64,7 @@ read by whoever picks up the next update.
 | Ecosystem and installs | Package manager (via lockfile), update commands, how many independent installs share the repo, whether Renovate/Dependabot opens the PRs |
 | Baseline | Type check, lint, test, build commands, and which of them CI runs |
 | Second baseline | Visual regression, bundle-size budget, benchmark, structural snapshot, Lighthouse budget — plus what each one does _not_ cover |
-| Pins and couplings | What is already pinned exactly, what determines the result but carries a range anyway, which versions appear in more than one file, and where CI masks a drift |
+| Pins and couplings | What is already pinned exactly, what determines the result but carries a range anyway, which versions appear in more than one file, which packages form a family that moves together, and where CI masks a drift |
 
 Manifest, config and lockfile signals come from `knowledge/project-tooling-detection.md`, shared with
 [workflow](./workflow.md) so both skills detect identically.
@@ -87,7 +87,7 @@ to settle it — never as an invented rule.
    the project's commit rules, which the generated skill adopts rather than prescribing its own
 2. Detect ecosystem, install boundaries and update commands
 3. Detect the baseline, including any second baseline and its documented limits
-4. Detect exact pins, multi-file version strings and cross-install couplings
+4. Detect exact pins, multi-file version strings, package families and cross-install couplings
 5. Interview the gaps (max six triggered questions)
 6. Present for approval
 7. Write `.claude/skills/dependency-update/SKILL.md`
