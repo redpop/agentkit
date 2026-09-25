@@ -57,6 +57,12 @@ authoritative where a blog post or a changelog summary is not.
 | Does X support Y? | `npm view <pkg>@<ver> peerDependencies engines` / `composer why-not <pkg> <ver>` / `cargo add <crate>@<ver> --dry-run` |
 | What does this tool actually do? | Read its source in the install directory (`node_modules/`, `vendor/`, `site-packages/`) |
 
+**A release-age gate changes what "newest" means.** A minimum age for new versions is enforced by whatever tool
+installs, and not every tool that displays versions applies it: the package manager's own outdated view may, a
+registry query or an editor plugin will not. The gate often lives in user or global config, outside the repository,
+so it holds on one machine and not in CI. A target version taken from a ticket or an editor is checked against the
+gate by its publish date before it is planned.
+
 **The update command moves only the package it names.** Read the lockfile diff after each step: anything that
 changed and is neither that package nor something it requires is a second change in the same commit, and it breaks
 the attribution this method exists for. Where a manager offers several ways to bump one package, some re-resolve
