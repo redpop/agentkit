@@ -177,6 +177,15 @@ it moves in one step whatever the tiers of its members.
 **Where does CI mask a drift?** If CI activates a fixed toolchain version for every job, a mismatch between two
 projects in the repo only ever appears locally. Note it.
 
+**Does a lockfile-only change reach production?** In a workspace the lockfile and root manifest sit at the
+repository root, while a deploy may build from a subdirectory and skip any commit that changes nothing under it.
+Netlify with `base` set cancels such a build unless an `ignore` command says otherwise, and Render with a root
+directory does not autodeploy it — a transitive security fix, or a dedupe, then never ships. Check the deploy config
+(`netlify.toml` `base` and `ignore`, Render's root directory and build filters) and, for any other platform, its
+documentation on skipped builds. Report a gap as a project finding, like an unpinned result-determining package:
+never change deploy config as a side effect. The generated skill names it as a coupling, so an update that only
+touches the lockfile is known not to deploy on its own.
+
 ### Step 5: Interview the gaps
 
 Detection finds signals; it cannot find meaning. Ask only questions whose trigger actually fired — a question about
@@ -369,6 +378,7 @@ has no answer for.
 | The skill's stated limits no longer hold | E.g. the visual suite now runs in CI, or on a second platform |
 | An exact pin has become a range | Someone loosened a decision; confirm it was deliberate |
 | A result-determining package carries a range and always has | **Not a change — a standing gap.** A comparison against the previous state cannot surface this, so check it outright every audit (Step 4 of Generate) |
+| A lockfile-only change would not trigger a deploy, and the skill does not say so | **Project finding** — a security fix in the lockfile alone never ships. Check it outright every audit (Step 4 of Generate) |
 | A coupled version now differs across files | **Live drift — this is a project bug, not a document bug** |
 | A version string now appears in more files than the skill states | Coupling grew |
 | An install was added or removed | Scope statement stale |

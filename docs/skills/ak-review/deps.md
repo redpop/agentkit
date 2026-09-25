@@ -64,7 +64,7 @@ read by whoever picks up the next update.
 | Ecosystem and installs | Package manager (via lockfile), update commands that move only the named package, how many independent installs share the repo, whether Renovate/Dependabot opens the PRs, and any release-age gate — in the repo, the user's own config or the bot — with which tools respect it |
 | Baseline | Type check, lint, test, build commands, and which of them CI runs |
 | Second baseline | Visual regression, bundle-size budget, benchmark, structural snapshot, Lighthouse budget — plus what each one does _not_ cover, or, where none exists, a per-run procedure matched to the UI libraries found |
-| Pins and couplings | What is already pinned exactly, what determines the result but carries a range anyway, which versions appear in more than one file, which packages form a family that moves together, and where CI masks a drift |
+| Pins and couplings | What is already pinned exactly, what determines the result but carries a range anyway, which versions appear in more than one file, which packages form a family that moves together, where CI masks a drift, and whether a lockfile-only change reaches the deploy at all |
 
 Manifest, config and lockfile signals come from `knowledge/project-tooling-detection.md`, shared with
 [workflow](./workflow.md) so both skills detect identically.
