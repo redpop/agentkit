@@ -5,6 +5,54 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.38.0] - 2026-09-25
+
+### ✨ Added
+
+- `ak-review:deps` — **detects release-age gates.** A minimum age for new versions changes what
+  "the newest version" means, and the tools on one machine disagree about it. The first skill the
+  generator produced for a real project made two wrong claims in a row about such a gate, which
+  lived in the developer's user config rather than in the repository. Detection now reads the
+  repository, the user's and global config and the update bot's config. It then checks the package
+  manager's own "latest" against the registry, because a config listing can print nothing for a
+  gate that is in effect. Only a difference counts as proof. When neither check finds a gate, the
+  generated skill asks the question instead of claiming there is none. The table of settings for
+  each manager lists only what the managers themselves document.
+
+- `ak-review:deps` — **asks whether a lockfile-only change reaches production.** A deploy that
+  builds from a subdirectory can skip every commit that changes nothing beneath it. Netlify with a
+  base directory and Render with a root directory both do this by default, so a transitive security
+  fix never ships. The generator reports this as a project finding, and the audit checks for it on
+  every run.
+
+- `ak-review:deps` — **proposes a per-run baseline where the project has none.** The generator no
+  longer just records the missing visual baseline as a gap. It also proposes a procedure that fits
+  the UI libraries it detected: magnitude-aware screenshot diffs, a repeatable DOM snapshot,
+  rule-level CSS diffs, an A/B test of the formatting patterns in use.
+
+### 🐛 Fixed
+
+- `ak-review:deps` — **the generated skill prescribed a commit shape of its own.** The methodology
+  put measured numbers and the story of a correction into the commit message, which the first
+  project to use it forbids, as does this repository. The generator now reads the project's commit
+  rules and adopts them. It asks where the numbers go only when it finds no rules. A merge request
+  with a review bot now means every thread is dealt with before the merge. The handoff to the
+  completion workflow now takes its step numbers and skips from that workflow instead of inventing
+  them. The audit checks both.
+
+- `ak-review:deps` — **recommended `pnpm update <pkg>@<ver>`.** Before pnpm 11.23 that command
+  could re-resolve unrelated packages into the same commit. `pnpm add` is recommended now. The other
+  managers' rows say where a targeted update reaches further than the package it names (Bundler
+  without `--conservative`, Yarn `up -R`, Composer `-w`/`-W`, Go). The uv row gained the package
+  argument it lacked.
+
+- `ak-review:deps` — **the methodology trusted three things it now checks:**
+  - An A/B comparison now confirms that the old side really runs the old version.
+  - Tiers now have two exceptions. Packages that share internals move together, and a peer range
+    can pull a patch into a minor.
+  - Coverage examples are traced through the imports before they are written, because an importer
+    can be dead code.
+
 ## [1.37.1] - 2026-09-22
 
 ### 🐛 Fixed
