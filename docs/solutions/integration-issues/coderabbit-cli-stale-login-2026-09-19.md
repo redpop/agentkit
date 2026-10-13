@@ -12,7 +12,7 @@ symptoms:
   - "Reviews fall back to the free allowance (`isProUser: false`) while a paid plan is active"
   - "`coderabbit doctor` passes every check, authentication included"
   - "`Review failed: Review organization does not match the authenticated session` under an API key
-    (the remedy below, blocked since 2026-09-22)"
+    (the remedy below, blocked 2026-09-22 to 2026-10-13)"
 root_cause: wrong_api
 resolution_type: config_change
 severity: high
@@ -70,9 +70,9 @@ automated work for a credential the CLI otherwise holds for months.
 
 ## Solution
 
-> **Blocked as of 2026-09-22.** This remedy is correct but did not work when last tested — the
-> API-key sessions tried that day were refused with an organization mismatch. Read _The Remedy Is
-> Currently Blocked_ below, and re-test, before following the steps here.
+> **Blocked 2026-09-22 to 2026-10-13.** In that window API-key sessions were refused with an
+> organization mismatch. A re-test on 2026-10-13 passed; see _The Remedy Was Blocked_ below for the
+> history and for what that re-test does not settle.
 
 Authenticate with an **Agentic API key** instead of the browser flow. Create it at
 `app.coderabbit.ai` under _Account → API keys_, choose the longest expiry offered, then:
@@ -114,7 +114,7 @@ because it is the only path that opens a browser.
 
 An API key removes the cookie from the picture entirely rather than renewing it.
 
-## The Remedy Is Currently Blocked (2026-09-22)
+## The Remedy Was Blocked (2026-09-22 to 2026-10-13)
 
 The diagnosis above still holds; the fix it recommends did not work when tested. On 2026-09-22,
 every review started from an API-key session failed within seconds at
@@ -140,16 +140,24 @@ account's CodeRabbit organizations. An API key's organization is fixed — `code
 refuses to switch it — where a browser login searches all the organizations it can reach, so a
 repository outside the key's organization is expected to fail on this path.
 
-Nothing local explains the GitLab case; it is a matter for CodeRabbit support. **Until it is
-resolved, use the browser login and accept the daily repair** — which means the unattended path this
-document exists to enable is unavailable. Re-test with an API key after a CLI or service update
-rather than assuming; the failure is immediate and did not consume included-review quota.
+Nothing local explained the GitLab case. The failure is immediate and did not consume
+included-review quota, so a re-test after a CLI or service update costs nothing.
+
+### Re-test on 2026-10-13: the failure is gone
+
+CLI 0.9.0, API-key session (`~/.coderabbit/auth.json` last written 2026-09-28, so the key postdates
+the failures above). `coderabbit review --uncommitted --include-untracked` on a one-line untracked
+file in `claude-agent-provisioning` completed in about a minute with "No findings" and no 403.
+
+What this does not settle: it is one run, with the key that was already logged in rather than a
+freshly created one, so it cannot tell a server-side fix from a CLI 0.9.0 fix. The unattended path
+is usable again; keep the browser login as the fallback if the 403 returns.
 
 ## Prevention
 
-- **Use an API key for any CLI work that must run unattended** — once the failure above is resolved.
-  The browser flow cannot be automated by design, and that is the actual constraint, not a bug in
-  the setup.
+- **Use an API key for any CLI work that must run unattended.** The browser flow cannot be
+  automated by design, and that is the actual constraint, not a bug in the setup. The API-key path
+  worked again on 2026-10-13 (see the re-test above).
 - **Do not treat a missing `Plan` or `Seat` line as staleness without checking `authType` first.**
   Under an API key they are never present, and a check that ignores that fires on every run. This is
   encoded in the `ak-review:coderabbit` skill's Phase 1.
