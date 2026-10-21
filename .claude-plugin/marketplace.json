@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "ak-marketplace",
-  "description": "AgentKit - 9 modulare Plugins für Review, Git, Projekt-Management, Code-Verbesserung, Knowledge, React, Security, Notifications und JavaScript",
+  "description": "AgentKit - 10 modulare Plugins für Review, Git, Projekt-Management, Code-Verbesserung, Knowledge, React, Security, Notifications, JavaScript und Schreiben",
   "owner": {
     "name": "redpop",
     "url": "https://github.com/redpop"
@@ -86,6 +86,15 @@
       "version": "1.38.0",
       "category": "development",
       "keywords": ["javascript", "nodejs", "package-json", "tsconfig", "config-validation", "monorepo"],
+      "license": "MIT"
+    },
+    {
+      "name": "ak-writing",
+      "source": "./plugins/ak-writing",
+      "description": "Prose quality for German and English text: remove AI-slop patterns from docs, commits, emails, blog posts, and slides without losing facts",
+      "version": "1.38.0",
+      "category": "productivity",
+      "keywords": ["writing", "editing", "german", "ai-slop", "prose", "documentation"],
       "license": "MIT"
     }
   ]

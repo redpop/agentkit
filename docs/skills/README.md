@@ -30,3 +30,4 @@ Skills are slash commands that users invoke directly in Claude Code via `/plugin
 | [code-security](ak-security/code-security.md) | ak-security | OWASP security guidelines for 15+ languages |
 | [llm-security](ak-security/llm-security.md) | ak-security | OWASP Top 10 for LLM Applications |
 | [semgrep](ak-security/semgrep.md) | ak-security | Semgrep static analysis scanning |
+| [unslop](ak-writing/unslop.md) | ak-writing | Remove AI-slop patterns from German and English prose |

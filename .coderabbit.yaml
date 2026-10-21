@@ -51,6 +51,10 @@ reviews:
     # filter: `coderabbit review --dir plugins/ak-security/knowledge`
     - "!plugins/*/knowledge/**"
 
+    # Regression fixtures full of deliberate defects (ak-writing's unslop cases
+    # quote AI tells on purpose). Reviewing them flags the fixtures, not bugs.
+    - "!plugins/*/evals/**"
+
     # Planning and working documents, kept for history. They describe what was
     # going to be built; the built thing is reviewed on its own.
     - "!.docs/**"

@@ -1,6 +1,6 @@
 # AgentKit
 
-Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) — 9 plugins with 24 skills, 8 agents, and domain knowledge bases for Git workflows, security, React, and more.
+Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) — 10 plugins with 25 skills, 8 agents, and domain knowledge bases for Git workflows, security, React, and more.
 
 ## Plugins
 
@@ -15,6 +15,7 @@ Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/
 | [**ak-react**](#ak-react--react--nextjs-development) | 2 | — | React and Next.js best practices, performance optimization, code scanning |
 | [**ak-review**](#ak-review--quality-assurance) | 9 | — | CodeRabbit review, code explanation, finalize workflow, workflow management, dependency update skill generation, external review delegation, unattended external-tool execution with guided setup, validation hooks |
 | [**ak-security**](#ak-security--security-guidelines) | 3 | — | OWASP security guidelines, LLM security, Semgrep static analysis |
+| [**ak-writing**](#ak-writing--prose-quality) | 1 | — | Remove AI-slop patterns from German and English prose: docs, commits, emails, blog posts, slides |
 
 ## Installation
 
@@ -42,6 +43,7 @@ Install all plugins:
 /plugin install ak-notifications@ak-marketplace
 /plugin install ak-react@ak-marketplace
 /plugin install ak-security@ak-marketplace
+/plugin install ak-writing@ak-marketplace
 ```
 
 Or browse available plugins interactively with `/plugin` and go to the **Marketplaces** tab.
@@ -223,6 +225,25 @@ static analysis scanning.
 | [`/ak-security:code-security`](docs/skills/ak-security/code-security.md) | OWASP Top 10 security guidelines for 15+ languages | `/ak-security:code-security` |
 | [`/ak-security:llm-security`](docs/skills/ak-security/llm-security.md) | OWASP Top 10 for LLM Applications security rules | `/ak-security:llm-security` |
 | [`/ak-security:semgrep`](docs/skills/ak-security/semgrep.md) | Semgrep static analysis scanning and custom rule creation | `/ak-security:semgrep` |
+
+### ak-writing — Prose Quality
+
+Finds and removes the patterns that make readers recognize text as AI-generated, in German and
+English, without losing facts or changing the strength of a claim. Adapted from
+[unslop_ai](https://github.com/jlwin/unslop_ai) (MIT).
+
+#### Skills
+
+| Skill | Purpose | Example |
+|-------|---------|---------|
+| [`/ak-writing:unslop`](docs/skills/ak-writing/unslop.md) | Check, rewrite, or edit prose against AI-slop patterns with register profiles for docs, email, blog, social, academic, and slides | `/ak-writing:unslop --check README.md` |
+
+#### Knowledge
+
+| File | Content |
+|------|---------|
+| word-lists.md | German and English vocabulary in three tiers, stock phrases, stretched verbs, leak artifacts, microformats |
+| pattern-catalog.md | Before/after examples for 31 pattern families, German special cases included |
 
 ## Recommended Tools
 
