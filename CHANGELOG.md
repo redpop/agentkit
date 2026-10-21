@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.39.0] - 2026-10-21
+
+### ✨ Added
+
+- `ak-writing` — **new plugin with the `unslop` skill.** It finds and removes the patterns that
+  make readers recognize German and English prose as AI-generated, on three levels: vocabulary,
+  sentence rhythm and document structure. Four modes (`--check`, `--rewrite`, `--write`, or a file
+  path to edit in place) and register profiles cover docs, commits and PRs, email, blog posts,
+  social posts, academic text and slide decks, with separate rules for stories and anecdotes.
+  Guardrails decide what a rewrite may never do: invent a number, name, quote or first person,
+  drop a fact, or change the strength of a cause, comparison, hedge or warning. A missing detail is
+  reported as a gap instead of being filled in. 28 regression cases, nine of which must come back
+  clean, catch overflagging when the skill changes. Adapted from
+  [unslop_ai](https://github.com/jlwin/unslop_ai) v1.8.4 (MIT).
+
 ## [1.38.0] - 2026-09-25
 
 ### ✨ Added
