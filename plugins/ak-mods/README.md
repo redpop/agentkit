@@ -24,7 +24,8 @@ Run `/ak-mods` to open the pane. Each mod has three buttons:
 
 - Switches reset in a new chat and after `/clear`. They are kept when a chat is resumed.
 - Standard marks are global: they apply to every chat.
-- Only AgentKit mods are listed: installed from `ak-marketplace` or loaded with `--plugin-dir`. The `ak-` name prefix decides only when the source is unknown.
+- Only AgentKit mods are listed: installed from `ak-marketplace` or loaded with `--plugin-dir`.
+  The `ak-` name prefix decides only when the source is unknown.
 - An off mod draws nothing. Its own slash command turns it on. Its tools are registered only while
   it is on, and its agent types are hidden.
 - A mod without `ak-mods` installed runs as on (fail-open).

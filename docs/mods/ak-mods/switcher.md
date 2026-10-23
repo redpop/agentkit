@@ -24,7 +24,8 @@ One row per mod that declared itself: title and summary, then three buttons.
 - `/clear` returns to that starting set.
 - A resumed chat gets its own switches back, including after a `/clear` earlier in it.
 - Standard marks are global, not per chat.
-- Only AgentKit mods are listed: installed from `ak-marketplace` or loaded with `--plugin-dir`. The `ak-` name prefix decides only when the source is unknown.
+- Only AgentKit mods are listed: installed from `ak-marketplace` or loaded with `--plugin-dir`.
+  The `ak-` name prefix decides only when the source is unknown.
 
 ## What off means
 
