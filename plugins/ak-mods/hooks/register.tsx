@@ -1,6 +1,7 @@
 import type { Register } from 'claude-code'
 
 import type { Mods } from '../types'
+import { renderPane } from './pane'
 import { initialOn, isAgentKit, namesOf, pruneKeys, rows, savedOf, upsert } from './switches'
 
 // `$` (here `built`) is spelled `built.state.get(REF)` at every call site: the
@@ -77,6 +78,14 @@ export const register: Register = on => {
 
     return next(e)
   })
+
+  on('command.run', { command: 'ak-mods' }, async $ => {
+    await $.ui.open({ id: 'ak-mods', title: 'Mods' })
+
+    return { text: 'Opened the Mods pane.' }
+  })
+
+  on('ui.render', { component: 'Pane', requestId: 'ak-mods' }, ($, e) => renderPane($, e))
 
   on('engine.create', async ($, e, next) => {
     const built = await next(e)
