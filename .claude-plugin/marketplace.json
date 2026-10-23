@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "ak-marketplace",
-  "description": "AgentKit - 10 modulare Plugins für Review, Git, Projekt-Management, Code-Verbesserung, Knowledge, React, Security, Notifications, JavaScript und Schreiben",
+  "description": "AgentKit - 11 modulare Plugins für Review, Git, Projekt-Management, Code-Verbesserung, Knowledge, React, Security, Notifications, JavaScript, Schreiben und Mods",
   "owner": {
     "name": "redpop",
     "url": "https://github.com/redpop"
@@ -95,6 +95,15 @@
       "version": "1.40.0",
       "category": "productivity",
       "keywords": ["writing", "editing", "german", "ai-slop", "prose", "documentation"],
+      "license": "MIT"
+    },
+    {
+      "name": "ak-mods",
+      "source": "./plugins/ak-mods",
+      "description": "Mod switcher: a pane that turns each AgentKit mod on or off for this session, with standard mods that start on in every new chat",
+      "version": "1.39.0",
+      "category": "productivity",
+      "keywords": ["mods", "switcher", "ui", "pane"],
       "license": "MIT"
     }
   ]

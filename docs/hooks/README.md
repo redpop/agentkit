@@ -1,10 +1,11 @@
 # Hooks
 
-Hooks are automated actions triggered by Claude Code tool events. They run shell scripts or prompt-based logic in response to specific tool uses.
+Hooks are automated actions triggered by Claude Code tool events. They run shell scripts or prompt-based logic in response to specific tool uses, or, for `ak-mods`, a TSX hooks module that runs inside Claude Code.
 
 ## All Hooks
 
 | Hook Group | Plugin | Trigger | Description |
 |------------|--------|---------|-------------|
 | [Notification Hooks](ak-notifications/notification-hooks.md) | ak-notifications | Permission/Idle prompts | Sound alerts and desktop notifications |
+| [Mod switcher](../mods/ak-mods/switcher.md) | ak-mods | Session start/end, commands, rendering | Hooks module (TSX) behind the Mods pane |
 | [Validation Hooks](ak-review/validation-hooks.md) | ak-review | After Write/Edit | Markdown, JSON, shell validation |

@@ -1,0 +1,44 @@
+# ak-mods
+
+Mod switcher for Claude Code. A mod changes Claude Code's own interface: a band above the prompt,
+a pane, a status entry, a slash command. `ak-mods` lists every AgentKit mod in a **Mods** pane and
+turns each on or off for the current chat.
+
+Requires Claude Code with hooks-module support (tested on 2.1.309).
+
+## Install
+
+```text
+/plugin install ak-mods@ak-marketplace
+```
+
+## Use
+
+Run `/ak-mods` to open the pane. Each mod has three buttons:
+
+- **On / Off** switches the mod for this chat.
+- **Standard** marks the mod to start on in every new chat.
+- **More / Less** shows or hides the mod's details.
+
+## Rules
+
+- Switches reset in a new chat and after `/clear`. They are kept when a chat is resumed.
+- Standard marks are global: they apply to every chat.
+- Only AgentKit mods (`ak-` prefix, `ak-marketplace`) are listed.
+- An off mod draws nothing. Its own slash command turns it on. Its tools are registered only while
+  it is on, and its agent types are hidden.
+- A mod without `ak-mods` installed runs as on (fail-open).
+
+See [the switcher docs](../../docs/mods/ak-mods/switcher.md) and
+[Writing an AgentKit mod](../../docs/mods/writing-a-mod.md).
+
+## Development
+
+```bash
+claude plugin validate plugins/ak-mods
+claude plugin test plugins/ak-mods
+claude plugin test plugins/ak-mods/tests/fixture
+```
+
+The second test command proves the fixture mod fails open with `ak-mods` absent.
+`tests/fixture/` is a test-only harness (version 0.0.0), not part of the marketplace.

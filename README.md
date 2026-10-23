@@ -1,6 +1,6 @@
 # AgentKit
 
-Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) — 10 plugins with 25 skills, 8 agents, and domain knowledge bases for Git workflows, security, React, and more.
+Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) — 11 plugins with 25 skills, 8 agents, a mod switcher, and domain knowledge bases for Git workflows, security, React, and more.
 
 ## Plugins
 
@@ -11,6 +11,7 @@ Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/
 | [**ak-js**](#ak-js--javascript-config-doctor) | 1 | 1 | JS config validation, 11 cross-file rules, monorepo-aware |
 | [**ak-knowledge**](#ak-knowledge--solution-documentation) | 4 | 1 | Solution docs, knowledge maintenance, AGENTS.md tools |
 | [**ak-meta**](#ak-meta--project-management-tools) | 4 | 2 | Discovery, changelog generation, session handoff for the next AI session, quality assessment, diagrams |
+| [**ak-mods**](#ak-mods--mod-switcher) | — | — | Mods pane: turn AgentKit mods on or off per chat, with standard mods |
 | [**ak-notifications**](#ak-notifications--macos-notifications) | — | — | macOS sound and banner notifications |
 | [**ak-react**](#ak-react--react--nextjs-development) | 2 | — | React and Next.js best practices, performance optimization, code scanning |
 | [**ak-review**](#ak-review--quality-assurance) | 9 | — | CodeRabbit review, code explanation, finalize workflow, workflow management, dependency update skill generation, external review delegation, unattended external-tool execution with guided setup, validation hooks |
@@ -40,6 +41,7 @@ Install all plugins:
 /plugin install ak-improve@ak-marketplace
 /plugin install ak-js@ak-marketplace
 /plugin install ak-knowledge@ak-marketplace
+/plugin install ak-mods@ak-marketplace
 /plugin install ak-notifications@ak-marketplace
 /plugin install ak-react@ak-marketplace
 /plugin install ak-security@ak-marketplace
@@ -55,6 +57,7 @@ Detailed documentation for all components is available in the [`docs/`](docs/) d
 - [Skills](docs/skills/) — All slash commands with usage examples
 - [Agents](docs/agents/) — Specialized sub-agents and their capabilities
 - [Hooks](docs/hooks/) — Automated actions on tool events
+- [Mods](docs/mods/) — The Mods pane and how to write an AgentKit mod
 
 ## Plugin Details
 
@@ -152,6 +155,21 @@ assessment, and session handoff so a fresh AI session can continue where the las
 |-------|---------|
 | [quality-assessor](docs/agents/ak-meta/quality-assessor.md) | Expert quality scoring for skills and agents on 4 dimensions |
 | [diagram-creator](docs/agents/ak-meta/diagram-creator.md) | Creates Mermaid diagrams for architecture, flows, ERDs, and interactions |
+
+### ak-mods — Mod Switcher
+
+A mod changes Claude Code's own interface (a band, a pane, a status entry, a slash command).
+`ak-mods` adds a **Mods** pane that turns each AgentKit mod on or off for the current chat.
+Requires Claude Code with hooks-module support (tested on 2.1.309).
+
+#### Commands
+
+| Command | Purpose | Example |
+|---------|---------|---------|
+| [`/ak-mods`](docs/mods/ak-mods/switcher.md) | Open the Mods pane: On/Off, Standard, and More/Less per mod | `/ak-mods` |
+
+See [Mods](docs/mods/) for how switches behave and
+[Writing an AgentKit mod](docs/mods/writing-a-mod.md) for the contract a mod follows.
 
 ### ak-notifications — macOS Notifications
 

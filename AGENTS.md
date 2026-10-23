@@ -6,11 +6,12 @@ This file provides guidance to AI agents (Claude Code, Warp AI, etc.) when worki
 
 ## Project overview
 
-Claude Code plugin marketplace (`ak-marketplace`) with 10 independently installable plugins, 25 skills, 8 agents, and domain knowledge bases. Built on the official Claude Code Plugin Architecture.
+Claude Code plugin marketplace (`ak-marketplace`) with 11 independently installable plugins, 25 skills, 8 agents, a mod switcher, and domain knowledge bases. Built on the official Claude Code Plugin Architecture.
 
 ## Dev environment
 
-No build step required — the codebase is pure Markdown, JSON, and shell scripts.
+No build step required — the codebase is Markdown, JSON, and shell scripts, plus one TSX
+hooks module (`ak-mods`) that Claude Code loads directly.
 
 **Test a plugin locally:**
 
@@ -43,6 +44,19 @@ python3 -m json.tool plugins/ak-review/.claude-plugin/plugin.json > /dev/null
 shellcheck plugins/ak-review/hooks/markdown-format.sh
 ```
 
+**Validate and test the `ak-mods` hooks module:**
+
+```bash
+claude plugin validate plugins/ak-mods
+claude plugin test plugins/ak-mods
+claude plugin test plugins/ak-mods/tests/fixture
+```
+
+The second test command loads the test-only fixture mod with `ak-mods` absent and proves it fails
+open. `tests/fixture/` is a harness (version 0.0.0), not a plugin: it gets no marketplace entry.
+`tsc -p plugins/ak-mods` needs the plugin loaded once from its folder
+(`claude --plugin-dir ./plugins/ak-mods`) so the engine lays the types in.
+
 **Validate the CodeRabbit config:**
 
 ```bash
@@ -64,6 +78,8 @@ plugins/{plugin-name}/
 ├── agents/{name}.md               ← Sub-agents (via Task tool)
 ├── knowledge/                     ← Domain reference files (optional)
 ├── hooks/hooks.json               ← Hook definitions (optional)
+├── hooks/register.tsx             ← Hooks modules (TSX, optional; ak-mods)
+├── types/index.d.ts               ← Types a plugin adds to `$` (optional; ak-mods)
 └── README.md
 ```
 
@@ -74,6 +90,7 @@ plugins/{plugin-name}/
 | `ak-meta` | 4 | 2 | |
 | `ak-improve` | - | 2 | knowledge/ (1 file) |
 | `ak-knowledge` | 4 | 1 | |
+| `ak-mods` | - | - | hooks module (TSX), types/ |
 | `ak-notifications` | - | - | hooks |
 | `ak-react` | 2 | - | knowledge/ (1 file) |
 | `ak-security` | 3 | - | knowledge/ (43 files) |
