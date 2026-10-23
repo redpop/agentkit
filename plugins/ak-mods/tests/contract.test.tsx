@@ -22,15 +22,21 @@ const NAME = 'ak-fixture'
 const FIXTURE = { name: NAME, register }
 const PLUGINS = [FIXTURE, { name: 'ak-probe', register: probe }]
 
-// Returns what the plugins asked of the display: panes closed, answers invalidated.
-const engine = (on: On) => {
+// Returns what the plugins asked of the engine: tools registered, panes
+// closed, answers invalidated.
+const engine = (on: On, store: Readonly<Record<string, unknown>> = {}) => {
+  const registered: string[] = []
   const closed: unknown[] = []
   const invalidated: unknown[] = []
-  mock.store(on)
+  mock.store(on, store)
   on('session.id', () => ({ value: 'S1' }))
   on('session.start', (_, e) => ({ cwd: e.cwd }))
   on('command.register', (_, e) => ({ value: { command: e.name } }))
-  on('tool.register', (_, e) => ({ value: { tool: `mcp__${NAME}__${e.name}` } }))
+  on('tool.register', (_, e) => {
+    registered.push(e.name)
+
+    return { value: { tool: `mcp__${NAME}__${e.name}` } }
+  })
   on('ui.open', () => ({ value: { isPlaced: true } }))
   on('ui.close', (_, e) => {
     closed.push(e)
@@ -49,7 +55,7 @@ const engine = (on: On) => {
     return <Text>engine</Text>
   })
 
-  return { closed, invalidated }
+  return { registered, closed, invalidated }
 }
 
 const start = ($: TestEngine) => $.session.start({ cwd: '/', surface: null, isInteractive: false })
@@ -83,6 +89,8 @@ test('an off mod draws nothing', { plugins: PLUGINS }, async ($, on) => {
 
   const ui = await $.ui.mount(BAND)
   expect(await ui.find({ type: 'Text', text: 'Fixture band' })).toBeUndefined()
+  // `next(e)` passed through: the engine's own drawing stands.
+  expect(await ui.find({ type: 'Text', text: 'engine' })).toBeDefined()
   await ui.unmount()
 })
 
@@ -104,28 +112,44 @@ test("the mod's command turns it on", { plugins: PLUGINS }, async ($, on) => {
   expect(await call($, 'isOn', { name: NAME })).toBe(true)
 })
 
-test('a tool of an off mod is hidden', { plugins: PLUGINS }, async ($, on) => {
+test('an off mod registers no tool until it is switched on', { plugins: PLUGINS }, async ($, on) => {
+  const { registered } = engine(on)
+  await start($)
+  expect(registered).toEqual([])
+
+  await call($, 'set', { name: NAME, on: true })
+  expect(registered).toEqual(['probe'])
+})
+
+test('a mod on from the start registers its tool', { plugins: PLUGINS }, async ($, on) => {
+  const { registered } = engine(on, { standard: [NAME] })
+  await start($)
+
+  expect(registered).toContain('probe')
+})
+
+test('a tool registered before switching off is hidden', { plugins: PLUGINS }, async ($, on) => {
   const { invalidated } = engine(on)
   on('tool.describe', (_, e) => ({ description: e.description }))
   await start($)
-
-  expect(await $.tool.describe(DESCRIBE)).toEqual({ description: 'Off in this chat. Do not call it.', isDeferred: true })
-
   await call($, 'set', { name: NAME, on: true })
-  expect(invalidated).toEqual([{ event: 'tool.describe' }])
   expect(await $.tool.describe(DESCRIBE)).toEqual({ description: 'Answers a probe.' })
+
+  await call($, 'set', { name: NAME, on: false })
+  expect(invalidated).toEqual([{ event: 'tool.describe' }, { event: 'tool.describe' }])
+  expect(await $.tool.describe(DESCRIBE)).toEqual({ description: 'Off in this chat. Do not call it.', isDeferred: true })
 })
 
-test('a tool call of an off mod finds no answer', { plugins: PLUGINS }, async ($, on) => {
+test('a tool call while off says how to turn the mod on', { plugins: PLUGINS }, async ($, on) => {
   engine(on)
-  // What the engine answers a call no hook answered.
-  on('tool.call', () => ({ deny: 'unanswered' }))
   await start($)
-
-  expect(await $.tool.call({ tool: 'mcp__ak-fixture__probe' })).toEqual({ deny: 'unanswered' })
-
   await call($, 'set', { name: NAME, on: true })
   expect((await $.tool.call({ tool: 'mcp__ak-fixture__probe' })).result).toBe('Probed.')
+
+  await call($, 'set', { name: NAME, on: false })
+  expect((await $.tool.call({ tool: 'mcp__ak-fixture__probe' })).result).toBe(
+    'ak-fixture is off in this chat. The person can turn it on with /ak-mods.',
+  )
 })
 
 test('an agent of an off mod is not offered', { plugins: PLUGINS }, async ($, on) => {

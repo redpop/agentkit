@@ -6,6 +6,7 @@ import type { Register } from 'claude-code'
 
 export const register: Register = on => {
   const NAME = 'ak-fixture'
+  const TOOL = { name: 'probe', description: 'Answers a probe.' }
 
   // Off only when ak-mods says so. Without ak-mods `$.mods` is missing and
   // the call throws: the mod is on (fail-open).
@@ -29,7 +30,8 @@ export const register: Register = on => {
       // No ak-mods loaded: nothing to declare to, and the mod runs on.
     }
     await $.command.register({ name: 'fixture', description: 'Turn the fixture on and open its pane' })
-    await $.tool.register({ name: 'probe', description: 'Answers a probe.' })
+    // The tool exists only once the mod is on: here, or when it is switched on.
+    if (!(await isOff(() => $.mods.isOn({ name: NAME })))) await $.tool.register(TOOL)
 
     return next(e)
   })
@@ -53,14 +55,17 @@ export const register: Register = on => {
     return { text: 'Fixture is on.' }
   })
 
-  // Every other hook passes through while off.
+  // A tool registered earlier in this chat answers that the mod is off.
   on('tool.call', { tool: 'mcp__ak-fixture__probe' }, async ($, e, next) => {
-    if (await isOff(() => $.mods.isOn({ name: NAME }))) return next(e)
+    if (await isOff(() => $.mods.isOn({ name: NAME }))) {
+      return { result: `${NAME} is off in this chat. The person can turn it on with /ak-mods.` }
+    }
 
     return { result: 'Probed.' }
   }).catch(($, e, next) => next(e))
 
-  // The model's view: the tool waits behind ToolSearch, its agent is not offered.
+  // The model's view while off: a tool registered earlier waits behind
+  // ToolSearch, the agent type is not offered.
   on('tool.describe', { tool: 'mcp__ak-fixture__probe' }, async ($, e, next) =>
     (await isOff(() => $.mods.isOn({ name: NAME })))
       ? { description: 'Off in this chat. Do not call it.', isDeferred: true }
@@ -70,11 +75,13 @@ export const register: Register = on => {
     (await isOff(() => $.mods.isOn({ name: NAME }))) ? { isOffered: false } : next(e),
   ).catch(($, e, next) => next(e))
 
-  // This mod's switch changed: describe its tool afresh, close its pane when off.
+  // This mod's switch changed: register or describe its tool afresh, close
+  // its pane when off.
   on('state.set', { plugin: 'ak-mods', key: 'on' }, async ($, e, next) => {
     const done = await next(e)
     const isOn = e.value[NAME] === true
     if (isOn !== (e.previous?.[NAME] === true)) {
+      if (isOn) await $.tool.register(TOOL)
       $.ui.invalidate('tool.describe')
       if (!isOn) await $.ui.close({ id: NAME })
     }

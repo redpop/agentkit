@@ -46,7 +46,12 @@ test('without ak-mods the mod is on', { plugins: PLUGINS }, async ($, on) => {
   on('session.id', () => ({ value: 'S1' }))
   on('session.start', (_, e) => ({ cwd: e.cwd }))
   on('command.register', (_, e) => ({ value: { command: e.name } }))
-  on('tool.register', (_, e) => ({ value: { tool: `mcp__ak-fixture__${e.name}` } }))
+  const registered: string[] = []
+  on('tool.register', (_, e) => {
+    registered.push(e.name)
+
+    return { value: { tool: `mcp__ak-fixture__${e.name}` } }
+  })
   on('ui.open', () => ({ value: { isPlaced: true } }))
   on('tool.describe', (_, e) => ({ description: e.description }))
   on('agent.offer', () => ({ isOffered: true }))
@@ -57,6 +62,7 @@ test('without ak-mods the mod is on', { plugins: PLUGINS }, async ($, on) => {
   })
 
   await $.session.start({ cwd: '/', surface: null, isInteractive: false })
+  expect(registered).toEqual(['probe'])
 
   const ui = await $.ui.mount(BAND)
   expect(await ui.find({ type: 'Text', text: 'Fixture band' })).toBeDefined()

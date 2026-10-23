@@ -10,15 +10,22 @@ a pane, a status entry, a slash command, a model tool. Each mod is its own plugi
 holds one switch per mod for the current chat. A mod is off until someone turns it on, unless it is
 marked standard.
 
-## plugin.json
+## plugin.json and hooks.json
 
-Beside the usual `name`, `description` and `version`, a mod lists `ak-mods` as a dependency:
+Beside the usual `name`, `description` and `version`, a mod's `.claude-plugin/plugin.json` lists
+`ak-mods` as a dependency:
 
 ```json
 {
   "name": "ak-example",
   "dependencies": ["ak-mods"]
 }
+```
+
+`hooks/hooks.json` names the hooks module that holds the recipe below:
+
+```json
+{ "modules": ["./register.tsx"] }
 ```
 
 Installing the mod then brings the switcher along. When a session loads the mod from a development
@@ -41,6 +48,7 @@ import type { Register } from 'claude-code'
 
 export const register: Register = on => {
   const NAME = 'ak-example'
+  const TOOL = { name: 'probe', description: 'Answers a probe.' }
 
   // Off only when ak-mods says so. Without ak-mods `$.mods` is missing and
   // the call throws: the mod is on (fail-open).
@@ -64,7 +72,8 @@ export const register: Register = on => {
       // No ak-mods loaded: nothing to declare to, and the mod runs on.
     }
     await $.command.register({ name: 'example', description: 'Turn the example on and open its pane' })
-    await $.tool.register({ name: 'probe', description: 'Answers a probe.' })
+    // The tool exists only once the mod is on: here, or when it is switched on.
+    if (!(await isOff(() => $.mods.isOn({ name: NAME })))) await $.tool.register(TOOL)
 
     return next(e)
   })
@@ -88,14 +97,17 @@ export const register: Register = on => {
     return { text: 'Example is on.' }
   })
 
-  // Every other hook passes through while off.
+  // A tool registered earlier in this chat answers that the mod is off.
   on('tool.call', { tool: 'mcp__ak-example__probe' }, async ($, e, next) => {
-    if (await isOff(() => $.mods.isOn({ name: NAME }))) return next(e)
+    if (await isOff(() => $.mods.isOn({ name: NAME }))) {
+      return { result: `${NAME} is off in this chat. The person can turn it on with /ak-mods.` }
+    }
 
     return { result: 'Probed.' }
   }).catch(($, e, next) => next(e))
 
-  // The model's view: the tool waits behind ToolSearch, its agent is not offered.
+  // The model's view while off: a tool registered earlier waits behind
+  // ToolSearch, the agent type is not offered.
   on('tool.describe', { tool: 'mcp__ak-example__probe' }, async ($, e, next) =>
     (await isOff(() => $.mods.isOn({ name: NAME })))
       ? { description: 'Off in this chat. Do not call it.', isDeferred: true }
@@ -105,11 +117,13 @@ export const register: Register = on => {
     (await isOff(() => $.mods.isOn({ name: NAME }))) ? { isOffered: false } : next(e),
   ).catch(($, e, next) => next(e))
 
-  // This mod's switch changed: describe its tool afresh, close its pane when off.
+  // This mod's switch changed: register or describe its tool afresh, close
+  // its pane when off.
   on('state.set', { plugin: 'ak-mods', key: 'on' }, async ($, e, next) => {
     const done = await next(e)
     const isOn = e.value[NAME] === true
     if (isOn !== (e.previous?.[NAME] === true)) {
+      if (isOn) await $.tool.register(TOOL)
       $.ui.invalidate('tool.describe')
       if (!isOn) await $.ui.close({ id: NAME })
     }
@@ -123,7 +137,8 @@ export const register: Register = on => {
 
 - **Fail-open.** Without `ak-mods`, `$.mods` is missing and every call on it throws. `isOff` turns
   that into "on", and `declare` sits in its own `try`, so a mod loaded alone (while you develop it)
-  behaves as on and never throws.
+  behaves as on and never throws. A `declare` that throws while `ak-mods` is loaded leaves the mod
+  undeclared, and so off, for that chat.
 - **`isOff` takes the call, not `$`.** The engine lets `$` be passed only to a function declared at
   the top of the module, and the test kit loads an inline plugin's `register` on its own, without
   the rest of its file. A helper inside `register` that receives the call is valid in both, so the
@@ -131,16 +146,19 @@ export const register: Register = on => {
 - **Drawings** read `ak-mods`'s `on` switches first. The read subscribes the drawing, so switching
   the mod on or off redraws it without a reload. While off, a drawing returns `next(e)` and draws
   nothing.
-- **Every other hook** returns `next(e)` while off.
+- **Every other hook** returns `next(e)` while off, except the mod's own `tool.call` (below).
 - **The mod's own command turns it on**, then does what it does. Commands stay listed while the
   mod is off.
-- **Agent types and model tools are withheld while off.** `agent.offer` answers
-  `{ isOffered: false }`, which hides the agent type. This build cannot take a registered tool out
-  of the model's list, so `tool.describe` moves it behind ToolSearch with a note that it is off, and
-  its `tool.call` hook passes through: a call finds no answer and fails.
+- **Model tools exist only while the mod is on.** `session.start` registers the tool when the mod
+  is on, and the `state.set` hook registers it when the mod is switched on (`$.tool.register` works
+  mid-session, from the next prompt on). A tool cannot be unregistered, so after the mod is switched
+  off again `tool.describe` moves it behind ToolSearch with a note that it is off, and its
+  `tool.call` answers that the mod is off in this chat and can be turned on with `/ak-mods`.
+- **Agent types are hidden while off:** `agent.offer` answers `{ isOffered: false }`.
 - **A switch change** reaches a mod outside a drawing through a `state.set` hook on `ak-mods`'s
-  `on` key. When the mod's own switch changes, the hook asks for `tool.describe` again (the engine
-  caches its answer) and, when off, closes the mod's pane with `$.ui.close`.
+  `on` key. When the mod's own switch changes, the hook registers the tool when on, asks for
+  `tool.describe` again (the engine caches its answer) and, when off, closes the mod's pane with
+  `$.ui.close`.
 - **Gating hooks** (`tool.call`, `agent.offer`, `state.set`) carry `.catch(($, e, next) => next(e))`:
   a guard that fails leaves the mod on, as fail-open asks.
 
@@ -148,7 +166,8 @@ export const register: Register = on => {
 
 `ak-mods` cannot be loaded inline in another plugin's tests, so a mod's own `claude plugin test`
 runs without it and covers the "on" path. The off path is proven once, in `ak-mods`:
-`plugins/ak-mods/tests/fixture/mod.tsx` is this recipe as `ak-fixture`.
+`plugins/ak-mods/tests/fixture/mod.tsx` is this recipe as `ak-fixture`. Its folder is a test-only
+harness plugin at version `0.0.0`, outside the repository's version bump and the marketplace.
 
 ```bash
 claude plugin validate plugins/ak-example
@@ -158,11 +177,12 @@ claude plugin test plugins/ak-mods
 claude plugin test plugins/ak-mods/tests/fixture
 ```
 
-`tests/contract.test.tsx` loads the fixture with `ak-mods`: off draws nothing, switching on draws
-the band without a reload, the command turns the mod on, the tool and agent type are withheld while
-off, and switching off closes the pane. `tests/fixture/fail-open.test.tsx` loads it without
-`ak-mods` and finds it on. When you change the recipe, change the fixture with it. This prints
-nothing while the two match:
+`tests/contract.test.tsx` loads the fixture with `ak-mods`: off draws nothing and leaves the
+engine's drawing, switching on draws the band without a reload, the command turns the mod on, the
+tool is registered only once the mod is on, after switching off it is hidden and its call says how
+to turn the mod on, the agent type is withheld while off, and switching off closes the pane.
+`tests/fixture/fail-open.test.tsx` loads it without `ak-mods` and finds it on. When you change the
+recipe, change the fixture with it. This prints nothing while the two match:
 
 ```bash
 diff <(sed -n '/^import/,$p' plugins/ak-mods/tests/fixture/mod.tsx |
