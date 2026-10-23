@@ -1,0 +1,5 @@
+{
+  "name": "ak-mods-fixture",
+  "description": "Test harness only: runs the fixture mod (mod.tsx) without ak-mods",
+  "version": "1.39.0"
+}
