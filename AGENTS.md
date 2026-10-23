@@ -59,11 +59,13 @@ Type-check (zero errors expected). `claude -p` never lays `.claude-plugin/types/
 tsconfig outside the repo from the API declarations the plugin-authoring skill ships
 (`$DTS` = its `types/claude-code.d.ts`; the fixture also needs the `ak-mods` contract). The file
 exists once a Claude Code session has loaded the `plugin-authoring` skill, which names its folder;
-the path varies per machine and Claude Code version. The recipe stops if `$DTS` is empty.
+the path varies per machine and Claude Code version; with several, the recipe takes the newest
+version. It runs in a subshell and stops there if `$DTS` is empty, leaving your shell open.
 
 ```bash
+(
 T=$(mktemp -d); R=$(git rev-parse --show-toplevel)
-DTS=$(find /private/tmp -path '*plugin-authoring/types/claude-code.d.ts' -print -quit 2>/dev/null)
+DTS=$(find /private/tmp -path '*plugin-authoring/types/claude-code.d.ts' 2>/dev/null | sort -V | tail -n 1)
 [ -n "$DTS" ] || { echo "claude-code.d.ts not found: load the plugin-authoring skill first" >&2; exit 1; }
 mkdir -p "$T/types/claude-code" "$T/fx/claude-code" "$T/fx/ak-mods"
 cp "$DTS" "$T/types/claude-code/index.d.ts"; cp "$DTS" "$T/fx/claude-code/index.d.ts"
@@ -73,6 +75,7 @@ F=$R/plugins/ak-mods
 echo "{\"compilerOptions\":{$O},\"include\":[\"$T/types\",\"$F/hooks\",\"$F/types\",\"$F/tests\"]}" > "$T/mods.json"
 echo "{\"compilerOptions\":{$O},\"include\":[\"$T/fx\",\"$F/tests/fixture\"]}" > "$T/fixture.json"
 npx -y -p typescript@5 tsc -p "$T/mods.json" && npx -y -p typescript@5 tsc -p "$T/fixture.json"
+)
 ```
 
 **Validate the CodeRabbit config:**
@@ -143,7 +146,9 @@ Body: Identity statement, Core expertise, Knowledge references (`${CLAUDE_PLUGIN
 
 ### plugin.json
 
-Required: `name`, `description`, `version`. Optional: `hooks` (path to hooks.json), `mcpServers` (path to .mcp.json).
+Required: `name`, `description`, `version`. Optional: `hooks` (path to hooks.json), `mcpServers`
+(path to .mcp.json), `types` (path to the `.d.ts` contract a hooks module adds to `$`),
+`dependencies` (plugins installed with it, such as `["ak-mods"]` for a mod).
 
 ### marketplace.json
 
@@ -155,7 +160,10 @@ All skill arguments use `--` prefix for consistency: `--commit`, `--push`, `--sh
 
 ### Hooks (hooks.json)
 
-Wrapper format: `{"description": "...", "hooks": {...}}`. The `${CLAUDE_PLUGIN_ROOT}` variable resolves to the plugin's absolute directory at runtime. Hook scripts must always `exit 0`.
+Two forms. Shell hooks use the wrapper `{"description": "...", "hooks": {...}}`; the
+`${CLAUDE_PLUGIN_ROOT}` variable resolves to the plugin's absolute directory at runtime, and hook
+scripts must always `exit 0`. A hooks module (`ak-mods` and its mods) names TypeScript files
+instead: `{ "modules": ["./register.tsx"] }`.
 
 ## Commit and PR guidelines
 
@@ -173,7 +181,8 @@ Rules for `git log`, not review criteria for diffs.
   in the body.
 
 Versions stay synchronized across `marketplace.json` and all `plugin.json` files (currently
-`1.40.0`) — that one **is** checkable in a diff.
+`1.40.0`) — that one **is** checkable in a diff. The one exception is the test-only harness
+`plugins/ak-mods/tests/fixture`, which stays at `0.0.0`.
 
 ## Task completion workflow
 

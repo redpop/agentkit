@@ -20,7 +20,8 @@ Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/
 
 ## Installation
 
-Requires [Claude Code](https://docs.anthropic.com/en/docs/claude-code) v1.0.33 or later.
+Requires [Claude Code](https://docs.anthropic.com/en/docs/claude-code) v1.0.33 or later; `ak-mods`
+and the mods it switches need 2.1.309 or later (hooks-module support).
 
 ### Step 1: Add the marketplace
 
@@ -160,13 +161,13 @@ assessment, and session handoff so a fresh AI session can continue where the las
 
 A mod changes Claude Code's own interface (a band, a pane, a status entry, a slash command).
 `ak-mods` adds a **Mods** pane that turns each AgentKit mod on or off for the current chat.
-Requires Claude Code with hooks-module support (tested on 2.1.309).
+Requires Claude Code 2.1.309 or later (hooks-module support).
 
 #### Commands
 
 | Command | Purpose | Example |
 |---------|---------|---------|
-| [`/ak-mods`](docs/mods/ak-mods/switcher.md) | Open the Mods pane: On/Off, Standard, and More/Less per mod | `/ak-mods` |
+| [`/ak-mods`](docs/mods/ak-mods/switcher.md) | Open the Mods pane: ○ Off / ● On, ☆ / ★ Standard, and More/Less per mod | `/ak-mods` |
 
 See [Mods](docs/mods/) for how switches behave and
 [Writing an AgentKit mod](docs/mods/writing-a-mod.md) for the contract a mod follows.
