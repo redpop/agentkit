@@ -68,6 +68,7 @@ test('without ak-mods the mod is on', { plugins: PLUGINS }, async ($, on) => {
   expect(await ui.find({ type: 'Text', text: 'Fixture band' })).toBeDefined()
   await ui.unmount()
 
+  // Inlines origin/presentation: this standalone harness must not import ../command.
   expect((await $.command.run({ command: 'fixture', args: '', origin: { kind: 'composer' }, presentation: { isFullscreen: false, columns: 80 } })).text).toBe('Fixture is on.')
   expect(await $.tool.describe(DESCRIBE)).toEqual({ description: 'Answers a probe.' })
   expect(
