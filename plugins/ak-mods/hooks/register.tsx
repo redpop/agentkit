@@ -32,6 +32,7 @@ export const register: Register = on => {
     // once this session has written it.
     const standardOf = async (): Promise<string[]> => {
       const held = await built.state.get(STANDARD)
+      // Version 0 means this session never wrote the key: the store decides.
       if (held.version > 0 && held.value !== undefined) {
         return held.value
       }
