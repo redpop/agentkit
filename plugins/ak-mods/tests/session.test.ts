@@ -59,13 +59,23 @@ const call = async ($: Engine, plugin: string, op: string, arg?: unknown) => {
   return JSON.parse(ran.text ?? 'null')
 }
 
-// The engine beneath the plugins: a session `S1` that starts and ends.
+// The engine beneath the plugins: a session `S1` that starts and ends. The
+// returned `session.id` changes the id the engine answers, as a resume does.
 const engine = (on: On, store: Readonly<Record<string, unknown>>) => {
+  const session = { id: 'S1' }
   mock.store(on, store)
-  on('session.id', () => ({ value: 'S1' }))
+  on('session.id', () => ({ value: session.id }))
   on('session.start', (_, e) => ({ cwd: e.cwd }))
   on('session.end', (_, e) => ({ sessionId: e.sessionId }))
   on('command.register', () => ({ value: { command: 'ak-mods' } }))
+
+  return session
+}
+
+// An in-process `/resume`: the chat `S1` ends and `id` takes its place.
+const resume = async ($: Engine, session: { id: string }, id: string) => {
+  await $.session.end({ reason: 'resume', sessionId: session.id, resume: { id: session.id } })
+  session.id = id
 }
 
 const start = ($: Engine) => $.session.start({ cwd: '/', surface: null, isInteractive: false })
@@ -152,6 +162,74 @@ test('/clear resets to the standard set and keeps the old chat resumable', { plu
 
   expect(await call($, 'ak-a', 'switches')).toEqual(initialOn(['ak-a'], undefined))
   expect(await call($, 'ak-a', 'store', 'session:S1')).toEqual({ 'ak-b': true, 'ak-a': false })
+})
+
+test('an in-process resume restores the new chat and keeps the old one apart', { plugins: PLUGINS }, async ($, on) => {
+  const session = engine(on, { standard: ['ak-a'], 'session:S1': { 'ak-b': true }, 'session:S2': { 'ak-a': false } })
+  await start($)
+  expect(await call($, 'ak-a', 'isOn', { name: 'ak-b' })).toBe(true)
+
+  await resume($, session, 'S2')
+  // Cleared at the end: the old chat's switches are gone from the state.
+  expect(await call($, 'ak-a', 'switches')).toEqual({})
+  // No `session.start` follows: reads answer the new chat's own from the
+  // store, and the first write restores them before it lands.
+  expect(await call($, 'ak-a', 'isOn', { name: 'ak-b' })).toBe(false)
+  expect(await call($, 'ak-a', 'isOn', { name: 'ak-a' })).toBe(false)
+
+  await call($, 'ak-a', 'set', { name: 'ak-a', on: true })
+  expect(await call($, 'ak-a', 'switches')).toEqual({ 'ak-a': true })
+  expect(await call($, 'ak-a', 'store', 'session:S2')).toEqual({ 'ak-a': true })
+  expect(await call($, 'ak-a', 'store', 'session:S1')).toEqual({ 'ak-b': true })
+})
+
+test('a resume into an unsaved chat starts it with the standard set', { plugins: PLUGINS }, async ($, on) => {
+  const session = engine(on, { standard: ['ak-a'], 'session:S1': { 'ak-b': true, 'ak-a': false } })
+  await start($)
+
+  await resume($, session, 'S2')
+  await call($, 'ak-b', 'set', { name: 'ak-b', on: false })
+  expect(await call($, 'ak-a', 'switches')).toEqual({ 'ak-a': true, 'ak-b': false })
+  expect(await call($, 'ak-a', 'store', 'session:S2')).toEqual({ 'ak-a': true, 'ak-b': false })
+  expect(await call($, 'ak-a', 'store', 'session:S1')).toEqual({ 'ak-b': true, 'ak-a': false })
+})
+
+test('a session.start after a resume restores the new chat', { plugins: PLUGINS }, async ($, on) => {
+  const session = engine(on, { 'session:S1': { 'ak-b': true }, 'session:S2': { 'ak-a': true } })
+  await start($)
+
+  await resume($, session, 'S2')
+  await start($)
+  expect(await call($, 'ak-a', 'switches')).toEqual({ 'ak-a': true })
+})
+
+test('the next turn after a resume writes the new chat into the state', { plugins: PLUGINS }, async ($, on) => {
+  const session = engine(on, { 'session:S1': { 'ak-b': true }, 'session:S2': { 'ak-a': true } })
+  on('turn.start', (_, e) => ({ turnId: e.turnId }))
+  await start($)
+
+  await resume($, session, 'S2')
+  await $.turn.start({ text: 'hi', turnId: 'T1' })
+  expect(await call($, 'ak-a', 'switches')).toEqual({ 'ak-a': true })
+})
+
+test('/ak-mods is registered even when the store fails', { plugins: PLUGINS }, async ($, on) => {
+  const registered: string[] = []
+  on('session.id', () => ({ value: 'S1' }))
+  on('session.start', (_, e) => ({ cwd: e.cwd }))
+  on('command.register', (_, e) => {
+    registered.push(e.name)
+
+    return { value: { command: e.name } }
+  })
+  for (const event of ['store.get', 'store.set', 'store.keys', 'store.delete'] as const) {
+    on(event, () => {
+      throw new Error('store down')
+    })
+  }
+
+  await start($).catch(() => undefined)
+  expect(registered).toContain('ak-mods')
 })
 
 test('old sessions are pruned', { plugins: PLUGINS }, async ($, on) => {

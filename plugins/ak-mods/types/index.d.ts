@@ -6,7 +6,7 @@ export type ModsRow = ModsInfo & { isOn: boolean; isStandard: boolean }
 
 /** The `$.mods` noun that ak-mods adds to `$`. */
 export type Mods = {
-  /** Announces a mod; resolves false when the caller is not an AgentKit plugin. */
+  /** Announces the calling mod; resolves false when the caller is not an AgentKit plugin or names another. */
   declare: (info: ModsInfo) => Promise<boolean>
   /** Whether the mod is on in this session; an undeclared name is off. */
   isOn: (args: { name: string }) => Promise<boolean>

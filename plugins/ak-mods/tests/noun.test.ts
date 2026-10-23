@@ -1,5 +1,5 @@
 import { expect, mock, test } from 'claude-code/testing'
-import type { Register } from 'claude-code'
+import type { On, Register } from 'claude-code'
 import type { Engine } from 'claude-code/testing'
 import { runCommand } from './command'
 
@@ -28,13 +28,23 @@ const probe: Register = on => {
               ? await $.mods.setStandard(arg)
               : op === 'switches'
                 ? (await $.state.get({ plugin: 'ak-mods', key: 'on' })).value
-                : await $.mods.list()
+                : op === 'store'
+                  ? await $.store.get(arg)
+                  : op === 'putStore'
+                    ? await $.store.set(arg.key, arg.value)
+                    : await $.mods.list()
 
     return { text: JSON.stringify(answer ?? null) }
   })
 }
 
 const consumer = (name: string) => ({ name, register: probe })
+
+// The engine beneath the plugins: a store and the chat `S1`.
+const engine = (on: On, store: Readonly<Record<string, unknown>> = {}) => {
+  mock.store(on, store)
+  on('session.id', () => ({ value: 'S1' }))
+}
 
 const call = async ($: Engine, plugin: string, op: string, arg?: unknown) => {
   const ran = await runCommand($, plugin, JSON.stringify({ op, arg }))
@@ -45,14 +55,14 @@ const call = async ($: Engine, plugin: string, op: string, arg?: unknown) => {
 const FIXTURE: ModsInfo = { name: 'ak-fixture', title: 'Fixture', summary: 's', details: 'd' }
 
 test('declare then isOn is false for a non-standard mod', { plugins: [consumer('ak-fixture')] }, async ($, on) => {
-  mock.store(on)
+  engine(on)
 
   expect(await call($, 'ak-fixture', 'declare', FIXTURE)).toBe(true)
   expect(await call($, 'ak-fixture', 'isOn', { name: 'ak-fixture' })).toBe(false)
 })
 
 test('set flips isOn immediately', { plugins: [consumer('ak-fixture')] }, async ($, on) => {
-  mock.store(on)
+  engine(on)
 
   await call($, 'ak-fixture', 'declare', FIXTURE)
   await call($, 'ak-fixture', 'set', { name: 'ak-fixture', on: true })
@@ -62,7 +72,7 @@ test('set flips isOn immediately', { plugins: [consumer('ak-fixture')] }, async 
 })
 
 test('declaring twice keeps one row and the switch', { plugins: [consumer('ak-fixture')] }, async ($, on) => {
-  mock.store(on)
+  engine(on)
 
   await call($, 'ak-fixture', 'declare', FIXTURE)
   await call($, 'ak-fixture', 'set', { name: 'ak-fixture', on: true })
@@ -75,15 +85,22 @@ test('declaring twice keeps one row and the switch', { plugins: [consumer('ak-fi
 })
 
 test('a non-AgentKit plugin is refused', { plugins: [consumer('other-plugin')] }, async ($, on) => {
-  mock.store(on)
+  engine(on)
 
   const info = { name: 'other-plugin', title: 'Other', summary: 's', details: 'd' }
   expect(await call($, 'other-plugin', 'declare', info)).toBe(false)
   expect(await call($, 'other-plugin', 'list')).toEqual([])
 })
 
+test('a plugin declaring another name is refused', { plugins: [consumer('ak-a'), consumer('ak-b')] }, async ($, on) => {
+  engine(on)
+
+  expect(await call($, 'ak-a', 'declare', { name: 'ak-b', title: 'B', summary: 's', details: 'd' })).toBe(false)
+  expect(await call($, 'ak-a', 'list')).toEqual([])
+})
+
 test('list is sorted by title', { plugins: [consumer('ak-b'), consumer('ak-a')] }, async ($, on) => {
-  mock.store(on)
+  engine(on)
 
   await call($, 'ak-b', 'declare', { name: 'ak-b', title: 'beta', summary: 's', details: 'd' })
   await call($, 'ak-a', 'declare', { name: 'ak-a', title: 'Alpha', summary: 's', details: 'd' })
@@ -93,11 +110,22 @@ test('list is sorted by title', { plugins: [consumer('ak-b'), consumer('ak-a')] 
 })
 
 test('standard marks come from the store and setStandard changes them', { plugins: [consumer('ak-fixture')] }, async ($, on) => {
-  mock.store(on, { standard: ['ak-fixture'] })
+  engine(on, { standard: ['ak-fixture'] })
 
   await call($, 'ak-fixture', 'declare', FIXTURE)
   expect((await call($, 'ak-fixture', 'list'))[0].isStandard).toBe(true)
 
   await call($, 'ak-fixture', 'setStandard', { name: 'ak-fixture', standard: false })
   expect((await call($, 'ak-fixture', 'list'))[0].isStandard).toBe(false)
+})
+
+test('setStandard keeps a mark another chat stored meanwhile', { plugins: [consumer('ak-a')] }, async ($, on) => {
+  engine(on, { standard: [] })
+
+  await call($, 'ak-a', 'setStandard', { name: 'ak-a', standard: true })
+  // Another chat marks ak-x: the store is shared, this chat's state is not.
+  await call($, 'ak-a', 'putStore', { key: 'standard', value: ['ak-a', 'ak-x'] })
+  await call($, 'ak-a', 'setStandard', { name: 'ak-b', standard: true })
+
+  expect(await call($, 'ak-a', 'store', 'standard')).toEqual(['ak-a', 'ak-x', 'ak-b'])
 })

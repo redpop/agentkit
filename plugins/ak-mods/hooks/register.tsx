@@ -18,11 +18,14 @@ const KEPT_SESSIONS = 100
 // last reload, is not in it and is judged by name alone.
 const provenances = new Map<string, string>()
 
-// Whether this load has restored the session's switches. Until it has, `set`
-// leaves the store alone: an early write would pass for the saved session and
-// hide the one the restore must read. A reload starts it over, and runs
-// `session.start` again.
-let isRestored = false
+// The chat whose switches this load restored, and the restore itself. A
+// write waits for it, so none lands before the restore or under another
+// chat's id. A reload, a `/clear` and a resume start it over.
+let restoring: { id: string; done: Promise<void> } | undefined
+
+// Restores the current chat's switches unless this load already did; answers
+// the chat's id. Set by `engine.create`, which holds what it needs.
+let restoreChat: (() => Promise<string>) | undefined
 
 export const register: Register = on => {
   on('plugin.register', ($, e, next) => {
@@ -31,28 +34,22 @@ export const register: Register = on => {
     return next(e)
   })
 
+  // A plugin declares itself alone, and only an AgentKit one.
   on('mods.declare', ($, e, next) =>
-    isAgentKit(next.origin.plugin, provenances.get(next.origin.plugin)) ? next(e) : { value: false },
+    e.name === next.origin.plugin && isAgentKit(next.origin.plugin, provenances.get(next.origin.plugin))
+      ? next(e)
+      : { value: false },
   ).catch(($, e, next) => (next.called ? next(e) : { value: false }))
 
-  // A resumed chat gets its saved switches back; a new one starts with the
-  // standard set. A mod that wrote its switch earlier in this load (its own
-  // `session.start` ran first) keeps it: the restore fills in around it.
+  // The command comes first, so `/ak-mods` exists even if the store fails.
+  // Then the chat is restored: a resumed one gets its saved switches back, a
+  // new one starts with the standard set.
   on('session.start', async ($, e, next) => {
-    const id = await $.session.id()
-    const restored = initialOn(namesOf(await $.store.get('standard')), savedOf(await $.store.get(`session:${id}`)))
-    isRestored = true
-    for (;;) {
-      const held = await $.state.get(ON)
-      const value = { ...restored, ...held.value }
-      if ((await $.state.set(ON, value, { ifVersion: held.version })).isSet) {
-        // Switches written before the restore were kept out of the store.
-        if (Object.keys(held.value ?? {}).length > 0) {
-          await $.store.set(`session:${id}`, value)
-        }
-        break
-      }
-    }
+    await $.command.register({
+      name: 'ak-mods',
+      description: 'Open the Mods pane: turn AgentKit mods on or off for this chat',
+    })
+    const id = await restoreChat?.()
 
     // The chat being resumed is kept whatever its age: its switches were just read.
     const others = (await $.store.keys()).filter(key => key !== `session:${id}`)
@@ -60,20 +57,32 @@ export const register: Register = on => {
       await $.store.delete(key)
     }
 
-    await $.command.register({
-      name: 'ak-mods',
-      description: 'Open the Mods pane: turn AgentKit mods on or off for this chat',
-    })
-
     return next(e)
   })
 
-  // `/clear` ends the chat with no new `session.start`: back to the standard set.
-  // The old chat's switches stay in the store, so a later resume of it gets
-  // them back; pruning ages them out.
+  // After a resume no `session.start` follows. Until something writes, the
+  // reads answer from the store; the next turn writes the new chat's
+  // switches into the state, so every mod sees its own switch change.
+  on('turn.start', async ($, e, next) => {
+    if (e.agentId === undefined) {
+      await restoreChat?.()
+    }
+
+    return next(e)
+  }).catch(($, e, next) => next(e))
+
+  // `/clear` ends the chat with no new `session.start`: back to the standard
+  // set. A resume puts another chat in its place, also with none: the state
+  // is emptied and the new chat restored under its own id, by the next write
+  // or turn. The old chat's switches stay in the store, so a later resume of
+  // it gets them back; pruning ages them out.
   on('session.end', async ($, e, next) => {
-    if (e.reason === 'clear') {
-      await $.state.set(ON, initialOn(namesOf(await $.store.get('standard')), undefined))
+    if (e.reason === 'clear' || e.reason === 'resume') {
+      restoring = undefined
+      await $.state.set(
+        ON,
+        e.reason === 'clear' ? initialOn(namesOf(await $.store.get('standard')), undefined) : {},
+      )
     }
 
     return next(e)
@@ -90,16 +99,41 @@ export const register: Register = on => {
   on('engine.create', async ($, e, next) => {
     const built = await next(e)
 
-    // Standard marks persist in the store; the state mirrors them for drawings
-    // once this session has written it.
-    const standardOf = async (): Promise<string[]> => {
-      const held = await built.state.get(STANDARD)
-      // Version 0 means this session never wrote the key: the store decides.
-      if (held.version > 0 && held.value !== undefined) {
-        return held.value
+    // The saved switches replace the state whole: nothing of another chat
+    // is carried over.
+    const restore = async (): Promise<string> => {
+      const id = await built.session.id()
+      if (restoring?.id !== id) {
+        const done = (async () => {
+          const standard = namesOf(await built.store.get('standard'))
+          await built.state.set(ON, initialOn(standard, savedOf(await built.store.get(`session:${id}`))))
+        })()
+        restoring = { id, done }
+        // A failed restore is tried again by the next write.
+        done.catch(() => {
+          if (restoring?.done === done) restoring = undefined
+        })
+      }
+      await restoring.done
+
+      return id
+    }
+    restoreChat = restore
+
+    // The current chat's switches, without writing (a drawing may not): the
+    // state once this load restored the chat, else what the restore would
+    // write. The state is read either way, so a drawing redraws on a change.
+    const switches = async (): Promise<Record<string, boolean>> => {
+      const id = await built.session.id()
+      if (restoring?.id === id) {
+        await restoring.done.catch(() => undefined)
+      }
+      const { value: map = {} } = await built.state.get(ON)
+      if (restoring?.id === id) {
+        return map
       }
 
-      return namesOf(await built.store.get('standard'))
+      return initialOn(namesOf(await built.store.get('standard')), savedOf(await built.store.get(`session:${id}`)))
     }
 
     const mods: Mods = {
@@ -116,36 +150,41 @@ export const register: Register = on => {
       },
       isOn: async ({ name }) => {
         const { value: list = [] } = await built.state.get(DECLARED)
-        const { value: map = {} } = await built.state.get(ON)
 
-        return list.some(one => one.name === name) && map[name] === true
+        return list.some(one => one.name === name) && (await switches())[name] === true
       },
-      // The store keeps the switches under the session's id, read at each
-      // call: after a `/clear` the chat goes on under a new one.
+      // The store keeps the switches under the chat's id: after a `/clear`
+      // or a resume the process goes on under another.
       set: async ({ name, on: isOn }) => {
+        const id = await restore()
         for (;;) {
           const held = await built.state.get(ON)
           const value = { ...held.value, [name]: isOn }
           if ((await built.state.set(ON, value, { ifVersion: held.version })).isSet) {
-            if (isRestored) {
-              await built.store.set(`session:${await built.session.id()}`, value)
-            }
+            await built.store.set(`session:${id}`, value)
 
             return
           }
         }
       },
+      // Standard marks persist in the store, shared by every chat; it is read
+      // afresh at each change, so a mark another chat set meanwhile stays. The
+      // state mirrors them, so a drawing that lists them redraws on a change.
+      // The chat is restored first: a new mark does not switch it.
       setStandard: async ({ name, standard }) => {
-        const marked = (await standardOf()).filter(one => one !== name)
+        await restore()
+        const marked = namesOf(await built.store.get('standard')).filter(one => one !== name)
         const value = standard ? [...marked, name] : marked
         await built.store.set('standard', value)
         await built.state.set(STANDARD, value)
       },
       list: async () => {
         const { value: list = [] } = await built.state.get(DECLARED)
-        const { value: map = {} } = await built.state.get(ON)
+        const map = await switches()
+        // Read for the subscription; the store decides.
+        await built.state.get(STANDARD)
 
-        return rows(list, map, await standardOf())
+        return rows(list, map, namesOf(await built.store.get('standard')))
       },
     }
 

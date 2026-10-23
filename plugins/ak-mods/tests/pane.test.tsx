@@ -1,9 +1,9 @@
 import { expect, mock, test } from 'claude-code/testing'
-import type { Register } from 'claude-code'
+import type { On, Register } from 'claude-code'
 import type { Engine } from 'claude-code/testing'
 import { runCommand } from './command'
 
-const FOOTER = 'Switches reset in a new chat or after /clear. Standard mods start on.'
+import { FOOTER } from '../hooks/pane'
 
 const PANE = {
   plugin: 'ak-mods',
@@ -34,7 +34,9 @@ const probe: Register = on => {
         ? await $.mods.declare(arg)
         : op === 'isOn'
           ? await $.mods.isOn(arg)
-          : await $.store.get(arg)
+          : op === 'set'
+            ? await $.mods.set(arg)
+            : await $.store.get(arg)
 
     return { text: JSON.stringify(answer ?? null) }
   })
@@ -42,14 +44,20 @@ const probe: Register = on => {
 
 const PLUGINS = [{ name: 'ak-fixture', register: probe }]
 
+// The engine beneath the plugins: a store and the chat `S1`.
+const engine = (on: On, store: Readonly<Record<string, unknown>> = {}) => {
+  mock.store(on, store)
+  on('session.id', () => ({ value: 'S1' }))
+}
+
 const call = async ($: Engine, op: string, arg?: unknown) =>
   JSON.parse((await runCommand($, 'ak-fixture', JSON.stringify({ op, arg }))).text ?? 'null')
 
-const declare = ($: Engine) =>
-  call($, 'declare', { name: 'ak-fixture', title: 'Fixture', summary: 's', details: 'd' })
+const declare = ($: Engine, title = 'Fixture') =>
+  call($, 'declare', { name: 'ak-fixture', title, summary: 's', details: 'd' })
 
 test('empty pane says no mods', { plugins: PLUGINS }, async ($, on) => {
-  mock.store(on)
+  engine(on)
 
   for (const surface of SURFACES) {
     const ui = await $.ui.mount({ ...PANE, surface })
@@ -59,45 +67,45 @@ test('empty pane says no mods', { plugins: PLUGINS }, async ($, on) => {
 })
 
 test('a row shows title, summary and switches', { plugins: PLUGINS }, async ($, on) => {
-  mock.store(on)
+  engine(on)
   await declare($)
 
   for (const surface of SURFACES) {
     const ui = await $.ui.mount({ ...PANE, surface })
     expect((await ui.find({ type: 'Text', text: 'Fixture' }))?.text).toBe('Fixture')
     expect((await ui.find({ type: 'Text', text: 's' }))?.text).toBe('s')
-    expect((await ui.find({ key: 'on-ak-fixture' }))?.text).toBe('Off')
-    expect((await ui.find({ key: 'std-ak-fixture' }))?.text).toBe('Standard')
+    expect((await ui.find({ key: 'on-ak-fixture' }))?.text).toBe('○ Off')
+    expect((await ui.find({ key: 'std-ak-fixture' }))?.text).toBe('☆ Standard')
     expect((await ui.find({ key: 'more-ak-fixture' }))?.text).toBe('More')
     await ui.unmount()
   }
 })
 
 test('pressing On flips the switch and redraws', { plugins: PLUGINS }, async ($, on) => {
-  mock.store(on)
+  engine(on)
   await declare($)
 
   const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
   await ui.press({ key: 'on-ak-fixture' })
-  expect((await ui.find({ key: 'on-ak-fixture' }))?.text).toBe('On')
+  expect((await ui.find({ key: 'on-ak-fixture' }))?.text).toBe('● On')
   expect(await call($, 'isOn', { name: 'ak-fixture' })).toBe(true)
   await ui.unmount()
 })
 
 test('pressing Standard persists, without switching the mod on', { plugins: PLUGINS }, async ($, on) => {
-  mock.store(on)
+  engine(on)
   await declare($)
 
   const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
   await ui.press({ key: 'std-ak-fixture' })
-  expect((await ui.find({ key: 'std-ak-fixture' }))?.text).toBe('Standard ✓')
+  expect((await ui.find({ key: 'std-ak-fixture' }))?.text).toBe('★ Standard')
   expect(await call($, 'store', 'standard')).toContain('ak-fixture')
   expect(await call($, 'isOn', { name: 'ak-fixture' })).toBe(false)
   await ui.unmount()
 })
 
 test('More reveals details', { plugins: PLUGINS }, async ($, on) => {
-  mock.store(on)
+  engine(on)
   await declare($)
 
   const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
@@ -108,8 +116,39 @@ test('More reveals details', { plugins: PLUGINS }, async ($, on) => {
   await ui.unmount()
 })
 
+test('a mod declaring after mount appears', { plugins: PLUGINS }, async ($, on) => {
+  engine(on)
+
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  expect(await ui.find({ type: 'Text', text: 'Fixture' })).toBeUndefined()
+  await declare($)
+  expect(await ui.find({ type: 'Text', text: 'Fixture' })).toBeDefined()
+  await ui.unmount()
+})
+
+test('a switch flipped outside the pane redraws its label', { plugins: PLUGINS }, async ($, on) => {
+  engine(on)
+  await declare($)
+
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  expect((await ui.find({ key: 'on-ak-fixture' }))?.text).toBe('○ Off')
+  await call($, 'set', { name: 'ak-fixture', on: true })
+  expect((await ui.find({ key: 'on-ak-fixture' }))?.text).toBe('● On')
+  await ui.unmount()
+})
+
+test('a long title wraps instead of being cut', { plugins: PLUGINS }, async ($, on) => {
+  engine(on)
+  const title = 'Fixture with a title far wider than the pane'
+  await declare($, title)
+
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal', props: { ...PANE.props, bodyColumns: 12 } })
+  expect((await ui.find({ type: 'Text', text: title }))?.text).toBe(title)
+  await ui.unmount()
+})
+
 test('footer is shown', { plugins: PLUGINS }, async ($, on) => {
-  mock.store(on)
+  engine(on)
 
   const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
   expect(await ui.find({ type: 'Text', text: FOOTER })).toBeDefined()
@@ -117,7 +156,7 @@ test('footer is shown', { plugins: PLUGINS }, async ($, on) => {
 })
 
 test('/ak-mods opens the pane', { plugins: PLUGINS }, async ($, on) => {
-  mock.store(on)
+  engine(on)
   const opened: unknown[] = []
   on('ui.open', (_, e) => {
     opened.push(e)
