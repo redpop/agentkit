@@ -1,5 +1,5 @@
 import { atom, update } from 'claude-code'
-import type { Engine } from 'claude-code'
+import type { EngineInterface } from 'claude-code'
 
 const EXPANDED = atom({ plugin: 'ak-mods', key: 'expanded' } as const, {})
 
@@ -9,7 +9,7 @@ const fit = (text: string, columns: number): string =>
   text.length <= columns ? text : `${text.slice(0, Math.max(0, columns - 1))}…`
 
 /** Draws the Mods pane: one row per declared mod, with its three buttons. */
-export async function renderPane($: Engine, e: Parameters<Engine['ui']['resolve']>[0] & { props: { bodyColumns: number } }) {
+export async function renderPane($: EngineInterface, e: Parameters<EngineInterface['ui']['resolve']>[0] & { props: { bodyColumns: number } }) {
   const { Box, Button, Text } = $.ui.resolve(e)
   const columns = Math.max(1, e.props.bodyColumns)
   const list = await $.mods.list()

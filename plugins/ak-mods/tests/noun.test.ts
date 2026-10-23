@@ -1,6 +1,7 @@
 import { expect, mock, test } from 'claude-code/testing'
 import type { Register } from 'claude-code'
 import type { Engine } from 'claude-code/testing'
+import { runCommand } from './command'
 
 import type { ModsInfo } from '../types'
 
@@ -36,7 +37,7 @@ const probe: Register = on => {
 const consumer = (name: string) => ({ name, register: probe })
 
 const call = async ($: Engine, plugin: string, op: string, arg?: unknown) => {
-  const ran = await $.command.run({ command: plugin, args: JSON.stringify({ op, arg }) })
+  const ran = await runCommand($, plugin, JSON.stringify({ op, arg }))
 
   return JSON.parse(ran.text ?? 'null')
 }

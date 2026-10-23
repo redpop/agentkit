@@ -54,8 +54,22 @@ claude plugin test plugins/ak-mods/tests/fixture
 
 The second test command loads the test-only fixture mod with `ak-mods` absent and proves it fails
 open. `tests/fixture/` is a harness (version 0.0.0), not a plugin: it gets no marketplace entry.
-`tsc -p plugins/ak-mods` needs the plugin loaded once from its folder
-(`claude --plugin-dir ./plugins/ak-mods`) so the engine lays the types in.
+
+Type-check (zero errors expected). `claude -p` never lays `.claude-plugin/types/`, so build a
+tsconfig outside the repo from the API declarations the plugin-authoring skill ships
+(`$DTS` = its `types/claude-code.d.ts`; the fixture also needs the `ak-mods` contract):
+
+```bash
+T=$(mktemp -d); R=$(pwd); DTS=/path/to/plugin-authoring/types/claude-code.d.ts
+mkdir -p "$T/types/claude-code" "$T/fx/claude-code" "$T/fx/ak-mods"
+cp "$DTS" "$T/types/claude-code/index.d.ts"; cp "$DTS" "$T/fx/claude-code/index.d.ts"
+cp plugins/ak-mods/types/index.d.ts "$T/fx/ak-mods/"
+O='"target":"es2023","lib":["es2023"],"types":[],"module":"esnext","moduleResolution":"bundler","strict":true,"noUncheckedIndexedAccess":true,"noEmit":true,"skipLibCheck":true,"jsx":"react","jsxFactory":"h","jsxFragmentFactory":"Fragment"'
+F=$R/plugins/ak-mods
+echo "{\"compilerOptions\":{$O},\"include\":[\"$T/types\",\"$F/hooks\",\"$F/types\",\"$F/tests\"]}" > "$T/mods.json"
+echo "{\"compilerOptions\":{$O},\"include\":[\"$T/fx\",\"$F/tests/fixture\"]}" > "$T/fixture.json"
+npx -y -p typescript@5 tsc -p "$T/mods.json" && npx -y -p typescript@5 tsc -p "$T/fixture.json"
+```
 
 **Validate the CodeRabbit config:**
 

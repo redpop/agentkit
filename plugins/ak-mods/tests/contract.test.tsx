@@ -1,6 +1,7 @@
 import { expect, mock, test } from 'claude-code/testing'
 import type { On, Register } from 'claude-code'
 import type { Engine as TestEngine } from 'claude-code/testing'
+import { runCommand } from './command'
 
 import { register } from './fixture/mod'
 
@@ -61,7 +62,7 @@ const engine = (on: On, store: Readonly<Record<string, unknown>> = {}) => {
 const start = ($: TestEngine) => $.session.start({ cwd: '/', surface: null, isInteractive: false })
 
 const call = async ($: TestEngine, op: string, arg: unknown) =>
-  JSON.parse((await $.command.run({ command: 'ak-probe', args: JSON.stringify({ op, arg }) })).text ?? 'null')
+  JSON.parse((await runCommand($, 'ak-probe', JSON.stringify({ op, arg }))).text ?? 'null')
 
 const BAND = {
   plugin: NAME,
@@ -108,7 +109,7 @@ test("the mod's command turns it on", { plugins: PLUGINS }, async ($, on) => {
   engine(on)
   await start($)
 
-  expect((await $.command.run({ command: 'fixture' })).text).toBe('Fixture is on.')
+  expect((await runCommand($, 'fixture')).text).toBe('Fixture is on.')
   expect(await call($, 'isOn', { name: NAME })).toBe(true)
 })
 
@@ -168,7 +169,7 @@ test('switching off closes the pane', { plugins: PLUGINS }, async ($, on) => {
   const { closed } = engine(on)
   await start($)
 
-  await $.command.run({ command: 'fixture' })
+  await runCommand($, 'fixture')
   expect(closed).toEqual([])
 
   await call($, 'set', { name: NAME, on: false })

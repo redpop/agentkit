@@ -1,6 +1,7 @@
 import { expect, mock, test } from 'claude-code/testing'
 import type { Register } from 'claude-code'
 import type { Engine } from 'claude-code/testing'
+import { runCommand } from './command'
 
 const FOOTER = 'Switches reset in a new chat or after /clear. Standard mods start on.'
 
@@ -42,7 +43,7 @@ const probe: Register = on => {
 const PLUGINS = [{ name: 'ak-fixture', register: probe }]
 
 const call = async ($: Engine, op: string, arg?: unknown) =>
-  JSON.parse((await $.command.run({ command: 'ak-fixture', args: JSON.stringify({ op, arg }) })).text ?? 'null')
+  JSON.parse((await runCommand($, 'ak-fixture', JSON.stringify({ op, arg }))).text ?? 'null')
 
 const declare = ($: Engine) =>
   call($, 'declare', { name: 'ak-fixture', title: 'Fixture', summary: 's', details: 'd' })
@@ -124,7 +125,7 @@ test('/ak-mods opens the pane', { plugins: PLUGINS }, async ($, on) => {
     return { value: { isPlaced: true } }
   })
 
-  const ran = await $.command.run({ command: 'ak-mods' })
+  const ran = await runCommand($, 'ak-mods')
   expect(ran.text).toBe('Opened the Mods pane.')
   expect(opened).toEqual([{ id: 'ak-mods', title: 'Mods' }])
 })
