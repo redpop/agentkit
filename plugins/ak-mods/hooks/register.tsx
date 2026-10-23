@@ -68,10 +68,11 @@ export const register: Register = on => {
   })
 
   // `/clear` ends the chat with no new `session.start`: back to the standard set.
+  // The old chat's switches stay in the store, so a later resume of it gets
+  // them back; pruning ages them out.
   on('session.end', async ($, e, next) => {
     if (e.reason === 'clear') {
       await $.state.set(ON, initialOn(namesOf(await $.store.get('standard')), undefined))
-      await $.store.delete(`session:${e.sessionId}`)
     }
 
     return next(e)

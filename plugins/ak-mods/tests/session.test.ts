@@ -144,13 +144,13 @@ test('setStandard persists', { plugins: PLUGINS }, async ($, on) => {
   expect(await call($, 'ak-b', 'isOn', { name: 'ak-b' })).toBe(false)
 })
 
-test('/clear resets to the standard set', { plugins: PLUGINS }, async ($, on) => {
+test('/clear resets to the standard set and keeps the old chat resumable', { plugins: PLUGINS }, async ($, on) => {
   engine(on, { standard: ['ak-a'], 'session:S1': { 'ak-b': true, 'ak-a': false } })
   await start($)
   await $.session.end({ reason: 'clear', sessionId: 'S1', resume: { id: 'S1' } })
 
   expect(await call($, 'ak-a', 'switches')).toEqual(initialOn(['ak-a'], undefined))
-  expect(await call($, 'ak-a', 'keys')).not.toContain('session:S1')
+  expect(await call($, 'ak-a', 'store', 'session:S1')).toEqual({ 'ak-b': true, 'ak-a': false })
 })
 
 test('old sessions are pruned', { plugins: PLUGINS }, async ($, on) => {
