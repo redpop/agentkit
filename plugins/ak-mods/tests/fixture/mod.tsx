@@ -8,9 +8,14 @@ export const register: Register = on => {
   const NAME = 'ak-fixture'
   const TOOL = { name: 'probe', description: 'Answers a probe.' }
 
-  // Off only when ak-mods says so. Without ak-mods `$.mods` is missing and
-  // the call throws: the mod is on (fail-open).
+  // Whether ak-mods switches this mod: false once its declare was refused or
+  // threw (no ak-mods loaded, or it failed). Then the mod runs on.
+  let isSwitched = true
+
+  // Off only when ak-mods switches the mod and says so. A call that throws
+  // leaves the mod on (fail-open).
   const isOff = async (isOn: () => Promise<boolean>): Promise<boolean> => {
+    if (!isSwitched) return false
     try {
       return !(await isOn())
     } catch {
@@ -20,14 +25,14 @@ export const register: Register = on => {
 
   on('session.start', async ($, e, next) => {
     try {
-      await $.mods.declare({
+      isSwitched = await $.mods.declare({
         name: NAME,
         title: 'Fixture',
         summary: 'Draws a band above the prompt.',
         details: 'The band says hello. /fixture turns the mod on and opens its pane.',
       })
     } catch {
-      // No ak-mods loaded: nothing to declare to, and the mod runs on.
+      isSwitched = false
     }
     await $.command.register({ name: 'fixture', description: 'Turn the fixture on and open its pane' })
     // The tool exists only once the mod is on: here, or when it is switched on.
@@ -75,15 +80,18 @@ export const register: Register = on => {
     (await isOff(() => $.mods.isOn({ name: NAME }))) ? { isOffered: false } : next(e),
   ).catch(($, e, next) => next(e))
 
-  // This mod's switch changed: register or describe its tool afresh, close
-  // its pane when off.
+  // This mod's switch changed, and the write landed: register or describe
+  // its tool afresh; when off, clear its status line and close its pane.
   on('state.set', { plugin: 'ak-mods', key: 'on' }, async ($, e, next) => {
     const done = await next(e)
     const isOn = e.value[NAME] === true
-    if (isOn !== (e.previous?.[NAME] === true)) {
+    if (isSwitched && done.value?.isSet === true && isOn !== (e.previous?.[NAME] === true)) {
       if (isOn) await $.tool.register(TOOL)
       $.ui.invalidate('tool.describe')
-      if (!isOn) await $.ui.close({ id: NAME })
+      if (!isOn) {
+        $.ui.status(undefined)
+        await $.ui.close({ id: NAME })
+      }
     }
 
     return done

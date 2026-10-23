@@ -21,14 +21,16 @@ const probe: Register = on => {
 
 const NAME = 'ak-fixture'
 const FIXTURE = { name: NAME, register }
-const PLUGINS = [FIXTURE, { name: 'ak-probe', register: probe }]
+const PROBE = { name: 'ak-probe', register: probe }
+const PLUGINS = [FIXTURE, PROBE]
 
 // Returns what the plugins asked of the engine: tools registered, panes
-// closed, answers invalidated.
+// closed, answers invalidated, status lines set.
 const engine = (on: On, store: Readonly<Record<string, unknown>> = {}) => {
   const registered: string[] = []
   const closed: unknown[] = []
   const invalidated: unknown[] = []
+  const statuses: unknown[] = []
   mock.store(on, store)
   on('session.id', () => ({ value: 'S1' }))
   on('session.start', (_, e) => ({ cwd: e.cwd }))
@@ -49,6 +51,11 @@ const engine = (on: On, store: Readonly<Record<string, unknown>> = {}) => {
 
     return { value: undefined }
   })
+  on('ui.status', (_, e) => {
+    statuses.push(e)
+
+    return { value: undefined }
+  })
   // The engine's own drawing beneath the plugins.
   on('ui.render', ($, e) => {
     const { Text } = $.ui.resolve(e)
@@ -56,7 +63,7 @@ const engine = (on: On, store: Readonly<Record<string, unknown>> = {}) => {
     return <Text>engine</Text>
   })
 
-  return { registered, closed, invalidated }
+  return { registered, closed, invalidated, statuses }
 }
 
 const start = ($: TestEngine) => $.session.start({ cwd: '/', surface: null, isInteractive: false })
@@ -175,3 +182,65 @@ test('switching off closes the pane', { plugins: PLUGINS }, async ($, on) => {
   await call($, 'set', { name: NAME, on: false })
   expect(closed).toEqual([{ id: NAME, origin: { kind: 'plugin' } }])
 })
+
+test('switching off clears the status line', { plugins: PLUGINS }, async ($, on) => {
+  const { statuses } = engine(on)
+  await start($)
+  await call($, 'set', { name: NAME, on: true })
+  expect(statuses).toEqual([])
+
+  await call($, 'set', { name: NAME, on: false })
+  expect(statuses).toEqual([{ text: undefined }])
+})
+
+// Below the fixture, it answers the first write that switches the fixture on
+// as a lost race: not set. ak-mods reads again and writes once more.
+const stale: Register = on => {
+  let isLost = false
+  on('state.set', { plugin: 'ak-mods', key: 'on' }, ($, e, next) => {
+    if (!isLost && e.value['ak-fixture'] === true) {
+      isLost = true
+
+      return { value: { isSet: false, version: e.ifVersion ?? 0 } }
+    }
+
+    return next(e)
+  })
+}
+
+test(
+  'a switch write that did not land changes nothing',
+  { plugins: [...PLUGINS, { name: 'ak-stale', tier: 'append', register: stale }] },
+  async ($, on) => {
+    const { registered, invalidated } = engine(on)
+    await start($)
+
+    await call($, 'set', { name: NAME, on: true })
+    expect(registered).toEqual(['probe'])
+    expect(invalidated).toEqual([{ event: 'tool.describe' }])
+  },
+)
+
+// Above ak-mods, it denies every declare: the caller's call throws.
+const broken: Register = on => {
+  on('mods.declare', () => ({ deny: 'declare failed' }))
+}
+
+for (const [name, plugins] of [
+  // ak-mods refuses a declare from a plugin that is not AgentKit's.
+  ['refused', [{ name: 'not-agentkit', register }, PROBE]],
+  ['thrown', [{ name: 'ak-broken', tier: 'prepend', register: broken }, ...PLUGINS]],
+] as const) {
+  test(`a declare ${name} leaves the mod on`, { plugins }, async ($, on) => {
+    const { registered } = engine(on)
+    await start($)
+    expect(registered).toEqual(['probe'])
+
+    const ui = await $.ui.mount(BAND)
+    expect(await ui.find({ type: 'Text', text: 'Fixture band' })).toBeDefined()
+    await ui.unmount()
+
+    expect((await runCommand($, 'fixture')).text).toBe('Fixture is on.')
+    expect((await $.tool.call({ tool: 'mcp__ak-fixture__probe' })).result).toBe('Probed.')
+  })
+}
