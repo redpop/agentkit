@@ -34,6 +34,10 @@ targeted improvements; there are no arguments, so discovery is automatic and sco
 - Setting up a new project and want optimal AI agent instructions
 - After major refactors that may have made instructions stale
 - When AI sessions seem to miss important project context
+- When the same kind of defect keeps coming back in fix commits or solution docs -- the skill turns
+  it into a rule with its provenance
+- When the file has collected generic advice ("keep changes minimal", "verify your work") that no
+  longer changes how the agent behaves
 - When agent-written commit messages have grown long enough to be unreadable -- the skill adds the
   convention that bounds them
 - Periodic maintenance of project instruction quality
@@ -43,6 +47,15 @@ targeted improvements; there are no arguments, so discovery is automatic and sco
 - Review the quality report before approving changes -- the skill always shows it first
 - Focus on commands/workflows (20 pts) and architecture clarity (20 pts) for maximum impact
 - Avoid adding obvious information derivable from code -- each line should earn its place
+- Lines that restate what a coding agent does anyway -- stay in scope, keep code minimal, verify
+  before done, ask when unsure -- are flagged for deletion. The test is whether an agent without
+  the line would behave differently in this repository; a line survives when it names a failure
+  that actually happened here, sharpened to that case
+- New rules come from the project's history, not from advice: the skill reads `docs/solutions/`
+  and recent fix commits (scoped to the package for a package-level file), groups them by defect
+  class, and proposes a rule for any class that
+  occurred twice or more with nothing in the file guarding against it. Each proposal carries its
+  count and where it is recorded
 - Keep instructions actionable with real paths and copy-paste ready commands
 - Consolidate if both CLAUDE.md and AGENTS.md exist at the same level
 - If `CLAUDE.md` is a symlink to `AGENTS.md`, the skill checks that `AGENTS.md` carries the symlink notice at the top; flags it as a common issue if missing

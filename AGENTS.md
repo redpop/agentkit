@@ -138,7 +138,7 @@ Rules for `git log`, not review criteria for diffs.
   in the body.
 
 Versions stay synchronized across `marketplace.json` and all `plugin.json` files (currently
-`1.39.0`) — that one **is** checkable in a diff.
+`1.40.0`) — that one **is** checkable in a diff.
 
 ## Task completion workflow
 
@@ -152,6 +152,11 @@ docs → re-validate → version & changelog.
 - Knowledge files are referenced explicitly in agents via `${CLAUDE_PLUGIN_ROOT}/knowledge/path`
 - The `$ARGUMENTS` placeholder receives user input in skills
 - Documentation is written in English
+- **This repository is public: nothing in it may point to a real project.** No client or project
+  name, real ticket key, person or local path in a skill, doc, example, test or changelog. Ticket
+  examples are `ABC-123` or `ABC-XXXX`, paths are `/Users/you/…`. A finding from a real project is
+  described by what was measured, never by where. Session handoffs (`docs/handoffs/`) are
+  gitignored for this reason
 - When adding, removing, or modifying plugins, skills, agents, or hooks, update the corresponding documentation in `docs/` (detail files and index READMEs) and the root `README.md` plugin table
 - The `markdown-format.sh` hook requires `markdownlint-cli2` (Homebrew preferred, npx fallback)
 - Before debugging from scratch, check `docs/solutions/` for previously documented fixes and reusable patterns — the project knowledge base grows via `/ak-knowledge:log` and is organized by track (bug fixes and knowledge/best-practices)
