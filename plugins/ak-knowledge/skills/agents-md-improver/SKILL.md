@@ -185,7 +185,7 @@ git log -100 --pretty=format:'%H' | while read h; do git log -1 --pretty=format:
   | sort -n | awk '{a[NR]=$1} END { print "median", a[int(NR/2)], "max", a[NR] }'
 ```
 
-- A ticket prefix shortens the subject: `<BUDGET>` is `72 − length(prefix)` as a number, `<PREFIX>` the pattern as a reader recognises it (`ABC-XXXX `). Name both instead of the generic 72.
+- A ticket prefix shortens the subject: `<BUDGET>` is `72 − length(prefix)` as a number, `<TICKET>` the pattern as a reader recognises it (`ABC-XXXX `). Name both instead of the generic 72.
 - If no prefix pattern appears, drop the prefix from the template and use the plain 72.
 - Report the measured median, the maximum and the subjects over 72 as concrete findings. They make the case for the section far better than the rule itself does.
 
