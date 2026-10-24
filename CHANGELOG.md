@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.40.0] - 2026-10-24
+
+### ✨ Added
+
+- `ak-knowledge:agents-md-improver` — **derives rules from recorded failures and flags restated
+  agent defaults.** The audit now reads `docs/solutions/` and recent fix commits, groups them by
+  defect class, and proposes a rule for every class that occurred at least twice with nothing in
+  the instruction file guarding against it. Each proposal shows how often the defect occurred and
+  where it is recorded. A package-level file only gets its own package's history. Lines that
+  restate what a coding agent does anyway ("keep changes minimal", "verify before done", "ask when
+  unsure") are flagged for deletion, unless they name a failure that actually happened in the
+  repository.
+
+### 🐛 Fixed
+
+- `ak-knowledge:agents-md-improver` — the subject-budget rule of the commit-message check named a
+  `<PREFIX>` placeholder that the template does not contain. It now names `<TICKET>`, the one the
+  template fills.
+
 ## [1.39.0] - 2026-10-21
 
 ### ✨ Added
