@@ -101,7 +101,7 @@
       "name": "ak-mods",
       "source": "./plugins/ak-mods",
       "description": "Mod switcher: a pane that turns each AgentKit mod on or off for this session, with standard mods that start on in every new chat",
-      "version": "1.39.0",
+      "version": "1.40.0",
       "category": "productivity",
       "keywords": ["mods", "switcher", "ui", "pane"],
       "license": "MIT"
