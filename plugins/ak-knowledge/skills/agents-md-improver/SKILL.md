@@ -38,7 +38,7 @@ For each file found, evaluate against these criteria:
 | Commands/workflows documented | 20 pts | Are build/test/dev commands present and copy-paste ready? |
 | Architecture clarity | 20 pts | Can a coding agent understand the codebase structure? |
 | Non-obvious patterns | 15 pts | Are gotchas, quirks, and "why we do it this way" documented? |
-| Conciseness | 15 pts | No verbose explanations or obvious info? Each line earns its place? |
+| Conciseness | 15 pts | No verbose explanations, obvious info or restated agent defaults? Each line earns its place? |
 | Currency | 15 pts | Does it reflect the current codebase state? Are referenced files/commands valid? |
 | Actionability | 15 pts | Are instructions executable, not vague? Paths real, commands working? |
 | Reviewability | — | Would a code reviewer applying this file produce useful findings, or noise? See below |
@@ -75,6 +75,54 @@ is discovered by the same `**/AGENTS.md` pattern and scopes its criteria to that
 portable equivalent of a reviewer configuration's per-path instructions, except that it also reaches
 every coding agent working in that directory. Where the root file carries a rule that only holds for
 one package, recommend moving it there rather than qualifying it in place.
+
+### Lines the Agent Follows Without Being Told
+
+**A coding agent already brings generic working discipline**, from its training and from the system
+prompt of the tool running it: stay within the task's scope, write the minimum code without
+speculative abstractions, verify before declaring done, ask when a decision is genuinely ambiguous.
+A line that restates this changes no behaviour, is resent on every prompt, and dilutes the lines
+only this file can carry. Some restatements push the wrong way: a blanket "don't assume, ask first"
+makes an agent running unattended stop on decisions that have an obvious default.
+
+Test each line: **would an agent without it behave differently in this repository?**
+
+- **No** → a Conciseness finding; recommend deleting the line. Being checkable does not save it —
+  "touch only what the task requires" gives a reviewer something to decide on, yet tells neither
+  the reviewer nor the agent anything it would not do anyway.
+- **Yes, because the failure happened here** → keep it, sharpened to the case that occurred:
+  "don't reformat Markdown tables you did not edit" instead of "touch only what the task requires".
+  Where the failure is recorded (a solution doc, a fix commit), the line may name it.
+
+The test applies to working discipline, not to project facts. A command, a path or a convention is
+never a restated default, however obvious it looks.
+
+### Failures the File Should Already Guard Against
+
+**The strongest lines in an instruction file come from failures that recurred**, not from advice.
+The project's history records them, so read it before scoring Non-obvious patterns:
+
+```bash
+# Recorded solutions and when they apply
+grep -rl '^problem_type:' docs/solutions 2>/dev/null
+# Recent fix subjects, to group by defect class (any commit convention, ticket prefix or not)
+git log -300 --pretty=format:'%s' | grep -iwE 'fix(e[sd])?' | head -80
+```
+
+**For a package-level file, scope both to the package**: its own solution docs if it keeps any, and
+`git log -300 --pretty=format:'%s' -- <package dir>`. A defect class from another package is not a
+gap in this file. The root file takes what recurs across packages.
+
+Read the matched solution docs' `applies_when` and `tags`, and group the fix subjects by the kind of
+defect rather than by the file they touched. A defect class with **two or more occurrences** that
+nothing in the instruction file guards against is a gap in Non-obvious patterns; a single
+occurrence is a one-off and stays out (see _What NOT to add_). Where a linter, hook or test could
+catch the class, recommend that check instead of a line.
+
+Propose each rule in the shape that makes it hold up: the rule as a checkable condition, one
+sentence on why, and its provenance — how often it occurred and where it is recorded. A rule that
+shows its count is believed and kept; one that argues from principle is the restated default above.
+When the solution doc already explains the fix, the rule points at it instead of repeating it.
 
 ### Task Completion Workflow Check
 
@@ -207,7 +255,7 @@ The exclusion list is the operative rule, not the line ceiling. The ceiling is a
 - [List specific problems]
 
 **Recommended additions:**
-- [List what should be added]
+- [List what should be added; for a rule from a recurring failure, its count and where it is recorded]
 ```
 
 ## Phase 4: Propose Updates
@@ -217,6 +265,8 @@ After presenting the report, ask the user for confirmation before making changes
 ### What TO add
 
 - **Commands/workflows** discovered during analysis (build, test, dev, deploy)
+- **Rules from recurring failures** found in the project's history, with their provenance (see
+  _Failures the File Should Already Guard Against_)
 - **Gotchas** and non-obvious patterns found in the codebase
 - **Package relationships** not obvious from the code
 - **Testing approaches** that work for this project
@@ -225,7 +275,8 @@ After presenting the report, ask the user for confirmation before making changes
 ### What NOT to add
 
 - Obvious info derivable from code (e.g., "UserService handles users")
-- Generic best practices not specific to the project
+- Generic best practices not specific to the project, including working discipline the agent
+  already follows (see _Lines the Agent Follows Without Being Told_)
 - One-off fixes unlikely to recur
 - Verbose explanations — prefer one-liners over paragraphs
 
@@ -292,3 +343,7 @@ After user approval, apply changes. Preserve existing content structure.
 14. **The convention stated in more than one place** — an instruction file, a git skill, a
     `.gitmessage` and a `CONTRIBUTING.md` that drift apart; keep one authority and point the rest
     at it
+15. **Restated agent defaults** — "keep changes minimal", "verify before done", "ask when unsure":
+    lines an agent follows without being told, resent on every prompt and changing nothing
+16. **A recurring failure with no rule** — a defect class that shows up in two or more fix commits
+    or solution docs while the instruction file says nothing that would have prevented it
