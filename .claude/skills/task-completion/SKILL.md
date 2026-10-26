@@ -10,6 +10,9 @@ After implementing changes:
 1. **Validate** — Verify modified files are well-formed
    - JSON files: `python3 -m json.tool {file} > /dev/null`
    - Shell scripts: `shellcheck {file}`
+   - Hooks modules (`plugins/*/hooks/*.ts[x]`): `claude plugin validate <plugin dir>` and
+     `claude plugin test <plugin dir>`; for `ak-mods` also
+     `claude plugin test plugins/ak-mods/tests/fixture` (fail-open with `ak-mods` absent)
    - Markdown: handled automatically by the `markdown-format` hook
 2. **Simplify** — Simplify changed code for clarity and maintainability
    - Claude Code: invoke `/simplify` (preferred — Claude Code skill, install via plugin management if not available)

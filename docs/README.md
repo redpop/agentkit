@@ -1,16 +1,17 @@
 # AgentKit Documentation
 
-Reference documentation for all AgentKit components — skills, agents, and hooks.
+Reference documentation for all AgentKit components — skills, agents, hooks, and mods.
 
 ## Overview
 
-AgentKit provides 10 plugins with specialized skills, agents, and hooks for Claude Code.
+AgentKit provides 11 plugins with specialized skills, agents, hooks, and mods for Claude Code.
 
 | Category | Count | Description |
 |----------|-------|-------------|
 | [Skills](skills/) | 25 | Slash commands invoked by the user |
 | [Agents](agents/) | 8 | Specialized sub-agents for autonomous tasks |
-| [Hooks](hooks/) | 2 plugins | Automated actions on tool events |
+| [Hooks](hooks/) | 3 plugins | Automated actions on tool events |
+| [Mods](mods/) | 1 plugin | Interface changes that the Mods pane switches on or off per chat |
 
 ## Plugins
 
@@ -21,6 +22,7 @@ AgentKit provides 10 plugins with specialized skills, agents, and hooks for Clau
 | ak-js | JavaScript/Node tooling | 1 | 1 | — |
 | ak-knowledge | Solution documentation | 4 | 1 | — |
 | ak-meta | Discovery & release management | 4 | 2 | — |
+| ak-mods | Mod switcher (Mods pane) | — | — | hooks module |
 | ak-notifications | macOS notifications | — | — | yes |
 | ak-react | React/Next.js development | 2 | — | — |
 | ak-review | Code quality assurance | 9 | — | yes |
