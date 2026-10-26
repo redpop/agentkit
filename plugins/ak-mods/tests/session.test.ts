@@ -39,8 +39,8 @@ const probe: Register = on => {
   })
 }
 
-// Declares itself and turns itself on in its `session.start`, so the switch
-// is written before ak-mods restores the session.
+// Declares itself and turns itself on in its `session.start`, which runs
+// before ak-mods' own: `set` restores the chat first, then lands the switch.
 const early: Register = on => {
   on('session.start', async ($, e, next) => {
     await $.mods.declare({ name: $.plugin.name, title: $.plugin.name, summary: 's', details: 'd' })
@@ -70,6 +70,59 @@ const engine = (on: On, store: Readonly<Record<string, unknown>>) => {
   on('command.register', () => ({ value: { command: 'ak-mods' } }))
 
   return session
+}
+
+// Holds the first `store.get` (or `store.set`) of `key` until `release`: a
+// restore reading that chat's switches, or a `set` saving them, stays in
+// flight. `reached` settles once it is held.
+// Called before `engine`: a test's hook registered after another on the
+// same event sits beneath it, and `mock.store` answers without `next`.
+const hold = (on: On, key: string, event: 'store.get' | 'store.set' = 'store.get') => {
+  let reach = () => {}
+  let release = () => {}
+  const reached = new Promise<void>(resolve => (reach = resolve))
+  const gate = new Promise<void>(resolve => (release = resolve))
+  let isHeld = false
+  const wait = async () => {
+    if (!isHeld) {
+      isHeld = true
+      reach()
+      await gate
+    }
+  }
+  if (event === 'store.get') {
+    on('store.get', { key }, async (_, e, next) => {
+      await wait()
+
+      return next(e)
+    })
+  } else {
+    on('store.set', { key }, async (_, e, next) => {
+      await wait()
+
+      return next(e)
+    })
+  }
+
+  return { reached, release: () => release() }
+}
+
+// Asks ak-mods whether it is on from a `state.set` hook on the switches,
+// while the write that raised it waits for the hook, and keeps the answer
+// in the store under `asked`. Prepended, so it declares itself before
+// ak-mods restores the chat.
+const asker: Register = on => {
+  on('session.start', async ($, e, next) => {
+    await $.mods.declare({ name: $.plugin.name, title: $.plugin.name, summary: 's', details: 'd' })
+
+    return next(e)
+  })
+
+  on('state.set', { plugin: 'ak-mods', key: 'on' }, async ($, e, next) => {
+    await $.store.set('asked', await $.mods.isOn({ name: $.plugin.name }))
+
+    return next(e)
+  })
 }
 
 // An in-process `/resume`: the chat `S1` ends and `id` takes its place.
@@ -113,21 +166,21 @@ test('a resumed chat keeps its switches', { plugins: PLUGINS }, async ($, on) =>
 })
 
 test(
-  'a mod declaring before restore keeps the restored switch',
+  'a mod switching on in its session.start lands on the restored switches',
   { plugins: [{ name: 'ak-b', tier: 'prepend', register: probe }, { name: 'ak-c', tier: 'prepend', register: early }] },
   async ($, on) => {
     engine(on, { 'session:S1': { 'ak-b': true } })
     await start($)
 
     expect(await call($, 'ak-b', 'isOn', { name: 'ak-b' })).toBe(true)
-    // A switch written this load, before the restore, is kept and saved too.
+    // Its `set` restored the chat first, so the saved switch stays beside it.
     expect(await call($, 'ak-b', 'isOn', { name: 'ak-c' })).toBe(true)
     expect(await call($, 'ak-b', 'store', 'session:S1')).toEqual({ 'ak-b': true, 'ak-c': true })
   },
 )
 
 test(
-  'a mod switching on before restore in a new chat keeps the standard set',
+  'a mod switching on in its session.start in a new chat lands on the standard set',
   { plugins: [consumer('ak-a'), { name: 'ak-c', tier: 'prepend', register: early }] },
   async ($, on) => {
     engine(on, { standard: ['ak-a'] })
@@ -193,6 +246,66 @@ test('a resume into an unsaved chat starts it with the standard set', { plugins:
   expect(await call($, 'ak-a', 'store', 'session:S2')).toEqual({ 'ak-a': true, 'ak-b': false })
   expect(await call($, 'ak-a', 'store', 'session:S1')).toEqual({ 'ak-b': true, 'ak-a': false })
 })
+
+test('a restore a resume overtakes leaves the new chat alone', { plugins: PLUGINS }, async ($, on) => {
+  const held = hold(on, 'session:S1')
+  const session = engine(on, { 'session:S1': { 'ak-b': true }, 'session:S2': { 'ak-a': true } })
+  const started = start($)
+  await held.reached
+
+  await resume($, session, 'S2')
+  await call($, 'ak-a', 'set', { name: 'ak-b', on: false })
+  held.release()
+  await started
+  // The old chat's restore wrote nothing once the resume ended it.
+  expect(await call($, 'ak-a', 'switches')).toEqual({ 'ak-a': true, 'ak-b': false })
+  expect(await call($, 'ak-a', 'store', 'session:S2')).toEqual({ 'ak-a': true, 'ak-b': false })
+  expect(await call($, 'ak-a', 'store', 'session:S1')).toEqual({ 'ak-b': true })
+})
+
+test('a set waiting on a restore a resume overtakes lands in the new chat', { plugins: PLUGINS }, async ($, on) => {
+  const held = hold(on, 'session:S1')
+  const session = engine(on, { 'session:S1': { 'ak-b': true }, 'session:S2': { 'ak-a': true } })
+  const set = call($, 'ak-a', 'set', { name: 'ak-a', on: false })
+  await held.reached
+
+  await resume($, session, 'S2')
+  held.release()
+  await set
+  expect(await call($, 'ak-a', 'switches')).toEqual({ 'ak-a': false })
+  expect(await call($, 'ak-a', 'store', 'session:S2')).toEqual({ 'ak-a': false })
+  expect(await call($, 'ak-a', 'store', 'session:S1')).toEqual({ 'ak-b': true })
+})
+
+test('a set that landed before a resume is saved under the old chat', { plugins: PLUGINS }, async ($, on) => {
+  const held = hold(on, 'session:S1', 'store.set')
+  const session = engine(on, { 'session:S1': { 'ak-b': true }, 'session:S2': { 'ak-a': true } })
+  await start($)
+  const set = call($, 'ak-a', 'set', { name: 'ak-a', on: true })
+  await held.reached
+
+  await resume($, session, 'S2')
+  held.release()
+  await set
+  // The write landed in the old chat, so the store keeps it there and the
+  // new chat's switches stay its own.
+  expect(await call($, 'ak-a', 'store', 'session:S1')).toEqual({ 'ak-b': true, 'ak-a': true })
+  expect(await call($, 'ak-a', 'isOn', { name: 'ak-a' })).toBe(true)
+  expect(await call($, 'ak-a', 'isOn', { name: 'ak-b' })).toBe(false)
+  expect(await call($, 'ak-a', 'store', 'session:S2')).toEqual({ 'ak-a': true })
+})
+
+test(
+  'a state.set hook on the switches may ask isOn while the restore writes',
+  { plugins: [consumer('ak-a'), { name: 'ak-c', tier: 'prepend', register: asker }] },
+  async ($, on) => {
+    engine(on, { 'session:S1': { 'ak-c': true } })
+    await start($)
+
+    expect(await call($, 'ak-a', 'store', 'asked')).toBe(true)
+    expect(await call($, 'ak-a', 'switches')).toEqual({ 'ak-c': true })
+  },
+)
 
 test('a session.start after a resume restores the new chat', { plugins: PLUGINS }, async ($, on) => {
   const session = engine(on, { 'session:S1': { 'ak-b': true }, 'session:S2': { 'ak-a': true } })

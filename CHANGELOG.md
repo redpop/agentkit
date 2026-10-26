@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.41.1] - 2026-10-26
+
+### 🐛 Fixed
+
+- `ak-mods` — **a `/resume` in a running session no longer mixes up two chats' switches.** If the
+  previous chat was still loading its switches when the resume happened, they could land in the
+  resumed chat afterwards. A switch flipped in the same moment could also be saved under the wrong
+  chat. The resumed chat now keeps its own switches, and every switch is saved under the chat it
+  was flipped in.
+- `ak-mods` — a mod whose `state.set` hook on the switches asked `$.mods.isOn` or `$.mods.list` no
+  longer hangs the chat's restore. `docs/mods/writing-a-mod.md` now says that hook must not call
+  `$.mods.set`.
+
 ## [1.41.0] - 2026-10-26
 
 ### ✨ Added

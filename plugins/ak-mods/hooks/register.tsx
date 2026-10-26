@@ -18,10 +18,11 @@ const KEPT_SESSIONS = 100
 // last reload, is not in it and is judged by name alone.
 const provenances = new Map<string, string>()
 
-// The chat whose switches this load restored, and the restore itself. A
-// write waits for it, so none lands before the restore or under another
-// chat's id. A reload, a `/clear` and a resume start it over.
-let restoring: { id: string; done: Promise<void> } | undefined
+// The chat whose switches this load restored, the restore itself, and whether
+// its write has settled. A write waits for it, so none lands before the
+// restore or under another chat's id. A reload, a `/clear` and a resume start
+// it over; a restore they overtake writes nothing.
+let restoring: { id: string; done: Promise<void>; isDone: boolean } | undefined
 
 // Restores the current chat's switches unless this load already did; answers
 // the chat's id. Set by `engine.create`, which holds what it needs.
@@ -100,40 +101,53 @@ export const register: Register = on => {
     const built = await next(e)
 
     // The saved switches replace the state whole: nothing of another chat
-    // is carried over.
+    // is carried over. A `/clear` or a resume while a restore reads the
+    // store overtakes it: it writes only while it is still the current
+    // restore, at the version it read, so the end's own write is never
+    // undone. The chat then current is restored in its place.
     const restore = async (): Promise<string> => {
-      const id = await built.session.id()
-      if (restoring?.id !== id) {
-        const done = (async () => {
-          const standard = namesOf(await built.store.get('standard'))
-          await built.state.set(ON, initialOn(standard, savedOf(await built.store.get(`session:${id}`))))
-        })()
-        restoring = { id, done }
-        // A failed restore is tried again by the next write.
-        done.catch(() => {
-          if (restoring?.done === done) restoring = undefined
-        })
+      for (;;) {
+        const id = await built.session.id()
+        if (restoring?.id !== id) {
+          const current = { id, done: Promise.resolve(), isDone: false }
+          current.done = (async () => {
+            const [standard, saved] = await Promise.all([built.store.get('standard'), built.store.get(`session:${id}`)])
+            const value = initialOn(namesOf(standard), savedOf(saved))
+            for (;;) {
+              const held = await built.state.get(ON)
+              if (restoring !== current) return
+              if ((await built.state.set(ON, value, { ifVersion: held.version })).isSet) break
+            }
+            current.isDone = true
+          })()
+          restoring = current
+          // A failed restore is tried again by the next write.
+          current.done.catch(() => {
+            if (restoring === current) restoring = undefined
+          })
+        }
+        const awaited = restoring
+        await awaited.done
+        if (restoring === awaited) {
+          return id
+        }
       }
-      await restoring.done
-
-      return id
     }
     restoreChat = restore
 
     // The current chat's switches, without writing (a drawing may not): the
-    // state once this load restored the chat, else what the restore would
-    // write. The state is read either way, so a drawing redraws on a change.
+    // state once this load restored the chat, else what the restore writes.
+    // It never waits for a restore: a mod's `state.set` hook asks while the
+    // restore's write waits for that hook. The state is read either way, so
+    // a drawing redraws on a change.
     const switches = async (): Promise<Record<string, boolean>> => {
-      const id = await built.session.id()
-      if (restoring?.id === id) {
-        await restoring.done.catch(() => undefined)
-      }
-      const { value: map = {} } = await built.state.get(ON)
-      if (restoring?.id === id) {
+      const [id, { value: map = {} }] = await Promise.all([built.session.id(), built.state.get(ON)])
+      if (restoring?.id === id && restoring.isDone) {
         return map
       }
+      const [standard, saved] = await Promise.all([built.store.get('standard'), built.store.get(`session:${id}`)])
 
-      return initialOn(namesOf(await built.store.get('standard')), savedOf(await built.store.get(`session:${id}`)))
+      return initialOn(namesOf(standard), savedOf(saved))
     }
 
     const mods: Mods = {
@@ -154,11 +168,15 @@ export const register: Register = on => {
         return list.some(one => one.name === name) && (await switches())[name] === true
       },
       // The store keeps the switches under the chat's id: after a `/clear`
-      // or a resume the process goes on under another.
+      // or a resume the process goes on under another. The switch lands in
+      // the chat current when it lands: one that ended since the restore is
+      // restored over again first. A write at the version read lands before
+      // the end's or not at all, so what the store gets is that chat's own.
       set: async ({ name, on: isOn }) => {
-        const id = await restore()
         for (;;) {
+          const id = await restore()
           const held = await built.state.get(ON)
+          if (restoring?.id !== id) continue
           const value = { ...held.value, [name]: isOn }
           if ((await built.state.set(ON, value, { ifVersion: held.version })).isSet) {
             await built.store.set(`session:${id}`, value)
