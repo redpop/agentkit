@@ -1,7 +1,7 @@
 {
   "name": "ak-writing",
   "description": "Prose quality for German and English text: remove AI-slop patterns from docs, commits, emails, blog posts, and slides without losing facts",
-  "version": "1.41.0",
+  "version": "1.41.1",
   "author": {
     "name": "redpop",
     "url": "https://github.com/redpop"
