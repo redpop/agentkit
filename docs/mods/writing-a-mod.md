@@ -170,7 +170,10 @@ export const register: Register = on => {
   `on` key. It acts only on a write that landed (`done.value?.isSet`; a missed write is raised
   again) and only when the mod's own switch changed. Then the hook registers the tool when on, asks
   for `tool.describe` again (the engine caches its answer) and, when off, clears the mod's status
-  line with `$.ui.status(undefined)` and closes its pane with `$.ui.close`.
+  line with `$.ui.status(undefined)` and closes its pane with `$.ui.close`. The hook reads the
+  switches from `e.value` and may ask `$.mods.isOn` or `$.mods.list`, but never calls
+  `$.mods.set`: the write that raised it may be the chat's restore, which waits for the hook while
+  `set` waits for the restore.
 - **Gating hooks** (`tool.call`, `agent.offer`, `state.set`) carry `.catch(($, e, next) => next(e))`:
   a guard that fails leaves the mod on, as fail-open asks.
 
