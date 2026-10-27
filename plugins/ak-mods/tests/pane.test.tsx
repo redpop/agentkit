@@ -36,13 +36,18 @@ const probe: Register = on => {
           ? await $.mods.isOn(arg)
           : op === 'set'
             ? await $.mods.set(arg)
-            : await $.store.get(arg)
+            : op === 'segment'
+              ? await $.mods.segment(arg)
+              : await $.store.get(arg)
 
     return { text: JSON.stringify(answer ?? null) }
   })
 }
 
 const PLUGINS = [{ name: 'ak-fixture', register: probe }]
+
+// Mods that publish segments, each loading the probe under its own name.
+const MODS = ['ak-a', 'ak-b', 'ak-c', 'ak-d'].map(name => ({ name, register: probe }))
 
 // The engine beneath the plugins: a store and the chat `S1`.
 const engine = (on: On, store: Readonly<Record<string, unknown>> = {}) => {
@@ -55,6 +60,28 @@ const call = async ($: Engine, op: string, arg?: unknown) =>
 
 const declare = ($: Engine, title = 'Fixture') =>
   call($, 'declare', { name: 'ak-fixture', title, summary: 's', details: 'd' })
+
+const callAs = async ($: Engine, plugin: string, op: string, arg?: unknown) =>
+  JSON.parse((await runCommand($, plugin, JSON.stringify({ op, arg }))).text ?? 'null')
+
+/** As in band-render.test.tsx: declares the mod, switches it on unless told not to, and publishes. */
+const publish = async ($: Engine, name: string, title: string, isOn = true) => {
+  await callAs($, name, 'declare', { name, title, summary: 's', details: 'd' })
+  // Off means switched on and back off before the publish: the switch-off clears
+  // the segment, the later publish lands anyway, so only the filter hides it.
+  await callAs($, name, 'set', { name, on: true })
+  if (!isOn) await callAs($, name, 'set', { name, on: false })
+  await callAs($, name, 'segment', { text: SEGMENT })
+}
+
+// 25 columns a segment. In a 40-column band each takes a row of its own, so
+// two fit and a third is dropped; in the desktop footer (60 columns) two fit
+// side by side and a third is dropped. Both surfaces drop the same mods.
+const SEGMENT = 'x'.repeat(25)
+const NARROW = { ...PANE.props, bodyColumns: 40 }
+
+const warningOf = async (ui: { find: (q: { type: string; text: RegExp }) => Promise<{ text: string } | undefined> }) =>
+  (await ui.find({ type: 'Text', text: /fits? the band/ }))?.text
 
 test('empty pane says no mods', { plugins: PLUGINS }, async ($, on) => {
   engine(on)
@@ -153,6 +180,105 @@ test('footer is shown', { plugins: PLUGINS }, async ($, on) => {
   const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
   expect(await ui.find({ type: 'Text', text: FOOTER })).toBeDefined()
   await ui.unmount()
+})
+
+test('no warning when everything fits', { plugins: MODS }, async ($, on) => {
+  engine(on)
+  await publish($, 'ak-a', 'Alpha')
+  await publish($, 'ak-b', 'Beta')
+
+  for (const surface of SURFACES) {
+    const ui = await $.ui.mount({ ...PANE, surface, props: NARROW })
+    expect(await warningOf(ui)).toBeUndefined()
+    await ui.unmount()
+  }
+})
+
+test('a warning names the mods that do not fit the band', { plugins: MODS }, async ($, on) => {
+  engine(on)
+  await publish($, 'ak-a', 'Alpha')
+  await publish($, 'ak-b', 'Beta')
+  await publish($, 'ak-c', 'Gamma')
+  await publish($, 'ak-d', 'Delta')
+
+  for (const surface of SURFACES) {
+    const ui = await $.ui.mount({ ...PANE, surface, props: NARROW })
+    // Display order: same priority, so by title.
+    expect(await warningOf(ui)).toBe('2 mods do not fit the band: Delta, Gamma')
+    await ui.unmount()
+  }
+})
+
+test('one mod that does not fit is named in the singular', { plugins: MODS }, async ($, on) => {
+  engine(on)
+  await publish($, 'ak-a', 'Alpha')
+  await publish($, 'ak-b', 'Beta')
+  await publish($, 'ak-c', 'Gamma')
+
+  for (const surface of SURFACES) {
+    const ui = await $.ui.mount({ ...PANE, surface, props: NARROW })
+    expect(await warningOf(ui)).toBe('1 mod does not fit the band: Gamma')
+    await ui.unmount()
+  }
+})
+
+test('the warning sits above the footer', { plugins: MODS }, async ($, on) => {
+  engine(on)
+  await publish($, 'ak-a', 'Alpha')
+  await publish($, 'ak-b', 'Beta')
+  await publish($, 'ak-c', 'Gamma')
+
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal', props: NARROW })
+  const texts = (await ui.findAll({ type: 'Text' })).map(one => one.text)
+  expect(texts.slice(-2)).toEqual(['1 mod does not fit the band: Gamma', FOOTER])
+  await ui.unmount()
+})
+
+test('the warning goes once a mod is switched off', { plugins: MODS }, async ($, on) => {
+  engine(on)
+  await publish($, 'ak-a', 'Alpha')
+  await publish($, 'ak-b', 'Beta')
+  await publish($, 'ak-c', 'Gamma')
+
+  for (const surface of SURFACES) {
+    await callAs($, 'ak-c', 'set', { name: 'ak-c', on: true })
+    await callAs($, 'ak-c', 'segment', { text: SEGMENT })
+    const ui = await $.ui.mount({ ...PANE, surface, props: NARROW })
+    expect(await warningOf(ui)).toBe('1 mod does not fit the band: Gamma')
+    await callAs($, 'ak-c', 'set', { name: 'ak-c', on: false })
+    expect(await warningOf(ui)).toBeUndefined()
+    await ui.unmount()
+  }
+})
+
+test("an off mod's segment never counts", { plugins: MODS }, async ($, on) => {
+  engine(on)
+  await publish($, 'ak-a', 'Alpha')
+  await publish($, 'ak-b', 'Beta')
+  // Off, with its segment in state all the same: it would be the third.
+  await publish($, 'ak-c', 'Gamma', false)
+
+  for (const surface of SURFACES) {
+    const ui = await $.ui.mount({ ...PANE, surface, props: NARROW })
+    expect(await warningOf(ui)).toBeUndefined()
+    await ui.unmount()
+  }
+})
+
+test('the terminal counts with the pane width, the desktop with the footer width', { plugins: MODS }, async ($, on) => {
+  engine(on)
+  await publish($, 'ak-a', 'Alpha')
+  await publish($, 'ak-b', 'Beta')
+  await publish($, 'ak-c', 'Gamma')
+
+  // 81 columns hold all three on one row; the 60-column footer does not.
+  const wide = { ...PANE.props, bodyColumns: 81 }
+  const terminal = await $.ui.mount({ ...PANE, surface: 'terminal', props: wide })
+  expect(await warningOf(terminal)).toBeUndefined()
+  await terminal.unmount()
+  const desktop = await $.ui.mount({ ...PANE, surface: 'desktop', props: wide })
+  expect(await warningOf(desktop)).toBe('1 mod does not fit the band: Gamma')
+  await desktop.unmount()
 })
 
 test('/ak-mods opens the pane', { plugins: PLUGINS }, async ($, on) => {
