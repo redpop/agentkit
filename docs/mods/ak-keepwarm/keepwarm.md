@@ -33,7 +33,8 @@ above the prompt, once the chat has made a request:
 | `○ cold 12m · rewrite ≈ $0.42` | The cache expired that long ago; a ping cannot help, and the button is hidden |
 
 The **keep warm** / **stop warm** button toggles the loop (key `1`); it runs `/keepwarm`. On the
-desktop app the segment is part of the footer label and ends with `/keepwarm`. The context size is
+desktop app the segment is part of the footer label and ends with `/keepwarm` while it has a button
+(not when cold). The context size is
 not shown, so a mod about tokens can own that figure.
 
 Without `ak-mods` (or when it refuses the mod, or a publish fails for good), the mod draws its own

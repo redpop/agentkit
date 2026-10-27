@@ -215,9 +215,10 @@ export const register: Register = on => {
         title: 'Keep warm',
         summary: 'Keeps the prompt cache warm with a small ping before it expires.',
         details:
-          'A band above the prompt shows how long the cache stays warm. /keepwarm [hours|off] sends a ' +
-          'small ping shortly before the cache would expire (default 4 hours); the cache read restarts ' +
-          'its timer. If a ping writes to the cache instead of reading it, keep warm turns itself off.',
+          'Its segment in the shared band above the prompt shows how long the cache stays warm. ' +
+          '/keepwarm [hours|off] sends a small ping shortly before the cache would expire (default ' +
+          '4 hours); the cache read restarts its timer. If a ping writes to the cache instead of ' +
+          'reading it, keep warm turns itself off.',
       })
     } catch {
       isSwitched = false
