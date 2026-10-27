@@ -295,7 +295,13 @@ export const register: Register = on => {
     } else {
       startKeepWarm($, Number(arg) > 0 ? Math.min(MAX_HOURS, Number(arg)) : DEFAULT_HOURS)
     }
-    await share(() => $.mods.isOn({ name: NAME }), () => publish($))
+    // Off the hook: run from ak-mods' button, this command is nested in ak-mods' own call, where a
+    // publish would resolve without reaching ak-mods.
+    $.clock.after(0, () => {
+      share(() => $.mods.isOn({ name: NAME }), () => publish($))
+        .then(() => $.ui.invalidate('ui.render'))
+        .catch(() => {})
+    })
     $.ui.invalidate('ui.render')
 
     return {}

@@ -267,6 +267,20 @@ test('publishes the ok segment while warm', OWNED, async ($, on) => {
   expect(segments(toasts).at(-1)).toEqual({ text: '● cache warm 60m', tone: 'ok', priority: 6, button: KEEP })
 })
 
+// Run from ak-mods' button, /keepwarm is nested in ak-mods' own call, where an inline publish
+// would not reach ak-mods (plugins/ak-mods/tests/button.test.tsx proves it with the real one): the
+// command publishes once it has returned.
+test('/keepwarm publishes the kept-warm segment off its hook', OWNED, async ($, on) => {
+  const { clock, toasts } = engine(on, { usage: usage(200000, 0), calls: 0 })
+  await startChat($)
+  const before = segments(toasts).length
+  await keepwarm($)
+  expect(segments(toasts).length).toBe(before)
+  await clock.settle()
+  expect(segments(toasts).at(-1)?.text).toMatch(/^◆ kept warm · 0 pings/)
+  expect(segments(toasts).at(-1)?.button?.label).toBe('stop warm')
+})
+
 test('publishes the warn segment with the keepwarm button while cooling', OWNED, async ($, on) => {
   const { clock, toasts } = engine(on, { usage: usage(200000, 0), calls: 0 })
   await startChat($)
@@ -282,9 +296,10 @@ test('publishes the cold segment without a button', OWNED, async ($, on) => {
 })
 
 test('publishes the kept-warm segment with the stop button', OWNED, async ($, on) => {
-  const { toasts } = engine(on, { usage: usage(200000, 0), calls: 0 })
+  const { clock, toasts } = engine(on, { usage: usage(200000, 0), calls: 0 })
   await startChat($)
   await keepwarm($)
+  await clock.settle()
   expect(segments(toasts).at(-1)).toEqual({
     text: `◆ kept warm · 0 pings $0 · until ${at(START + 4 * 60 * MIN)}`,
     tone: 'info',
