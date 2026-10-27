@@ -189,12 +189,20 @@ const SEGMENT = 'segment '
 const owner: Register = on => {
   // `fail`: a segment with text is refused, a clear lands; `break`: every segment call is refused.
   let refuses: 'none' | 'fail' | 'break' = 'none'
+  // Like ak-mods, a segment published from inside the mod's `state.set` hook, while `set` still
+  // runs, never reaches the store: it resolves and is dropped.
+  let isSetting = false
 
   on('engine.create', async ($, e, next) => {
     const built = await next(e)
     const set = async ({ name, on: isOn }: { name: string; on: boolean }) => {
       const held = await built.state.get({ plugin: 'ak-mods', key: 'on' })
-      await built.state.set({ plugin: 'ak-mods', key: 'on' }, { ...held.value, [name]: isOn })
+      isSetting = true
+      try {
+        await built.state.set({ plugin: 'ak-mods', key: 'on' }, { ...held.value, [name]: isOn })
+      } finally {
+        isSetting = false
+      }
       if (!isOn) await built.ui.toast('segment null')
     }
 
@@ -212,6 +220,7 @@ const owner: Register = on => {
         list: async () => [],
         // `$.mods.segment(undefined)` may arrive as `{}`: no text is a clear.
         segment: async (segment: Segment) => {
+          if (isSetting) return
           const isClear = typeof segment?.text !== 'string'
           if (refuses === 'break' || (refuses === 'fail' && !isClear)) throw new Error('refused')
           await built.ui.toast('segment ' + JSON.stringify(typeof segment?.text === 'string' ? segment : null))
@@ -302,8 +311,9 @@ test('clears the segment on /clear and publishes nothing while off', OWNED, asyn
   await clock.advance(56 * MIN)
   expect(segments(toasts).length).toBe(count)
 
-  // Switched on again, the segment comes back at once.
+  // Switched on again, the segment comes back on the next turn of the clock.
   await standIn($, 'on')
+  await clock.advance(0)
   expect(segments(toasts).at(-1)?.text).toMatch(/^◐ cools in 4m/)
 })
 
@@ -323,8 +333,8 @@ test('draws no band of its own while ak-mods owns the drawing', OWNED, async ($,
   await ui.unmount()
 })
 
-test('switching off and on again resends the same segment', OWNED, async ($, on) => {
-  const { toasts } = engine(on, { usage: usage(200000, 0), calls: 0 })
+test('after switch-off and on again the segment is published', OWNED, async ($, on) => {
+  const { clock, toasts } = engine(on, { usage: usage(200000, 0), calls: 0 })
   await startChat($)
   const warm = segments(toasts).at(-1)
   expect(warm?.text).toBe('● cache warm 60m')
@@ -332,6 +342,8 @@ test('switching off and on again resends the same segment', OWNED, async ($, on)
   await standIn($, 'off')
   expect(segments(toasts).at(-1)).toBeUndefined()
   await standIn($, 'on')
+  // Published on the next turn of the clock, after the switch's own hook has returned.
+  await clock.advance(0)
   expect(segments(toasts).at(-1)).toEqual(warm)
 })
 

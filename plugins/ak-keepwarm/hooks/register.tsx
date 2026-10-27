@@ -183,6 +183,9 @@ export const register: Register = on => {
   // Whether ak-mods switches this mod: false once its declare was refused or
   // threw (no ak-mods loaded, or it failed). Then the mod runs on.
   let isSwitched = true
+  // Counts this mod's switch changes: a republish scheduled for one change is dropped once another
+  // followed it. Its own read of the switch could still answer as of the change it was scheduled for.
+  let switches = 0
 
   // Off only when ak-mods switches the mod and says so. A call that throws
   // leaves the mod on (fail-open).
@@ -340,15 +343,24 @@ export const register: Register = on => {
   })
 
   // This mod's switch changed, and the write landed: switching off stops the keep-warm loop,
-  // switching on publishes the segment again.
+  // switching on publishes the segment again. Not from inside this hook: it runs within the
+  // `set` of ak-mods, where a segment call resolves without reaching ak-mods. Hence the next turn
+  // of the clock, unless the switch changed again meanwhile.
   on('state.set', { plugin: 'ak-mods', key: 'on' }, async ($, e, next) => {
     const done = await next(e)
     const isOn = e.value[NAME] === true
     if (isSwitched && done.value?.isSet === true && isOn !== (e.previous?.[NAME] === true)) {
       if (!isOn) stopKeepWarm($, 'the mod is off')
-      now = await $.clock.now()
       forget()
-      if (isOn && !(await publish($))) isSwitched = false
+      const change = ++switches
+      if (isOn) {
+        $.clock.after(0, () => {
+          if (change !== switches) return
+          share(() => $.mods.isOn({ name: NAME }), () => publish($))
+            .then(() => $.ui.invalidate('ui.render'))
+            .catch(() => {})
+        })
+      }
       $.ui.invalidate('ui.render')
     }
 
