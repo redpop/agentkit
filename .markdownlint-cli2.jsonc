@@ -21,6 +21,12 @@
       // human could actually rewrap.
       "code_blocks": false,
       "tables": false
+    },
+    // Keep a Changelog repeats "Added", "Fixed" and the rest under every
+    // version. A heading must differ only from its siblings, not from every
+    // heading in the file.
+    "MD024": {
+      "siblings_only": true
     }
   },
   // Only affects glob invocations such as `markdownlint-cli2 "**/*.md"`. Files
