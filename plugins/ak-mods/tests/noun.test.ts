@@ -32,7 +32,11 @@ const probe: Register = on => {
                   ? await $.store.get(arg)
                   : op === 'putStore'
                     ? await $.store.set(arg.key, arg.value)
-                    : await $.mods.list()
+                    : op === 'segment'
+                      ? await $.mods.segment(arg)
+                      : op === 'segments'
+                        ? (await $.state.get({ plugin: 'ak-mods', key: 'segments' })).value
+                        : await $.mods.list()
 
     return { text: JSON.stringify(answer ?? null) }
   })
@@ -129,3 +133,64 @@ test('setStandard keeps a mark another chat stored meanwhile', { plugins: [consu
 
   expect(await call($, 'ak-a', 'store', 'standard')).toEqual(['ak-a', 'ak-x', 'ak-b'])
 })
+
+test('segment stores under the caller\'s name', { plugins: [consumer('ak-fixture')] }, async ($, on) => {
+  engine(on)
+
+  await call($, 'ak-fixture', 'declare', FIXTURE)
+  await call($, 'ak-fixture', 'segment', { text: 'ready', tone: 'ok' })
+
+  expect(await call($, 'ak-fixture', 'segments')).toEqual({ 'ak-fixture': { text: 'ready', tone: 'ok' } })
+})
+
+test('segment replaces and clears', { plugins: [consumer('ak-fixture')] }, async ($, on) => {
+  engine(on)
+
+  await call($, 'ak-fixture', 'declare', FIXTURE)
+  await call($, 'ak-fixture', 'segment', { text: 'one' })
+  await call($, 'ak-fixture', 'segment', { text: 'two', priority: 7 })
+  expect(await call($, 'ak-fixture', 'segments')).toEqual({ 'ak-fixture': { text: 'two', priority: 7 } })
+
+  await call($, 'ak-fixture', 'segment')
+  expect(await call($, 'ak-fixture', 'segments')).toEqual({})
+})
+
+test('undeclared caller is refused', { plugins: [consumer('ak-x')] }, async ($, on) => {
+  engine(on)
+
+  expect(await call($, 'ak-x', 'segment', { text: 'sneaky' })).toBe(null)
+  expect(await call($, 'ak-x', 'segments')).toBe(null)
+})
+
+test('switching a mod off clears its segment', { plugins: [consumer('ak-a'), consumer('ak-b')] }, async ($, on) => {
+  engine(on)
+
+  await call($, 'ak-a', 'declare', { name: 'ak-a', title: 'A', summary: 's', details: 'd' })
+  await call($, 'ak-b', 'declare', { name: 'ak-b', title: 'B', summary: 's', details: 'd' })
+  await call($, 'ak-a', 'set', { name: 'ak-a', on: true })
+  await call($, 'ak-a', 'segment', { text: 'a' })
+  await call($, 'ak-b', 'segment', { text: 'b' })
+
+  // Switching on keeps it; switching off drops only that mod's segment.
+  await call($, 'ak-a', 'set', { name: 'ak-a', on: true })
+  expect(await call($, 'ak-a', 'segments')).toEqual({ 'ak-a': { text: 'a' }, 'ak-b': { text: 'b' } })
+  await call($, 'ak-a', 'set', { name: 'ak-a', on: false })
+  expect(await call($, 'ak-a', 'segments')).toEqual({ 'ak-b': { text: 'b' } })
+})
+
+test(
+  'a rejected declare leaves $.mods.segment throwing nothing for other mods',
+  { plugins: [consumer('ak-a'), consumer('other-plugin')] },
+  async ($, on) => {
+    engine(on)
+
+    await call($, 'ak-a', 'declare', { name: 'ak-a', title: 'A', summary: 's', details: 'd' })
+    await call($, 'ak-a', 'segment', { text: 'a' })
+    expect(await call($, 'other-plugin', 'declare', { name: 'other-plugin', title: 'O', summary: 's', details: 'd' })).toBe(
+      false,
+    )
+
+    expect(await call($, 'other-plugin', 'segment', { text: 'o' })).toBe(null)
+    expect(await call($, 'ak-a', 'segments')).toEqual({ 'ak-a': { text: 'a' } })
+  },
+)

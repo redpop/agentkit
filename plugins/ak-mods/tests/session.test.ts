@@ -33,7 +33,11 @@ const probe: Register = on => {
               ? (await $.state.get({ plugin: 'ak-mods', key: 'on' })).value
               : op === 'store'
                 ? await $.store.get(arg)
-                : await $.store.keys()
+                : op === 'segment'
+                  ? await $.mods.segment(arg)
+                  : op === 'segments'
+                    ? (await $.state.get({ plugin: 'ak-mods', key: 'segments' })).value
+                    : await $.store.keys()
 
     return { text: JSON.stringify(answer ?? null) }
   })
@@ -362,3 +366,16 @@ test('the chat being resumed is never pruned', { plugins: PLUGINS }, async ($, o
   expect(await call($, 'ak-a', 'keys')).toContain('session:S1')
   expect(await call($, 'ak-a', 'isOn', { name: 'ak-b' })).toBe(true)
 })
+
+for (const reason of ['clear', 'resume', 'other'] as const) {
+  test(`/clear and session end clear all segments (${reason})`, { plugins: PLUGINS }, async ($, on) => {
+    engine(on, {})
+    await start($)
+    await call($, 'ak-a', 'segment', { text: 'a' })
+    await call($, 'ak-b', 'segment', { text: 'b' })
+    expect(await call($, 'ak-a', 'segments')).toEqual({ 'ak-a': { text: 'a' }, 'ak-b': { text: 'b' } })
+
+    await $.session.end({ reason, sessionId: 'S1', resume: { id: 'S1' } })
+    expect(await call($, 'ak-a', 'segments')).toEqual({})
+  })
+}

@@ -1,13 +1,9 @@
-export type Tone = 'ok' | 'warn' | 'alert' | 'info' | 'dim'
+import type { ModsSegment, ModsTone } from '../types'
 
-export type Segment = {
-  name: string
-  title: string
-  text: string
-  tone?: Tone
-  priority?: number
-  button?: { label: string; hotkey?: string; command: string; args?: string }
-}
+export type Tone = ModsTone
+
+/** A mod's published segment with the name and title ak-mods knows it by. */
+export type Segment = ModsSegment & { name: string; title: string }
 
 /** Up to two rows of segments; `hidden` holds the mod names that did not fit. */
 export type Layout = { rows: readonly (readonly Segment[])[]; hidden: readonly string[] }
