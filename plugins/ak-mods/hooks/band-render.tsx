@@ -119,7 +119,10 @@ export async function renderBand(
                     label={one.button.label}
                     hotkey={hotkeys.get(one.name)}
                     plain
-                    onPress={() => $.command.run({ command: one.button?.command ?? '', args: one.button?.args ?? '' })}
+                    onPress={() => {
+                      // A command the host refuses changes nothing in the band.
+                      $.command.run({ command: one.button?.command ?? '', args: one.button?.args ?? '' }).catch(() => {})
+                    }}
                   />,
                 ]),
           ])}
@@ -129,7 +132,10 @@ export async function renderBand(
               key="more-segments"
               label={`+${hidden.length}`}
               plain
-              onPress={() => $.ui.open({ id: 'ak-mods', title: 'Mods' })}
+              onPress={() => {
+                // A failed open leaves the band as it is.
+                $.ui.open({ id: 'ak-mods', title: 'Mods' }).catch(() => {})
+              }}
             />,
           ]}
         </Box>

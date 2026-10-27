@@ -200,6 +200,38 @@ test('a button without args runs its command with empty args', { plugins: [consu
   await ui.unmount()
 })
 
+// Above ak-mods, it refuses every pane open: the call rejects.
+const refusing: Register = on => {
+  on('ui.open', () => ({ deny: 'no room' }))
+}
+
+const REFUSING = { name: 'ak-refusing', tier: 'prepend', register: refusing } as const
+
+test('a button whose command the host refuses does not reject', { plugins: [consumer('ak-a')] }, async ($, on) => {
+  engine(on)
+  // Nothing answers the name: the call rejects, as the host's does for an unknown one.
+  await publish($, 'ak-a', 'A', { text: 'ready', button: { label: 'go', command: 'fixture-unknown' } })
+
+  const ui = await $.ui.mount(BAND)
+  await ui.press({ key: 'seg-ak-a' })
+  await ui.unmount()
+})
+
+test(
+  'a refused pane open from the +N chip does not reject',
+  { plugins: [REFUSING, consumer('ak-a'), consumer('ak-b'), consumer('ak-c')] },
+  async ($, on) => {
+    engine(on)
+    await publish($, 'ak-a', 'A', { text: 'aaaaaaaa' })
+    await publish($, 'ak-b', 'B', { text: 'bbbbbbbb' })
+    await publish($, 'ak-c', 'C', { text: 'cccccccc' })
+
+    const ui = await $.ui.mount({ ...BAND, props: { ...BAND.props, bodyColumns: 16 } })
+    await ui.press({ key: 'more-segments' })
+    await ui.unmount()
+  },
+)
+
 test('hotkey clash: first by title keeps it', { plugins: [consumer('ak-a'), consumer('ak-b')] }, async ($, on) => {
   engine(on)
   // Published in reverse: title order decides, not arrival or priority.
