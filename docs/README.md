@@ -23,7 +23,7 @@ AgentKit provides 12 plugins with specialized skills, agents, hooks, and mods fo
 | ak-keepwarm | Keep-warm mod (prompt cache pings) | — | — | hooks module |
 | ak-knowledge | Solution documentation | 4 | 1 | — |
 | ak-meta | Discovery & release management | 4 | 2 | — |
-| ak-mods | Mod switcher (Mods pane) | — | — | hooks module |
+| ak-mods | Mod switcher (Mods pane, shared band) | — | — | hooks module |
 | ak-notifications | macOS notifications | — | — | yes |
 | ak-react | React/Next.js development | 2 | — | — |
 | ak-review | Code quality assurance | 9 | — | yes |

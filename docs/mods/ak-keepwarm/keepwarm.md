@@ -22,17 +22,23 @@ small ping shortly before expiry costs a fraction of a rewrite.
 
 ## Band
 
-A band above the prompt, once the chat has made a request:
+The mod shows its state as one segment in the band that [`ak-mods`](../ak-mods/switcher.md) draws
+above the prompt, once the chat has made a request:
 
-| Entry | Meaning |
-|-------|---------|
-| ◆ kept warm | Keep warm is on: pings so far, their cost, and when it ends |
-| ● cache warm | Time left before the cache expires |
-| ◐ cache cools | Under 5 minutes left |
-| ○ cache cold | The cache expired; a ping cannot help, and the button is hidden |
+| Segment | Meaning |
+|---------|---------|
+| `◆ kept warm · 3 pings $0.02 · until 3:00pm` | Keep warm is on: pings so far, their cost, and when it ends |
+| `● cache warm 42m` | Time left before the cache expires |
+| `◐ cools in 4m · rewrite ≈ $0.42` | Under 5 minutes left, and what a rewrite of the context would cost |
+| `○ cold 12m · rewrite ≈ $0.42` | The cache expired that long ago; a ping cannot help, and the button is hidden |
 
-The band also shows the context size and an estimate of what a rewrite costs. The **keep warm** /
-**stop warm** button toggles the loop (key `1`).
+The **keep warm** / **stop warm** button toggles the loop (key `1`); it runs `/keepwarm`. On the
+desktop app the segment is part of the footer label and ends with `/keepwarm`. The context size is
+not shown, so a mod about tokens can own that figure.
+
+Without `ak-mods` (or when it refuses the mod, or a publish fails for good), the mod draws its own
+band instead, never both. That band shows the same states (`◐ cache cools in 4m`,
+`○ cache cold 12m`), the context size and the rewrite estimate, with the same button.
 
 ## How it works
 
@@ -46,6 +52,9 @@ The band also shows the context size and an estimate of what a rewrite costs. Th
   itself off and says why. So does a ping that gets no answer.
 - Switching the mod off, `/clear`, `/resume` and `/branch` stop keep warm. The cache after those is
   unknown.
+- The segment is published when it changes: after a request, on the 30-second check, after
+  `/keepwarm`, and after the mod is switched on. Switched off, it publishes nothing; `ak-mods`
+  clears the segment.
 
 ## Cost
 

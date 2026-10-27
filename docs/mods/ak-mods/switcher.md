@@ -1,6 +1,6 @@
 # Mod switcher (`ak-mods`)
 
-Turns AgentKit mods on or off for the current chat.
+Turns AgentKit mods on or off for the current chat, and draws the one band they share.
 
 Requires Claude Code 2.1.309 or later (hooks-module support).
 
@@ -18,6 +18,30 @@ One row per mod that declared itself: title and summary, then three buttons.
 | ☆ Standard / ★ Standard | Marks or unmarks the mod to start on in every new chat; ★ means marked |
 | More / Less | Shows or hides the mod's details |
 
+## Band
+
+`ak-mods` owns one band above the prompt for all AgentKit mods. Each switched-on mod contributes
+one short segment: a text, a tone, and at most one button. A button runs the mod's slash command,
+so pressing it does what the command does. With no switched-on mod showing a segment, there is no
+band.
+
+When the segments do not fit the width, the band degrades in steps:
+
+1. All segments fit: one row.
+2. They do not fit: two rows, never more.
+3. They still do not fit: the segments with the lowest priority drop out, and a `+N` chip ends the
+   band. Pressing the chip opens the Mods pane.
+
+The Mods pane then names the dropped mods in a dim line, `N mods do not fit the band: …`, so you
+can switch some off. The pane counts with the terminal's width as `/ak-mods` last ran. The chip and
+that line are the only signals; there is no toast.
+
+On the desktop app the footer label is the path: `ak-mods` appends one label to the footer with the
+segments' texts joined by ` · `, one line only. A segment with a button ends with the button's
+slash command (`/keepwarm`), which is how you act there. Segments that do not fit drop out the same
+way and the label ends with `+N`. The footer's width (60 characters) is provisional until it is
+checked on the desktop app.
+
 ## Session rules
 
 - A new chat starts with the standard mods on and all others off.
@@ -30,14 +54,15 @@ One row per mod that declared itself: title and summary, then three buttons.
 
 ## What off means
 
-- The mod draws nothing.
+- The mod draws nothing, and its segment leaves the band.
 - Its own slash command turns it on.
 - Its model tools are registered once it is switched on. After a switch-off a tool stays
   registered but is deferred with a note that the mod is off, and answers a call that the mod is
   off in this chat.
 - Its agent types are hidden.
 
-Without `ak-mods`, a mod runs as on (fail-open). The contract a mod follows is in
+Without `ak-mods`, a mod runs as on (fail-open) and draws its own single band instead of a
+segment. The contract a mod follows is in
 [Writing an AgentKit mod](../writing-a-mod.md).
 
 ## Tests

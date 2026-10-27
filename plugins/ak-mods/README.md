@@ -1,8 +1,8 @@
 # ak-mods
 
-Mod switcher for Claude Code. A mod changes Claude Code's own interface: a band above the prompt,
-a pane, a status entry, a slash command. `ak-mods` lists every AgentKit mod in a **Mods** pane and
-turns each on or off for the current chat.
+Mod switcher for Claude Code. A mod changes Claude Code's own interface: a segment in the band
+above the prompt, a pane, a status entry, a slash command. `ak-mods` lists every AgentKit mod in a
+**Mods** pane, turns each on or off for the current chat, and draws the one band they share.
 
 Requires Claude Code 2.1.309 or later (hooks-module support).
 
@@ -21,6 +21,11 @@ Run `/ak-mods` to open the pane. Each mod has three buttons:
   filled star means it is marked.
 - **More / Less** shows or hides the mod's details.
 
+Each switched-on mod shows one segment in a single band above the prompt. When they do not fit, the
+band grows to two rows, then drops the lowest-priority segments and ends with a `+N` chip that
+opens the pane. The pane then names the mods that do not fit. On the desktop app the segments
+form one label in the footer instead.
+
 ## Rules
 
 - Switches reset in a new chat and after `/clear`. They are kept when a chat is resumed,
@@ -28,10 +33,11 @@ Run `/ak-mods` to open the pane. Each mod has three buttons:
 - Standard marks are global: they apply to every chat.
 - Only AgentKit mods are listed: installed from `ak-marketplace` or loaded with `--plugin-dir`.
   The `ak-` name prefix decides only when the source is unknown.
-- An off mod draws nothing. Its own slash command turns it on. Its tools are registered once it is
-  switched on; after a switch-off they stay registered but are deferred with a note that the mod is
-  off, and answer a call with that message. Its agent types are hidden.
-- A mod without `ak-mods` installed runs as on (fail-open).
+- An off mod draws nothing, and its segment leaves the band. Its own slash command turns it on.
+  Its tools are registered once it is switched on; after a switch-off they stay registered but are
+  deferred with a note that the mod is off, and answer a call with that message. Its agent types
+  are hidden.
+- A mod without `ak-mods` installed runs as on (fail-open) and draws its own single band.
 
 See [the switcher docs](../../docs/mods/ak-mods/switcher.md) and
 [Writing an AgentKit mod](../../docs/mods/writing-a-mod.md).

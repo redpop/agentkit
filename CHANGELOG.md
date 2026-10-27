@@ -9,10 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### ✨ Added
 
+- `ak-mods` — **one band above the prompt, shared by all mods.** With every mod drawing its own
+  band, ten mods would stack ten bands. Now a mod publishes one short segment (a text, a tone, at
+  most one button that runs its slash command) with `$.mods.segment(...)`, and `ak-mods` draws the
+  segments of the switched-on mods in a single band. When they do not fit, the band grows to two
+  rows, then drops the lowest-priority segments and ends with a `+N` chip that opens the Mods pane,
+  where a dim line names the mods that do not fit; there is no toast. On the desktop app the
+  segments form one label in the footer instead, whose width is provisional until it is checked
+  there. A mod without `ak-mods` still draws its own single band (fail-open). The recipe in
+  `docs/mods/writing-a-mod.md` and its test fixture publish a segment; a publish from the switch
+  hook is scheduled off the hook, where it would not reach `ak-mods`.
 - `ak-keepwarm` — **new mod: keep a chat's prompt cache warm.** Once a cache expires, the next
   message writes the whole context again at up to twice the input price. `/keepwarm [hours|off]`
-  sends a small ping shortly before the cache would expire (4 hours by default, 24 at most); a band
-  above the prompt shows how long the cache stays warm and what a rewrite would cost. A ping that
+  sends a small ping shortly before the cache would expire (4 hours by default, 24 at most); its
+  segment in the shared band shows how long the cache stays warm, and what a rewrite would cost
+  while it cools or is cold. A ping that
   writes to the cache instead of reading it, or that gets no answer, turns keep warm off. It is the
   keepwarm part of Cache Keeper by Nate Herk (MIT), ported to the `ak-mods` contract so the Mods
   pane switches it per chat; the board, cold-send guard and handoff of the original are left out.

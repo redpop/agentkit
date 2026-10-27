@@ -9,10 +9,10 @@ Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/
 | [**ak-git**](#ak-git--smart-git-operations) | 1 | 2 | Smart commits, change analysis, conflict resolution, releases |
 | [**ak-improve**](#ak-improve--code-improvement) | — | 2 | Code refactoring and performance optimization agents |
 | [**ak-js**](#ak-js--javascript-config-doctor) | 1 | 1 | JS config validation, 11 cross-file rules, monorepo-aware |
-| [**ak-keepwarm**](#ak-keepwarm--keep-the-prompt-cache-warm) | — | — | Mod: `/keepwarm` pings the prompt cache before it expires; a band shows how long it stays warm |
+| [**ak-keepwarm**](#ak-keepwarm--keep-the-prompt-cache-warm) | — | — | Mod: `/keepwarm` pings the prompt cache before it expires; its band segment shows how long it stays warm |
 | [**ak-knowledge**](#ak-knowledge--solution-documentation) | 4 | 1 | Solution docs, knowledge maintenance, AGENTS.md tools |
 | [**ak-meta**](#ak-meta--project-management-tools) | 4 | 2 | Discovery, changelog generation, session handoff for the next AI session, quality assessment, diagrams |
-| [**ak-mods**](#ak-mods--mod-switcher) | — | — | Mods pane: turn AgentKit mods on or off per chat, with standard mods |
+| [**ak-mods**](#ak-mods--mod-switcher) | — | — | Mods pane: turn AgentKit mods on or off per chat, with standard mods; one band shared by all mods |
 | [**ak-notifications**](#ak-notifications--macos-notifications) | — | — | macOS sound and banner notifications |
 | [**ak-react**](#ak-react--react--nextjs-development) | 2 | — | React and Next.js best practices, performance optimization, code scanning |
 | [**ak-review**](#ak-review--quality-assurance) | 9 | — | CodeRabbit review, code explanation, finalize workflow, workflow management, dependency update skill generation, external review delegation, unattended external-tool execution with guided setup, validation hooks |
@@ -160,8 +160,10 @@ assessment, and session handoff so a fresh AI session can continue where the las
 
 ### ak-mods — Mod Switcher
 
-A mod changes Claude Code's own interface (a band, a pane, a status entry, a slash command).
-`ak-mods` adds a **Mods** pane that turns each AgentKit mod on or off for the current chat.
+A mod changes Claude Code's own interface (a band segment, a pane, a status entry, a slash
+command). `ak-mods` adds a **Mods** pane that turns each AgentKit mod on or off for the current
+chat, and draws one band above the prompt that all switched-on mods share (a footer label on the
+desktop app).
 Requires Claude Code 2.1.309 or later (hooks-module support).
 
 #### Commands
@@ -175,9 +177,9 @@ See [Mods](docs/mods/) for how switches behave and
 
 ### ak-keepwarm — Keep the Prompt Cache Warm
 
-A mod (needs `ak-mods`, installed with it) that keeps the chat's prompt cache warm. A band above the
-prompt shows how long the cache stays warm; `/keepwarm` sends a small ping shortly before it
-expires. Based on Cache Keeper by Nate Herk (MIT).
+A mod (needs `ak-mods`, installed with it) that keeps the chat's prompt cache warm. Its segment in
+the shared band above the prompt shows how long the cache stays warm; `/keepwarm` sends a small
+ping shortly before it expires. Based on Cache Keeper by Nate Herk (MIT).
 
 #### Commands
 
