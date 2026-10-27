@@ -161,6 +161,19 @@ test('a quick switch-off drops the scheduled publish', { plugins: PLUGINS }, asy
   await ui.unmount()
 })
 
+test('/branch keeps the segment of a mod that stays on', { plugins: PLUGINS }, async ($, on) => {
+  engine(on, { standard: [NAME] })
+  on('session.end', (_, e) => ({ sessionId: e.sessionId }))
+  await start($)
+
+  // Whatever ends the chat, ak-mods clears every segment; the branch keeps the switches.
+  await $.session.end({ reason: 'other', sessionId: 'S1', resume: { id: 'S1' } })
+  await $.classic.SessionStart({ source: 'fork' })
+  const ui = await $.ui.mount(BAND)
+  expect(await ui.find({ type: 'Text', text: 'Fixture segment' })).toBeDefined()
+  await ui.unmount()
+})
+
 test('/clear keeps the segment of a mod that stays on', { plugins: PLUGINS }, async ($, on) => {
   engine(on, { standard: [NAME] })
   on('session.end', (_, e) => ({ sessionId: e.sessionId }))

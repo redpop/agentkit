@@ -29,8 +29,8 @@ export const register: Register = on => {
   }
 
   // The mod's part of the shared band. ak-mods draws it while the mod is on
-  // and clears it on switch-off and /clear. Publish it again whenever what
-  // it shows changes.
+  // and clears it on switch-off and when the chat ends. Publish it again
+  // whenever what it shows changes.
   const SEGMENT = { text: 'Fixture segment', tone: 'ok' } as const
 
   // Publishes while ak-mods switches the mod and it is on. A publish that
@@ -63,8 +63,9 @@ export const register: Register = on => {
     return next(e)
   })
 
-  // /clear ends the chat, and ak-mods clears every segment with it.
-  on('classic.SessionStart', { source: ['clear'] }, async ($, e, next) => {
+  // /clear, /resume and /branch end the chat, and ak-mods clears every
+  // segment with it. A publish for a mod that is off is not drawn.
+  on('classic.SessionStart', { source: ['clear', 'resume', 'fork'] }, async ($, e, next) => {
     await publish(() => $.mods.isOn({ name: NAME }), () => $.mods.segment(SEGMENT))
 
     return next(e)

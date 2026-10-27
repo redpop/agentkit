@@ -5,10 +5,10 @@
 ## What a mod is
 
 A mod is a plugin whose hooks module changes Claude Code's own interface: a segment in the shared
-band above the prompt, a pane, a status entry, a slash command, a model tool. Each mod is its own plugin
-(`plugins/ak-<name>/`), installable on its own. `ak-mods` lists every mod that declared itself and
-holds one switch per mod for the current chat. A mod is off until someone turns it on, unless it is
-marked standard.
+band above the prompt, a pane, a status entry, a slash command, a model tool. Each mod is its own
+plugin (`plugins/ak-<name>/`), installable on its own. `ak-mods` lists every mod that declared
+itself and holds one switch per mod for the current chat. A mod is off until someone turns it on,
+unless it is marked standard.
 
 ## plugin.json and hooks.json
 
@@ -72,8 +72,8 @@ export const register: Register = on => {
   }
 
   // The mod's part of the shared band. ak-mods draws it while the mod is on
-  // and clears it on switch-off and /clear. Publish it again whenever what
-  // it shows changes.
+  // and clears it on switch-off and when the chat ends. Publish it again
+  // whenever what it shows changes.
   const SEGMENT = { text: 'Example segment', tone: 'ok' } as const
 
   // Publishes while ak-mods switches the mod and it is on. A publish that
@@ -106,8 +106,9 @@ export const register: Register = on => {
     return next(e)
   })
 
-  // /clear ends the chat, and ak-mods clears every segment with it.
-  on('classic.SessionStart', { source: ['clear'] }, async ($, e, next) => {
+  // /clear, /resume and /branch end the chat, and ak-mods clears every
+  // segment with it. A publish for a mod that is off is not drawn.
+  on('classic.SessionStart', { source: ['clear', 'resume', 'fork'] }, async ($, e, next) => {
     await publish(() => $.mods.isOn({ name: NAME }), () => $.mods.segment(SEGMENT))
 
     return next(e)
@@ -201,9 +202,10 @@ export const register: Register = on => {
   runs, its `args`). The button runs a slash command the mod already answers, so no handler crosses
   from one plugin to another. When two mods ask for one hotkey, the first by title keeps it.
 - **One segment per mod.** Publishing again replaces it; `$.mods.segment(undefined)` clears it.
-  `ak-mods` clears it itself when the mod is switched off and when the chat ends, `/clear`
-  included. So the mod publishes at `session.start`, again whenever what the segment shows changes,
-  after a switch-on and after `/clear`. It publishes nothing while off.
+  `ak-mods` clears it itself when the mod is switched off and when the chat ends, whatever ends it.
+  So the mod publishes at `session.start`, again whenever what the segment shows changes, after a
+  switch-on, and after `/clear`, `/resume` and `/branch` (a `classic.SessionStart` hook). It
+  publishes nothing while off.
 - **A publish from a `state.set` hook on the switches does not reach `ak-mods`; schedule it off
   the hook with `$.clock.after(0, ...)`.** That hook runs inside `ak-mods`'s own `set`, where a
   segment call resolves without being stored. A switch-off right after has been seen to read as on
@@ -242,8 +244,9 @@ export const register: Register = on => {
   `$.ui.close`. The hook reads the switches from `e.value` and may ask `$.mods.isOn` or
   `$.mods.list`, but never calls `$.mods.set`: the write that raised it may be the chat's restore,
   which waits for the hook while `set` waits for the restore.
-- **Gating hooks** (`tool.call`, `agent.offer`, `state.set`, `classic.SessionStart`) carry
-  `.catch(($, e, next) => next(e))`: a guard that fails leaves the mod on, as fail-open asks.
+- **Gating hooks** (`tool.call`, `agent.offer`, `state.set`, and the `classic.SessionStart` hook of
+  the republish after `/clear`, `/resume` and `/branch`) carry `.catch(($, e, next) => next(e))`: a
+  guard that fails leaves the mod on, as fail-open asks.
 
 ## Testing
 
@@ -264,13 +267,13 @@ claude plugin test plugins/ak-mods/tests/fixture
 `tests/contract.test.tsx` loads the fixture with `ak-mods`: off draws nothing and leaves the
 engine's drawing, switching on shows the segment in the shared band without a reload, a mod on from
 the start shows it, switching off clears it, a quick switch-off drops the scheduled publish,
-`/clear` keeps the segment of a mod that stays on, the command turns the mod on, the tool is
-registered only once the mod is on, after switching off it is hidden and its call says how to turn
-the mod on, the agent type is withheld while off, switching off closes the pane and clears the
-status line, a switch write that did not land changes nothing, and a `declare` that `ak-mods`
+`/branch` and `/clear` keep the segment of a mod that stays on, the command turns the mod on, the
+tool is registered only once the mod is on, after switching off it is hidden and its call says how
+to turn the mod on, the agent type is withheld while off, switching off closes the pane and clears
+the status line, a switch write that did not land changes nothing, and a `declare` that `ak-mods`
 refuses or that throws leaves the mod on and drawing its own band.
-`tests/fixture/fail-open.test.tsx` loads it without `ak-mods` and finds it on, drawing its own
-band. When you change the recipe, change the fixture with it. This prints nothing while the two match:
+`tests/fixture/fail-open.test.tsx` loads it without `ak-mods` and finds it on, drawing its own band.
+When you change the recipe, change the fixture with it. This prints nothing while the two match:
 
 ```bash
 diff <(sed -n '/^import/,$p' plugins/ak-mods/tests/fixture/mod.tsx |
