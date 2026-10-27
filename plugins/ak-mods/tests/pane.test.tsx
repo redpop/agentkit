@@ -312,6 +312,44 @@ test('the warning updates when the recorded width changes', { plugins: MODS }, a
   await ui.unmount()
 })
 
+test('a terminal width of 0 or NaN is not recorded', { plugins: MODS }, async ($, on) => {
+  placing(on)
+  await three($)
+  await record($, 81)
+
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal', props: NARROW })
+  for (const columns of [0, Number.NaN]) {
+    await record($, columns)
+    // Still 81: all three fit, so no warning.
+    expect(await warningOf(ui)).toBeUndefined()
+  }
+  await ui.unmount()
+})
+
+// Below ak-mods, as contract.test.tsx's `stale`: it denies every write of the
+// width, so ak-mods' `$.state.set` rejects.
+const failing: Register = on => {
+  on('state.set', { plugin: 'ak-mods', key: 'width' }, () => ({ deny: 'state down' }))
+}
+
+test(
+  '/ak-mods opens the pane when the width cannot be recorded',
+  { plugins: [...PLUGINS, { name: 'ak-failing', tier: 'append', register: failing }] },
+  async ($, on) => {
+    engine(on)
+    const opened: unknown[] = []
+    on('ui.open', (_, e) => {
+      opened.push(e)
+
+      return { value: { isPlaced: true } }
+    })
+
+    const ran = await runCommand($, 'ak-mods')
+    expect(ran.text).toBe('Opened the Mods pane.')
+    expect(opened).toEqual([{ id: 'ak-mods', title: 'Mods' }])
+  },
+)
+
 test('the desktop counts with the footer width', { plugins: MODS }, async ($, on) => {
   placing(on)
   await three($)

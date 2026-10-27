@@ -117,7 +117,12 @@ export const register: Register = on => {
   // and no other hook outside one sees the width. The pane counts the band's
   // cut with it.
   on('command.run', { command: 'ak-mods' }, async ($, e) => {
-    await $.state.set(WIDTH, e.presentation.columns)
+    const columns = e.presentation.columns
+    // No usable width, or a failed write, keeps the last one; with none at
+    // all the pane counts with its own width. The pane opens either way.
+    if (Number.isFinite(columns) && columns > 0) {
+      await $.state.set(WIDTH, columns).catch(() => undefined)
+    }
     await $.ui.open({ id: 'ak-mods', title: 'Mods' })
 
     return { text: 'Opened the Mods pane.' }
