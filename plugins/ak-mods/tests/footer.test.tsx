@@ -55,7 +55,10 @@ const call = async ($: Engine, plugin: string, op: string, arg?: unknown) =>
 
 const publish = async ($: Engine, name: string, title: string, segment: unknown, isOn = true) => {
   await call($, name, 'declare', { name, title, summary: 's', details: 'd' })
-  if (isOn) await call($, name, 'set', { name, on: true })
+  // Off means switched on and back off before the publish: the switch-off clears
+  // the segment, the later publish lands anyway, so only the filter hides it.
+  await call($, name, 'set', { name, on: true })
+  if (!isOn) await call($, name, 'set', { name, on: false })
   await call($, name, 'segment', segment)
 }
 
