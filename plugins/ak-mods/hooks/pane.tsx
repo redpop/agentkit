@@ -21,26 +21,31 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
   const { Box, Button, Text } = $.ui.resolve(e)
   const list = await $.mods.list()
   // The reads subscribe the pane: a switch, a declare or a publish redraws it.
-  const [{ value: expanded = {} }, { value: on = {} }, { value: declared = [] }, { value: stored = {} }] =
-    await Promise.all([
-      $.state.get({ plugin: 'ak-mods', key: 'expanded' }),
-      $.state.get({ plugin: 'ak-mods', key: 'on' }),
-      $.state.get({ plugin: 'ak-mods', key: 'declared' }),
-      $.state.get({ plugin: 'ak-mods', key: 'segments' }),
-    ])
+  const [
+    { value: expanded = {} },
+    { value: on = {} },
+    { value: declared = [] },
+    { value: stored = {} },
+    { value: width = e.props.bodyColumns },
+  ] = await Promise.all([
+    $.state.get({ plugin: 'ak-mods', key: 'expanded' }),
+    $.state.get({ plugin: 'ak-mods', key: 'on' }),
+    $.state.get({ plugin: 'ak-mods', key: 'declared' }),
+    $.state.get({ plugin: 'ak-mods', key: 'segments' }),
+    $.state.get({ plugin: 'ak-mods', key: 'width' }),
+  ])
 
-  // The cut the band makes, counted again here. No hook outside a drawing sees
-  // the band's width (`command.run` has the terminal's, only as a command
-  // runs), and a drawing may not record it. So the terminal counts with the
-  // pane's own width, which can differ from the band's: the warning is
-  // approximate there, counted afresh at each redraw. The desktop counts with
-  // the footer's width, as the footer does.
+  // The cut the band makes, counted again here. The terminal counts with its
+  // width as `/ak-mods` last ran (a docked pane is narrower than the band),
+  // the pane's own only before that is known: approximate after a resize,
+  // until the command runs again. The desktop counts with the footer's width,
+  // as the footer does.
   const segments = drawable(on, declared, stored)
   const hidden =
     segments.length === 0
       ? []
       : e.surface === 'terminal'
-        ? layout(segments, e.props.bodyColumns).hidden
+        ? layout(segments, width).hidden
         : e.surface === 'desktop'
           ? footerLabel(segments, FOOTER_COLUMNS).hidden
           : []

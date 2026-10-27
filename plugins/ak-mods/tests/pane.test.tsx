@@ -265,20 +265,62 @@ test("an off mod's segment never counts", { plugins: MODS }, async ($, on) => {
   }
 })
 
-test('the terminal counts with the pane width, the desktop with the footer width', { plugins: MODS }, async ($, on) => {
+/** The engine, with a `ui.open` that places the pane, so `/ak-mods` runs. */
+const placing = (on: On) => {
   engine(on)
+  on('ui.open', () => ({ value: { isPlaced: true } }))
+}
+
+/** Runs `/ak-mods` in a terminal `columns` wide, which records that width. */
+const record = ($: Engine, columns: number) => runCommand($, 'ak-mods', '', columns)
+
+/** Alpha, Beta and Gamma, 25 columns each: one row of 81 holds all three. */
+const three = async ($: Engine) => {
   await publish($, 'ak-a', 'Alpha')
   await publish($, 'ak-b', 'Beta')
   await publish($, 'ak-c', 'Gamma')
+}
 
-  // 81 columns hold all three on one row; the 60-column footer does not.
-  const wide = { ...PANE.props, bodyColumns: 81 }
-  const terminal = await $.ui.mount({ ...PANE, surface: 'terminal', props: wide })
-  expect(await warningOf(terminal)).toBeUndefined()
-  await terminal.unmount()
-  const desktop = await $.ui.mount({ ...PANE, surface: 'desktop', props: wide })
-  expect(await warningOf(desktop)).toBe('1 mod does not fit the band: Gamma')
-  await desktop.unmount()
+test('the terminal counts with the recorded width, not the pane width', { plugins: MODS }, async ($, on) => {
+  placing(on)
+  await three($)
+
+  // The band is 81 wide and shows all three: the 40-column pane beside it does not warn.
+  await record($, 81)
+  const narrow = await $.ui.mount({ ...PANE, surface: 'terminal', props: NARROW })
+  expect(await warningOf(narrow)).toBeUndefined()
+  await narrow.unmount()
+
+  // The band is 40 wide and drops one: a pane wider than that warns all the same.
+  await record($, 40)
+  const wide = await $.ui.mount({ ...PANE, surface: 'terminal', props: { ...PANE.props, bodyColumns: 200 } })
+  expect(await warningOf(wide)).toBe('1 mod does not fit the band: Gamma')
+  await wide.unmount()
+})
+
+test('the warning updates when the recorded width changes', { plugins: MODS }, async ($, on) => {
+  placing(on)
+  await three($)
+  await record($, 81)
+
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal', props: NARROW })
+  expect(await warningOf(ui)).toBeUndefined()
+  await record($, 40)
+  expect(await warningOf(ui)).toBe('1 mod does not fit the band: Gamma')
+  await record($, 81)
+  expect(await warningOf(ui)).toBeUndefined()
+  await ui.unmount()
+})
+
+test('the desktop counts with the footer width', { plugins: MODS }, async ($, on) => {
+  placing(on)
+  await three($)
+  // Neither the recorded width nor the pane's counts: the 60-column footer drops one.
+  await record($, 200)
+
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop', props: { ...PANE.props, bodyColumns: 200 } })
+  expect(await warningOf(ui)).toBe('1 mod does not fit the band: Gamma')
+  await ui.unmount()
 })
 
 test('/ak-mods opens the pane', { plugins: PLUGINS }, async ($, on) => {

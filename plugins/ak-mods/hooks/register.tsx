@@ -12,6 +12,7 @@ const DECLARED = { plugin: 'ak-mods', key: 'declared' } as const
 const ON = { plugin: 'ak-mods', key: 'on' } as const
 const STANDARD = { plugin: 'ak-mods', key: 'standard' } as const
 const SEGMENTS = { plugin: 'ak-mods', key: 'segments' } as const
+const WIDTH = { plugin: 'ak-mods', key: 'width' } as const
 
 // How many other sessions' switches the store keeps; older ones are dropped at start.
 const KEPT_SESSIONS = 100
@@ -112,7 +113,11 @@ export const register: Register = on => {
     return next(e)
   })
 
-  on('command.run', { command: 'ak-mods' }, async $ => {
+  // The terminal's width as the command runs: a drawing may not write state,
+  // and no other hook outside one sees the width. The pane counts the band's
+  // cut with it.
+  on('command.run', { command: 'ak-mods' }, async ($, e) => {
+    await $.state.set(WIDTH, e.presentation.columns)
     await $.ui.open({ id: 'ak-mods', title: 'Mods' })
 
     return { text: 'Opened the Mods pane.' }
