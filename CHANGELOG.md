@@ -12,13 +12,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ak-mods` — **one band above the prompt, shared by all mods.** With every mod drawing its own
   band, ten mods would stack ten bands. Now a mod publishes one short segment (a text, a tone, at
   most one button that runs its slash command) with `$.mods.segment(...)`, and `ak-mods` draws the
-  segments of the switched-on mods in a single band. When they do not fit, the band grows to two
-  rows, then drops the lowest-priority segments and ends with a `+N` chip that opens the Mods pane,
-  where a dim line names the mods that do not fit; there is no toast. On the desktop app the
-  segments form one label in the footer instead, whose width is provisional until it is checked
-  there. A mod without `ak-mods` still draws its own single band (fail-open). The recipe in
-  `docs/mods/writing-a-mod.md` and its test fixture publish a segment. A publish after a switch-on
-  is scheduled off the switch hook, because from inside that hook it would not reach `ak-mods`.
+  segments of the switched-on mods in a single band. A segment stays one line: a control character
+  in it draws as a space. When the segments do not fit, the band grows to two rows, then drops the
+  lowest-priority segments and ends with a `+N` chip that opens the Mods pane, where a dim line
+  names the mods that do not fit; there is no toast. On the desktop app the segments form one label
+  in the footer instead, whose width is provisional until it is checked there. A mod without
+  `ak-mods` still draws its own single band (fail-open). The recipe in `docs/mods/writing-a-mod.md`
+  and its test fixture publish a segment. A publish after a switch-on is scheduled off the switch
+  hook, because from inside that hook it would not reach `ak-mods`.
 - `ak-keepwarm` — **new mod: keep a chat's prompt cache warm.** Once a cache expires, the next
   message writes the whole context again at up to twice the input price. `/keepwarm [hours|off]`
   sends a small ping shortly before the cache would expire (4 hours by default, 24 at most); its

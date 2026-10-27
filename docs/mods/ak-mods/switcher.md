@@ -32,9 +32,10 @@ When the segments do not fit the width, the band degrades in steps:
 3. They still do not fit: the segments with the lowest priority drop out, and a `+N` chip ends the
    band. Pressing the chip opens the Mods pane.
 
-The Mods pane then names the dropped mods in a dim line, `N mods do not fit the band: …`, so you
-can switch some off. The pane counts with the terminal's width as `/ak-mods` last ran. The chip and
-that line are the only signals; there is no toast.
+The Mods pane then names the dropped mods in a dim line, `N mods do not fit the band: …`, so you can
+switch some off. The pane counts with the band's width as `/ak-mods` last ran: the terminal's, less
+the five columns of the band's `[-]`. The chip and that line are the only signals; there is no
+toast.
 
 On the desktop app the footer label is the path: `ak-mods` appends one label to the footer with the
 segments' texts joined by ` · `, one line only. A segment with a button ends with the button's

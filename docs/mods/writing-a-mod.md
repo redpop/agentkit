@@ -270,11 +270,12 @@ claude plugin test plugins/ak-mods/tests/fixture
 `tests/contract.test.tsx` loads the fixture with `ak-mods`: off draws nothing and leaves the
 engine's drawing, switching on shows the segment in the shared band without a reload, a mod on from
 the start shows it, switching off clears it, a quick switch-off drops the scheduled publish,
-`/branch` and `/clear` keep the segment of a mod that stays on, the command turns the mod on, the
-tool is registered only once the mod is on, after switching off it is hidden and its call says how
-to turn the mod on, the agent type is withheld while off, switching off closes the pane and clears
-the status line, a switch write that did not land changes nothing, and a `declare` that `ak-mods`
-refuses or that throws leaves the mod on and drawing its own band.
+`/branch` and `/clear` keep the segment of a mod that stays on, after `/resume` it shows before the
+next turn, the command turns the mod on, the tool is registered only once the mod is on, after
+switching off it is hidden and its call says how to turn the mod on, the agent type is withheld
+while off, switching off closes the pane and clears the status line, a switch write that did not
+land changes nothing, and a `declare` that `ak-mods` refuses or that throws leaves the mod on and
+drawing its own band.
 `tests/fixture/fail-open.test.tsx` loads it without `ak-mods` and finds it on, drawing its own band.
 When you change the recipe, change the fixture with it. This prints nothing while the two match:
 

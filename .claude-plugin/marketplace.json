@@ -100,7 +100,7 @@
     {
       "name": "ak-mods",
       "source": "./plugins/ak-mods",
-      "description": "Mod switcher: a pane that turns each AgentKit mod on or off for this session, with standard mods that start on in every new chat",
+      "description": "Mod switcher: a pane that turns each AgentKit mod on or off for this session, with standard mods that start on in every new chat, and draws the one band they share",
       "version": "1.41.1",
       "category": "productivity",
       "keywords": ["mods", "switcher", "ui", "pane"],
@@ -109,7 +109,7 @@
     {
       "name": "ak-keepwarm",
       "source": "./plugins/ak-keepwarm",
-      "description": "Mod: keeps this chat's prompt cache warm with a small ping before it expires (/keepwarm), with a band above the prompt",
+      "description": "Mod: keeps this chat's prompt cache warm with a small ping before it expires (/keepwarm), with a segment in the shared band",
       "version": "1.41.1",
       "category": "productivity",
       "keywords": ["mods", "cache", "keepwarm", "cost"],

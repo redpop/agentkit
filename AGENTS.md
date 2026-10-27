@@ -10,8 +10,8 @@ Claude Code plugin marketplace (`ak-marketplace`) with 12 independently installa
 
 ## Dev environment
 
-No build step required — the codebase is Markdown, JSON, and shell scripts, plus one TSX
-hooks module (`ak-mods`) that Claude Code loads directly.
+No build step required — the codebase is Markdown, JSON, and shell scripts, plus two TSX
+hooks modules (`ak-mods`, `ak-keepwarm`) that Claude Code loads directly.
 
 **Test a plugin locally:**
 
@@ -44,20 +44,23 @@ python3 -m json.tool plugins/ak-review/.claude-plugin/plugin.json > /dev/null
 shellcheck plugins/ak-review/hooks/markdown-format.sh
 ```
 
-**Validate and test the `ak-mods` hooks module:**
+**Validate and test the hooks modules (`ak-mods`, `ak-keepwarm`):**
 
 ```bash
 claude plugin validate plugins/ak-mods
 claude plugin test plugins/ak-mods
 claude plugin test plugins/ak-mods/tests/fixture
+claude plugin validate plugins/ak-keepwarm
+claude plugin test plugins/ak-keepwarm
 ```
 
-The second test command loads the test-only fixture mod with `ak-mods` absent and proves it fails
+The third command loads the test-only fixture mod with `ak-mods` absent and proves it fails
 open. `tests/fixture/` is a harness (version 0.0.0), not a plugin: it gets no marketplace entry.
 
 Type-check (zero errors expected). `claude -p` never lays `.claude-plugin/types/`, so build a
 tsconfig outside the repo from the API declarations the plugin-authoring skill ships
-(`$DTS` = its `types/claude-code.d.ts`; the fixture also needs the `ak-mods` contract). The file
+(`$DTS` = its `types/claude-code.d.ts`; the fixture and `ak-keepwarm` also need the `ak-mods`
+contract). The file
 exists once a Claude Code session has loaded the `plugin-authoring` skill, which names its folder;
 the path varies per machine and Claude Code version; with several, the recipe takes the newest
 version. It runs in a subshell and stops there if `$DTS` is empty, leaving your shell open.
@@ -74,7 +77,10 @@ O='"target":"es2023","lib":["es2023"],"types":[],"module":"esnext","moduleResolu
 F=$R/plugins/ak-mods
 echo "{\"compilerOptions\":{$O},\"include\":[\"$T/types\",\"$F/hooks\",\"$F/types\",\"$F/tests\"]}" > "$T/mods.json"
 echo "{\"compilerOptions\":{$O},\"include\":[\"$T/fx\",\"$F/tests/fixture\"]}" > "$T/fixture.json"
-npx -y -p typescript@5 tsc -p "$T/mods.json" && npx -y -p typescript@5 tsc -p "$T/fixture.json"
+K=$R/plugins/ak-keepwarm
+echo "{\"compilerOptions\":{$O},\"include\":[\"$T/fx\",\"$K/hooks\",\"$K/tests\"]}" > "$T/keepwarm.json"
+npx -y -p typescript@5 tsc -p "$T/mods.json" && npx -y -p typescript@5 tsc -p "$T/fixture.json" &&
+  npx -y -p typescript@5 tsc -p "$T/keepwarm.json"
 )
 ```
 
@@ -99,7 +105,7 @@ plugins/{plugin-name}/
 ├── agents/{name}.md               ← Sub-agents (via Task tool)
 ├── knowledge/                     ← Domain reference files (optional)
 ├── hooks/hooks.json               ← Hook definitions (optional)
-├── hooks/register.tsx             ← Hooks modules (TSX, optional; ak-mods)
+├── hooks/register.tsx             ← Hooks modules (TSX, optional; ak-mods, ak-keepwarm)
 ├── types/index.d.ts               ← Types a plugin adds to `$` (optional; ak-mods)
 └── README.md
 ```
