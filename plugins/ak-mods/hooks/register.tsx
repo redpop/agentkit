@@ -1,6 +1,7 @@
 import type { Register } from 'claude-code'
 
 import type { Mods } from '../types'
+import { renderBand } from './band-render'
 import { renderPane } from './pane'
 import { initialOn, isAgentKit, namesOf, pruneKeys, rows, savedOf, upsert } from './switches'
 
@@ -117,6 +118,9 @@ export const register: Register = on => {
   })
 
   on('ui.render', { component: 'Pane', requestId: 'ak-mods' }, ($, e) => renderPane($, e))
+
+  // The shared band above the prompt, drawn from every switched-on mod's segment.
+  on('ui.render', { component: 'AbovePrompt' }, ($, e, next) => renderBand($, e, next))
 
   on('engine.create', async ($, e, next) => {
     const built = await next(e)
