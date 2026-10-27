@@ -75,8 +75,7 @@ const publish = async ($: Engine, name: string, title: string, isOn = true) => {
 }
 
 // 25 columns a segment. In a 40-column band each takes a row of its own, so
-// two fit and a third is dropped; in the desktop footer (60 columns) two fit
-// side by side and a third is dropped. Both surfaces drop the same mods.
+// two fit and a third is dropped, on the terminal and the desktop alike.
 const SEGMENT = 'x'.repeat(25)
 const NARROW = { ...PANE.props, bodyColumns: 40 }
 
@@ -412,11 +411,11 @@ test("the band's +N chip records the band's width, so the pane warns as the band
   await pane.unmount()
 })
 
-test('the desktop counts with the footer width', { plugins: MODS }, async ($, on) => {
+test('the desktop counts with the recorded width, as the terminal does', { plugins: MODS }, async ($, on) => {
   placing(on)
   await three($)
-  // Neither the recorded width nor the pane's counts: the 60-column footer drops one.
-  await record($, 200)
+  // A band of 40 columns drops one; the pane's own 200 would drop none.
+  await record($, 45)
 
   const ui = await $.ui.mount({ ...PANE, surface: 'desktop', props: { ...PANE.props, bodyColumns: 200 } })
   expect(await warningOf(ui)).toBe('1 mod does not fit the band: Gamma')
@@ -437,8 +436,8 @@ test('/ak-mods opens the pane', { plugins: PLUGINS }, async ($, on) => {
   expect(opened).toEqual([{ id: 'ak-mods', title: 'Mods' }])
 })
 
-// The pane draws on every surface the band or the footer may not: each row
-// carries its mod's current segment, and the segment's button.
+// The pane draws on every surface, the band only on two: each row carries
+// its mod's current segment, and the segment's button.
 test("a row shows its mod's current segment, on every surface", { plugins: MODS }, async ($, on) => {
   engine(on)
   await callAs($, 'ak-a', 'declare', { name: 'ak-a', title: 'Alpha', summary: 's', details: 'd' })

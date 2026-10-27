@@ -99,32 +99,3 @@ export const bandWidth = (from: { bodyColumns: number } | { terminalColumns: num
 
   return 'bodyColumns' in from ? columns : Math.max(1, columns - BAND_MARK_COLUMNS)
 }
-
-// Provisional: the footer's width in columns on the desktop app. Unchecked
-// until the footer width is checked on the real desktop app.
-export const FOOTER_COLUMNS = 60
-
-const FOOTER_SEPARATOR = ' · '
-
-const footerText = (segment: Segment): string =>
-  segment.button === undefined ? segment.text : `${segment.text} /${segment.button.command}`
-
-/** One line for the desktop footer: texts joined by dots, the lowest priority dropped, ending with `+N`. */
-export const footerLabel = (
-  segments: readonly Segment[],
-  columns: number,
-): { text: string; hidden: readonly string[] } => {
-  const sorted = ordered(segments)
-  const texts = sorted.map(footerText)
-  const all = texts.join(FOOTER_SEPARATOR)
-
-  if (all.length <= columns) return { text: all, hidden: [] }
-
-  for (let keep = sorted.length - 1; keep > 0; keep--) {
-    const text = `${texts.slice(0, keep).join(FOOTER_SEPARATOR)}${FOOTER_SEPARATOR}+${sorted.length - keep}`
-
-    if (text.length <= columns) return { text, hidden: sorted.slice(keep).map(one => one.name) }
-  }
-
-  return { text: cut(texts[0] ?? '', columns), hidden: sorted.slice(1).map(one => one.name) }
-}

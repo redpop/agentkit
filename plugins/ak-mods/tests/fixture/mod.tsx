@@ -64,9 +64,14 @@ export const register: Register = on => {
   })
 
   // /clear, /resume and /branch end the chat, and ak-mods clears every
-  // segment with it. A publish for a mod that is off is not drawn.
-  on('classic.SessionStart', { source: ['clear', 'resume', 'fork'] }, async ($, e, next) => {
-    await publish(() => $.mods.isOn({ name: NAME }), () => $.mods.segment(SEGMENT))
+  // segment with it: publish again once the end has passed. A `session.end`
+  // hook, not `classic.SessionStart`: where Claude Code's built-in guard
+  // loads, a user's mod gets no classic event. A publish for a mod that is
+  // off is not drawn.
+  on('session.end', async ($, e, next) => {
+    $.clock.after(0, () => {
+      publish(() => $.mods.isOn({ name: NAME }), () => $.mods.segment(SEGMENT)).catch(() => {})
+    })
 
     return next(e)
   }).catch(($, e, next) => next(e))

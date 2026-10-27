@@ -107,9 +107,14 @@ export const register: Register = on => {
   })
 
   // /clear, /resume and /branch end the chat, and ak-mods clears every
-  // segment with it. A publish for a mod that is off is not drawn.
-  on('classic.SessionStart', { source: ['clear', 'resume', 'fork'] }, async ($, e, next) => {
-    await publish(() => $.mods.isOn({ name: NAME }), () => $.mods.segment(SEGMENT))
+  // segment with it: publish again once the end has passed. A `session.end`
+  // hook, not `classic.SessionStart`: where Claude Code's built-in guard
+  // loads, a user's mod gets no classic event. A publish for a mod that is
+  // off is not drawn.
+  on('session.end', async ($, e, next) => {
+    $.clock.after(0, () => {
+      publish(() => $.mods.isOn({ name: NAME }), () => $.mods.segment(SEGMENT)).catch(() => {})
+    })
 
     return next(e)
   }).catch(($, e, next) => next(e))
@@ -207,21 +212,26 @@ export const register: Register = on => {
 - **One segment per mod.** Publishing again replaces it; `$.mods.segment(undefined)` clears it.
   `ak-mods` clears it itself when the mod is switched off and when the chat ends, whatever ends it.
   So the mod publishes at `session.start`, again whenever what the segment shows changes, after a
-  switch-on, and after `/clear`, `/resume` and `/branch` (a `classic.SessionStart` hook). It
-  publishes nothing while off.
-- **A publish from a `state.set` hook on the switches does not reach `ak-mods`; schedule it off
-  the hook with `$.clock.after(0, ...)`.** That hook runs inside `ak-mods`'s own `set`, where a
-  segment call resolves without being stored. A switch-off right after has been seen to read as on
-  in the delayed call, so the recipe counts the switch changes and drops a publish scheduled for an
-  earlier one.
+  switch-on, and after `/clear`, `/resume` and `/branch` (a `session.end` hook). It publishes
+  nothing while off.
+- **No `classic.*` hooks.** Where Claude Code's built-in guard `cc-plugin-sec-default` loads (a
+  machine with managed settings, or a Team or Enterprise login), a hook on a `classic.<Event>` of a
+  mod the user installed never runs. The recipe republishes from `session.end` instead, which every
+  `/clear`, `/resume` and `/branch` raises.
+- **A publish from inside a call `ak-mods` made does not reach `ak-mods`; schedule it off the hook
+  with `$.clock.after(0, ...)`.** A `state.set` hook on the switches runs inside `ak-mods`'s own
+  `set`, and a command that a segment's button runs (in the band or the Mods pane) runs inside
+  `ak-mods`'s own `$.command.run`: in both, a segment call resolves without being stored. The
+  delay has to be the mod's own: scheduled by `ak-mods` it stays inside its call. The `session.end`
+  republish waits the same way, so it lands after `ak-mods` has cleared the segments. A switch-off
+  right after has been seen to read as on in the delayed call, so the recipe counts the switch
+  changes and drops a publish scheduled for an earlier one.
 - **When the band runs out of room** it degrades in steps: one row; then two rows, never more; then
   the segments with the lowest priority drop out (ties by title) and a `+N` chip ends the band.
   The chip opens the Mods pane, which names the dropped mods: `N mods do not fit the band: …`.
   There is no toast.
-- **On the desktop app** `ak-mods` shows the same segments as one label in the footer: the texts
-  joined with ` · `, one line, a segment with a button ending with its slash command (`/keepwarm`),
-  and `+N` when the lowest-priority segments drop out. The mod does nothing extra for it. The
-  footer's width is provisional (60 characters) until it is checked on the desktop app.
+- **The band draws on the terminal and the desktop app**, the two apps that draw `AbovePrompt`.
+  Every row of the Mods pane also shows its mod's current segment and button, on every surface.
 - **The mod's own band is the fail-open path.** While `isSwitched` is false (no `ak-mods`, or it
   refused the mod), the mod draws its own single band and publishes nothing. A publish that throws
   turns `isSwitched` false, so the mod draws its own band again. While `isSwitched` is true it
@@ -247,8 +257,8 @@ export const register: Register = on => {
   `$.ui.close`. The hook reads the switches from `e.value` and may ask `$.mods.isOn` or
   `$.mods.list`, but never calls `$.mods.set`: the write that raised it may be the chat's restore,
   which waits for the hook while `set` waits for the restore.
-- **Gating hooks** (`tool.call`, `agent.offer`, `state.set`, and the `classic.SessionStart` hook of
-  the republish after `/clear`, `/resume` and `/branch`) carry `.catch(($, e, next) => next(e))`: a
+- **Gating hooks** (`tool.call`, `agent.offer`, `state.set`, and the `session.end` hook of the
+  republish after `/clear`, `/resume` and `/branch`) carry `.catch(($, e, next) => next(e))`: a
   guard that fails leaves the mod on, as fail-open asks.
 
 ## Testing

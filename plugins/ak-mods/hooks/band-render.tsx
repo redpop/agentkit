@@ -12,8 +12,8 @@ const compareTitles = (a: Segment, b: Segment): number => {
   return x < y ? -1 : x > y ? 1 : 0
 }
 
-// A control character (a newline, ESC) would break the band's two rows or the
-// footer's one line, or reach the terminal raw.
+// A control character (a newline, ESC) would break the band's two rows, or
+// reach the terminal raw.
 const CONTROL = /[\u0000-\u001f\u007f]/g
 
 const spaced = (text: string): string => text.replace(CONTROL, ' ')
@@ -66,9 +66,9 @@ export const drawable = (rows: readonly ModsRow[], stored: Record<string, unknow
     .filter(one => one !== undefined)
 
 /**
- * Draws the shared band above the prompt on the terminal: the segments of the
- * switched-on mods in up to two rows, a `+N` chip for those that did not fit,
- * then whatever lies beneath.
+ * Draws the shared band above the prompt on the terminal and the desktop
+ * app: the segments of the switched-on mods in up to two rows, a `+N` chip
+ * for those that did not fit, then whatever lies beneath.
  */
 export async function renderBand(
   $: EngineInterface,
@@ -81,7 +81,7 @@ export async function renderBand(
     $.mods.list(),
     $.state.get({ plugin: 'ak-mods', key: 'segments' }),
   ])
-  if (e.surface !== 'terminal' || e.props.hasSurvey) return next(e)
+  if ((e.surface !== 'terminal' && e.surface !== 'desktop') || e.props.hasSurvey) return next(e)
 
   const segments = drawable(list, stored)
   if (segments.length === 0) return next(e)

@@ -43,7 +43,7 @@ const engine = (on: On, fork: { usage: ReturnType<typeof usage> | null; calls: n
 
     return { value: undefined }
   })
-  on('classic.SessionStart', () => ({}))
+  on('session.end', (_, e) => ({ sessionId: e.sessionId }))
   on('turn.start', (_, e) => ({ turnId: e.turnId }))
   on('turn.step', async function* (_, e) {
     return { turnId: e.turnId, index: e.index, answer: '', toolUses: [], stopReason: 'end_turn', usage: usage(200000, 0) }
@@ -143,7 +143,7 @@ test('a cleared chat starts from an unknown cache', async ($, on) => {
   const { clock } = engine(on, fork)
   await startChat($)
   await keepwarm($)
-  await $.classic.SessionStart({ source: 'clear' })
+  await $.session.end({ reason: 'clear', sessionId: 'S1', resume: { id: 'S1' } })
 
   await clock.advance(55 * MIN)
   expect(fork.calls).toBe(0)
@@ -317,7 +317,8 @@ test('no segment before the first request', OWNED, async ($, on) => {
 test('clears the segment on /clear and publishes nothing while off', OWNED, async ($, on) => {
   const { clock, toasts } = engine(on, { usage: usage(200000, 0), calls: 0 })
   await startChat($)
-  await $.classic.SessionStart({ source: 'clear' })
+  await $.session.end({ reason: 'clear', sessionId: 'S1', resume: { id: 'S1' } })
+  await clock.settle()
   expect(segments(toasts).at(-1)).toBeUndefined()
 
   await startChat($)

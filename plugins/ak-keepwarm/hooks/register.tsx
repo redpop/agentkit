@@ -244,15 +244,20 @@ export const register: Register = on => {
     return next(e)
   })
 
-  // /clear, /resume and /branch start from an unknown cache. The process goes on under a new
-  // session id, and no session.start fires for it.
-  on('classic.SessionStart', { source: ['clear', 'resume', 'fork'] }, async ($, e, next) => {
+  // /clear, /resume and /branch end the chat, and the next one starts from an unknown cache. The
+  // process goes on under a new session id, and no session.start fires for it. A `session.end`
+  // hook, not `classic.SessionStart`: where Claude Code's built-in guard loads, a user's mod gets
+  // no classic event. The publish waits until the end has passed, after ak-mods' own clear.
+  on('session.end', async ($, e, next) => {
     reset()
-    await share(() => $.mods.isOn({ name: NAME }), () => publish($))
-    $.ui.invalidate('ui.render')
+    $.clock.after(0, () => {
+      share(() => $.mods.isOn({ name: NAME }), () => publish($))
+        .then(() => $.ui.invalidate('ui.render'))
+        .catch(() => {})
+    })
 
     return next(e)
-  })
+  }).catch(($, e, next) => next(e))
 
   on('turn.start', async ($, e, next) => {
     now = await $.clock.now()

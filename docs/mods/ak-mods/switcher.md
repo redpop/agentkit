@@ -40,12 +40,8 @@ chip records the band's own width, and `/ak-mods` records the terminal's, less t
 the band's `[-]`. Before either, the pane counts with its own width. The chip and that line are the
 only signals; there is no toast.
 
-On the desktop app the footer label is the path: `ak-mods` appends one label to the footer with the
-segments' texts joined by ` · `, one line only. A segment with a button ends with the button's
-slash command (`/keepwarm`), which is how you act there. Segments that do not fit drop out the same
-way and the label ends with `+N`. The footer's width (60 characters) is provisional, and in a first
-test on the desktop app neither the band nor the footer label appeared: there, read the segments in
-the Mods pane.
+The band draws on the terminal and on the desktop app. Every row of the Mods pane also shows its
+mod's current segment and button, so a mod's state and its action are reachable on every surface.
 
 ## Session rules
 

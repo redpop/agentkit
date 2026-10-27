@@ -323,11 +323,20 @@ test('hasSurvey true returns next(e)', { plugins: [consumer('ak-a')] }, async ($
   }
 })
 
-test('another surface than the terminal returns next(e)', { plugins: [consumer('ak-a')] }, async ($, on) => {
+test('the desktop app draws the band too', { plugins: [consumer('ak-a')] }, async ($, on) => {
   engine(on)
   await publish($, 'ak-a', 'A', { text: 'ready' })
 
   const ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  expect((await ui.find({ type: 'Text', text: 'ready' }))?.text).toBe('ready')
+  await ui.unmount()
+})
+
+test('a surface without the band returns next(e)', { plugins: [consumer('ak-a')] }, async ($, on) => {
+  engine(on)
+  await publish($, 'ak-a', 'A', { text: 'ready' })
+
+  const ui = await $.ui.mount({ ...BAND, surface: 'vscode' })
   expect(await ui.drawn()).toMatchObject({ type: 'Text', children: ['below'] })
   await ui.unmount()
 })

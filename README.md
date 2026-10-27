@@ -162,8 +162,8 @@ assessment, and session handoff so a fresh AI session can continue where the las
 
 A mod changes Claude Code's own interface (a band segment, a pane, a status entry, a slash
 command). `ak-mods` adds a **Mods** pane that turns each AgentKit mod on or off for the current
-chat, and draws one band above the prompt that all switched-on mods share (a footer label on the
-desktop app).
+chat, and draws one band above the prompt that all switched-on mods share, on the terminal and the
+desktop app.
 Requires Claude Code 2.1.309 or later (hooks-module support).
 
 #### Commands

@@ -1,7 +1,7 @@
 import { atom, update } from 'claude-code'
 import type { EngineInterface, RenderInput } from 'claude-code'
 
-import { FOOTER_COLUMNS, footerLabel, layout } from './band'
+import { layout } from './band'
 import { drawable } from './band-render'
 
 const EXPANDED = atom({ plugin: 'ak-mods', key: 'expanded' } as const, {})
@@ -29,24 +29,17 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
       $.state.get({ plugin: 'ak-mods', key: 'width' }),
     ])
 
-  // The cut the band makes, counted again here. The terminal counts with the
-  // band's width (see `bandWidth`) as `/ak-mods` or the band's `+N` chip last
-  // recorded it (a docked pane is narrower than the band), the pane's own
-  // only before that is known: approximate after a resize, until either
-  // records it again. The desktop counts with the footer's width, as the
-  // footer does.
+  // The cut the band makes, counted again here, on the surfaces that draw the
+  // band. It counts with the band's width (see `bandWidth`) as `/ak-mods` or
+  // the band's `+N` chip last recorded it (a docked pane is narrower than the
+  // band), the pane's own only before that is known: approximate after a
+  // resize, until either records it again.
   const segments = drawable(list, stored)
   const hidden =
-    segments.length === 0
-      ? []
-      : e.surface === 'terminal'
-        ? layout(segments, width).hidden
-        : e.surface === 'desktop'
-          ? footerLabel(segments, FOOTER_COLUMNS).hidden
-          : []
+    segments.length > 0 && (e.surface === 'terminal' || e.surface === 'desktop') ? layout(segments, width).hidden : []
   const dropped = warning(hidden, new Map(list.map(row => [row.name, row.title])))
-  // Each row's current segment too: the pane draws on surfaces where the band
-  // or the footer may not, so this is where a segment is always visible.
+  // Each row's current segment too: the pane draws on every surface, the band
+  // only on the terminal and the desktop app.
   const current = new Map(segments.map(one => [one.name, one]))
 
   return (

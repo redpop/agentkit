@@ -1,6 +1,6 @@
 import { expect, test } from 'claude-code/testing'
 
-import { footerLabel, layout } from '../hooks/band'
+import { layout } from '../hooks/band'
 import type { Segment } from '../hooks/band'
 
 const seg = (name: string, text: string, extra: Partial<Segment> = {}): Segment => ({
@@ -91,26 +91,4 @@ test('layout counts button label and hotkey in the width', () => {
   const fits = layout([seg('a', 'x'.repeat(20), { button: plain }), seg('b', 'x'.repeat(20), { button: plain })], 49)
 
   expect(fits.rows.length).toBe(1)
-})
-
-test('footerLabel joins with a dot and appends the command of a button', () => {
-  const result = footerLabel([seg('a', 'one'), seg('b', 'two', { button: { label: 'Go', command: 'go' } })], 80)
-
-  expect(result).toEqual({ text: 'one · two /go', hidden: [] })
-})
-
-test('footerLabel honours columns, drops the lowest priority and ends with a count', () => {
-  const result = footerLabel(
-    [seg('a', 'aaaa', { priority: 1 }), seg('b', 'bbbb'), seg('c', 'cccc'), seg('d', 'dddd', { priority: 1 })],
-    16,
-  )
-
-  expect(result.text).toBe('bbbb · cccc · +2')
-  expect(result.hidden).toEqual(['a', 'd'])
-})
-
-test('footerLabel cuts an overlong single segment to columns', () => {
-  const result = footerLabel([seg('a', 'x'.repeat(50)), seg('b', 'y')], 10)
-
-  expect(result).toEqual({ text: `${'x'.repeat(9)}…`, hidden: ['b'] })
 })
