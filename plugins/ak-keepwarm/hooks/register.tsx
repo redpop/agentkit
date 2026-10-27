@@ -346,7 +346,8 @@ export const register: Register = on => {
   // This mod's switch changed, and the write landed: switching off stops the keep-warm loop,
   // switching on publishes the segment again. Not from inside this hook: it runs within the
   // `set` of ak-mods, where a segment call resolves without reaching ak-mods. Hence the next turn
-  // of the clock, unless the switch changed again meanwhile.
+  // of the clock, unless the switch changed again meanwhile. The time is read afresh: the last
+  // tick or turn read it up to 30 s earlier.
   on('state.set', { plugin: 'ak-mods', key: 'on' }, async ($, e, next) => {
     const done = await next(e)
     const isOn = e.value[NAME] === true
@@ -357,8 +358,15 @@ export const register: Register = on => {
       if (isOn) {
         $.clock.after(0, () => {
           if (change !== switches) return
-          share(() => $.mods.isOn({ name: NAME }), () => publish($))
-            .then(() => $.ui.invalidate('ui.render'))
+          $.clock
+            .now()
+            .then(async time => {
+              // The switch may have changed again while the time was read.
+              if (change !== switches) return
+              now = time
+              await share(() => $.mods.isOn({ name: NAME }), () => publish($))
+              $.ui.invalidate('ui.render')
+            })
             .catch(() => {})
         })
       }

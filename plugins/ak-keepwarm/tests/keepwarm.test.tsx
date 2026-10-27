@@ -347,6 +347,41 @@ test('after switch-off and on again the segment is published', OWNED, async ($, 
   expect(segments(toasts).at(-1)).toEqual(warm)
 })
 
+test('the segment after a switch-on counts from the time of the switch-on', OWNED, async ($, on) => {
+  const { clock, toasts } = engine(on, { usage: usage(200000, 0), calls: 0 })
+  await startChat($)
+  await standIn($, 'off')
+  // The last tick ran at 90 s, when 58.5 minutes were left; at 119 s, 58.02 are.
+  await clock.advance(119 * 1000)
+  await standIn($, 'on')
+  await clock.advance(0)
+  expect(segments(toasts).at(-1)?.text).toBe('● cache warm 58m')
+})
+
+test('a switch-off before the scheduled publish drops it', OWNED, async ($, on) => {
+  const { clock, toasts } = engine(on, { usage: usage(200000, 0), calls: 0 })
+  await startChat($)
+  await standIn($, 'off')
+  await standIn($, 'on')
+  await standIn($, 'off')
+  const count = segments(toasts).length
+  await clock.advance(0)
+  expect(segments(toasts).length).toBe(count)
+  expect(segments(toasts).at(-1)).toBeUndefined()
+})
+
+test('on, off and on again publish the segment once', OWNED, async ($, on) => {
+  const { clock, toasts } = engine(on, { usage: usage(200000, 0), calls: 0 })
+  await startChat($)
+  await standIn($, 'off')
+  await standIn($, 'on')
+  await standIn($, 'off')
+  await standIn($, 'on')
+  const count = segments(toasts).length
+  await clock.advance(0)
+  expect(segments(toasts).slice(count)).toEqual([{ text: '● cache warm 60m', tone: 'ok', priority: 6, button: KEEP }])
+})
+
 test('a refused publish clears the earlier segment and sends again later', OWNED, async ($, on) => {
   const { clock, toasts } = engine(on, { usage: usage(200000, 0), calls: 0 })
   on('ui.render', ($, e) => {
