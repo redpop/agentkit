@@ -12,11 +12,23 @@ const compareTitles = (a: Segment, b: Segment): number => {
   return x < y ? -1 : x > y ? 1 : 0
 }
 
+// A control character (a newline, ESC) would break the band's two rows or the
+// footer's one line, or reach the terminal raw.
+const CONTROL = /[\u0000-\u001f\u007f]/g
+
+const spaced = (text: string): string => text.replace(CONTROL, ' ')
+
+/** A hotkey the band can arm: exactly one printable character, else none. */
+const hotkeyOf = (hotkey: unknown): string | undefined =>
+  typeof hotkey === 'string' && hotkey.length === 1 && spaced(hotkey) === hotkey ? hotkey : undefined
+
 /**
  * A stored segment as the band can draw it, or undefined. Segments are stored
  * unchecked: an unknown tone draws uncoloured, a priority that is no number
- * takes the default, a button without a label or command is left out, and a
- * segment without text is not drawn.
+ * takes the default, a control character in a text or a label draws as a
+ * space, a hotkey that is not one printable character is left out, a button
+ * without a label or command is left out, and a segment without text is not
+ * drawn.
  */
 const checked = (info: ModsInfo, stored: unknown): Segment | undefined => {
   const one = (stored ?? {}) as Partial<Record<keyof ModsSegment, unknown>>
@@ -26,15 +38,15 @@ const checked = (info: ModsInfo, stored: unknown): Segment | undefined => {
   return {
     name: info.name,
     title: info.title,
-    text: one.text,
+    text: spaced(one.text),
     tone: typeof one.tone === 'string' && TONES.includes(one.tone) ? (one.tone as ModsTone) : undefined,
     priority: typeof one.priority === 'number' && Number.isFinite(one.priority) ? one.priority : undefined,
     button:
       typeof button.label === 'string' && typeof button.command === 'string'
         ? {
-            label: button.label,
+            label: spaced(button.label),
             command: button.command,
-            hotkey: typeof button.hotkey === 'string' ? button.hotkey : undefined,
+            hotkey: hotkeyOf(button.hotkey),
             args: typeof button.args === 'string' ? button.args : undefined,
           }
         : undefined,

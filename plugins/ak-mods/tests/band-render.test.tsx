@@ -248,6 +248,30 @@ test('hotkey clash: first by title keeps it', { plugins: [consumer('ak-a'), cons
   }
 })
 
+test(
+  'control characters become spaces, a hotkey that is not one printable character is dropped',
+  { plugins: [consumer('ak-a'), consumer('ak-b'), consumer('ak-c'), consumer('ak-d')] },
+  async ($, on) => {
+    engine(on)
+    await publish($, 'ak-a', 'A', { text: 'two\nlines', button: { label: 'g\u001bo', hotkey: '12', command: 'x' } })
+    await publish($, 'ak-b', 'B', { text: 'tab\there', button: { label: 'b', hotkey: '', command: 'x' } })
+    await publish($, 'ak-c', 'C', { text: 'c', button: { label: 'c', hotkey: '\n', command: 'x' } })
+    await publish($, 'ak-d', 'D', { text: 'd', button: { label: 'd', hotkey: '2', command: 'x' } })
+
+    const ui = await $.ui.mount(BAND)
+    expect(await ui.find({ type: 'Text', text: 'two lines' })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: 'tab here' })).toBeDefined()
+    expect(await ui.find({ key: 'seg-ak-a' })).toMatchObject({ text: 'g o' })
+    for (const name of ['ak-a', 'ak-b', 'ak-c']) {
+      expect((await ui.find({ key: `seg-${name}` }))?.props.hotkey).toBeUndefined()
+    }
+    expect((await ui.find({ key: 'seg-ak-d' }))?.props.hotkey).toBe('2')
+    // Still one row: no segment breaks a line.
+    expect(await ui.find({ key: 'band-row-1' })).toBeUndefined()
+    await ui.unmount()
+  },
+)
+
 test('hasSurvey true returns next(e)', { plugins: [consumer('ak-a')] }, async ($, on) => {
   engine(on)
   await publish($, 'ak-a', 'A', { text: 'ready' })

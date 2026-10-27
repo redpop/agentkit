@@ -9,10 +9,12 @@ export type ModsTone = 'ok' | 'warn' | 'alert' | 'info' | 'dim'
 
 /** What a mod shows in the shared band; ak-mods adds its name and title. */
 export type ModsSegment = {
+  /** One line: a control character draws as a space, as in the button's label. */
   text: string
   tone?: ModsTone
   /** Higher stays visible longer when the band runs out of room; 5 when left out. */
   priority?: number
+  /** `hotkey` is one printable character; any other is left out. */
   button?: { label: string; hotkey?: string; command: string; args?: string }
 }
 
