@@ -8,7 +8,8 @@ import { register } from './fixture/mod'
 // fixture/mod.tsx is the recipe of docs/mods/writing-a-mod.md as the mod
 // `ak-fixture`; these tests run it with ak-mods. Beneath the plugins stands
 // a stand-in engine, beside them a probe that reads and flips switches (the
-// test's own `$` carries no `$.mods`).
+// test's own `$` carries no `$.mods`). The mod's segment shows in ak-mods's
+// shared band; its own band shows only where ak-mods does not switch it.
 
 const probe: Register = on => {
   on('command.run', { command: 'ak-probe' }, async ($, e) => {
@@ -25,15 +26,17 @@ const PROBE = { name: 'ak-probe', register: probe }
 const PLUGINS = [FIXTURE, PROBE]
 
 // Returns what the plugins asked of the engine: tools registered, panes
-// closed, answers invalidated, status lines set.
+// closed, answers invalidated, status lines set; and the clock.
 const engine = (on: On, store: Readonly<Record<string, unknown>> = {}) => {
   const registered: string[] = []
   const closed: unknown[] = []
   const invalidated: unknown[] = []
   const statuses: unknown[] = []
   mock.store(on, store)
+  const clock = mock.clock(on, { now: 0 })
   on('session.id', () => ({ value: 'S1' }))
   on('session.start', (_, e) => ({ cwd: e.cwd }))
+  on('classic.SessionStart', () => ({}))
   on('command.register', (_, e) => ({ value: { command: e.name } }))
   on('tool.register', (_, e) => {
     registered.push(e.name)
@@ -63,7 +66,7 @@ const engine = (on: On, store: Readonly<Record<string, unknown>> = {}) => {
     return <Text>engine</Text>
   })
 
-  return { registered, closed, invalidated, statuses }
+  return { registered, closed, invalidated, statuses, clock }
 }
 
 const start = ($: TestEngine) => $.session.start({ cwd: '/', surface: null, isInteractive: false })
@@ -71,10 +74,11 @@ const start = ($: TestEngine) => $.session.start({ cwd: '/', surface: null, isIn
 const call = async ($: TestEngine, op: string, arg: unknown) =>
   JSON.parse((await runCommand($, 'ak-probe', JSON.stringify({ op, arg }))).text ?? 'null')
 
+// The band on the terminal, where ak-mods draws the shared one.
 const BAND = {
   plugin: NAME,
   component: 'AbovePrompt',
-  surface: 'desktop',
+  surface: 'terminal',
   props: {
     hasSurvey: false,
     isWorking: false,
@@ -96,19 +100,77 @@ test('an off mod draws nothing', { plugins: PLUGINS }, async ($, on) => {
   await start($)
 
   const ui = await $.ui.mount(BAND)
+  expect(await ui.find({ type: 'Text', text: 'Fixture segment' })).toBeUndefined()
   expect(await ui.find({ type: 'Text', text: 'Fixture band' })).toBeUndefined()
   // `next(e)` passed through: the engine's own drawing stands.
   expect(await ui.find({ type: 'Text', text: 'engine' })).toBeDefined()
   await ui.unmount()
 })
 
-test('switching on draws the band without reload', { plugins: PLUGINS }, async ($, on) => {
-  engine(on)
+test('switching on shows the segment in the shared band without reload', { plugins: PLUGINS }, async ($, on) => {
+  const { clock } = engine(on)
   await start($)
 
   const ui = await $.ui.mount(BAND)
   await call($, 'set', { name: NAME, on: true })
-  expect(await ui.find({ type: 'Text', text: 'Fixture band' })).toBeDefined()
+  // Published on the next turn of the clock, after the switch's hook returned.
+  await clock.advance(0)
+  expect(await ui.find({ type: 'Text', text: 'Fixture segment' })).toBeDefined()
+  // ak-mods draws the segment; the mod draws no band of its own beside it.
+  expect(await ui.find({ type: 'Text', text: 'Fixture band' })).toBeUndefined()
+  await ui.unmount()
+})
+
+test('a mod on from the start shows its segment', { plugins: PLUGINS }, async ($, on) => {
+  engine(on, { standard: [NAME] })
+  await start($)
+
+  const ui = await $.ui.mount(BAND)
+  expect(await ui.find({ type: 'Text', text: 'Fixture segment' })).toBeDefined()
+  await ui.unmount()
+})
+
+test('switching off clears the segment', { plugins: PLUGINS }, async ($, on) => {
+  const { clock } = engine(on)
+  await start($)
+  await call($, 'set', { name: NAME, on: true })
+  await clock.advance(0)
+
+  const ui = await $.ui.mount(BAND)
+  expect(await ui.find({ type: 'Text', text: 'Fixture segment' })).toBeDefined()
+  await call($, 'set', { name: NAME, on: false })
+  expect(await ui.find({ type: 'Text', text: 'Fixture segment' })).toBeUndefined()
+  expect(await ui.find({ type: 'Text', text: 'Fixture band' })).toBeUndefined()
+  expect(await ui.find({ type: 'Text', text: 'engine' })).toBeDefined()
+  await ui.unmount()
+})
+
+test('a quick switch-off drops the scheduled publish', { plugins: PLUGINS }, async ($, on) => {
+  const { clock } = engine(on)
+  await start($)
+  await call($, 'set', { name: NAME, on: true })
+  await call($, 'set', { name: NAME, on: false })
+  await clock.advance(0)
+  // Switched on again, the band shows only what this switch-on publishes:
+  // nothing the dropped publish stored while the mod was off.
+  await call($, 'set', { name: NAME, on: true })
+  const ui = await $.ui.mount(BAND)
+  expect(await ui.find({ type: 'Text', text: 'Fixture segment' })).toBeUndefined()
+  await clock.advance(0)
+  expect(await ui.find({ type: 'Text', text: 'Fixture segment' })).toBeDefined()
+  await ui.unmount()
+})
+
+test('/clear keeps the segment of a mod that stays on', { plugins: PLUGINS }, async ($, on) => {
+  engine(on, { standard: [NAME] })
+  on('session.end', (_, e) => ({ sessionId: e.sessionId }))
+  await start($)
+
+  // ak-mods clears every segment as the chat ends; the mod publishes again.
+  await $.session.end({ reason: 'clear', sessionId: 'S1', resume: { id: 'S1' } })
+  await $.classic.SessionStart({ source: 'clear' })
+  const ui = await $.ui.mount(BAND)
+  expect(await ui.find({ type: 'Text', text: 'Fixture segment' })).toBeDefined()
   await ui.unmount()
 })
 
