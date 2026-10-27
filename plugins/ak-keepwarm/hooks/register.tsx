@@ -36,6 +36,12 @@ const S = {
 
 let now = 0
 
+type Segment = Parameters<EngineInterface['mods']['segment']>[0]
+
+// The last segment handed to ak-mods, as JSON; null before the first and after a switch-off,
+// whose clear ak-mods makes itself. Publishing only a change keeps redraws from churning the state.
+let published: string | null = null
+
 const msLeft = (): number | null => (S.lastActivity ? S.ttlMin * MIN - (now - S.lastActivity) : null)
 
 const cacheState = (): 'unknown' | 'kept' | 'cold' | 'cooling' | 'warm' => {
@@ -101,6 +107,49 @@ const tick = async ($: EngineInterface, isOff: boolean) => {
   $.ui.invalidate('ui.render')
 }
 
+// The cache state as the shared band shows it: no segment before the first request. The rewrite
+// estimate rides along only while it matters, as the cache cools or is cold.
+const segment = (): Segment => {
+  const state = S.isKeepWarm ? 'kept' : cacheState()
+  if (state === 'unknown') return undefined
+  const left = msLeft() ?? 0
+  const rewrite = ` · rewrite ≈ ${usd(rewriteCost(S.ctx, S.model, S.ttlMin))}`
+  const button = (label: string) => ({ label, hotkey: '1', command: 'keepwarm' })
+  if (state === 'kept') {
+    const pings = `${S.pings} ping${S.pings === 1 ? '' : 's'} ${usd(S.pingUsd)}`
+    const text = `◆ kept warm · ${pings} · until ${clock(S.keepWarmUntil)}`
+
+    return { text, tone: 'info', priority: 6, button: button('stop warm') }
+  }
+  if (state === 'warm') return { text: `● cache warm ${minutes(left)}`, tone: 'ok', priority: 6, button: button('keep warm') }
+  if (state === 'cooling') {
+    return { text: `◐ cools in ${minutes(left)}${rewrite}`, tone: 'warn', priority: 6, button: button('keep warm') }
+  }
+
+  return { text: `○ cold ${minutes(-left)}${rewrite}`, tone: 'dim', priority: 6 }
+}
+
+// Hands the segment to ak-mods when it changed. False when the call failed: then ak-mods cannot
+// draw it, and the mod draws its own band again (fail-open).
+const publish = async ($: EngineInterface): Promise<boolean> => {
+  const next = segment()
+  const key = JSON.stringify(next ?? null)
+  if (key === published) return true
+  try {
+    await $.mods.segment(next)
+  } catch {
+    return false
+  }
+  published = key
+
+  return true
+}
+
+// Switched off, ak-mods clears the segment: the next publish after switching on is sent whole.
+const forget = () => {
+  published = null
+}
+
 // The usage of one main-loop request tells whether it read the cache or rewrote it. A rewrite after
 // 5 to 60 idle minutes shows a 5-minute TTL; a hit after more than 5 idle minutes proves the 1-hour one.
 const measure = (u: Usage & { model?: string }, startedAt: number) => {
@@ -135,6 +184,15 @@ export const register: Register = on => {
     }
   }
 
+  // While ak-mods draws, the mod publishes its state instead of drawing it, never while off.
+  // A publish that fails hands the drawing back to the mod's own band.
+  const share = async (isOn: () => Promise<boolean>, send: () => Promise<boolean>) => {
+    if (!isSwitched) return
+    if (await isOff(isOn)) return forget()
+    if (await send()) return
+    isSwitched = false
+  }
+
   on('session.start', async ($, e, next) => {
     try {
       isSwitched = await $.mods.declare({
@@ -160,8 +218,10 @@ export const register: Register = on => {
     $.clock.every(TICK_EVERY, () => {
       isOff(() => $.mods.isOn({ name: NAME }))
         .then(off => tick($, off))
+        .then(() => share(() => $.mods.isOn({ name: NAME }), () => publish($)))
         .catch(() => {})
     })
+    await share(() => $.mods.isOn({ name: NAME }), () => publish($))
 
     return next(e)
   })
@@ -170,6 +230,7 @@ export const register: Register = on => {
   // session id, and no session.start fires for it.
   on('classic.SessionStart', { source: ['clear', 'resume', 'fork'] }, async ($, e, next) => {
     reset()
+    await share(() => $.mods.isOn({ name: NAME }), () => publish($))
 
     return next(e)
   })
@@ -188,6 +249,7 @@ export const register: Register = on => {
     now = await $.clock.now()
     measure(result.usage, startedAt)
     S.lastActivity = now
+    await share(() => $.mods.isOn({ name: NAME }), () => publish($))
 
     return result
   })
@@ -197,6 +259,7 @@ export const register: Register = on => {
     if (e.agentId) return done
     now = await $.clock.now()
     S.isWorking = false
+    await share(() => $.mods.isOn({ name: NAME }), () => publish($))
     $.ui.invalidate('ui.render')
 
     return done
@@ -212,16 +275,16 @@ export const register: Register = on => {
     } else {
       startKeepWarm($, Number(arg) > 0 ? Math.min(MAX_HOURS, Number(arg)) : DEFAULT_HOURS)
     }
+    await share(() => $.mods.isOn({ name: NAME }), () => publish($))
     $.ui.invalidate('ui.render')
 
     return {}
   })
 
-  // The band above the prompt: this chat's cache at a glance, with one button.
+  // The band above the prompt: this chat's cache at a glance, with one button. Drawn only while
+  // ak-mods does not draw the mod's segment: never both.
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
-    // The read subscribes the drawing, so a switch redraws it.
-    await $.state.get({ plugin: 'ak-mods', key: 'on' })
-    if (await isOff(() => $.mods.isOn({ name: NAME }))) return next(e)
+    if (isSwitched) return next(e)
     const below = await next(e)
     const state = cacheState()
     if (state === 'unknown' && !S.isKeepWarm) return below
@@ -260,12 +323,16 @@ export const register: Register = on => {
     return <Box flexDirection="column">{below ? [mine, below] : [mine]}</Box>
   })
 
-  // This mod's switch changed, and the write landed: switching off stops the keep-warm loop.
+  // This mod's switch changed, and the write landed: switching off stops the keep-warm loop,
+  // switching on publishes the segment again.
   on('state.set', { plugin: 'ak-mods', key: 'on' }, async ($, e, next) => {
     const done = await next(e)
     const isOn = e.value[NAME] === true
-    if (isSwitched && done.value?.isSet === true && !isOn && e.previous?.[NAME] === true) {
-      stopKeepWarm($, 'the mod is off')
+    if (isSwitched && done.value?.isSet === true && isOn !== (e.previous?.[NAME] === true)) {
+      if (!isOn) stopKeepWarm($, 'the mod is off')
+      now = await $.clock.now()
+      forget()
+      if (isOn && !(await publish($))) isSwitched = false
     }
 
     return done

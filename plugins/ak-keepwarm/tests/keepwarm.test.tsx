@@ -1,6 +1,9 @@
 import { expect, mock, test } from 'claude-code/testing'
-import type { On } from 'claude-code'
+import type { EngineInterface, On, Register } from 'claude-code'
 import type { Engine } from 'claude-code/testing'
+
+import { clock as at, usd } from '../hooks/fmt'
+import { rewriteCost } from '../hooks/pricing'
 
 // Run on its own, ak-keepwarm finds no ak-mods: the mod is on (fail-open).
 const START = 1_000_000
@@ -172,5 +175,184 @@ test('the band shows the cache state and the button, on every surface', async ($
   const ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
   expect(await ui.find({ type: 'Text', text: /cache cold/ })).toBeDefined()
   expect(await ui.find({ key: 'keepwarm' })).toBeUndefined()
+  await ui.unmount()
+})
+
+type Segment = Parameters<EngineInterface['mods']['segment']>[0]
+
+const SEGMENT = 'segment '
+
+// ak-mods cannot be loaded here, so a plugin above the mod stands in for it: declaring switches the
+// mod on, the switch lives where ak-mods keeps it, and each published segment comes out as a toast.
+// An inline plugin is loaded as a module of its own: it names nothing of this file, and reaches the
+// test only through `$`.
+const owner: Register = on => {
+  on('engine.create', async ($, e, next) => {
+    const built = await next(e)
+    const set = async ({ name, on: isOn }: { name: string; on: boolean }) => {
+      const held = await built.state.get({ plugin: 'ak-mods', key: 'on' })
+      await built.state.set({ plugin: 'ak-mods', key: 'on' }, { ...held.value, [name]: isOn })
+    }
+
+    return {
+      ...built,
+      mods: {
+        declare: async ({ name }: { name: string }) => {
+          await set({ name, on: true })
+
+          return true
+        },
+        isOn: async ({ name }: { name: string }) => (await built.state.get({ plugin: 'ak-mods', key: 'on' })).value?.[name] === true,
+        set,
+        setStandard: async () => {},
+        list: async () => [],
+        // `$.mods.segment(undefined)` may arrive as `{}`: no text is a clear.
+        segment: async (segment: Segment) => {
+          await built.ui.toast('segment ' + JSON.stringify(typeof segment?.text === 'string' ? segment : null))
+        },
+      },
+    }
+  })
+
+  // `/stand-in on|off` is the test's switch: the test's `$` carries no plugin's nouns.
+  on('session.start', async ($, e, next) => {
+    await $.command.register({ name: 'stand-in', description: 'Switches ak-keepwarm', immediate: true })
+
+    return next(e)
+  })
+  on('command.run', { command: 'stand-in' }, async ($, e) => {
+    await $.mods.set({ name: 'ak-keepwarm', on: e.args === 'on' })
+
+    return {}
+  })
+}
+
+// Named ak-mods: the switches it writes are that plugin's state.
+const OWNED = { plugins: [{ name: 'ak-mods', tier: 'prepend', register: owner }] } as const
+
+const segments = (toasts: string[]): Segment[] =>
+  toasts.filter(t => t.startsWith(SEGMENT)).map(t => JSON.parse(t.slice(SEGMENT.length)) ?? undefined)
+
+const switchTo = ($: Engine, isOn: boolean) =>
+  $.command.run({
+    command: 'stand-in',
+    args: isOn ? 'on' : 'off',
+    origin: { kind: 'composer' },
+    presentation: { isFullscreen: false, columns: 80 },
+  })
+
+const REWRITE = ` · rewrite ≈ ${usd(rewriteCost(200010, 'claude-sonnet-5-5', 60))}`
+const KEEP = { label: 'keep warm', hotkey: '1', command: 'keepwarm' }
+
+test('publishes the ok segment while warm', OWNED, async ($, on) => {
+  const { toasts } = engine(on, { usage: usage(200000, 0), calls: 0 })
+  await startChat($)
+  expect(segments(toasts).at(-1)).toEqual({ text: '● cache warm 60m', tone: 'ok', priority: 6, button: KEEP })
+})
+
+test('publishes the warn segment with the keepwarm button while cooling', OWNED, async ($, on) => {
+  const { clock, toasts } = engine(on, { usage: usage(200000, 0), calls: 0 })
+  await startChat($)
+  await clock.advance(56 * MIN)
+  expect(segments(toasts).at(-1)).toEqual({ text: `◐ cools in 4m${REWRITE}`, tone: 'warn', priority: 6, button: KEEP })
+})
+
+test('publishes the cold segment without a button', OWNED, async ($, on) => {
+  const { clock, toasts } = engine(on, { usage: usage(200000, 0), calls: 0 })
+  await startChat($)
+  await clock.advance(72 * MIN)
+  expect(segments(toasts).at(-1)).toEqual({ text: `○ cold 12m${REWRITE}`, tone: 'dim', priority: 6 })
+})
+
+test('publishes the kept-warm segment with the stop button', OWNED, async ($, on) => {
+  const { toasts } = engine(on, { usage: usage(200000, 0), calls: 0 })
+  await startChat($)
+  await keepwarm($)
+  expect(segments(toasts).at(-1)).toEqual({
+    text: `◆ kept warm · 0 pings $0 · until ${at(START + 4 * 60 * MIN)}`,
+    tone: 'info',
+    priority: 6,
+    button: { label: 'stop warm', hotkey: '1', command: 'keepwarm' },
+  })
+})
+
+test('no segment before the first request', OWNED, async ($, on) => {
+  const { toasts } = engine(on, { usage: usage(200000, 0), calls: 0 })
+  await $.session.start({ cwd: '/', surface: null, isInteractive: false })
+  expect(segments(toasts)).toEqual([undefined])
+})
+
+test('clears the segment on /clear and publishes nothing while off', OWNED, async ($, on) => {
+  const { clock, toasts } = engine(on, { usage: usage(200000, 0), calls: 0 })
+  await startChat($)
+  await $.classic.SessionStart({ source: 'clear' })
+  expect(segments(toasts).at(-1)).toBeUndefined()
+
+  await startChat($)
+  await switchTo($, false)
+  const count = segments(toasts).length
+  await clock.advance(56 * MIN)
+  expect(segments(toasts).length).toBe(count)
+
+  // Switched on again, the segment comes back at once.
+  await switchTo($, true)
+  expect(segments(toasts).at(-1)?.text).toMatch(/^◐ cools in 4m/)
+})
+
+test('draws no band of its own while ak-mods owns the drawing', OWNED, async ($, on) => {
+  engine(on, { usage: usage(200000, 0), calls: 0 })
+  on('ui.render', ($, e) => {
+    const { Text } = $.ui.resolve(e)
+
+    return <Text>engine</Text>
+  })
+  await startChat($)
+
+  const ui = await $.ui.mount(BAND)
+  expect(await ui.find({ type: 'Text', text: 'engine' })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /cache warm/ })).toBeUndefined()
+  expect(await ui.find({ key: 'keepwarm' })).toBeUndefined()
+  await ui.unmount()
+})
+
+test('context size is no longer in the segment', OWNED, async ($, on) => {
+  const { clock, toasts } = engine(on, { usage: usage(200000, 0), calls: 0 })
+  await startChat($)
+  await clock.advance(72 * MIN)
+  const all = segments(toasts)
+  expect(all.length).toBeGreaterThan(2)
+  for (const one of all) expect(one?.text ?? '').not.toContain('ctx')
+})
+
+
+// A stand-in whose segment call fails: the mod cannot be drawn by ak-mods, so it draws its own band.
+const broken: Register = on => {
+  on('engine.create', async ($, e, next) => ({
+    ...(await next(e)),
+    mods: {
+      declare: async () => true,
+      isOn: async () => true,
+      set: async () => {},
+      setStandard: async () => {},
+      list: async () => [],
+      segment: async () => {
+        throw new Error('no band')
+      },
+    },
+  }))
+}
+
+test('a failing publish leaves the mod drawing its own band', { plugins: [{ name: 'ak-mods', tier: 'prepend', register: broken }] }, async ($, on) => {
+  engine(on, { usage: usage(200000, 0), calls: 0 })
+  on('ui.render', ($, e) => {
+    const { Text } = $.ui.resolve(e)
+
+    return <Text>engine</Text>
+  })
+  await startChat($)
+
+  const ui = await $.ui.mount(BAND)
+  expect(await ui.find({ type: 'Text', text: /cache warm 60m/ })).toBeDefined()
+  expect((await ui.find({ key: 'keepwarm' }))?.text).toBe('keep warm')
   await ui.unmount()
 })
