@@ -86,33 +86,50 @@ export async function renderBand(
   const segments = drawable(list, stored)
   if (segments.length === 0) return next(e)
 
-  // Two mods on one hotkey: the first by title keeps it, the later goes without.
+  const { rows, hidden } = layout(segments, e.props.bodyColumns)
+
+  // Two shown mods on one hotkey: the first by title keeps it, the later goes
+  // without. A mod behind the `+N` chip takes none.
   const hotkeys = new Map<string, string>()
-  for (const one of [...segments].sort(compareTitles)) {
+  for (const one of rows.flat().sort(compareTitles)) {
     const hotkey = one.button?.hotkey
     if (hotkey !== undefined && ![...hotkeys.values()].includes(hotkey)) hotkeys.set(one.name, hotkey)
   }
 
-  const { rows, hidden } = layout(segments, e.props.bodyColumns)
   const below = await next(e)
   const { Box, Button, Text } = $.ui.resolve(e)
-  const toned = (one: Segment) =>
-    one.tone === 'ok' ? (
-      <Text color="green">{one.text}</Text>
+  const toned = (one: Segment) => {
+    const key = `text-${one.name}`
+
+    return one.tone === 'ok' ? (
+      <Text key={key} color="green">
+        {one.text}
+      </Text>
     ) : one.tone === 'warn' ? (
-      <Text color="yellow">{one.text}</Text>
+      <Text key={key} color="yellow">
+        {one.text}
+      </Text>
     ) : one.tone === 'alert' ? (
-      <Text color="red" bold>
+      <Text key={key} color="red" bold>
         {one.text}
       </Text>
     ) : one.tone === 'info' ? (
-      <Text color="cyan">{one.text}</Text>
+      <Text key={key} color="cyan">
+        {one.text}
+      </Text>
     ) : one.tone === 'dim' ? (
-      <Text dimColor>{one.text}</Text>
+      <Text key={key} dimColor>
+        {one.text}
+      </Text>
     ) : (
-      <Text>{one.text}</Text>
+      <Text key={key}>{one.text}</Text>
     )
-  const separator = () => <Text dimColor> │ </Text>
+  }
+  const separator = (key: string) => (
+    <Text key={key} dimColor>
+      {' │ '}
+    </Text>
+  )
   // Buttons draw plain (`1: label`, `+N`): the widths `layout` counts.
 
   const band = (
@@ -120,12 +137,12 @@ export async function renderBand(
       {rows.map((row, index) => (
         <Box key={`band-row-${index}`} flexDirection="row">
           {row.flatMap((one, at) => [
-            ...(at > 0 ? [separator()] : []),
+            ...(at > 0 ? [separator(`sep-${one.name}`)] : []),
             toned(one),
             ...(one.button === undefined
               ? []
               : [
-                  <Text> </Text>,
+                  <Text key={`gap-${one.name}`}> </Text>,
                   <Button
                     key={`seg-${one.name}`}
                     label={one.button.label}
@@ -139,7 +156,7 @@ export async function renderBand(
                 ]),
           ])}
           {index === rows.length - 1 && hidden.length > 0 && [
-            separator(),
+            separator('sep-more'),
             <Button
               key="more-segments"
               label={`+${hidden.length}`}

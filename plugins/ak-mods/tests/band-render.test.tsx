@@ -272,6 +272,19 @@ test(
   },
 )
 
+test('hotkey clash: a mod hidden behind +N does not take the hotkey', { plugins: [consumer('ak-a'), consumer('ak-b')] }, async ($, on) => {
+  engine(on)
+  // First by title, but the lowest priority: it is the one dropped.
+  await publish($, 'ak-a', 'alpha', { text: 'aaaaaaaaaa', priority: 1, button: { label: 'aa', hotkey: '1', command: 'x' } })
+  await publish($, 'ak-b', 'Beta', { text: 'b', priority: 9, button: { label: 'bb', hotkey: '1', command: 'x' } })
+
+  const ui = await $.ui.mount({ ...BAND, props: { ...BAND.props, bodyColumns: 14 } })
+  expect(await ui.find({ key: 'seg-ak-a' })).toBeUndefined()
+  expect(await ui.find({ key: 'more-segments' })).toMatchObject({ text: '+1' })
+  expect((await ui.find({ key: 'seg-ak-b' }))?.props.hotkey).toBe('1')
+  await ui.unmount()
+})
+
 test('hasSurvey true returns next(e)', { plugins: [consumer('ak-a')] }, async ($, on) => {
   engine(on)
   await publish($, 'ak-a', 'A', { text: 'ready' })
