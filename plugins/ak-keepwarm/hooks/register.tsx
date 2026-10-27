@@ -41,6 +41,8 @@ type Segment = Parameters<EngineInterface['mods']['segment']>[0]
 // The last segment handed to ak-mods, as JSON; null before the first and after a switch-off,
 // whose clear ak-mods makes itself. Publishing only a change keeps redraws from churning the state.
 let published: string | null = null
+// Whether ak-mods ever took a segment: a mod it never drew has no stale segment to clear.
+let hasPublished = false
 
 const msLeft = (): number | null => (S.lastActivity ? S.ttlMin * MIN - (now - S.lastActivity) : null)
 
@@ -104,7 +106,6 @@ const tick = async ($: EngineInterface, isOff: boolean) => {
   now = await $.clock.now()
   if (isOff) stopKeepWarm($, 'the mod is off')
   else await keepWarmStep($)
-  $.ui.invalidate('ui.render')
 }
 
 // The cache state as the shared band shows it: no segment before the first request. The rewrite
@@ -129,20 +130,30 @@ const segment = (): Segment => {
   return { text: `○ cold ${minutes(-left)}${rewrite}`, tone: 'dim', priority: 6 }
 }
 
-// Hands the segment to ak-mods when it changed. False when the call failed: then ak-mods cannot
-// draw it, and the mod draws its own band again (fail-open).
+// Hands the segment to ak-mods when it changed. A failed send clears the last one, so a stale
+// segment is never drawn, and the next publish sends again. False when ak-mods never took a segment
+// or the clear failed too: then the mod draws its own band again (fail-open).
 const publish = async ($: EngineInterface): Promise<boolean> => {
   const next = segment()
   const key = JSON.stringify(next ?? null)
   if (key === published) return true
   try {
     await $.mods.segment(next)
+    published = key
+    hasPublished = true
+
+    return true
+  } catch {
+    published = null
+  }
+  if (!hasPublished) return false
+  try {
+    await $.mods.segment(undefined)
+
+    return true
   } catch {
     return false
   }
-  published = key
-
-  return true
 }
 
 // Switched off, ak-mods clears the segment: the next publish after switching on is sent whole.
@@ -185,7 +196,8 @@ export const register: Register = on => {
   }
 
   // While ak-mods draws, the mod publishes its state instead of drawing it, never while off.
-  // A publish that fails hands the drawing back to the mod's own band.
+  // A publish that fails for good hands the drawing back to the mod's own band. Every caller
+  // redraws after it, so the own band shows at once.
   const share = async (isOn: () => Promise<boolean>, send: () => Promise<boolean>) => {
     if (!isSwitched) return
     if (await isOff(isOn)) return forget()
@@ -219,9 +231,11 @@ export const register: Register = on => {
       isOff(() => $.mods.isOn({ name: NAME }))
         .then(off => tick($, off))
         .then(() => share(() => $.mods.isOn({ name: NAME }), () => publish($)))
+        .then(() => $.ui.invalidate('ui.render'))
         .catch(() => {})
     })
     await share(() => $.mods.isOn({ name: NAME }), () => publish($))
+    $.ui.invalidate('ui.render')
 
     return next(e)
   })
@@ -231,6 +245,7 @@ export const register: Register = on => {
   on('classic.SessionStart', { source: ['clear', 'resume', 'fork'] }, async ($, e, next) => {
     reset()
     await share(() => $.mods.isOn({ name: NAME }), () => publish($))
+    $.ui.invalidate('ui.render')
 
     return next(e)
   })
@@ -250,6 +265,7 @@ export const register: Register = on => {
     measure(result.usage, startedAt)
     S.lastActivity = now
     await share(() => $.mods.isOn({ name: NAME }), () => publish($))
+    $.ui.invalidate('ui.render')
 
     return result
   })
@@ -333,6 +349,7 @@ export const register: Register = on => {
       now = await $.clock.now()
       forget()
       if (isOn && !(await publish($))) isSwitched = false
+      $.ui.invalidate('ui.render')
     }
 
     return done
