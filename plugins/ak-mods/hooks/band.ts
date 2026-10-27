@@ -81,6 +81,10 @@ export const layout = (segments: readonly Segment[], columns: number): Layout =>
   }
 }
 
+// Provisional: the footer's width in columns on the desktop app. Unchecked
+// until the footer width is checked on the real desktop app.
+export const FOOTER_COLUMNS = 60
+
 const FOOTER_SEPARATOR = ' · '
 
 const footerText = (segment: Segment): string =>

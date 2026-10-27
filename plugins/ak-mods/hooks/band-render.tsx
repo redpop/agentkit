@@ -42,6 +42,20 @@ const checked = (info: ModsInfo, stored: unknown): Segment | undefined => {
 }
 
 /**
+ * The segments of the switched-on declared mods, each checked. A publish can
+ * land after its mod's switch-off cleared it: the switch decides.
+ */
+export const drawable = (
+  on: Record<string, boolean>,
+  declared: readonly ModsInfo[],
+  stored: Record<string, unknown>,
+): Segment[] =>
+  declared
+    .filter(info => on[info.name] === true)
+    .map(info => checked(info, stored[info.name]))
+    .filter(one => one !== undefined)
+
+/**
  * Draws the shared band above the prompt on the terminal: the segments of the
  * switched-on mods in up to two rows, a `+N` chip for those that did not fit,
  * then whatever lies beneath.
@@ -59,11 +73,7 @@ export async function renderBand(
   ])
   if (e.surface !== 'terminal' || e.props.hasSurvey) return next(e)
 
-  // A publish can land after its mod's switch-off cleared it: the switch decides.
-  const segments = declared
-    .filter(info => on[info.name] === true)
-    .map(info => checked(info, stored[info.name]))
-    .filter(one => one !== undefined)
+  const segments = drawable(on, declared, stored)
   if (segments.length === 0) return next(e)
 
   // Two mods on one hotkey: the first by title keeps it, the later goes without.

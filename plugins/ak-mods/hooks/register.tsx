@@ -1,7 +1,8 @@
 import type { Register } from 'claude-code'
 
 import type { Mods } from '../types'
-import { renderBand } from './band-render'
+import { FOOTER_COLUMNS, footerLabel } from './band'
+import { drawable, renderBand } from './band-render'
 import { renderPane } from './pane'
 import { initialOn, isAgentKit, namesOf, pruneKeys, rows, savedOf, upsert } from './switches'
 
@@ -121,6 +122,25 @@ export const register: Register = on => {
 
   // The shared band above the prompt, drawn from every switched-on mod's segment.
   on('ui.render', { component: 'AbovePrompt' }, ($, e, next) => renderBand($, e, next))
+
+  // The same segments as one label in the desktop footer, after its own modes.
+  // The terminal has the band instead, so only the desktop surface adds it.
+  on('ui.render', { component: 'SessionMode' }, async ($, e, next) => {
+    // The reads subscribe the drawing: a switch, a declare or a publish redraws it.
+    const [{ value: switched = {} }, { value: declared = [] }, { value: stored = {} }] = await Promise.all([
+      $.state.get(ON),
+      $.state.get(DECLARED),
+      $.state.get(SEGMENTS),
+    ])
+    if (e.surface !== 'desktop') return next(e)
+
+    const segments = drawable(switched, declared, stored)
+    if (segments.length === 0) return next(e)
+
+    const modes = Array.isArray(e.props?.modes) ? e.props.modes : []
+
+    return next({ ...e, props: { ...e.props, modes: [...modes, footerLabel(segments, FOOTER_COLUMNS).text] } })
+  })
 
   on('engine.create', async ($, e, next) => {
     const built = await next(e)
