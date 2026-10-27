@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.42.1] - 2026-10-27
+
+### 🐛 Fixed
+
+- `ak-mods` — **the Mods pane shows each mod's current segment and its button.** In a first test on
+  the desktop app neither the shared band nor the footer label appeared, while the pane did. A
+  switched-on mod's row now carries its segment, so the state and the button (`keep warm`) are
+  reachable on every surface.
+- `ak-mods` — a control character in a button's command draws as a space in the one-line footer
+  label, as it already did in texts and labels.
+- `ak-mods` — a failed switch reset on `/clear` or resume no longer ends the `session.end` hook
+  with an error.
+- `ak-keepwarm` — its `plugin.json` description matches the marketplace entry.
+
 ## [1.42.0] - 2026-10-27
 
 ### ✨ Added
