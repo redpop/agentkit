@@ -382,6 +382,36 @@ test(
   },
 )
 
+test("the band's +N chip records the band's width, so the pane warns as the band drops", { plugins: MODS }, async ($, on) => {
+  placing(on)
+  on('ui.render', { component: 'AbovePrompt' }, $ => {
+    const { Text } = $.ui.resolve({ surface: 'terminal', component: 'AbovePrompt' })
+
+    return <Text>below</Text>
+  })
+  // 40 columns a segment: the 75-column band holds one a row and drops the
+  // third; the 40-column pane, counting with its own width, would drop two.
+  for (const [name, title] of [['ak-a', 'Alpha'], ['ak-b', 'Beta'], ['ak-c', 'Gamma']] as const) {
+    await callAs($, name, 'declare', { name, title, summary: 's', details: 'd' })
+    await callAs($, name, 'set', { name, on: true })
+    await callAs($, name, 'segment', { text: 'x'.repeat(40) })
+  }
+
+  const band = await $.ui.mount({
+    plugin: 'ak-mods',
+    component: 'AbovePrompt',
+    surface: 'terminal',
+    props: { hasSurvey: false, isWorking: false, maxRows: 10, bodyColumns: 75, scroll: { offset: 0, bodyRows: 9 }, view: {} },
+  })
+  expect(await band.find({ key: 'more-segments' })).toMatchObject({ text: '+1' })
+  await band.press({ key: 'more-segments' })
+  await band.unmount()
+
+  const pane = await $.ui.mount({ ...PANE, surface: 'terminal', props: NARROW })
+  expect(await warningOf(pane)).toBe('1 mod does not fit the band: Gamma')
+  await pane.unmount()
+})
+
 test('the desktop counts with the footer width', { plugins: MODS }, async ($, on) => {
   placing(on)
   await three($)

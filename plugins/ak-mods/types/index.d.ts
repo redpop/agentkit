@@ -49,8 +49,9 @@ declare module 'claude-code' {
       expanded: Record<string, boolean>
       segments: Record<string, ModsSegment>
       /**
-       * The band's width in cells as `/ak-mods` last ran (the terminal's less the five of the
-       * engine's `[-]`): what the pane counts the band's cut with.
+       * The band's width in cells (its `bodyColumns`: the terminal's less the five of the engine's
+       * `[-]`), as `/ak-mods` or the band's `+N` chip last recorded it; `bandWidth` in
+       * `hooks/band.ts` defines it. What the pane counts the band's cut with.
        */
       width: number
     }

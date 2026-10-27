@@ -232,6 +232,33 @@ test(
   },
 )
 
+// Beneath ak-mods, it denies every write of the width: ak-mods' write rejects.
+const widthDown: Register = on => {
+  on('state.set', { plugin: 'ak-mods', key: 'width' }, () => ({ deny: 'state down' }))
+}
+
+test(
+  'the +N chip opens the Mods pane when the width cannot be recorded',
+  { plugins: [consumer('ak-a'), consumer('ak-b'), consumer('ak-c'), { name: 'ak-width-down', tier: 'append', register: widthDown }] },
+  async ($, on) => {
+    engine(on)
+    const opened: unknown[] = []
+    on('ui.open', (_, e) => {
+      opened.push(e)
+
+      return { value: { isPlaced: true } }
+    })
+    await publish($, 'ak-a', 'A', { text: 'aaaaaaaa' })
+    await publish($, 'ak-b', 'B', { text: 'bbbbbbbb' })
+    await publish($, 'ak-c', 'C', { text: 'cccccccc' })
+
+    const ui = await $.ui.mount({ ...BAND, props: { ...BAND.props, bodyColumns: 16 } })
+    await ui.press({ key: 'more-segments' })
+    expect(opened).toEqual([{ id: 'ak-mods', title: 'Mods' }])
+    await ui.unmount()
+  },
+)
+
 test('hotkey clash: first by title keeps it', { plugins: [consumer('ak-a'), consumer('ak-b')] }, async ($, on) => {
   engine(on)
   // Published in reverse: title order decides, not arrival or priority.

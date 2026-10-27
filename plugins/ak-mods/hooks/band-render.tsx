@@ -1,7 +1,7 @@
 import type { EngineInterface, Next, RenderInput } from 'claude-code'
 
 import type { ModsInfo, ModsRow, ModsSegment, ModsTone } from '../types'
-import { layout } from './band'
+import { bandWidth, layout } from './band'
 import type { Segment } from './band'
 
 const TONES: readonly string[] = ['ok', 'warn', 'alert', 'info', 'dim'] satisfies ModsTone[]
@@ -162,8 +162,15 @@ export async function renderBand(
               label={`+${hidden.length}`}
               plain
               onPress={() => {
-                // A failed open leaves the band as it is.
-                $.ui.open({ id: 'ak-mods', title: 'Mods' }).catch(() => {})
+                // The band's width (see `bandWidth`) first, so the pane counts
+                // the cut the band made. A failed write still opens the pane;
+                // a failed open leaves the band as it is.
+                const width = bandWidth({ bodyColumns: e.props.bodyColumns })
+                const recorded =
+                  width === undefined
+                    ? Promise.resolve(undefined)
+                    : $.state.set({ plugin: 'ak-mods', key: 'width' }, width).catch(() => undefined)
+                recorded.then(() => $.ui.open({ id: 'ak-mods', title: 'Mods' })).catch(() => {})
               }}
             />,
           ]}

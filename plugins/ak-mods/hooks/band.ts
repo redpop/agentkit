@@ -81,6 +81,25 @@ export const layout = (segments: readonly Segment[], columns: number): Layout =>
   }
 }
 
+// The cells at the band's right end that hold the engine's `[-]`.
+const BAND_MARK_COLUMNS = 5
+
+/**
+ * The band's width in cells, the one meaning of ak-mods' `width` state: the
+ * cells the band's tree is laid out in (`AbovePrompt`'s `bodyColumns`), the
+ * terminal's width less the engine's `[-]`. Both writers go through here,
+ * so they cannot drift: the `+N` chip with the band's `bodyColumns` as is,
+ * `/ak-mods` with the terminal's columns. The pane counts the band's cut
+ * with it. Undefined for a width that is no finite number above 0: nothing
+ * is recorded then.
+ */
+export const bandWidth = (from: { bodyColumns: number } | { terminalColumns: number }): number | undefined => {
+  const columns = 'bodyColumns' in from ? from.bodyColumns : from.terminalColumns
+  if (!Number.isFinite(columns) || columns <= 0) return undefined
+
+  return 'bodyColumns' in from ? columns : Math.max(1, columns - BAND_MARK_COLUMNS)
+}
+
 // Provisional: the footer's width in columns on the desktop app. Unchecked
 // until the footer width is checked on the real desktop app.
 export const FOOTER_COLUMNS = 60

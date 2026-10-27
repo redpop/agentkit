@@ -1,7 +1,7 @@
 import type { Register } from 'claude-code'
 
 import type { Mods } from '../types'
-import { FOOTER_COLUMNS, footerLabel } from './band'
+import { bandWidth, FOOTER_COLUMNS, footerLabel } from './band'
 import { drawable, renderBand } from './band-render'
 import { renderPane } from './pane'
 import { initialOn, isAgentKit, namesOf, pruneKeys, rows, savedOf, upsert } from './switches'
@@ -17,9 +17,6 @@ const WIDTH = { plugin: 'ak-mods', key: 'width' } as const
 // How many other sessions' switches the store keeps; older ones are dropped at start.
 const KEPT_SESSIONS = 100
 
-// The cells at the band's right end that hold the engine's `[-]`: the band's
-// `bodyColumns` is its column's width less these.
-const BAND_MARK_COLUMNS = 5
 
 // Where each loaded plugin came from (`<name>@<marketplace>`, `<name>@inline`),
 // as `plugin.register` saw it. A plugin admitted before ak-mods, or before its
@@ -118,15 +115,14 @@ export const register: Register = on => {
     return next(e)
   })
 
-  // The band's width, from the terminal's as the command runs: a drawing may
-  // not write state, and no other hook outside one sees the width. The pane
-  // counts the band's cut with it.
+  // The band's width (see `bandWidth`), from the terminal's as the command
+  // runs: a drawing may not write state. The band's `+N` chip records it too.
   on('command.run', { command: 'ak-mods' }, async ($, e) => {
-    const columns = e.presentation.columns
+    const width = bandWidth({ terminalColumns: e.presentation.columns })
     // No usable width, or a failed write, keeps the last one; with none at
     // all the pane counts with its own width. The pane opens either way.
-    if (Number.isFinite(columns) && columns > 0) {
-      await $.state.set(WIDTH, Math.max(1, columns - BAND_MARK_COLUMNS)).catch(() => undefined)
+    if (width !== undefined) {
+      await $.state.set(WIDTH, width).catch(() => undefined)
     }
     await $.ui.open({ id: 'ak-mods', title: 'Mods' })
 
