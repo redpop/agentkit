@@ -265,6 +265,24 @@ test("an off mod's segment never counts", { plugins: MODS }, async ($, on) => {
   }
 })
 
+test('after /resume the warning counts the mods on in the resumed chat', { plugins: MODS }, async ($, on) => {
+  engine(on, { standard: ['ak-a', 'ak-b', 'ak-c'] })
+  on('session.end', (_, e) => ({ sessionId: e.sessionId }))
+  await publish($, 'ak-a', 'Alpha')
+  await publish($, 'ak-b', 'Beta')
+  await publish($, 'ak-c', 'Gamma')
+
+  // The resume empties the switches and the segments until the next turn; the mods publish again.
+  await $.session.end({ reason: 'resume', sessionId: 'S1', resume: { id: 'S1' } })
+  for (const name of ['ak-a', 'ak-b', 'ak-c']) await callAs($, name, 'segment', { text: SEGMENT })
+
+  for (const surface of SURFACES) {
+    const ui = await $.ui.mount({ ...PANE, surface, props: NARROW })
+    expect(await warningOf(ui)).toBe('1 mod does not fit the band: Gamma')
+    await ui.unmount()
+  }
+})
+
 /** The engine, with a `ui.open` that places the pane, so `/ak-mods` runs. */
 const placing = (on: On) => {
   engine(on)

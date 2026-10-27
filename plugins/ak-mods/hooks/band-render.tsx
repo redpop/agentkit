@@ -1,6 +1,6 @@
 import type { EngineInterface, Next, RenderInput } from 'claude-code'
 
-import type { ModsInfo, ModsSegment, ModsTone } from '../types'
+import type { ModsInfo, ModsRow, ModsSegment, ModsTone } from '../types'
 import { layout } from './band'
 import type { Segment } from './band'
 
@@ -43,16 +43,14 @@ const checked = (info: ModsInfo, stored: unknown): Segment | undefined => {
 
 /**
  * The segments of the switched-on declared mods, each checked. A publish can
- * land after its mod's switch-off cleared it: the switch decides.
+ * land after its mod's switch-off cleared it: the switch decides. The rows
+ * are `$.mods.list()`'s, whose switches are the chat's even while a resume
+ * has emptied the state until the next turn.
  */
-export const drawable = (
-  on: Record<string, boolean>,
-  declared: readonly ModsInfo[],
-  stored: Record<string, unknown>,
-): Segment[] =>
-  declared
-    .filter(info => on[info.name] === true)
-    .map(info => checked(info, stored[info.name]))
+export const drawable = (rows: readonly ModsRow[], stored: Record<string, unknown>): Segment[] =>
+  rows
+    .filter(row => row.isOn)
+    .map(row => checked(row, stored[row.name]))
     .filter(one => one !== undefined)
 
 /**
@@ -65,15 +63,15 @@ export async function renderBand(
   e: RenderInput<'AbovePrompt'>,
   next: Next<'ui.render', RenderInput<'AbovePrompt'>>,
 ) {
-  // The reads subscribe the drawing: a switch, a declare or a publish redraws it.
-  const [{ value: on = {} }, { value: declared = [] }, { value: stored = {} }] = await Promise.all([
-    $.state.get({ plugin: 'ak-mods', key: 'on' }),
-    $.state.get({ plugin: 'ak-mods', key: 'declared' }),
+  // The reads subscribe the drawing: a switch, a declare or a publish redraws
+  // it (the list reads the switches and the declared mods).
+  const [list, { value: stored = {} }] = await Promise.all([
+    $.mods.list(),
     $.state.get({ plugin: 'ak-mods', key: 'segments' }),
   ])
   if (e.surface !== 'terminal' || e.props.hasSurvey) return next(e)
 
-  const segments = drawable(on, declared, stored)
+  const segments = drawable(list, stored)
   if (segments.length === 0) return next(e)
 
   // Two mods on one hotkey: the first by title keeps it, the later goes without.

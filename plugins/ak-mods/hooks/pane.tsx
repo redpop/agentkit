@@ -19,28 +19,22 @@ const warning = (hidden: readonly string[], titles: ReadonlyMap<string, string>)
 /** Draws the Mods pane: one row per declared mod, with its three buttons. Texts wrap. */
 export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
   const { Box, Button, Text } = $.ui.resolve(e)
-  const list = await $.mods.list()
-  // The reads subscribe the pane: a switch, a declare or a publish redraws it.
-  const [
-    { value: expanded = {} },
-    { value: on = {} },
-    { value: declared = [] },
-    { value: stored = {} },
-    { value: width = e.props.bodyColumns },
-  ] = await Promise.all([
-    $.state.get({ plugin: 'ak-mods', key: 'expanded' }),
-    $.state.get({ plugin: 'ak-mods', key: 'on' }),
-    $.state.get({ plugin: 'ak-mods', key: 'declared' }),
-    $.state.get({ plugin: 'ak-mods', key: 'segments' }),
-    $.state.get({ plugin: 'ak-mods', key: 'width' }),
-  ])
+  // The reads subscribe the pane: a switch, a declare or a publish redraws it
+  // (the list reads the switches and the declared mods).
+  const [list, { value: expanded = {} }, { value: stored = {} }, { value: width = e.props.bodyColumns }] =
+    await Promise.all([
+      $.mods.list(),
+      $.state.get({ plugin: 'ak-mods', key: 'expanded' }),
+      $.state.get({ plugin: 'ak-mods', key: 'segments' }),
+      $.state.get({ plugin: 'ak-mods', key: 'width' }),
+    ])
 
   // The cut the band makes, counted again here. The terminal counts with its
   // width as `/ak-mods` last ran (a docked pane is narrower than the band),
   // the pane's own only before that is known: approximate after a resize,
   // until the command runs again. The desktop counts with the footer's width,
   // as the footer does.
-  const segments = drawable(on, declared, stored)
+  const segments = drawable(list, stored)
   const hidden =
     segments.length === 0
       ? []
@@ -49,7 +43,7 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
         : e.surface === 'desktop'
           ? footerLabel(segments, FOOTER_COLUMNS).hidden
           : []
-  const dropped = warning(hidden, new Map(declared.map(info => [info.name, info.title])))
+  const dropped = warning(hidden, new Map(list.map(row => [row.name, row.title])))
 
   return (
     <Box flexDirection="column">

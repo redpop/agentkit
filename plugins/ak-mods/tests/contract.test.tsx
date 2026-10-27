@@ -59,9 +59,11 @@ const engine = (on: On, store: Readonly<Record<string, unknown>> = {}) => {
 
     return { value: undefined }
   })
-  // The engine's own drawing beneath the plugins.
+  // The engine's own drawing beneath the plugins; the desktop footer draws
+  // one Text per mode it is given.
   on('ui.render', ($, e) => {
     const { Text } = $.ui.resolve(e)
+    if (e.component === 'SessionMode') return <Text>{e.props.modes.join(', ')}</Text>
 
     return <Text>engine</Text>
   })
@@ -185,6 +187,23 @@ test('/clear keeps the segment of a mod that stays on', { plugins: PLUGINS }, as
   const ui = await $.ui.mount(BAND)
   expect(await ui.find({ type: 'Text', text: 'Fixture segment' })).toBeDefined()
   await ui.unmount()
+})
+
+test('/resume shows the segment of a mod on in the resumed chat before any turn', { plugins: PLUGINS }, async ($, on) => {
+  engine(on, { standard: [NAME] })
+  on('session.end', (_, e) => ({ sessionId: e.sessionId }))
+  await start($)
+
+  // The resume empties the switches until the next turn; the restore answers from the store.
+  await $.session.end({ reason: 'resume', sessionId: 'S1', resume: { id: 'S1' } })
+  await $.classic.SessionStart({ source: 'resume' })
+  const band = await $.ui.mount(BAND)
+  expect(await band.find({ type: 'Text', text: 'Fixture segment' })).toBeDefined()
+  await band.unmount()
+
+  const footer = await $.ui.mount({ plugin: NAME, component: 'SessionMode', surface: 'desktop', props: { modes: [] } })
+  expect(await footer.find({ type: 'Text', text: 'Fixture segment' })).toBeDefined()
+  await footer.unmount()
 })
 
 test("the mod's command turns it on", { plugins: PLUGINS }, async ($, on) => {

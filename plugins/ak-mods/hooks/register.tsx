@@ -136,15 +136,12 @@ export const register: Register = on => {
   // The same segments as one label in the desktop footer, after its own modes.
   // The terminal has the band instead, so only the desktop surface adds it.
   on('ui.render', { component: 'SessionMode' }, async ($, e, next) => {
-    // The reads subscribe the drawing: a switch, a declare or a publish redraws it.
-    const [{ value: switched = {} }, { value: declared = [] }, { value: stored = {} }] = await Promise.all([
-      $.state.get(ON),
-      $.state.get(DECLARED),
-      $.state.get(SEGMENTS),
-    ])
+    // The reads subscribe the drawing: a switch, a declare or a publish redraws
+    // it (the list reads the switches and the declared mods).
+    const [list, { value: stored = {} }] = await Promise.all([$.mods.list(), $.state.get(SEGMENTS)])
     if (e.surface !== 'desktop') return next(e)
 
-    const segments = drawable(switched, declared, stored)
+    const segments = drawable(list, stored)
     if (segments.length === 0) return next(e)
 
     const modes = Array.isArray(e.props?.modes) ? e.props.modes : []
