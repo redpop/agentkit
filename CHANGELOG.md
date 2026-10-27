@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.42.2] - 2026-10-27
+
+### 🐛 Fixed
+
+- `ak-mods` — **the shared band draws on the desktop app too.** Claude Code draws the band above
+  the prompt on the terminal and the desktop app, but `ak-mods` drew it only on the terminal and
+  put a footer label on the desktop app instead, which did not appear there. The footer label is
+  gone; the desktop app gets the same band, buttons included.
+- `ak-keepwarm` — **`/clear`, `/resume` and `/branch` reset keep warm again on a Team or Enterprise
+  login.** Where Claude Code's built-in guard loads, a mod the user installed gets no `classic.*`
+  event, so the reset in a `classic.SessionStart` hook never ran and keep warm went on with the
+  ended chat's cache. It now resets in a `session.end` hook; the recipe in
+  `docs/mods/writing-a-mod.md` and its fixture republish their segment there too.
+- `ak-keepwarm` — pressing **keep warm** in the band or the Mods pane now shows the kept-warm
+  segment. A command that `ak-mods` runs for a button runs inside its own call, where a publish was
+  lost; `/keepwarm` now publishes once it has returned.
+
 ## [1.42.1] - 2026-10-27
 
 ### 🐛 Fixed
