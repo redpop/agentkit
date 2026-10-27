@@ -164,6 +164,9 @@ test('/branch keeps the segment of a mod that stays on', { plugins: PLUGINS }, a
   const { clock } = engine(on, { standard: [NAME] })
   on('session.end', (_, e) => ({ sessionId: e.sessionId }))
   await start($)
+  // The switch-on's own publish lands first, so only the mod's republish
+  // can draw the segment after the end.
+  await clock.settle()
 
   // Whatever ends the chat, ak-mods clears every segment; the branch keeps the switches.
   await $.session.end({ reason: 'other', sessionId: 'S1', resume: { id: 'S1' } })
@@ -177,6 +180,8 @@ test('/clear keeps the segment of a mod that stays on', { plugins: PLUGINS }, as
   const { clock } = engine(on, { standard: [NAME] })
   on('session.end', (_, e) => ({ sessionId: e.sessionId }))
   await start($)
+  // As for /branch: only the mod's republish can draw the segment after the end.
+  await clock.settle()
 
   // ak-mods clears every segment as the chat ends; the mod publishes again.
   await $.session.end({ reason: 'clear', sessionId: 'S1', resume: { id: 'S1' } })
