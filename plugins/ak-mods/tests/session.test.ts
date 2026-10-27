@@ -379,3 +379,29 @@ for (const reason of ['clear', 'resume', 'other'] as const) {
     expect(await call($, 'ak-a', 'segments')).toEqual({})
   })
 }
+
+// Beneath ak-mods: it denies every write of the segments, so ak-mods'
+// `$.state.set` rejects, and keeps the reason of each `session.end` that
+// reaches it in the store under `ended`.
+const failingSegments: Register = on => {
+  on('state.set', { plugin: 'ak-mods', key: 'segments' }, () => ({ deny: 'state down' }))
+  on('session.end', async ($, e, next) => {
+    await $.store.set('ended', e.reason)
+
+    return next(e)
+  })
+}
+
+test(
+  'a failed segments clear still resets the switches on /clear and runs the hooks beneath',
+  { plugins: [...PLUGINS, { name: 'ak-failing', tier: 'append', register: failingSegments }] },
+  async ($, on) => {
+    engine(on, { standard: ['ak-a'], 'session:S1': { 'ak-b': true, 'ak-a': false } })
+    await start($)
+    expect(await call($, 'ak-b', 'isOn', { name: 'ak-b' })).toBe(true)
+
+    await $.session.end({ reason: 'clear', sessionId: 'S1', resume: { id: 'S1' } })
+    expect(await call($, 'ak-a', 'switches')).toEqual(initialOn(['ak-a'], undefined))
+    expect(await call($, 'ak-a', 'store', 'ended')).toBe('clear')
+  },
+)

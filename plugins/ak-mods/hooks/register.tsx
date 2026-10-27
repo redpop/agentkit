@@ -104,8 +104,9 @@ export const register: Register = on => {
   // or turn. The old chat's switches stay in the store, so a later resume of
   // it gets them back; pruning ages them out.
   on('session.end', async ($, e, next) => {
-    // Segments belong to the chat that showed them, whatever ends it.
-    await $.state.set(SEGMENTS, {})
+    // Segments belong to the chat that showed them, whatever ends it. A
+    // failed clear keeps them, not the switches of the chat that ended.
+    await $.state.set(SEGMENTS, {}).catch(() => undefined)
     if (e.reason === 'clear' || e.reason === 'resume') {
       restoring = undefined
       await $.state.set(
