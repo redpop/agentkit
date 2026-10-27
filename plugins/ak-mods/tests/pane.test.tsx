@@ -436,3 +436,53 @@ test('/ak-mods opens the pane', { plugins: PLUGINS }, async ($, on) => {
   expect(ran.text).toBe('Opened the Mods pane.')
   expect(opened).toEqual([{ id: 'ak-mods', title: 'Mods' }])
 })
+
+// The pane draws on every surface the band or the footer may not: each row
+// carries its mod's current segment, and the segment's button.
+test("a row shows its mod's current segment, on every surface", { plugins: MODS }, async ($, on) => {
+  engine(on)
+  await callAs($, 'ak-a', 'declare', { name: 'ak-a', title: 'Alpha', summary: 's', details: 'd' })
+  await callAs($, 'ak-a', 'set', { name: 'ak-a', on: true })
+  await callAs($, 'ak-a', 'segment', { text: '● cache warm 60m', button: { label: 'keep warm', hotkey: '1', command: 'zap' } })
+
+  for (const surface of SURFACES) {
+    const ui = await $.ui.mount({ ...PANE, surface })
+    expect((await ui.find({ type: 'Text', text: '● cache warm 60m' }))?.text).toBe('● cache warm 60m')
+    expect((await ui.find({ key: 'seg-ak-a' }))?.text).toContain('keep warm')
+    await ui.unmount()
+  }
+})
+
+test("an off mod's row shows no segment", { plugins: MODS }, async ($, on) => {
+  engine(on)
+  await callAs($, 'ak-a', 'declare', { name: 'ak-a', title: 'Alpha', summary: 's', details: 'd' })
+  await callAs($, 'ak-a', 'set', { name: 'ak-a', on: true })
+  await callAs($, 'ak-a', 'set', { name: 'ak-a', on: false })
+  // Published after the switch-off: only the filter hides it.
+  await callAs($, 'ak-a', 'segment', { text: '● cache warm 60m', button: { label: 'keep warm', command: 'zap' } })
+
+  for (const surface of SURFACES) {
+    const ui = await $.ui.mount({ ...PANE, surface })
+    expect(await ui.find({ type: 'Text', text: '● cache warm 60m' })).toBeUndefined()
+    expect(await ui.find({ key: 'seg-ak-a' })).toBeUndefined()
+    await ui.unmount()
+  }
+})
+
+test("the row's segment button runs its command", { plugins: MODS }, async ($, on) => {
+  engine(on)
+  const ran: string[] = []
+  on('command.run', { command: 'zap' }, (_, e) => {
+    ran.push(`${e.command} ${e.args}`)
+
+    return { text: '' }
+  })
+  await callAs($, 'ak-a', 'declare', { name: 'ak-a', title: 'Alpha', summary: 's', details: 'd' })
+  await callAs($, 'ak-a', 'set', { name: 'ak-a', on: true })
+  await callAs($, 'ak-a', 'segment', { text: 'x', button: { label: 'go', command: 'zap', args: 'now' } })
+
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  await ui.press({ key: 'seg-ak-a' })
+  expect(ran).toEqual(['zap now'])
+  await ui.unmount()
+})

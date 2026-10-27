@@ -10,7 +10,9 @@ Requires Claude Code 2.1.309 or later (hooks-module support).
 
 ## Pane
 
-One row per mod that declared itself: title and summary, then three buttons.
+One row per mod that declared itself: title and summary, then three buttons. A switched-on mod
+that publishes a segment also shows it in its row, with the segment's button; the pane draws on
+every surface, so this is where a segment is always visible.
 
 | Button | Effect |
 |--------|--------|
@@ -41,8 +43,9 @@ only signals; there is no toast.
 On the desktop app the footer label is the path: `ak-mods` appends one label to the footer with the
 segments' texts joined by ` · `, one line only. A segment with a button ends with the button's
 slash command (`/keepwarm`), which is how you act there. Segments that do not fit drop out the same
-way and the label ends with `+N`. The footer's width (60 characters) is provisional until it is
-checked on the desktop app.
+way and the label ends with `+N`. The footer's width (60 characters) is provisional, and in a first
+test on the desktop app neither the band nor the footer label appeared: there, read the segments in
+the Mods pane.
 
 ## Session rules
 

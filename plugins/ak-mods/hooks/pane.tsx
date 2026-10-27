@@ -45,6 +45,9 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
           ? footerLabel(segments, FOOTER_COLUMNS).hidden
           : []
   const dropped = warning(hidden, new Map(list.map(row => [row.name, row.title])))
+  // Each row's current segment too: the pane draws on surfaces where the band
+  // or the footer may not, so this is where a segment is always visible.
+  const current = new Map(segments.map(one => [one.name, one]))
 
   return (
     <Box flexDirection="column">
@@ -53,6 +56,23 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
         <Box flexDirection="column" marginBottom={1}>
           <Text bold>{row.title}</Text>
           <Text dimColor>{row.summary}</Text>
+          {current.has(row.name) && (
+            <Box>
+              <Text>{current.get(row.name)?.text}</Text>
+              {current.get(row.name)?.button !== undefined && [
+                <Text key={`gap-${row.name}`}> </Text>,
+                <Button
+                  key={`seg-${row.name}`}
+                  label={current.get(row.name)?.button?.label ?? ''}
+                  onPress={() => {
+                    const button = current.get(row.name)?.button
+                    // A command the host refuses changes nothing in the pane.
+                    $.command.run({ command: button?.command ?? '', args: button?.args ?? '' }).catch(() => {})
+                  }}
+                />,
+              ]}
+            </Box>
+          )}
           {expanded[row.name] === true && <Text dimColor>{row.details}</Text>}
           <Box>
             <Button

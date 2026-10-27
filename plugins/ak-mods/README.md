@@ -24,7 +24,8 @@ Run `/ak-mods` to open the pane. Each mod has three buttons:
 Each switched-on mod shows one segment in a single band above the prompt. When they do not fit, the
 band grows to two rows, then drops the lowest-priority segments and ends with a `+N` chip that
 opens the pane. The pane then names the mods that do not fit. On the desktop app the segments
-form one label in the footer instead.
+form one label in the footer instead. Every row of the pane also shows its mod's current segment
+and button, on every surface.
 
 ## Rules
 
