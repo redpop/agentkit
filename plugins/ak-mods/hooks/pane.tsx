@@ -29,11 +29,11 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
       $.state.get({ plugin: 'ak-mods', key: 'width' }),
     ])
 
-  // The cut the band makes, counted again here. The terminal counts with its
-  // width as `/ak-mods` last ran (a docked pane is narrower than the band),
-  // the pane's own only before that is known: approximate after a resize,
-  // until the command runs again. The desktop counts with the footer's width,
-  // as the footer does.
+  // The cut the band makes, counted again here. The terminal counts with the
+  // band's width as `/ak-mods` last ran (the terminal's less the `[-]`; a
+  // docked pane is narrower than the band), the pane's own only before that
+  // is known: approximate after a resize, until the command runs again. The
+  // desktop counts with the footer's width, as the footer does.
   const segments = drawable(list, stored)
   const hidden =
     segments.length === 0

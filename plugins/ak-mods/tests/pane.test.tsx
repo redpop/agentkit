@@ -289,10 +289,10 @@ const placing = (on: On) => {
   on('ui.open', () => ({ value: { isPlaced: true } }))
 }
 
-/** Runs `/ak-mods` in a terminal `columns` wide, which records that width. */
+/** Runs `/ak-mods` in a terminal `columns` wide, which records the band's width: five less, for the `[-]`. */
 const record = ($: Engine, columns: number) => runCommand($, 'ak-mods', '', columns)
 
-/** Alpha, Beta and Gamma, 25 columns each: one row of 81 holds all three. */
+/** Alpha, Beta and Gamma, 25 columns each: one row of 81 holds all three, two rows of 53. */
 const three = async ($: Engine) => {
   await publish($, 'ak-a', 'Alpha')
   await publish($, 'ak-b', 'Beta')
@@ -304,13 +304,13 @@ test('the terminal counts with the recorded width, not the pane width', { plugin
   await three($)
 
   // The band is 81 wide and shows all three: the 40-column pane beside it does not warn.
-  await record($, 81)
+  await record($, 86)
   const narrow = await $.ui.mount({ ...PANE, surface: 'terminal', props: NARROW })
   expect(await warningOf(narrow)).toBeUndefined()
   await narrow.unmount()
 
   // The band is 40 wide and drops one: a pane wider than that warns all the same.
-  await record($, 40)
+  await record($, 45)
   const wide = await $.ui.mount({ ...PANE, surface: 'terminal', props: { ...PANE.props, bodyColumns: 200 } })
   expect(await warningOf(wide)).toBe('1 mod does not fit the band: Gamma')
   await wide.unmount()
@@ -319,21 +319,35 @@ test('the terminal counts with the recorded width, not the pane width', { plugin
 test('the warning updates when the recorded width changes', { plugins: MODS }, async ($, on) => {
   placing(on)
   await three($)
-  await record($, 81)
+  await record($, 86)
 
   const ui = await $.ui.mount({ ...PANE, surface: 'terminal', props: NARROW })
   expect(await warningOf(ui)).toBeUndefined()
-  await record($, 40)
+  await record($, 45)
   expect(await warningOf(ui)).toBe('1 mod does not fit the band: Gamma')
-  await record($, 81)
+  await record($, 86)
   expect(await warningOf(ui)).toBeUndefined()
+  await ui.unmount()
+})
+
+test('the band is five columns narrower than the terminal', { plugins: MODS }, async ($, on) => {
+  placing(on)
+  await three($)
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal', props: NARROW })
+
+  // 58 columns leave a band of 53: two rows hold all three.
+  await record($, 58)
+  expect(await warningOf(ui)).toBeUndefined()
+  // 57 leave 52: one a row, so the third is dropped.
+  await record($, 57)
+  expect(await warningOf(ui)).toBe('1 mod does not fit the band: Gamma')
   await ui.unmount()
 })
 
 test('a terminal width of 0 or NaN is not recorded', { plugins: MODS }, async ($, on) => {
   placing(on)
   await three($)
-  await record($, 81)
+  await record($, 86)
 
   const ui = await $.ui.mount({ ...PANE, surface: 'terminal', props: NARROW })
   for (const columns of [0, Number.NaN]) {
