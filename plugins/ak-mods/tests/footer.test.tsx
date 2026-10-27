@@ -108,6 +108,15 @@ test('a segment with a button ends with its /command', { plugins: [consumer('ak-
   await ui.unmount()
 })
 
+test("control characters in a button's command become spaces in the label", { plugins: [consumer('ak-a')] }, async ($, on) => {
+  engine(on)
+  await publish($, 'ak-a', 'A', { text: 'ready', button: { label: 'go', command: 'go\nnow' } })
+
+  const ui = await $.ui.mount(FOOTER)
+  expect(await modesOf(ui)).toEqual(['plan', 'ready /go now'])
+  await ui.unmount()
+})
+
 test('control characters in a segment become spaces in the one-line label', { plugins: [consumer('ak-a')] }, async ($, on) => {
   engine(on)
   await publish($, 'ak-a', 'A', { text: 'two\nlines\u001b[31m' })

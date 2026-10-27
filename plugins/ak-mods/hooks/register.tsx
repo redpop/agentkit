@@ -17,7 +17,6 @@ const WIDTH = { plugin: 'ak-mods', key: 'width' } as const
 // How many other sessions' switches the store keeps; older ones are dropped at start.
 const KEPT_SESSIONS = 100
 
-
 // Where each loaded plugin came from (`<name>@<marketplace>`, `<name>@inline`),
 // as `plugin.register` saw it. A plugin admitted before ak-mods, or before its
 // last reload, is not in it and is judged by name alone.
@@ -106,10 +105,11 @@ export const register: Register = on => {
     await $.state.set(SEGMENTS, {}).catch(() => undefined)
     if (e.reason === 'clear' || e.reason === 'resume') {
       restoring = undefined
-      await $.state.set(
-        ON,
-        e.reason === 'clear' ? initialOn(namesOf(await $.store.get('standard')), undefined) : {},
-      )
+      // A failed reset keeps the ended chat's switches until the next write;
+      // the hooks beneath still run.
+      await $.state
+        .set(ON, e.reason === 'clear' ? initialOn(namesOf(await $.store.get('standard')), undefined) : {})
+        .catch(() => undefined)
     }
 
     return next(e)

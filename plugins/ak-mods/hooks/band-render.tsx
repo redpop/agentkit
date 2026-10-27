@@ -25,10 +25,10 @@ const hotkeyOf = (hotkey: unknown): string | undefined =>
 /**
  * A stored segment as the band can draw it, or undefined. Segments are stored
  * unchecked: an unknown tone draws uncoloured, a priority that is no number
- * takes the default, a control character in a text or a label draws as a
- * space, a hotkey that is not one printable character is left out, a button
- * without a label or command is left out, and a segment without text is not
- * drawn.
+ * takes the default, a control character in a text, a label or a command
+ * draws as a space, a hotkey that is not one printable character is left
+ * out, a button without a label or command is left out, and a segment
+ * without text is not drawn.
  */
 const checked = (info: ModsInfo, stored: unknown): Segment | undefined => {
   const one = (stored ?? {}) as Partial<Record<keyof ModsSegment, unknown>>
@@ -45,7 +45,7 @@ const checked = (info: ModsInfo, stored: unknown): Segment | undefined => {
       typeof button.label === 'string' && typeof button.command === 'string'
         ? {
             label: spaced(button.label),
-            command: button.command,
+            command: spaced(button.command),
             hotkey: hotkeyOf(button.hotkey),
             args: typeof button.args === 'string' ? button.args : undefined,
           }

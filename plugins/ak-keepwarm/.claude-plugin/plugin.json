@@ -1,7 +1,7 @@
 {
   "name": "ak-keepwarm",
-  "description": "Keeps this chat's prompt cache warm with a small ping before it expires, so the next message does not rewrite the whole context",
-  "version": "1.42.0",
+  "description": "Mod: keeps this chat's prompt cache warm with a small ping before it expires (/keepwarm), with a segment in the shared band",
+  "version": "1.42.1",
   "author": {
     "name": "redpop",
     "url": "https://github.com/redpop"
