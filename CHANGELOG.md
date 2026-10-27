@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### ✨ Added
+
+- `ak-keepwarm` — **new mod: keep a chat's prompt cache warm.** Once a cache expires, the next
+  message writes the whole context again at up to twice the input price. `/keepwarm [hours|off]`
+  sends a small ping shortly before the cache would expire (4 hours by default, 24 at most); a band
+  above the prompt shows how long the cache stays warm and what a rewrite would cost. A ping that
+  writes to the cache instead of reading it, or that gets no answer, turns keep warm off. It is the
+  keepwarm part of Cache Keeper by Nate Herk (MIT), ported to the `ak-mods` contract so the Mods
+  pane switches it per chat; the board, cold-send guard and handoff of the original are left out.
+
 ## [1.41.1] - 2026-10-26
 
 ### 🐛 Fixed

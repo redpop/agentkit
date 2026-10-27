@@ -1,6 +1,6 @@
 # AgentKit
 
-Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) — 11 plugins with 25 skills, 8 agents, a mod switcher, and domain knowledge bases for Git workflows, security, React, and more.
+Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) — 12 plugins with 25 skills, 8 agents, a mod switcher, a keep-warm mod, and domain knowledge bases for Git workflows, security, React, and more.
 
 ## Plugins
 
@@ -9,6 +9,7 @@ Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/
 | [**ak-git**](#ak-git--smart-git-operations) | 1 | 2 | Smart commits, change analysis, conflict resolution, releases |
 | [**ak-improve**](#ak-improve--code-improvement) | — | 2 | Code refactoring and performance optimization agents |
 | [**ak-js**](#ak-js--javascript-config-doctor) | 1 | 1 | JS config validation, 11 cross-file rules, monorepo-aware |
+| [**ak-keepwarm**](#ak-keepwarm--keep-the-prompt-cache-warm) | — | — | Mod: `/keepwarm` pings the prompt cache before it expires; a band shows how long it stays warm |
 | [**ak-knowledge**](#ak-knowledge--solution-documentation) | 4 | 1 | Solution docs, knowledge maintenance, AGENTS.md tools |
 | [**ak-meta**](#ak-meta--project-management-tools) | 4 | 2 | Discovery, changelog generation, session handoff for the next AI session, quality assessment, diagrams |
 | [**ak-mods**](#ak-mods--mod-switcher) | — | — | Mods pane: turn AgentKit mods on or off per chat, with standard mods |
@@ -171,6 +172,18 @@ Requires Claude Code 2.1.309 or later (hooks-module support).
 
 See [Mods](docs/mods/) for how switches behave and
 [Writing an AgentKit mod](docs/mods/writing-a-mod.md) for the contract a mod follows.
+
+### ak-keepwarm — Keep the Prompt Cache Warm
+
+A mod (needs `ak-mods`, installed with it) that keeps the chat's prompt cache warm. A band above the
+prompt shows how long the cache stays warm; `/keepwarm` sends a small ping shortly before it
+expires. Based on Cache Keeper by Nate Herk (MIT).
+
+#### Commands
+
+| Command | Purpose | Example |
+|---------|---------|---------|
+| [`/keepwarm`](docs/mods/ak-keepwarm/keepwarm.md) | Keep the cache warm for 4 hours (or N hours), or turn it off | `/keepwarm 2`, `/keepwarm off` |
 
 ### ak-notifications — macOS Notifications
 

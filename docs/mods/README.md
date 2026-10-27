@@ -11,6 +11,7 @@ Requires Claude Code 2.1.309 or later (hooks-module support).
 | Mod | Plugin | Purpose |
 |-----|--------|---------|
 | [Mod switcher](ak-mods/switcher.md) | ak-mods | The Mods pane: ○ Off / ● On, ☆ / ★ Standard, and More/Less per mod |
+| [Keep warm](ak-keepwarm/keepwarm.md) | ak-keepwarm | Keeps the prompt cache warm with a small ping before it expires |
 
 ## Writing a mod
 
