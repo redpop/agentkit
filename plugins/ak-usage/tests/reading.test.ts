@@ -28,6 +28,7 @@ test('the context alone where no rate limit is reported', () => {
       { text: ' ctx', tone: 'dim' },
     ],
     detail: 'ctx 67%',
+    card: [{ label: 'Context', value: '67%' }],
     tone: 'ok',
   })
 })
@@ -133,4 +134,18 @@ test('where the band draws pictures, each figure is a ring with its percentage a
   ])
   const two = reading({ ...usage(134400, { five_hour: 7 }) }, NOW)
   expect(two?.rich.map(part => part.text).join('')).toBe('ctx 67% 67% ctx   5h 7% 7% 5h')
+})
+
+test('the hover card shows every window still current, the week below 75 % too, each with its reset', () => {
+  const now = reading(
+    { ...usage(134400), rateLimits: [resets('five_hour', 42, at(28, 23, 10)), resets('seven_day', 40, at(31, 10))] },
+    NOW,
+  )
+  expect(now?.card).toEqual([
+    { label: 'Context', value: '67%' },
+    { label: '5-hour limit', value: '42% · resets 11:10pm' },
+    { label: '7-day limit', value: '40% · resets Sat 10:00am' },
+  ])
+  // A window whose reset has passed leaves the card as it leaves the band.
+  expect(reading(windows(resets('five_hour', 42, at(28, 19))), NOW)).toBeUndefined()
 })

@@ -22,7 +22,9 @@ type Tone = 'ok' | 'warn' | 'alert'
 
 type Part = { text: string; tone: Tone | 'dim'; ring?: number }
 
-export type Reading = { text: string; parts: Part[]; rich: Part[]; detail: string; tone: Tone }
+type Row = { label: string; value: string }
+
+export type Reading = { text: string; parts: Part[]; rich: Part[]; detail: string; card: Row[]; tone: Tone }
 
 // A window at 90 % or more: `key` names it until it resets, `text` is the toast.
 export type Alert = { key: string; text: string }
@@ -129,10 +131,25 @@ export const reading = (usage: SessionUsage, now: number): Reading | undefined =
     ...(percent >= WARN && resetsAt !== undefined ? [{ text: `  ${reset(resetsAt)}`, tone: 'dim' as const }] : []),
   ])
 
+  // The hover card has the room for every window, the week below 75 % too, each with its reset.
+  const context = contextPercent(usage)
+  const card: Row[] = [
+    ...(context === undefined ? [] : [{ label: 'Context', value: `${context}%` }]),
+    ...WINDOWS.flatMap(({ kind, title }) => {
+      const limit = windowOf(usage.rateLimits, kind, now)
+      if (limit === undefined) return []
+      const resetsAt = resetOf(limit)
+      const value = `${Math.round(limit.percentUsed)}%${resetsAt === undefined ? '' : ` · ${reset(resetsAt)}`}`
+
+      return [{ label: title, value }]
+    }),
+  ]
+
   return {
     text: parts.map(part => part.text).join(''),
     parts,
     rich,
+    card,
     detail: figures
       .map(({ label, percent, resetsAt }) => `${label} ${percent}%${resetsAt === undefined ? '' : ` (${reset(resetsAt)})`}`)
       .join(' · '),

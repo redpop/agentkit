@@ -34,9 +34,11 @@ percentage and reset after the bars, `· ctx 67% · 5h 42% (resets 11:10pm)`. Th
 7: it comes first in the band, before keep warm (6) and the session id (2), and when the band runs
 out of room it is dropped last. It has no button.
 
-On the desktop app each figure draws as a ring filled to its percentage, with the percentage and
-the label beside it: `◔ 67% ctx   ◔ 42% 5h`. A window from 75 % adds its reset there too. The ring
-and the percentage take the figure's colour; the terminal keeps the bars.
+On the desktop app each figure draws as a ring filled to its percentage, with the percentage and the
+label beside it: `◔ 67% ctx   ◔ 42% 5h`. A window from 75 % adds its reset there too. The ring and
+the percentage take the figure's colour; the terminal keeps the bars. With the pointer over the
+segment, a card lists the context and every window still current, the week below 75 % too, each
+window with its reset.
 
 Without `ak-mods` (or when it refuses the mod, or a publish fails), the mod draws its own band
 instead, never both, with the same parts and colours.
