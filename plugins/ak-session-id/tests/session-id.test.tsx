@@ -109,7 +109,7 @@ test('without ak-mods the own band shows the end of the id and copies it on the 
 
   for (const surface of ['terminal', 'desktop'] as const) {
     const ui = await $.ui.mount({ ...BAND, surface })
-    expect(await ui.find({ type: 'Text', text: `session …${HOST.slice(-6)}` })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: `id …${HOST.slice(-6)}` })).toBeDefined()
     expect((await ui.find({ key: 'session-id' }))?.text).toBe('copy')
     expect(await ui.find({ type: 'Text', text: 'engine' })).toBeDefined()
     await ui.press({ key: 'session-id' })
@@ -190,7 +190,7 @@ test('publishes the end of the desktop id with the copy button', OWNED, async ($
   const { toasts } = engine(on)
   await start($)
 
-  expect(segments(toasts).at(-1)).toEqual({ text: `session …${HOST.slice(-6)}`, tone: 'dim', priority: 2, button: COPY })
+  expect(segments(toasts).at(-1)).toEqual({ text: `id …${HOST.slice(-6)}`, tone: 'dim', priority: 2, button: COPY })
 })
 
 test('draws no band of its own while ak-mods owns the drawing', OWNED, async ($, on) => {
@@ -217,7 +217,7 @@ test('after a chat ends it publishes the new id once the end has passed', OWNED,
   await $.session.end({ reason: 'clear', sessionId: ENGINE, resume: { id: ENGINE } })
   expect(segments(toasts).length).toBe(before)
   await clock.settle()
-  expect(segments(toasts).at(-1)?.text).toBe('session …123456')
+  expect(segments(toasts).at(-1)?.text).toBe('id …123456')
 })
 
 test('switched off it publishes nothing; switched on again it publishes', OWNED, async ($, on) => {
@@ -233,7 +233,7 @@ test('switched off it publishes nothing; switched on again it publishes', OWNED,
 
   await standIn($, 'on')
   await clock.settle()
-  expect(segments(toasts).at(-1)?.text).toBe(`session …${HOST.slice(-6)}`)
+  expect(segments(toasts).at(-1)?.text).toBe(`id …${HOST.slice(-6)}`)
 })
 
 test('/session-id turns the mod on when it is off', OWNED, async ($, on) => {
@@ -244,5 +244,5 @@ test('/session-id turns the mod on when it is off', OWNED, async ($, on) => {
   await sessionId($)
   await clock.settle()
   expect(copied).toEqual([{ text: HOST }])
-  expect(segments(toasts).at(-1)?.text).toBe(`session …${HOST.slice(-6)}`)
+  expect(segments(toasts).at(-1)?.text).toBe(`id …${HOST.slice(-6)}`)
 })

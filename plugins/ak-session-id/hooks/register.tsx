@@ -18,7 +18,7 @@ const pick = async ($: EngineInterface, isEngine: boolean): Promise<string> => {
   return host !== undefined && host !== '' ? host : await $.session.id()
 }
 
-const tail = (id: string): string => `session …${id.slice(-TAIL)}`
+const tail = (id: string): string => `id …${id.slice(-TAIL)}`
 
 // Copies the id and says so. Should no clipboard take it, the answer names the whole id and why, so
 // it can be copied by hand.

@@ -29,7 +29,7 @@ prompt:
 
 | Segment | Meaning |
 |---------|---------|
-| `session …4e5f6a` | The last six characters of the id the button copies, to tell sessions apart at a glance |
+| `id …4e5f6a` | The last six characters of the id the button copies, to tell sessions apart at a glance |
 
 The **copy** button (key `c`) runs `/session-id`. The segment has a low priority (2): when the band
 runs out of room, it is dropped before the others. The band draws on the terminal and the desktop
