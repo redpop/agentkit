@@ -28,10 +28,12 @@ segment is always visible.
 short segment: a text, a tone, and at most one button. The text may come in parts, each in its own
 tone, so a label sits dim beside its value. On the desktop app a segment may draw in a richer form:
 runs as the parts are, any of them a ring filled to a share, such as `◔ 42% 5h`. The terminal draws
-the text. A button runs the mod's slash command, so pressing it does what the command does. The band
-ends with a `mods` button, hotkey `m`, that does what `/ak-mods` does: it opens the Mods pane, or
-closes it while it is shown. No mod's button takes the hotkey `m` in the band. With no switched-on
-mod showing a segment, there is no band and no button; `/ak-mods` still opens the pane.
+the text. With the pointer over a segment, the desktop app shows a card above it: the mod's title,
+then its rows, labels dim in one column beside their values, or else its detail. A button runs the
+mod's slash command, so pressing it does what the command does. The band ends with a `mods` button,
+hotkey `m`, that does what `/ak-mods` does: it opens the Mods pane, or closes it while it is shown.
+No mod's button takes the hotkey `m` in the band. With no switched-on mod showing a segment, there
+is no band and no button; `/ak-mods` still opens the pane.
 
 The band stays quiet at rest. Colour marks only what needs attention: `ok` draws in the text colour,
 `warn` in the theme's warning colour, `alert` in its error colour, `info` in its suggestion colour,

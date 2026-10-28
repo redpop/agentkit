@@ -14,6 +14,9 @@ export type ModsTone = 'ok' | 'warn' | 'alert' | 'info' | 'dim'
  */
 export type ModsPart = { text: string; tone?: ModsTone; ring?: number }
 
+/** One row of a segment's hover card: a label and its value, one line each. */
+export type ModsCardRow = { label: string; value: string }
+
 /** What a mod shows in the shared band; ak-mods adds its name and title. */
 export type ModsSegment = {
   /** One line: a control character draws as a space, as in the button's label. */
@@ -31,6 +34,11 @@ export type ModsSegment = {
   rich?: ModsPart[]
   /** More of the same state, shown dim after the text in the Mods pane only, never in the band. One line, as `text`. */
   detail?: string
+  /**
+   * The rows of the card the desktop app shows while the pointer is over the segment: a dim label
+   * beside its value, the labels in one column. Without them the card shows `detail`, a line a part.
+   */
+  card?: ModsCardRow[]
   tone?: ModsTone
   /** Higher stays visible longer when the band runs out of room; 5 when left out. */
   priority?: number

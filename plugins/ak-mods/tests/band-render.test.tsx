@@ -522,6 +522,41 @@ test('on the desktop app a segment draws its rich runs, a ring as a picture; the
   await term.unmount()
 })
 
+test('on the desktop app a segment shows its detail as a card on hover, a line a part; the terminal shows none', { plugins: [consumer('ak-a')] }, async ($, on) => {
+  engine(on)
+  await publish($, 'ak-a', 'A', { text: 'ctx ▬▬▬', detail: 'ctx 42% · 5h 7% (resets 11:10pm)' })
+
+  const desk = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  const card = (await desk.findAll({ type: 'Box' })).find(box => box.props.display === 'none')
+  expect(card?.props).toMatchObject({ position: 'absolute', bottom: 1, left: 0 })
+  expect(card?.text).toBe('Actx 42%5h 7% (resets 11:10pm)')
+  await desk.unmount()
+
+  const term = await $.ui.mount({ ...BAND, surface: 'terminal' })
+  expect((await term.findAll({ type: 'Box' })).some(box => box.props.display === 'none')).toBe(false)
+  await term.unmount()
+})
+
+test('card rows draw as dim labels in one column beside their values, in place of the detail', { plugins: [consumer('ak-a')] }, async ($, on) => {
+  engine(on)
+  await publish($, 'ak-a', 'A', {
+    text: 'ctx ▬▬▬',
+    detail: 'ctx 42%',
+    card: [
+      { label: 'Context', value: '42%' },
+      { label: '5-hour limit', value: '7% · resets 11:10pm' },
+    ],
+  })
+
+  const desk = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  const card = (await desk.findAll({ type: 'Box' })).find(box => box.props.display === 'none')
+  expect(card?.text).toBe('AContext42%5-hour limit7% · resets 11:10pm')
+  expect(await exactly(desk, '5-hour limit')).toMatchObject({ props: { dimColor: true } })
+  const column = (await desk.findAll({ type: 'Box' })).filter(box => box.props.width === '5-hour limit'.length)
+  expect(column).toHaveLength(2)
+  await desk.unmount()
+})
+
 test(
   'parts that do not join to the text, or are no list of texts, leave the text in one run',
   { plugins: [consumer('ak-a'), consumer('ak-b'), consumer('ak-c')] },

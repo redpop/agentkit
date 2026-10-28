@@ -1,6 +1,6 @@
 import type { BoxProps, ElementConstructor, EngineInterface, Next, RenderInput, SvgProps, TextProps } from 'claude-code'
 
-import type { ModsInfo, ModsPart, ModsRow, ModsSegment, ModsTone } from '../types'
+import type { ModsCardRow, ModsInfo, ModsPart, ModsRow, ModsSegment, ModsTone } from '../types'
 import { bandWidth, layout, TOGGLE_HOTKEY, toggleLabel } from './band'
 import type { Segment } from './band'
 import { togglePane } from './toggle'
@@ -53,6 +53,16 @@ const richOf = (rich: unknown): ModsPart[] | undefined => {
   return kept.length > 0 ? kept : undefined
 }
 
+/** The rows of a segment's card, or undefined when they are no list of label and value texts or none. */
+const cardOf = (card: unknown): ModsCardRow[] | undefined => {
+  if (!Array.isArray(card) || card.length === 0) return undefined
+  const rows = (card as Partial<Record<keyof ModsCardRow, unknown>>[]).map(row =>
+    typeof row?.label === 'string' && typeof row.value === 'string' ? { label: spaced(row.label), value: spaced(row.value) } : undefined,
+  )
+
+  return rows.some(row => row === undefined) ? undefined : (rows as ModsCardRow[])
+}
+
 /**
  * A stored segment as the band can draw it, or undefined. Segments are stored
  * unchecked: an unknown tone draws uncoloured, a priority that is no number
@@ -61,7 +71,8 @@ const richOf = (rich: unknown): ModsPart[] | undefined => {
  * left out, a button without a label or command is left out, a detail that
  * is no text is left out, parts that do not join to the text are left out,
  * rich runs that are no list of texts are left out, a ring is held to 0 to
- * 100, and a segment without text is not drawn.
+ * 100, card rows that are no list of label and value texts are left out, and
+ * a segment without text is not drawn.
  */
 const checked = (info: ModsInfo, stored: unknown): Segment | undefined => {
   const one = (stored ?? {}) as Partial<Record<keyof ModsSegment, unknown>>
@@ -77,6 +88,7 @@ const checked = (info: ModsInfo, stored: unknown): Segment | undefined => {
     parts: partsOf(one.parts, text),
     rich: richOf(one.rich),
     detail: typeof one.detail === 'string' && one.detail !== '' ? spaced(one.detail) : undefined,
+    card: cardOf(one.card),
     tone: toneOf(one.tone),
     priority: typeof one.priority === 'number' && Number.isFinite(one.priority) ? one.priority : undefined,
     button:
@@ -171,6 +183,51 @@ export const segmentView = ({ Box, Text, Svg }: Draws, surface: string, one: Seg
   )
 
 /**
+ * A segment's card, which the desktop app shows while the pointer is over the
+ * segment: its mod's title, then its rows, the dim labels in one column and
+ * the values beside them; a segment without rows shows its detail, a line a
+ * part. Placed above the segment, against its left edge, or its right edge for
+ * a segment in the right half of the row, so it stays in the window.
+ */
+export const detailCard = ({ Box, Text }: Draws, one: Segment, key: string, isRight: boolean) => {
+  const rows = one.card ?? one.detail?.split(' · ').map(line => ({ label: '', value: line }))
+  if (rows === undefined) return null
+  // The label column is as wide as its longest label; a desktop Box counts its width in text cells.
+  const column = Math.max(0, ...rows.map(row => row.label.length))
+
+  // No key on the card itself: a keyed Box would scope its own hover, which a hidden Box never gets.
+  return (
+    <Box
+      position="absolute"
+      bottom={1}
+      {...(isRight ? { right: 0 } : { left: 0 })}
+      display="none"
+      hover={{ display: 'flex' }}
+      flexDirection="column"
+      rowGap={0}
+      paddingX={1}
+      borderStyle="round"
+      borderColor="subtle"
+      backgroundColor="Canvas"
+    >
+      <Box marginBottom={1}>
+        <Text bold>{one.title}</Text>
+      </Box>
+      {rows.map((row, at) => (
+        <Box key={`${key}-${at}`} flexDirection="row" columnGap={2}>
+          {column > 0 && (
+            <Box width={column} flexShrink={0}>
+              <Text dimColor>{row.label}</Text>
+            </Box>
+          )}
+          <Text tabular>{row.value}</Text>
+        </Box>
+      ))}
+    </Box>
+  )
+}
+
+/**
  * A segment's text as the band and the Mods pane draw it: in one run in its
  * tone, or in its parts, each in its own tone or else the segment's. Its
  * digits are of one width, so a figure that counts down does not shift.
@@ -256,6 +313,8 @@ export async function renderBand(
             ...(at > 0 ? [separator(`sep-${one.name}`)] : []),
             <Box key={`segment-${one.name}`} flexDirection="row" columnGap={1}>
               {segmentView(draws, e.surface, one, `text-${one.name}`)}
+              {/* The keyed segment Box is the hover scope: the pointer anywhere on it shows the card. */}
+              {e.surface === 'desktop' && detailCard(draws, one, `card-${one.name}`, row.length > 1 && at >= row.length / 2)}
               {one.button !== undefined && (
                 <Button
                   key={`seg-${one.name}`}

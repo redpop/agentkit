@@ -206,7 +206,10 @@ export const register: Register = on => {
   read as `text`, else `text` draws in one run), optional `rich` (the segment as the desktop app
   draws it, in place of `text` and `parts`: runs as in `parts`, and a run with a `ring` from 0 to
   100 draws as a ring filled that far, its `text` what a reader that cannot see the ring gets;
-  the terminal draws `text`, and the band counts its room by `text`), an optional `detail` (more
+  the terminal draws `text`, and the band counts its room by `text`), optional `card` rows
+  `{ label, value }` (the card the desktop app shows while the pointer is over the segment: dim
+  labels in one column beside their values; without rows the card shows `detail`, a line a part),
+  an optional `detail` (more
   of the same state, shown dim after the text in the Mods pane only, never in the band), an
   optional `tone` (`ok`, `warn`, `alert`, `info` or `dim`; `ak-mods` picks the colour, and `ok`
   stays the text colour; a part without a tone takes the segment's), an optional `priority`
