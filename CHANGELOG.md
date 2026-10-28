@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.43.0] - 2026-10-28
+
+### ✨ Added
+
+- `ak-session-id` — **a new mod that copies this session's id.** Working with several sessions,
+  you tell one session's agent about another, and session names are not unique. `/session-id`
+  copies the id: in the desktop app the `local_…` id the session tools address, elsewhere the engine
+  id; `/session-id engine` copies the engine id even there. Its segment in the shared band shows
+  the id's last six characters with a **copy** button (key `c`). The line under the prompt was
+  tried first; the desktop app does not draw it.
+
 ## [1.42.2] - 2026-10-27
 
 ### 🐛 Fixed
