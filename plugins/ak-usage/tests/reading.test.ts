@@ -28,7 +28,7 @@ test('the context alone where no rate limit is reported', () => {
       { text: ' ctx', tone: 'dim' },
     ],
     detail: 'ctx 67%',
-    card: [{ label: 'Context', value: '67%' }],
+    card: [{ label: 'Context', value: '67% · 134k of 200k tokens' }],
     tone: 'ok',
   })
 })
@@ -133,7 +133,7 @@ test('where the band draws pictures, each figure is a ring with its percentage a
     { text: '  resets 11:10pm', tone: 'dim' },
   ])
   const two = reading({ ...usage(134400, { five_hour: 7 }) }, NOW)
-  expect(two?.rich.map(part => part.text).join('')).toBe('ctx 67% 67% ctx   5h 7% 7% 5h')
+  expect(two?.rich.map(part => part.text).join('')).toBe('ctx 67% 67% ctx    5h 7% 7% 5h')
 })
 
 test('the hover card shows every window still current, the week below 75 % too, each with its reset', () => {
@@ -142,7 +142,7 @@ test('the hover card shows every window still current, the week below 75 % too, 
     NOW,
   )
   expect(now?.card).toEqual([
-    { label: 'Context', value: '67%' },
+    { label: 'Context', value: '67% · 134k of 200k tokens' },
     { label: '5-hour limit', value: '42% · resets 11:10pm' },
     { label: '7-day limit', value: '40% · resets Sat 10:00am' },
   ])
@@ -158,7 +158,7 @@ test('in German the resets read on a 24-hour clock with German weekdays, the car
   )
   expect(now?.text).toBe('ctx ▬▬▬▬▬  5h ▬▬▬▬▬ 81%  Reset 23:10')
   expect(now?.card).toEqual([
-    { label: 'Kontext', value: '67%' },
+    { label: 'Kontext', value: '67% · 134k von 200k Tokens' },
     { label: '5-Stunden-Limit', value: '81% · Reset 23:10' },
     { label: '7-Tage-Limit', value: '40% · Reset Sa 10:00' },
   ])

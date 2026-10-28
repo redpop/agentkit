@@ -37,8 +37,8 @@ out of room it is dropped last. It has no button.
 On the desktop app each figure draws as a ring filled to its percentage, with the percentage and the
 label beside it: `◔ 67% ctx   ◔ 42% 5h`. A window from 75 % adds its reset there too. The ring and
 the percentage take the figure's colour; the terminal keeps the bars. With the pointer over the
-segment, a card lists the context and every window still current, the week below 75 % too, each
-window with its reset.
+segment, a card lists the context with the tokens used and the window's size (`68% · 680k of 1M
+tokens`) and every window still current, the week below 75 % too, each window with its reset.
 
 Without `ak-mods` (or when it refuses the mod, or a publish fails), the mod draws its own band
 instead, never both, with the same parts and colours.

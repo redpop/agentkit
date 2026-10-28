@@ -54,6 +54,13 @@ const windowOf = (rateLimits: readonly SessionRateLimit[], kind: string, now: nu
   return resetsAt !== undefined && resetsAt <= now ? undefined : limit
 }
 
+// A token count, short: `680k`, `1M`, `1.2M`.
+const tokens = (count: number): string => {
+  const short = (value: number) => (Number.isInteger(value) ? String(value) : value.toFixed(1))
+
+  return count >= 1e6 ? `${short(Math.round(count / 1e5) / 10)}M` : count >= 1e3 ? `${Math.round(count / 1e3)}k` : String(count)
+}
+
 const toneOf = (percent: number): Tone => (percent >= ALERT ? 'alert' : percent >= WARN ? 'warn' : 'ok')
 
 // The local time of a reset in the language's clock, `11:10pm` or `23:10`, with its weekday when it
@@ -126,7 +133,7 @@ export const reading = (usage: SessionUsage, now: number, lang: Lang = 'en'): Re
   // Where the band draws pictures, each figure is a ring with its percentage and label beside it:
   // `◔ 42% 5h`. Rings and percentages in the figure's tone, labels and resets dim.
   const rich = figures.flatMap(({ label, percent, resetsAt }, at): Part[] => [
-    ...(at > 0 ? [{ text: '   ', tone: 'dim' as const }] : []),
+    ...(at > 0 ? [{ text: '    ', tone: 'dim' as const }] : []),
     { text: `${label} ${percent}%`, tone: toneOf(percent), ring: percent },
     { text: ` ${percent}%`, tone: toneOf(percent) },
     { text: ` ${label}`, tone: 'dim' },
@@ -136,7 +143,9 @@ export const reading = (usage: SessionUsage, now: number, lang: Lang = 'en'): Re
   // The hover card has the room for every window, the week below 75 % too, each with its reset.
   const context = contextPercent(usage)
   const card: Row[] = [
-    ...(context === undefined ? [] : [{ label: t.context, value: `${context}%` }]),
+    ...(context === undefined
+      ? []
+      : [{ label: t.context, value: `${context}% · ${t.ofTokens(tokens(usage.context.tokens ?? 0), tokens(usage.context.window))}` }]),
     ...WINDOWS.flatMap(({ kind }) => {
       const limit = windowOf(usage.rateLimits, kind, now)
       if (limit === undefined) return []

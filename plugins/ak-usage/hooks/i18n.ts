@@ -62,6 +62,7 @@ const EN = {
     'toast says so once. Here every percentage and reset follows the bars. The windows are ' +
     'as the last response of this session reported them, and leave the band once they reset.',
   context: 'Context',
+  ofTokens: (used: string, window: string) => `${used} of ${window} tokens`,
   windows: { five_hour: '5-hour limit', seven_day: '7-day limit' } as Record<string, string>,
   days: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
   // `11:10pm`
@@ -82,6 +83,7 @@ const DE: typeof EN = {
     'stehen so, wie die letzte Antwort dieser Session sie gemeldet hat, und verlassen das Band ' +
     'nach ihrem Reset.',
   context: 'Kontext',
+  ofTokens: (used: string, window: string) => `${used} von ${window} Tokens`,
   windows: { five_hour: '5-Stunden-Limit', seven_day: '7-Tage-Limit' },
   days: ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'],
   // `23:10`
