@@ -1,5 +1,5 @@
 import { expect, mock, test } from 'claude-code/testing'
-import type { EngineInterface, On, Register } from 'claude-code'
+import type { ConfigRow, EngineInterface, On, Register } from 'claude-code'
 import type { Engine } from 'claude-code/testing'
 
 // Run on its own, ak-session-id finds no ak-mods: the mod is on (fail-open) and draws its own band.
@@ -245,4 +245,14 @@ test('/session-id turns the mod on when it is off', OWNED, async ($, on) => {
   await clock.settle()
   expect(copied).toEqual([{ text: HOST }])
   expect(segments(toasts).at(-1)?.text).toBe(`id …${HOST.slice(-6)}`)
+})
+
+test('with Claude Code set to German, the button and the answer are German', OWNED, async ($, on) => {
+  const { toasts } = engine(on)
+  on('config.list', () => ({ value: [{ key: 'language', label: 'Language', value: 'German' }] as unknown as ConfigRow[] }))
+  await start($)
+
+  expect(segments(toasts).at(-1)?.button).toEqual({ ...COPY, label: 'kopieren' })
+  expect((await sessionId($)).text).toBe(`Session-ID ${HOST} kopiert`)
+  expect((await sessionId($, 'what')).text).toBe('Aufruf: /session-id [engine]')
 })

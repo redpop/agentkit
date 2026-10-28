@@ -38,6 +38,9 @@ app; the Mods pane shows the segment and its button in the mod's row on every su
 Without `ak-mods` (or when it refuses the mod, or a publish fails), the mod draws its own band
 instead, never both, with the same text and button.
 
+The mod's texts follow Claude Code's `language` setting, else `LC_ALL`, `LC_MESSAGES` or `LANG`:
+German or English. In German the button reads `kopieren`.
+
 ## How it works
 
 - In the desktop app, the host's id comes from the environment variable

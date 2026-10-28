@@ -3,6 +3,8 @@
 
 import type { EngineInterface, Register, RenderSurface } from 'claude-code'
 
+import { languageFor, learnLanguage, texts } from './i18n'
+
 const NAME = 'ak-session-id'
 // How much of the id the band shows: enough to tell sessions apart at a glance.
 const TAIL = 6
@@ -25,8 +27,9 @@ const tail = (id: string): string => `id …${id.slice(-TAIL)}`
 const copy = async ($: EngineInterface, isEngine: boolean, surface?: RenderSurface): Promise<string> => {
   const id = await pick($, isEngine)
   const copied = await $.ui.copy(surface === undefined ? { text: id } : { text: id, surface })
+  const t = texts(await languageFor($))
 
-  return copied.isCopied ? `Copied session id ${id}` : `Session id ${id} (not copied: ${copied.reason})`
+  return copied.isCopied ? t.copied(id) : t.notCopied(id, copied.reason)
 }
 
 // The id as the shared band shows it, with the button that copies it. Low priority: when the band
@@ -35,7 +38,7 @@ const segment = async ($: EngineInterface): Promise<Segment> => ({
   text: tail(await pick($, false)),
   tone: 'dim',
   priority: 2,
-  button: { label: 'copy', hotkey: 'c', command: 'session-id' },
+  button: { label: texts(await languageFor($)).copy, hotkey: 'c', command: 'session-id' },
 })
 
 export const register: Register = on => {
@@ -69,23 +72,15 @@ export const register: Register = on => {
   }
 
   on('session.start', async ($, e, next) => {
+    const t = texts(await learnLanguage($))
     try {
-      isSwitched = await $.mods.declare({
-        name: NAME,
-        title: 'Session id',
-        summary: "Copies this session's id, to tell another session's agent which one is meant.",
-        details:
-          'Its segment in the shared band above the prompt shows the end of the id; copy (key c) ' +
-          'puts the whole id on the clipboard. /session-id does the same. In the desktop app it ' +
-          'copies the local_… id the session tools address, elsewhere the engine id; ' +
-          '/session-id engine copies the engine id even there.',
-      })
+      isSwitched = await $.mods.declare({ name: NAME, title: t.title, summary: t.summary, details: t.details })
     } catch {
       isSwitched = false
     }
     await $.command.register({
       name: 'session-id',
-      description: "Copy this session's id, or /session-id engine for the engine's",
+      description: t.command,
       argumentHint: '[engine]',
       immediate: true,
     })
@@ -114,7 +109,7 @@ export const register: Register = on => {
   on('command.run', { command: 'session-id' }, async ($, e) => {
     if (await isOff(() => $.mods.isOn({ name: NAME }))) await $.mods.set({ name: NAME, on: true })
     const arg = String(e.args || '').trim().toLowerCase()
-    if (arg !== '' && arg !== 'engine') return { text: 'Usage: /session-id [engine]' }
+    if (arg !== '' && arg !== 'engine') return { text: texts(await languageFor($)).usage }
     const text = await copy($, arg === 'engine')
     $.ui.toast(text)
 
@@ -137,7 +132,7 @@ export const register: Register = on => {
     const mine = (
       <Box flexDirection="row" columnGap={2}>
         <Text dimColor>{tail(await pick($, false))}</Text>
-        <Button key="session-id" label="copy" hotkey="c" plain onPress={pressed => press(pressed.surface)} />
+        <Button key="session-id" label={texts(await languageFor($)).copy} hotkey="c" plain onPress={pressed => press(pressed.surface)} />
       </Box>
     )
 
