@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.51.0] - 2026-10-28
+
+### ✨ Added
+
+- **The mods speak German.** `ak-mods`, `ak-usage`, `ak-keepwarm` and `ak-session-id` follow
+  Claude Code's `language` setting, else `LC_ALL`, `LC_MESSAGES` or `LANG`, in English or German:
+  the band, the cards, the Mods pane, toasts and the declared texts. German times read on a
+  24-hour clock.
+- `ak-mods` — **a card on hover** on the desktop app: the pointer over a segment shows its detail
+  above the band. A segment may give it `card` rows of label and value, drawn as a table.
+- `ak-usage` — the card lists the context and every window with its reset, the week below 75 %
+  too.
+- `ak-keepwarm` — the card shows the cache's state, lifetime, context and rewrite estimate. A
+  cooling cache says on the desktop app when it drops and how many tokens the next message would
+  write again.
+
 ## [1.50.0] - 2026-10-28
 
 ### ✨ Added
