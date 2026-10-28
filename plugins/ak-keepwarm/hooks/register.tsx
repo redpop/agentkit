@@ -108,6 +108,11 @@ const tick = async ($: EngineInterface, isOff: boolean) => {
   else await keepWarmStep($)
 }
 
+// Keep warm as the band shows it: short, so the band stays one row. The pings and their cost join
+// once there is one; when it ends is the start toast's.
+const keptWarm = (): string =>
+  S.pings === 0 ? '◆ kept warm' : `◆ kept warm · ${S.pings} ping${S.pings === 1 ? '' : 's'} ${usd(S.pingUsd)}`
+
 // The cache state as the shared band shows it: no segment before the first request. The rewrite
 // estimate rides along only while it matters, as the cache cools or is cold.
 const segment = (): Segment => {
@@ -116,12 +121,7 @@ const segment = (): Segment => {
   const left = msLeft() ?? 0
   const rewrite = ` · rewrite ≈ ${usd(rewriteCost(S.ctx, S.model, S.ttlMin))}`
   const button = (label: string) => ({ label, hotkey: '1', command: 'keepwarm' })
-  if (state === 'kept') {
-    const pings = `${S.pings} ping${S.pings === 1 ? '' : 's'} ${usd(S.pingUsd)}`
-    const text = `◆ kept warm · ${pings} · until ${clock(S.keepWarmUntil)}`
-
-    return { text, tone: 'info', priority: 6, button: button('stop warm') }
-  }
+  if (state === 'kept') return { text: keptWarm(), tone: 'info', priority: 6, button: button('stop') }
   if (state === 'warm') return { text: `● cache warm ${minutes(left)}`, tone: 'ok', priority: 6, button: button('keep warm') }
   if (state === 'cooling') {
     return { text: `◐ cools in ${minutes(left)}${rewrite}`, tone: 'warn', priority: 6, button: button('keep warm') }
@@ -331,9 +331,9 @@ export const register: Register = on => {
     }
     const status =
       state === 'kept' ? (
-        <Text color="cyan">{`◆ kept warm · ${S.pings} ping${S.pings === 1 ? '' : 's'} ${usd(S.pingUsd)} · until ${clock(S.keepWarmUntil)}`}</Text>
+        <Text color="cyan">{keptWarm()}</Text>
       ) : state === 'warm' ? (
-        <Text color="green">{`● cache warm ${minutes(left)}`}</Text>
+        <Text>{`● cache warm ${minutes(left)}`}</Text>
       ) : state === 'cooling' ? (
         <Text color="yellow" bold>{`◐ cache cools in ${minutes(left)}`}</Text>
       ) : (
@@ -346,7 +346,7 @@ export const register: Register = on => {
           <Text dimColor>{` │ ctx ${tokens(S.ctx)} │ rewrite ≈ ${usd(rewriteCost(S.ctx, S.model, S.ttlMin))}`}</Text>
         </Box>
         {state !== 'cold' && (
-          <Button key="keepwarm" label={S.isKeepWarm ? 'stop warm' : 'keep warm'} hotkey="1" plain onPress={press} />
+          <Button key="keepwarm" label={S.isKeepWarm ? 'stop' : 'keep warm'} hotkey="1" plain onPress={press} />
         )}
       </Box>
     )

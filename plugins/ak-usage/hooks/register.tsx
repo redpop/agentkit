@@ -111,7 +111,8 @@ export const register: Register = on => {
     if (now === undefined) return below
 
     const { Box, Text } = $.ui.resolve(e)
-    const color = now.tone === 'alert' ? 'red' : now.tone === 'warn' ? 'yellow' : 'green'
+    // As in the shared band: colour only from 75 %, the text colour below.
+    const color = now.tone === 'alert' ? 'red' : now.tone === 'warn' ? 'yellow' : undefined
     const mine = (
       <Box flexDirection="row">
         <Text color={color}>{now.text}</Text>

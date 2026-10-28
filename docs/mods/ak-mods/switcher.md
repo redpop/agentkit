@@ -30,6 +30,10 @@ does what `/ak-mods` does: it opens the Mods pane, or closes it while it is show
 takes the hotkey `m` in the band. With no switched-on mod showing a segment, there is no band and no
 button; `/ak-mods` still opens the pane.
 
+The band stays quiet at rest. Colour marks only what needs attention: `ok` draws in the text colour,
+`warn` yellow, `alert` red, `info` cyan, and `dim` dimmed. A dim `│` separates the segments, with
+one cell on each side. The `mods` button sits dimmed at the right edge of the last row.
+
 When the segments do not fit the width, the band degrades in steps:
 
 1. All segments fit: one row.

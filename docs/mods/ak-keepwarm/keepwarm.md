@@ -27,12 +27,13 @@ above the prompt, once the chat has made a request:
 
 | Segment | Meaning |
 |---------|---------|
-| `◆ kept warm · 3 pings $0.02 · until 3:00pm` | Keep warm is on: pings so far, their cost, and when it ends |
+| `◆ kept warm` | Keep warm is on; no ping was needed yet |
+| `◆ kept warm · 3 pings $0.02` | Keep warm is on: pings so far and their cost. When it ends, the start toast says |
 | `● cache warm 42m` | Time left before the cache expires |
 | `◐ cools in 4m · rewrite ≈ $0.42` | Under 5 minutes left, and what a rewrite of the context would cost |
 | `○ cold 12m · rewrite ≈ $0.42` | The cache expired that long ago; a ping cannot help, and the button is hidden |
 
-The **keep warm** / **stop warm** button toggles the loop (key `1`); it runs `/keepwarm`. The band
+The **keep warm** / **stop** button toggles the loop (key `1`); it runs `/keepwarm`. The band
 draws on the terminal and the desktop app; the Mods pane shows the segment and its button in the
 mod's row on every surface.
 The context size is not shown: the [Usage](../ak-usage/usage.md) mod shows how full it is.

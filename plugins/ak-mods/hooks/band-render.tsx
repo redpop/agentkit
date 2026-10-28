@@ -101,14 +101,12 @@ export async function renderBand(
 
   const below = await next(e)
   const { Box, Button, Text } = $.ui.resolve(e)
+  // Colour marks what needs attention: `ok` draws in the text colour, so a
+  // band at rest stays quiet and yellow or red stands out.
   const toned = (one: Segment) => {
     const key = `text-${one.name}`
 
-    return one.tone === 'ok' ? (
-      <Text key={key} color="green">
-        {one.text}
-      </Text>
-    ) : one.tone === 'warn' ? (
+    return one.tone === 'warn' ? (
       <Text key={key} color="yellow">
         {one.text}
       </Text>
@@ -130,41 +128,46 @@ export async function renderBand(
   }
   const separator = (key: string) => (
     <Text key={key} dimColor>
-      {' │ '}
+      │
     </Text>
   )
-  // Buttons draw plain (`1: label`, `m: mods +N`): the widths `layout` counts.
+  // Every space is a gap of the Box, one cell wide: a surface that draws its
+  // buttons with chrome spaces them alike, so the separators sit centred.
+  // Buttons draw plain (`1: label`, `m: mods +N`): the widths `layout` counts,
+  // with the separator and its two gaps as three, a segment's text and button
+  // one apart. The `mods` button sits at the right edge of the last row, at
+  // least three from the last segment.
 
   const band = (
     <Box flexDirection="column">
       {rows.map((row, index) => (
-        <Box key={`band-row-${index}`} flexDirection="row">
+        <Box key={`band-row-${index}`} flexDirection="row" columnGap={1}>
           {row.flatMap((one, at) => [
             ...(at > 0 ? [separator(`sep-${one.name}`)] : []),
-            toned(one),
-            ...(one.button === undefined
-              ? []
-              : [
-                  <Text key={`gap-${one.name}`}> </Text>,
-                  <Button
-                    key={`seg-${one.name}`}
-                    label={one.button.label}
-                    hotkey={hotkeys.get(one.name)}
-                    plain
-                    onPress={() => {
-                      // A command the host refuses changes nothing in the band.
-                      $.command.run({ command: one.button?.command ?? '', args: one.button?.args ?? '' }).catch(() => {})
-                    }}
-                  />,
-                ]),
+            <Box key={`segment-${one.name}`} flexDirection="row" columnGap={1}>
+              {toned(one)}
+              {one.button !== undefined && (
+                <Button
+                  key={`seg-${one.name}`}
+                  label={one.button.label}
+                  hotkey={hotkeys.get(one.name)}
+                  plain
+                  onPress={() => {
+                    // A command the host refuses changes nothing in the band.
+                    $.command.run({ command: one.button?.command ?? '', args: one.button?.args ?? '' }).catch(() => {})
+                  }}
+                />
+              )}
+            </Box>,
           ])}
           {index === rows.length - 1 && [
-            separator('sep-mods'),
+            <Box key="mods-space" flexGrow={1} minWidth={1} />,
             <Button
               key="mods-toggle"
               label={toggleLabel(hidden.length)}
               hotkey={TOGGLE_HOTKEY}
               plain
+              dimColor
               onPress={() => {
                 // A failed close or open leaves the band as it is.
                 togglePane($, bandWidth({ bodyColumns: e.props.bodyColumns })).catch(() => {})

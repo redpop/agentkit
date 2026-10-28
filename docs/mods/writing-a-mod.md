@@ -202,7 +202,7 @@ export const register: Register = on => {
 - **The band is shared.** `ak-mods` owns one band above the prompt for all mods. A mod does not
   draw a band beside it: it publishes one segment with `$.mods.segment(...)`, and `ak-mods` draws
   the segments of the switched-on mods. A segment is plain data: `text`, an optional `tone` (`ok`,
-  `warn`, `alert`, `info` or `dim`; `ak-mods` picks the colour), an optional `priority` (default
+  `warn`, `alert`, `info` or `dim`; `ak-mods` picks the colour, and `ok` stays the text colour), an optional `priority` (default
   5; higher stays longer) and at most one `button` (`label`, an optional `hotkey`, the `command` it
   runs, its `args`). The button runs a slash command the mod already answers, so no handler crosses
   from one plugin to another. A segment is one line: a control character (a newline, ESC) in the

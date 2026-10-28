@@ -2,7 +2,7 @@ import { expect, mock, test } from 'claude-code/testing'
 import type { EngineInterface, On, Register } from 'claude-code'
 import type { Engine } from 'claude-code/testing'
 
-import { clock as at, usd } from '../hooks/fmt'
+import { usd } from '../hooks/fmt'
 import { rewriteCost } from '../hooks/pricing'
 
 // Run on its own, ak-keepwarm finds no ak-mods: the mod is on (fail-open).
@@ -165,7 +165,7 @@ test('the band shows the cache state and the button, on every surface', async ($
     expect((await ui.find({ key: 'keepwarm' }))?.text).toBe('keep warm')
     await ui.press({ key: 'keepwarm' })
     expect(await ui.find({ type: 'Text', text: /kept warm/ })).toBeDefined()
-    expect((await ui.find({ key: 'keepwarm' }))?.text).toBe('stop warm')
+    expect((await ui.find({ key: 'keepwarm' }))?.text).toBe('stop')
     await ui.press({ key: 'keepwarm' })
     await ui.unmount()
   }
@@ -277,8 +277,8 @@ test('/keepwarm publishes the kept-warm segment off its hook', OWNED, async ($, 
   await keepwarm($)
   expect(segments(toasts).length).toBe(before)
   await clock.settle()
-  expect(segments(toasts).at(-1)?.text).toMatch(/^◆ kept warm · 0 pings/)
-  expect(segments(toasts).at(-1)?.button?.label).toBe('stop warm')
+  expect(segments(toasts).at(-1)?.text).toBe('◆ kept warm')
+  expect(segments(toasts).at(-1)?.button?.label).toBe('stop')
 })
 
 test('publishes the warn segment with the keepwarm button while cooling', OWNED, async ($, on) => {
@@ -295,17 +295,25 @@ test('publishes the cold segment without a button', OWNED, async ($, on) => {
   expect(segments(toasts).at(-1)).toEqual({ text: `○ cold 12m${REWRITE}`, tone: 'dim', priority: 6 })
 })
 
-test('publishes the kept-warm segment with the stop button', OWNED, async ($, on) => {
+test('publishes the kept-warm segment with the stop button, without its end', OWNED, async ($, on) => {
   const { clock, toasts } = engine(on, { usage: usage(200000, 0), calls: 0 })
   await startChat($)
   await keepwarm($)
   await clock.settle()
   expect(segments(toasts).at(-1)).toEqual({
-    text: `◆ kept warm · 0 pings $0 · until ${at(START + 4 * 60 * MIN)}`,
+    text: '◆ kept warm',
     tone: 'info',
     priority: 6,
-    button: { label: 'stop warm', hotkey: '1', command: 'keepwarm' },
+    button: { label: 'stop', hotkey: '1', command: 'keepwarm' },
   })
+})
+
+test('the kept-warm segment counts the pings and their cost once there is one', OWNED, async ($, on) => {
+  const { clock, toasts } = engine(on, { usage: usage(200000, 0), calls: 0 })
+  await startChat($)
+  await keepwarm($)
+  await clock.advance(55 * MIN)
+  expect(segments(toasts).at(-1)?.text).toMatch(/^◆ kept warm · 1 ping \$/)
 })
 
 test('no segment before the first request', OWNED, async ($, on) => {

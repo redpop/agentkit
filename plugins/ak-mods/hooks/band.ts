@@ -34,7 +34,7 @@ export const toggleLabel = (hidden: number): string => (hidden > 0 ? `mods +${hi
 /** The hotkey of that button; no mod's button takes it in the band. */
 export const TOGGLE_HOTKEY = 'm'
 
-/** That button with its separator, its hotkey and the `: ` after it. */
+/** That button with its least space before it (as wide as a separator), its hotkey and the `: ` after it. */
 const toggleWidth = (hidden: number): number => ROW_SEPARATOR + TOGGLE_HOTKEY.length + 2 + toggleLabel(hidden).length
 
 const cut = (text: string, columns: number): string =>

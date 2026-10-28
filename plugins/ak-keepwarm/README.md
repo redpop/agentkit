@@ -17,7 +17,7 @@ Requires Claude Code 2.1.309 or later (hooks-module support).
 - `/keepwarm` keeps the cache warm for 4 hours; `/keepwarm 2` for 2 hours (at most 24).
 - `/keepwarm off` stops it. `/keepwarm` with no argument stops it while it runs.
 - Its segment in the band above the prompt shows the cache state, and what a rewrite would cost
-  while the cache cools or is cold, with a **keep warm** / **stop warm** button (key `1`). Without
+  while the cache cools or is cold, with a **keep warm** / **stop** button (key `1`). Without
   `ak-mods` the mod draws its own band, which also shows the context size.
 
 See [the mod docs](../../docs/mods/ak-keepwarm/keepwarm.md).

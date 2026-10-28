@@ -4,7 +4,7 @@ export type ModsInfo = { name: string; title: string; summary: string; details: 
 /** One row of the switcher: a declared mod with its two switches. */
 export type ModsRow = ModsInfo & { isOn: boolean; isStandard: boolean }
 
-/** A segment's colour: its state, not its mod. */
+/** A segment's colour: its state, not its mod. `ok` draws in the text colour; only the others colour it. */
 export type ModsTone = 'ok' | 'warn' | 'alert' | 'info' | 'dim'
 
 /** What a mod shows in the shared band; ak-mods adds its name and title. */

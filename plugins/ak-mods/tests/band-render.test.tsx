@@ -67,7 +67,7 @@ const publish = async ($: Engine, name: string, title: string, segment: unknown,
   await call($, name, 'segment', segment)
 }
 
-/** The band's rows as the texts of their segments, the separators left out. */
+/** The band's Boxes as their texts: the gaps between their children are no text. */
 const rowsOf = async (ui: { findAll: (q: { key?: string; type?: string }) => Promise<{ text: string }[]> }) => {
   const rows = await ui.findAll({ type: 'Box' })
 
@@ -110,10 +110,11 @@ test('one row for two segments joined by │', { plugins: [consumer('ak-a'), con
     const row = await ui.find({ key: 'band-row-0' })
     expect(row).toBeDefined()
     expect(await ui.find({ key: 'band-row-1' })).toBeUndefined()
-    expect(await ui.find({ type: 'Text', text: 'alpha' })).toMatchObject({ props: { color: 'green' } })
+    // `ok` is the text colour: colour marks only what needs attention.
+    expect((await ui.find({ type: 'Text', text: 'alpha' }))?.props.color).toBeUndefined()
     expect(await ui.find({ type: 'Text', text: 'beta' })).toMatchObject({ props: { color: 'red', bold: true } })
-    expect(await ui.find({ type: 'Text', text: ' │ ' })).toMatchObject({ props: { dimColor: true } })
-    expect(await rowsOf(ui)).toContain('alpha │ beta │ mods')
+    expect(await ui.find({ type: 'Text', text: '│' })).toMatchObject({ props: { dimColor: true } })
+    expect(await rowsOf(ui)).toContain('alpha│betamods')
     // The line beneath stays below the band.
     expect(await ui.drawn()).toMatchObject({
       type: 'Box',
@@ -132,7 +133,7 @@ test('second row when too wide', { plugins: [consumer('ak-a'), consumer('ak-b')]
     // One row needs 30 with the `mods` button; two rows need 18, the button on the second.
     const ui = await $.ui.mount({ ...BAND, surface, props: { ...BAND.props, bodyColumns: 20 } })
     expect((await ui.find({ key: 'band-row-0' }))?.text).toBe('alpha-one')
-    expect((await ui.find({ key: 'band-row-1' }))?.text).toBe('beta-two │ mods')
+    expect((await ui.find({ key: 'band-row-1' }))?.text).toBe('beta-twomods')
     await ui.unmount()
   }
 })
@@ -170,12 +171,27 @@ test('the band ends in a mods button with the hotkey m; with the pane closed it 
   for (const surface of ['terminal', 'desktop'] as const) {
     const ui = await $.ui.mount({ ...BAND, surface })
     expect(await ui.find({ key: 'mods-toggle' })).toMatchObject({ text: 'mods', props: { hotkey: 'm', plain: true } })
-    expect((await ui.find({ key: 'band-row-0' }))?.text).toBe('ready │ mods')
+    expect((await ui.find({ key: 'band-row-0' }))?.text).toBe('readymods')
     await ui.press({ key: 'mods-toggle' })
     expect(opened).toEqual([{ id: 'ak-mods', title: 'Mods' }])
     opened.length = 0
     await ui.unmount()
   }
+})
+
+test('spaces are one-cell gaps, and the mods button sits dim at the right edge', { plugins: [consumer('ak-a'), consumer('ak-b')] }, async ($, on) => {
+  engine(on)
+  await publish($, 'ak-a', 'A', { text: 'alpha', button: { label: 'go', command: 'x' } })
+  await publish($, 'ak-b', 'B', { text: 'beta' })
+
+  const ui = await $.ui.mount(BAND)
+  expect(await ui.find({ key: 'band-row-0' })).toMatchObject({ props: { flexDirection: 'row', columnGap: 1 } })
+  // A segment's text and its button, one gap apart.
+  expect(await ui.find({ key: 'segment-ak-a' })).toMatchObject({ text: 'alphago', props: { columnGap: 1 } })
+  // The space before the button takes what the row leaves, never less than one cell.
+  expect(await ui.find({ key: 'mods-space' })).toMatchObject({ props: { flexGrow: 1, minWidth: 1 } })
+  expect(await ui.find({ key: 'mods-toggle' })).toMatchObject({ props: { dimColor: true } })
+  await ui.unmount()
 })
 
 test('the mods button closes the Mods pane while it is shown', { plugins: [consumer('ak-a')] }, async ($, on) => {
@@ -232,7 +248,7 @@ test(
       expect(await ui.find({ type: 'Text', text: 'c'.repeat(12) })).toBeUndefined()
       expect(await ui.find({ key: 'mods-toggle' })).toMatchObject({ text: 'mods +1', props: { plain: true } })
       // The button ends the last row.
-      expect((await ui.find({ key: 'band-row-1' }))?.text).toBe(`${'b'.repeat(12)} │ mods +1`)
+      expect((await ui.find({ key: 'band-row-1' }))?.text).toBe(`${'b'.repeat(12)}mods +1`)
       await ui.press({ key: 'mods-toggle' })
       expect(opened).toEqual([{ id: 'ak-mods', title: 'Mods' }])
       await ui.unmount()
@@ -443,7 +459,7 @@ test(
       expect(odd).toBeDefined()
       expect(odd?.props.color).toBeUndefined()
       expect(await ui.find({ type: 'Text', text: 'fine' })).toMatchObject({ props: { color: 'cyan' } })
-      expect((await ui.find({ key: 'band-row-0' }))?.text).toBe('odd │ fine │ mods')
+      expect((await ui.find({ key: 'band-row-0' }))?.text).toBe('odd│finemods')
       await ui.unmount()
     }
   },
