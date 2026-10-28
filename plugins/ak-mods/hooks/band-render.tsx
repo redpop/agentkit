@@ -3,6 +3,7 @@ import type { BoxProps, ElementConstructor, EngineInterface, Next, RenderInput, 
 import type { ModsCardRow, ModsInfo, ModsPart, ModsRow, ModsSegment, ModsTone } from '../types'
 import { bandWidth, layout, TOGGLE_HOTKEY, toggleLabel } from './band'
 import type { Segment } from './band'
+import { languageFor, texts } from './i18n'
 import { togglePane } from './toggle'
 
 const TONES: readonly string[] = ['ok', 'warn', 'alert', 'info', 'dim'] satisfies ModsTone[]
@@ -293,6 +294,7 @@ export async function renderBand(
   }
 
   const below = await next(e)
+  const t = texts(await languageFor($))
   const draws = $.ui.resolve(e)
   const { Box, Button, Text } = draws
   // A cell of space between two segments, three with its two gaps: no rule
@@ -333,7 +335,7 @@ export async function renderBand(
             <Box key="mods-space" flexGrow={1} minWidth={1} />,
             <Button
               key="mods-toggle"
-              label={toggleLabel(hidden.length)}
+              label={toggleLabel(hidden.length, t.toggle)}
               hotkey={TOGGLE_HOTKEY}
               plain
               dimColor

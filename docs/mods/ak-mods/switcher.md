@@ -60,6 +60,10 @@ are the only signals; there is no toast.
 The band draws on the terminal and on the desktop app. Every row of the Mods pane also shows its
 mod's current segment and button, so a mod's state and its action are reachable on every surface.
 
+The pane, the band's `mods` button and the answers of `/ak-mods` follow Claude Code's `language`
+setting, else `LC_ALL`, `LC_MESSAGES` or `LANG`: German or English. Each mod declares its title and
+summary in that language at the start of the session.
+
 ## Session rules
 
 - A new chat starts with the standard mods on and all others off.

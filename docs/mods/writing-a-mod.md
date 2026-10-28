@@ -272,6 +272,15 @@ export const register: Register = on => {
 - **Gating hooks** (`tool.call`, `agent.offer`, `state.set`, and the `session.end` hook of the
   republish after `/clear`, `/resume` and `/branch`) carry `.catch(($, e, next) => next(e))`: a
   guard that fails leaves the mod on, as fail-open asks.
+- **Texts follow the person's language.** What a person reads (the segment, the card, toasts, the
+  declared title, summary and details, the command's description) comes in English and German.
+  Each mod reads the language in its own `hooks/i18n.ts`: Claude Code's `language` setting from
+  `$.config.list()`, else `LC_ALL`, `LC_MESSAGES` or `LANG`, else English. The system's language
+  is out of reach: on macOS the runtime reports `en-US` whatever the system is set to. The language
+  is read at the session's start; the declare, made then, keeps it until the next session. Short
+  codes such as `ctx` and `5h` stay as they are. `$.env.get` takes each name written out, and a
+  helper that takes `$` from an imported file is a function declaration, as the hooks loader
+  follows `$` only into those.
 
 ## Testing
 

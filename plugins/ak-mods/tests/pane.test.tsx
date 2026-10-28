@@ -1,9 +1,11 @@
 import { expect, mock, test } from 'claude-code/testing'
-import type { On, Register } from 'claude-code'
+import type { ConfigRow, On, Register } from 'claude-code'
 import type { Engine } from 'claude-code/testing'
 import { runCommand } from './command'
 
-import { FOOTER } from '../hooks/pane'
+import { texts } from '../hooks/i18n'
+
+const FOOTER = texts('en').footer
 
 const PANE = {
   plugin: 'ak-mods',
@@ -94,6 +96,18 @@ test('empty pane says no mods', { plugins: PLUGINS }, async ($, on) => {
     expect(await ui.find({ type: 'Text', text: 'No AgentKit mods installed.' })).toBeDefined()
     await ui.unmount()
   }
+})
+
+test('with Claude Code set to German, the pane speaks German', { plugins: PLUGINS }, async ($, on) => {
+  engine(on)
+  on('config.list', () => ({ value: [{ key: 'language', label: 'Language', value: 'German' }] as unknown as ConfigRow[] }))
+  await declare($)
+
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  expect((await ui.find({ key: 'on-ak-fixture' }))?.text).toBe('○ Aus')
+  expect((await ui.find({ key: 'more-ak-fixture' }))?.text).toBe('Mehr')
+  expect(await ui.find({ type: 'Text', text: texts('de').footer })).toBeDefined()
+  await ui.unmount()
 })
 
 test('a row shows title, summary and switches', { plugins: PLUGINS }, async ($, on) => {

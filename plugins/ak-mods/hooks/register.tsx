@@ -6,6 +6,7 @@ import { renderBand } from './band-render'
 import { renderPane } from './pane'
 import { togglePane } from './toggle'
 import { initialOn, isAgentKit, namesOf, pruneKeys, rows, savedOf, upsert } from './switches'
+import { languageFor, learnLanguage, texts } from './i18n'
 
 // `$` (here `built`) is spelled `built.state.get(REF)` at every call site: the
 // engine refuses a module that hands it to a helper, `read` and `update` included.
@@ -68,10 +69,8 @@ export const register: Register = on => {
   // Then the chat is restored: a resumed one gets its saved switches back, a
   // new one starts with the standard set.
   on('session.start', async ($, e, next) => {
-    await $.command.register({
-      name: 'ak-mods',
-      description: 'Open or close the Mods pane: turn AgentKit mods on or off for this chat',
-    })
+    const t = texts(await learnLanguage($))
+    await $.command.register({ name: 'ak-mods', description: t.command })
     const id = await restoreChat?.()
 
     // The chat being resumed is kept whatever its age: its switches were just read.
@@ -122,7 +121,9 @@ export const register: Register = on => {
   on('command.run', { command: 'ak-mods' }, async ($, e) => {
     const done = await togglePane($, bandWidth({ terminalColumns: e.presentation.columns }))
 
-    return { text: done === 'opened' ? 'Opened the Mods pane.' : 'Closed the Mods pane.' }
+    const t = texts(await languageFor($))
+
+    return { text: done === 'opened' ? t.opened : t.closed }
   })
 
   on('ui.render', { component: 'Pane', requestId: 'ak-mods' }, ($, e) => renderPane($, e))

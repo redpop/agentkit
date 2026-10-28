@@ -3,18 +3,17 @@ import type { EngineInterface, RenderInput } from 'claude-code'
 
 import { layout } from './band'
 import { drawable, segmentView } from './band-render'
+import { languageFor, texts } from './i18n'
 
 const EXPANDED = atom({ plugin: 'ak-mods', key: 'expanded' } as const, {})
 
-export const FOOTER = 'Switches reset in a new chat or after /clear. Standard mods start on.'
-
 /** The warning for the mods the band dropped, titles in display order; undefined when all fit. */
-const warning = (hidden: readonly string[], titles: ReadonlyMap<string, string>): string | undefined =>
-  hidden.length === 0
-    ? undefined
-    : `${hidden.length} ${hidden.length === 1 ? 'mod does' : 'mods do'} not fit the band: ${hidden
-        .map(name => titles.get(name) ?? name)
-        .join(', ')}`
+const warning = (
+  hidden: readonly string[],
+  titles: ReadonlyMap<string, string>,
+  t: ReturnType<typeof texts>,
+): string | undefined =>
+  hidden.length === 0 ? undefined : t.dropped(hidden.length, hidden.map(name => titles.get(name) ?? name).join(', '))
 
 /** Draws the Mods pane: one row per declared mod, with its three buttons. Texts wrap. */
 export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
@@ -38,7 +37,8 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
   const segments = drawable(list, stored)
   const hidden =
     segments.length > 0 && (e.surface === 'terminal' || e.surface === 'desktop') ? layout(segments, width).hidden : []
-  const dropped = warning(hidden, new Map(list.map(row => [row.name, row.title])))
+  const t = texts(await languageFor($))
+  const dropped = warning(hidden, new Map(list.map(row => [row.name, row.title])), t)
   // Each row's current segment too, in its band colour: the pane draws on every
   // surface, the band only on the terminal and the desktop app.
   const current = new Map(segments.map(one => [one.name, one]))
@@ -77,19 +77,19 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
             <Box>
               <Button
                 key={`on-${row.name}`}
-                label={row.isOn ? '● On' : '○ Off'}
+                label={row.isOn ? t.on : t.off}
                 onPress={() => $.mods.set({ name: row.name, on: !row.isOn })}
               />
               <Text> </Text>
               <Button
                 key={`std-${row.name}`}
-                label={row.isStandard ? '★ Standard' : '☆ Standard'}
+                label={row.isStandard ? t.standard : t.notStandard}
                 onPress={() => $.mods.setStandard({ name: row.name, standard: !row.isStandard })}
               />
               <Text> </Text>
               <Button
                 key={`more-${row.name}`}
-                label={expanded[row.name] === true ? 'Less' : 'More'}
+                label={expanded[row.name] === true ? t.less : t.more}
                 onPress={() => update($, EXPANDED, map => ({ ...map, [row.name]: map[row.name] !== true }))}
               />
             </Box>
@@ -97,7 +97,7 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
         )
       })}
       {dropped !== undefined && <Text dimColor>{dropped}</Text>}
-      <Text dimColor>{FOOTER}</Text>
+      <Text dimColor>{t.footer}</Text>
     </Box>
   )
 }

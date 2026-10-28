@@ -29,7 +29,7 @@ const widthOf = (segment: Segment): number =>
       : segment.button.label.length + segment.button.hotkey.length + 3)
 
 /** The label of the band's last button, which opens and closes the Mods pane: `mods`, or `mods +N` with N dropped. */
-export const toggleLabel = (hidden: number): string => (hidden > 0 ? `mods +${hidden}` : 'mods')
+export const toggleLabel = (hidden: number, word = 'mods'): string => (hidden > 0 ? `${word} +${hidden}` : word)
 
 /** The hotkey of that button; no mod's button takes it in the band. */
 export const TOGGLE_HOTKEY = 'm'
