@@ -23,7 +23,7 @@ const segment = async ($: EngineInterface): Promise<Segment> => {
     return undefined
   }
 
-  return now === undefined ? undefined : { text: now.text, tone: now.tone, priority: 7 }
+  return now === undefined ? undefined : { ...now, priority: 7 }
 }
 
 export const register: Register = on => {
@@ -63,10 +63,11 @@ export const register: Register = on => {
         title: 'Usage',
         summary: "Shows how full this session's context is and how much of the 5-hour limit is used.",
         details:
-          'Its segment in the shared band above the prompt reads ctx 67% · 5h 42%: the context of ' +
-          'this session, and the 5-hour window of the account, every session counted. The 7-day ' +
-          'window joins from 75 %. The colour follows the fullest figure: yellow from 75 %, red ' +
-          'from 90 %. The windows are as the last response of this session reported them.',
+          'Its segment in the shared band above the prompt shows a bar of five cells a figure: the ' +
+          'context of this session, and the 5-hour window of the account, every session counted. ' +
+          'The 7-day window joins from 75 %. A figure from 75 % adds its percentage and turns the ' +
+          'warning colour, from 90 % the error colour. Here every percentage follows the bars. The ' +
+          'windows are as the last response of this session reported them.',
       })
     } catch {
       isSwitched = false
@@ -112,7 +113,7 @@ export const register: Register = on => {
 
     const { Box, Text } = $.ui.resolve(e)
     // As in the shared band: colour only from 75 %, the text colour below.
-    const color = now.tone === 'alert' ? 'red' : now.tone === 'warn' ? 'yellow' : undefined
+    const color = now.tone === 'alert' ? 'error' : now.tone === 'warn' ? 'warning' : undefined
     const mine = (
       <Box flexDirection="row">
         <Text color={color}>{now.text}</Text>

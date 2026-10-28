@@ -19,13 +19,16 @@ prompt, once a response has reported figures:
 
 | Segment | Meaning |
 | --------- | --------- |
-| `ctx 67% · 5h 42%` | The context of this session is 67 % full; 42 % of the account's 5-hour window is used |
-| `ctx 12% · 5h 18% · 7d 81%` | The 7-day window joins from 75 % |
-| `ctx 67%` | No rate limit was reported, as with an API key |
+| `ctx ▰▰▰▱▱  5h ▰▰▱▱▱` | The context of this session is about 60 % full; about 40 % of the account's 5-hour window is used |
+| `ctx ▰▱▱▱▱  5h ▰▱▱▱▱  7d ▰▰▰▰▱ 81%` | The 7-day window joins from 75 %, with its percentage |
+| `ctx ▰▰▰▱▱` | No rate limit was reported, as with an API key |
 
-The colour follows the fullest figure shown: the text colour below 75 %, yellow from 75 %, red from
-90 %. The segment has priority 7: it comes first in the band, before keep warm (6) and the session
-id (2), and when the band runs out of room it is dropped last. It has no button.
+Each figure is a bar of five cells, a cell a fifth of the window, filled to the nearest fifth. A
+figure from 75 % adds its percentage, as it needs attention. The labels draw dim, each bar in its
+own figure's colour: the text colour below 75 %, the warning colour from 75 %, the error colour from
+90 %. The Mods pane adds every percentage after the bars, `· ctx 67% · 5h 42%`. The segment has
+priority 7: it comes first in the band, before keep warm (6) and the session id (2), and when the
+band runs out of room it is dropped last. It has no button.
 
 Without `ak-mods` (or when it refuses the mod, or a publish fails), the mod draws its own band
 instead, never both, with the same text and colour.

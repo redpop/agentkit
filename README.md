@@ -18,7 +18,7 @@ Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/
 | [**ak-review**](#ak-review--quality-assurance) | 9 | — | CodeRabbit review, code explanation, finalize workflow, workflow management, dependency update skill generation, external review delegation, unattended external-tool execution with guided setup, validation hooks |
 | [**ak-security**](#ak-security--security-guidelines) | 3 | — | OWASP security guidelines, LLM security, Semgrep static analysis |
 | [**ak-session-id**](#ak-session-id--copy-the-session-id) | — | — | Mod: `/session-id` copies this session's id for another session's agent; its band segment shows the id's end with a copy button |
-| [**ak-usage**](#ak-usage--context-and-rate-limit-at-a-glance) | — | — | Mod: one compact band segment with the context fill and the 5-hour limit (`ctx 67% · 5h 42%`) |
+| [**ak-usage**](#ak-usage--context-and-rate-limit-at-a-glance) | — | — | Mod: one compact band segment with the context fill and the 5-hour limit as bars (`ctx ▰▰▰▱▱  5h ▰▰▱▱▱`) |
 | [**ak-writing**](#ak-writing--prose-quality) | 1 | — | Remove AI-slop patterns from German and English prose: docs, commits, emails, blog posts, slides |
 
 ## Installation
@@ -209,7 +209,8 @@ the `local_…` id the session tools address.
 
 A mod (needs `ak-mods`, installed with it) that shows one compact segment in the shared band above
 the prompt: how full this session's context is and how much of the account's 5-hour limit is used,
-every session counted (`ctx 67% · 5h 42%`). The 7-day window joins from 75 %. See
+every session counted, a bar of five cells each (`ctx ▰▰▰▱▱  5h ▰▰▱▱▱`). The 7-day window joins
+from 75 %. See
 [Usage](docs/mods/ak-usage/usage.md).
 
 ### ak-notifications — macOS Notifications

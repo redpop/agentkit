@@ -69,7 +69,7 @@ test('without ak-mods the own band shows the figures once there are some', async
   await turn($)
   for (const surface of ['terminal', 'desktop'] as const) {
     const ui = await $.ui.mount({ ...BAND, surface })
-    expect(await ui.find({ type: 'Text', text: 'ctx 67% · 5h 42%' })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: 'ctx ▰▰▰▱▱  5h ▰▰▱▱▱' })).toBeDefined()
     expect(await ui.find({ type: 'Text', text: 'engine' })).toBeDefined()
     await ui.unmount()
   }
@@ -156,11 +156,11 @@ test('publishes the figures after each main-loop turn, not after a subagent', OW
 
   set(figures(134400, 41.6))
   await turn($)
-  expect(segments(toasts).at(-1)).toEqual({ text: 'ctx 67% · 5h 42%', tone: 'ok', priority: 7 })
+  expect(segments(toasts).at(-1)).toMatchObject({ text: 'ctx ▰▰▰▱▱  5h ▰▰▱▱▱', detail: 'ctx 67% · 5h 42%', tone: 'ok', priority: 7 })
 
   set(figures(190000, 41.6))
   await turn($, 'agent-1')
-  expect(segments(toasts).at(-1)?.text).toBe('ctx 67% · 5h 42%')
+  expect(segments(toasts).at(-1)?.detail).toBe('ctx 67% · 5h 42%')
 })
 
 test('draws no band of its own while ak-mods owns the drawing', OWNED, async ($, on) => {
@@ -185,7 +185,7 @@ test('after a chat ends it publishes again once the end has passed', OWNED, asyn
   await $.session.end({ reason: 'clear', sessionId: 'S1', resume: { id: 'S1' } })
   expect(segments(toasts).length).toBe(before)
   await clock.settle()
-  expect(segments(toasts).at(-1)?.text).toBe('5h 42%')
+  expect(segments(toasts).at(-1)?.detail).toBe('5h 42%')
 })
 
 test('switched off it publishes nothing; switched on again it publishes', OWNED, async ($, on) => {
@@ -200,5 +200,5 @@ test('switched off it publishes nothing; switched on again it publishes', OWNED,
 
   await standIn($, 'on')
   await clock.settle()
-  expect(segments(toasts).at(-1)?.text).toBe('ctx 67% · 5h 42%')
+  expect(segments(toasts).at(-1)?.detail).toBe('ctx 67% · 5h 42%')
 })

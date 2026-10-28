@@ -15,15 +15,38 @@ test('nothing to show before the first response', () => {
 })
 
 test('the context alone where no rate limit is reported', () => {
-  expect(reading(usage(134400))).toEqual({ text: 'ctx 67%', tone: 'ok' })
+  expect(reading(usage(134400))).toEqual({
+    text: 'ctx ▰▰▰▱▱',
+    parts: [
+      { text: 'ctx ', tone: 'dim' },
+      { text: '▰▰▰▱▱', tone: 'ok' },
+    ],
+    detail: 'ctx 67%',
+    tone: 'ok',
+  })
 })
 
 test('the context and the 5-hour window, the week hidden below 75 %', () => {
-  expect(reading(usage(134400, { five_hour: 41.6, seven_day: 74.4 }))).toEqual({ text: 'ctx 67% · 5h 42%', tone: 'ok' })
+  const now = reading(usage(134400, { five_hour: 41.6, seven_day: 74.4 }))
+  expect(now).toMatchObject({ text: 'ctx ▰▰▰▱▱  5h ▰▰▱▱▱', detail: 'ctx 67% · 5h 42%', tone: 'ok' })
+  expect(now?.parts.map(part => part.text)).toEqual(['ctx ', '▰▰▰▱▱', '  5h ', '▰▰▱▱▱'])
 })
 
-test('the week joins from 75 % and sets the tone', () => {
-  expect(reading(usage(20000, { five_hour: 10, seven_day: 81 }))).toEqual({ text: 'ctx 10% · 5h 10% · 7d 81%', tone: 'warn' })
+test('the week joins from 75 % with its percentage, in its own tone, and sets the tone', () => {
+  const now = reading(usage(20000, { five_hour: 10, seven_day: 81 }))
+  expect(now).toMatchObject({ text: 'ctx ▰▱▱▱▱  5h ▰▱▱▱▱  7d ▰▰▰▰▱ 81%', detail: 'ctx 10% · 5h 10% · 7d 81%', tone: 'warn' })
+  expect(now?.parts.at(-1)).toEqual({ text: '▰▰▰▰▱ 81%', tone: 'warn' })
+  // The calm figures keep their own tone: only the one that needs attention is coloured.
+  expect(now?.parts[1]).toEqual({ text: '▰▱▱▱▱', tone: 'ok' })
+})
+
+test('a bar fills to the nearest fifth: empty at 0, full at 100', () => {
+  const ctx = (percent: number) => reading({ ...usage(1), context: { tokens: 1, window: 200000, percent } })?.parts[1]?.text
+  expect(ctx(0)).toBe('▱▱▱▱▱')
+  expect(ctx(9)).toBe('▱▱▱▱▱')
+  expect(ctx(10)).toBe('▰▱▱▱▱')
+  expect(ctx(50)).toBe('▰▰▰▱▱')
+  expect(ctx(100)).toBe('▰▰▰▰▰ 100%')
 })
 
 test('the fullest figure sets the tone: yellow from 75 %, red from 90 %', () => {
@@ -33,9 +56,9 @@ test('the fullest figure sets the tone: yellow from 75 %, red from 90 %', () => 
 })
 
 test("the engine's own percentage wins over the computed one", () => {
-  expect(reading({ ...usage(100000), context: { tokens: 100000, window: 200000, percent: 52 } })?.text).toBe('ctx 52%')
+  expect(reading({ ...usage(100000), context: { tokens: 100000, window: 200000, percent: 52 } })?.detail).toBe('ctx 52%')
 })
 
 test('a 5-hour reading without context still shows', () => {
-  expect(reading(usage(undefined, { five_hour: 33 }))).toEqual({ text: '5h 33%', tone: 'ok' })
+  expect(reading(usage(undefined, { five_hour: 33 }))).toMatchObject({ text: '5h ▰▰▱▱▱', detail: '5h 33%', tone: 'ok' })
 })
