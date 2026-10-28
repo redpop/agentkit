@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.46.0] - 2026-10-28
+
+### 🔄 Changed
+
+- `ak-mods` — **the band is calmer and steadier.** Colour marks only what needs attention: an `ok`
+  segment draws in the text colour, so yellow and red stand out. Every space in the band is a
+  one-cell gap of its layout, so separators sit centred on the desktop app too, where buttons
+  bring their own chrome. The `mods` button sits dimmed at the right edge of the last row.
+- `ak-mods` — a segment may carry a `detail`: more of the same state, shown dim after the text in
+  the Mods pane only, never in the band.
+- `ak-keepwarm` — the kept-warm segment reads only `◆ kept warm`. The pings and their cost move to
+  its detail in the Mods pane; when keep warm ends is left to the start toast. The button reads
+  **stop**.
+- `ak-usage` — its own band, drawn without `ak-mods`, no longer colours a figure below 75 %.
+
 ## [1.45.0] - 2026-10-28
 
 ### ✨ Added
