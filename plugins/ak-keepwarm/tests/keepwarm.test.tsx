@@ -1,5 +1,5 @@
 import { expect, mock, test } from 'claude-code/testing'
-import type { EngineInterface, On, Register } from 'claude-code'
+import type { EngineInterface, ModelForkResult, On, Register } from 'claude-code'
 import type { Engine } from 'claude-code/testing'
 
 import { usd } from '../hooks/fmt'
@@ -32,10 +32,18 @@ const usage = (read: number, written: number) => ({
 })
 
 // The engine beneath the plugin: a clock, a model, and the fork the pings go through.
-const engine = (on: On, fork: { usage: ReturnType<typeof usage> | null; calls: number }) => {
+// The chat's id: a /clear in the test moves it on, as the engine does.
+const chat = { id: 'S1' }
+
+type Fork = { usage: ReturnType<typeof usage> | null; calls: number; reply?: ModelForkResult }
+
+const engine = (on: On, fork: Fork, step = { usage: usage(200000, 0) }, stored: Record<string, unknown> = {}) => {
   const clock = mock.clock(on, { now: START })
+  mock.store(on, stored)
   const toasts: string[] = []
+  chat.id = 'S1'
   on('session.model', () => ({ value: 'claude-sonnet-5-5' }))
+  on('session.id', () => ({ value: chat.id }))
   on('session.start', (_, e) => ({ cwd: e.cwd }))
   on('command.register', (_, e) => ({ value: { command: e.name } }))
   on('ui.toast', (_, e) => {
@@ -46,11 +54,12 @@ const engine = (on: On, fork: { usage: ReturnType<typeof usage> | null; calls: n
   on('session.end', (_, e) => ({ sessionId: e.sessionId }))
   on('turn.start', (_, e) => ({ turnId: e.turnId }))
   on('turn.step', async function* (_, e) {
-    return { turnId: e.turnId, index: e.index, answer: '', toolUses: [], stopReason: 'end_turn', usage: usage(200000, 0) }
+    return { turnId: e.turnId, index: e.index, answer: '', toolUses: [], stopReason: 'end_turn', usage: step.usage }
   })
   on('turn.complete', () => ({ text: 'hi' }))
   on('model.fork', () => {
     fork.calls += 1
+    if (fork.reply) return { value: fork.reply }
 
     return fork.usage
       ? { value: { isAnswered: true, text: 'ok', usage: fork.usage } }
@@ -60,13 +69,18 @@ const engine = (on: On, fork: { usage: ReturnType<typeof usage> | null; calls: n
   return { clock, toasts }
 }
 
-const startChat = async ($: Engine) => {
-  await $.session.start({ cwd: '/', surface: null, isInteractive: false })
-  await $.turn.start({ turnId: 'T1', text: 'hi' })
-  const step = $.turn.step({ turnId: 'T1', index: 0, model: 'claude-sonnet-5-5', messageCount: 1 })
+// One main-loop turn with one request.
+const turn = async ($: Engine, turnId = 'T1') => {
+  await $.turn.start({ turnId, text: 'hi' })
+  const step = $.turn.step({ turnId, index: 0, model: 'claude-sonnet-5-5', messageCount: 1 })
   for await (const _ of step) void _
   await step.result
-  await $.turn.complete({ turnId: 'T1', reason: 'answer', answer: 'hi', durationMs: 1, isAborted: false })
+  await $.turn.complete({ turnId, reason: 'answer', answer: 'hi', durationMs: 1, isAborted: false })
+}
+
+const startChat = async ($: Engine) => {
+  await $.session.start({ cwd: '/', surface: null, isInteractive: false })
+  await turn($)
 }
 
 const keepwarm = ($: Engine, args = '') =>
@@ -110,13 +124,141 @@ test('a ping that writes to the cache turns keep warm off', async ($, on) => {
 })
 
 test('a ping with no answer turns keep warm off', async ($, on) => {
-  const fork = { usage: null, calls: 0 }
+  const fork: Fork = { usage: null, calls: 0, reply: { isAnswered: false, reason: 'empty-reply', usage: usage(0, 0) } }
   const { clock, toasts } = engine(on, fork)
   await startChat($)
   await keepwarm($)
 
   await clock.advance(55 * MIN)
   expect(toasts.some(t => t.includes('Keep warm off') && t.includes('no answer'))).toBe(true)
+})
+
+test('a ping the API turns away as busy is sent again while it can land, then keep warm stops', async ($, on) => {
+  // `usage: null` answers 529 overloaded.
+  const fork: Fork = { usage: null, calls: 0 }
+  const { clock, toasts } = engine(on, fork)
+  await startChat($)
+  await keepwarm($)
+
+  await clock.advance(52.5 * MIN)
+  expect(fork.calls).toBe(1)
+  expect(toasts.some(t => t.includes('Keep warm off'))).toBe(false)
+  // Retries after 1 and 2 minutes; a third after 4 would land too close to the expiry.
+  await clock.advance(7 * MIN)
+  expect(fork.calls).toBe(3)
+  expect(toasts.at(-1)).toContain('the API stayed busy')
+})
+
+test('a busy ping that lands on its retry keeps the chat warm', async ($, on) => {
+  const fork: Fork = { usage: null, calls: 0 }
+  const { clock, toasts } = engine(on, fork)
+  await startChat($)
+  await keepwarm($)
+
+  await clock.advance(52.5 * MIN)
+  expect(fork.calls).toBe(1)
+  fork.usage = usage(200000, 0)
+  await clock.advance(2 * MIN)
+  expect(fork.calls).toBe(2)
+  await clock.advance(10 * MIN)
+  expect(fork.calls).toBe(2)
+  expect(toasts.some(t => t.includes('Keep warm off'))).toBe(false)
+})
+
+test('a ping that reads nothing turns keep warm off', async ($, on) => {
+  const fork = { usage: usage(0, 0), calls: 0 }
+  const { clock, toasts } = engine(on, fork)
+  await startChat($)
+  await keepwarm($)
+
+  await clock.advance(55 * MIN)
+  expect(toasts.at(-1)).toContain('read nothing from the cache')
+})
+
+test('with nothing to fork yet, keep warm waits for the next turn instead of stopping', async ($, on) => {
+  const fork: Fork = { usage: usage(200000, 0), calls: 0, reply: { isAnswered: false, reason: 'nothing-to-fork' } }
+  const { clock, toasts } = engine(on, fork)
+  await startChat($)
+  await keepwarm($)
+
+  await clock.advance(55 * MIN)
+  expect(fork.calls).toBe(1)
+  await clock.advance(5 * MIN)
+  expect(fork.calls).toBe(1)
+  expect(toasts.some(t => t.includes('Keep warm off'))).toBe(false)
+
+  fork.reply = undefined
+  await turn($, 'T2')
+  await clock.advance(55 * MIN)
+  expect(fork.calls).toBe(2)
+})
+
+test('/keepwarm takes minutes and hours, and refuses anything else', async ($, on) => {
+  const { clock, toasts } = engine(on, { usage: usage(200000, 0), calls: 0 })
+  await startChat($)
+
+  await keepwarm($, '90m')
+  await clock.advance(85 * MIN)
+  expect(toasts.some(t => t.includes('time limit reached'))).toBe(false)
+  await clock.advance(10 * MIN)
+  expect(toasts.at(-1)).toContain('time limit reached')
+
+  await keepwarm($, '1h30m')
+  await clock.advance(95 * MIN)
+  expect(toasts.at(-1)).toContain('time limit reached')
+
+  await keepwarm($, 'soon')
+  expect(toasts.at(-1)).toContain('not "soon"')
+  await keepwarm($, '25h')
+  expect(toasts.at(-1)).toContain('not "25h"')
+})
+
+test('always keeps the chat warm until 6 hours after its last turn, until /keepwarm off', async ($, on) => {
+  const { clock, toasts } = engine(on, { usage: usage(200000, 0), calls: 0 })
+  await startChat($)
+
+  await keepwarm($, 'always')
+  expect(toasts.at(-1)).toContain('Keeping every chat warm until 6h00m after its last turn')
+  await clock.advance(5 * 60 * MIN)
+  await turn($, 'T2')
+  // 5 hours on, the turn moved the end to 6 hours after it.
+  await clock.advance(5 * 60 * MIN)
+  expect(toasts.some(t => t.includes('time limit reached'))).toBe(false)
+  await clock.advance(65 * MIN)
+  expect(toasts.at(-1)).toContain('time limit reached')
+
+  // A turn starts it again; off ends always too.
+  await turn($, 'T3')
+  await keepwarm($, 'off')
+  expect(toasts.at(-1)).toContain('Keep warm off (turned off)')
+  await turn($, 'T4')
+  await keepwarm($)
+  expect(toasts.at(-1)).toContain('Keeping this cache warm until')
+})
+
+test('a resumed chat picks its running keep warm up again; a cleared one does not', async ($, on) => {
+  const fork = { usage: usage(200000, 0), calls: 0 }
+  const { clock } = engine(on, fork)
+  await startChat($)
+  await keepwarm($)
+
+  // Away to another chat, then back: the window S1 saved comes back with it.
+  await $.session.end({ reason: 'resume', sessionId: 'S1', resume: { id: 'S2' } })
+  chat.id = 'S2'
+  await clock.advance(MIN)
+  await $.session.end({ reason: 'resume', sessionId: 'S2', resume: { id: 'S1' } })
+  chat.id = 'S1'
+  await clock.advance(55 * MIN)
+  expect(fork.calls).toBe(1)
+
+  // /clear ends it.
+  await $.session.end({ reason: 'clear', sessionId: 'S1', resume: { id: 'S3' } })
+  chat.id = 'S3'
+  await clock.advance(MIN)
+  await $.session.end({ reason: 'resume', sessionId: 'S3', resume: { id: 'S1' } })
+  chat.id = 'S1'
+  await clock.advance(60 * MIN)
+  expect(fork.calls).toBe(1)
 })
 
 test('/keepwarm off stops the pings, and the hours argument sets the limit', async ($, on) => {
@@ -329,6 +471,19 @@ test('publishes the kept-warm segment with the stop button, without its end', OW
   })
 })
 
+test('a rewrite of a cache that had been warm is counted with its cost in the detail', OWNED, async ($, on) => {
+  const step = { usage: usage(200000, 0) }
+  const { clock, toasts } = engine(on, { usage: usage(200000, 0), calls: 0 }, step)
+  await startChat($)
+  expect(segments(toasts).at(-1)?.detail).toBeUndefined()
+
+  await clock.advance(70 * MIN)
+  step.usage = usage(0, 200000)
+  await turn($, 'T2')
+  const cost = usd(rewriteCost(200000, 'claude-sonnet-5-5', 60))
+  expect(segments(toasts).at(-1)?.detail).toBe(`1 rewrite ${cost}`)
+})
+
 test('the kept-warm segment carries the pings and their cost as its detail, once there is one', OWNED, async ($, on) => {
   const { clock, toasts } = engine(on, { usage: usage(200000, 0), calls: 0 })
   await startChat($)
@@ -499,4 +654,15 @@ test('a failing publish leaves the mod drawing its own band', { plugins: [{ name
   expect(await ui.find({ type: 'Text', text: /cache warm 60m/ })).toBeDefined()
   expect((await ui.find({ key: 'keepwarm' }))?.text).toBe('keep warm')
   await ui.unmount()
+})
+
+test('after a restart the saved window keeps the chat warm again', OWNED, async ($, on) => {
+  const fork = { usage: usage(200000, 0), calls: 0 }
+  const saved = { lastActivity: START - 10 * MIN, ctx: 200010, ttlMin: 60, keepWarmUntil: START + 3 * 60 * MIN, pings: 2, pingUsd: 0.1 }
+  const { clock, toasts } = engine(on, fork, undefined, { 'chat:S1': saved })
+  await $.session.start({ cwd: '/', surface: null, isInteractive: false })
+  expect(segments(toasts).at(-1)).toMatchObject({ text: '◆ kept warm', detail: '2 pings $0.10' })
+
+  await clock.advance(43 * MIN)
+  expect(fork.calls).toBe(1)
 })

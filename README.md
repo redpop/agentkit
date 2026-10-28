@@ -190,7 +190,7 @@ ping shortly before it expires. Based on Cache Keeper by Nate Herk (MIT).
 
 | Command | Purpose | Example |
 |---------|---------|---------|
-| [`/keepwarm`](docs/mods/ak-keepwarm/keepwarm.md) | Keep the cache warm for 4 hours (or N hours), or turn it off | `/keepwarm 2`, `/keepwarm off` |
+| [`/keepwarm`](docs/mods/ak-keepwarm/keepwarm.md) | Keep the cache warm for 4 hours (or a span of your own, or always), or turn it off | `/keepwarm 90m`, `/keepwarm always`, `/keepwarm off` |
 
 ### ak-session-id — Copy the Session Id
 

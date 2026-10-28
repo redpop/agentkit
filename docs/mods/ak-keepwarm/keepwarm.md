@@ -17,8 +17,12 @@ small ping shortly before expiry costs a fraction of a rewrite.
 | Command | Effect |
 |---------|--------|
 | `/keepwarm` | Starts keep warm for 4 hours; stops it while it runs |
-| `/keepwarm <hours>` | Starts it for that many hours (at most 24) |
-| `/keepwarm off` | Stops it |
+| `/keepwarm <span>` | Starts it for that span: `90m`, `2h30m`, `6h`, or bare hours such as `2` (at most 24 hours) |
+| `/keepwarm always` | Keeps every chat warm until 6 hours after its last turn, here and in later sessions |
+| `/keepwarm off` | Stops it and ends `always` |
+
+Stopping keep warm by hand, with the command or the button, ends `always` too: else the next turn
+would start it again.
 
 ## Band
 
@@ -27,10 +31,15 @@ above the prompt, once the chat has made a request:
 
 | Segment | Meaning |
 |---------|---------|
-| `◆ kept warm` | Keep warm is on. The Mods pane adds the pings so far and their cost, `· 3 pings $0.02`; when it ends, the start toast says |
+| `◆ kept warm` | Keep warm is on; when it ends, the start toast says |
 | `◕ 42m` | Time left before the cache expires; the circle empties with it (`●` `◕` `◑` `◔`) |
 | `◔ 4m  rewrite ≈ $0.42` | Under 5 minutes left, in the warning colour, and what a rewrite of the context would cost |
 | `○ cold 12m  rewrite ≈ $0.42` | The cache expired that long ago; a ping cannot help, and the button is hidden |
+
+In every state the Mods pane adds what this chat's cache cost so far, once there is something to
+count: the pings and the rewrites of a cache that had been warm, each with its cost, `· 3 pings
+$0.02 · 1 rewrite $0.80`. It also says when a ping waits for a retry (`ping retry 1 of 3`) or for
+the next turn, and `always` while that is on.
 
 The **keep warm** / **stop** button toggles the loop (key `1`); it runs `/keepwarm`. The band
 draws on the terminal and the desktop app; the Mods pane shows the segment and its button in the
@@ -49,19 +58,33 @@ band instead, never both. That band shows the same states (`◐ cache cools in 4
 - Every 30 seconds the mod checks the clock. About 8 minutes (1-hour TTL) or 90 seconds (5-minute
   TTL) before expiry, and only while Claude is idle, it sends one ping: a fork of the chat that
   answers "ok".
-- A ping that writes more than a tenth of what it reads did not hit the cache. Keep warm turns
-  itself off and says why. So does a ping that gets no answer.
-- Switching the mod off, `/clear`, `/resume` and `/branch` stop keep warm. The cache after those is
-  unknown.
+- A ping that reads nothing, or writes more than a tenth of what it reads, did not hit the cache.
+  Keep warm turns itself off and says why. So does a ping that gets no answer.
+- A ping the API turns away as busy (429, 529 or another 5xx) is sent again after 1, 2 and 4
+  minutes, as long as it can still land a minute before the cache expires. Past that keep warm
+  turns itself off.
+- A request that writes most of a context the cache had held counts as a rewrite, at the write
+  price of its model.
+- Each chat's state is saved in the mod's store: when keep warm runs until, the last request, the
+  TTL seen and the counts. A reload of the mod, a restart of Claude Code and a resume of the chat
+  pick it up again. After a restart the process has no conversation to fork until the next turn,
+  so a ping due before it waits for that turn instead of stopping. A chat idle for two days that
+  keeps nothing warm is dropped from the store.
+- `/clear` and switching the mod off stop keep warm. `/resume` and `/branch` leave the chat they
+  end saved, so going back to it brings its keep warm back while the window runs.
+- With `always` on, each main-loop turn moves the end of keep warm to 6 hours after it.
 - The segment is published when it changes: after a request, on the 30-second check, after
   `/keepwarm`, and after the mod is switched on. Switched off, it publishes nothing; `ak-mods`
   clears the segment.
 
 ## Cost
 
-The pings are small model requests, sent only while keep warm is on. The cost estimate uses list
-prices copied from the upstream mod; check them against the current pricing page.
+The pings are small model requests, sent only while keep warm is on. The cost estimates use
+Anthropic's list prices per model, including the long-prompt rates of Haiku 5.5 above 100K tokens.
+A model the table does not know is priced as the newest of its family.
 
 ## Credit
 
-Based on Cache Keeper by Nate Herk (MIT). Only the keepwarm part is taken over.
+Based on Cache Keeper by Nate Herk (MIT). Only the keepwarm part is taken over. The saved window,
+the busy-API retries, `always` and the rewrite count follow ideas from Cache Tax by karanb192; no
+code is taken over.
