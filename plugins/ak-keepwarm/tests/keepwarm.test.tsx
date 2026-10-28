@@ -2,7 +2,7 @@ import { expect, mock, test } from 'claude-code/testing'
 import type { EngineInterface, ModelForkResult, On, Register } from 'claude-code'
 import type { Engine } from 'claude-code/testing'
 
-import { usd } from '../hooks/fmt'
+import { clock as clockTime, usd } from '../hooks/fmt'
 import { rewriteCost } from '../hooks/pricing'
 
 // Run on its own, ak-keepwarm finds no ak-mods: the mod is on (fail-open).
@@ -402,6 +402,13 @@ const standIn = ($: Engine, args: 'on' | 'off' | 'fail' | 'break' | 'heal') =>
 
 const COST = `≈ ${usd(rewriteCost(200010, 'claude-sonnet-5-5', 60))}`
 const KEEP = { label: 'keep warm', hotkey: '1', command: 'keepwarm' }
+// The hover card's rows of a chat on a 1-hour cache it has not yet measured, whose state reads `cache`.
+const card = (cache: string) => [
+  { label: 'Cache', value: cache },
+  { label: 'Lifetime', value: '1 hour, assumed' },
+  { label: 'Context', value: '200k tokens' },
+  { label: 'Rewrite', value: COST },
+]
 // The warm segment at a full hour, its rich runs a full ring.
 const WARM = {
   text: '● 60m',
@@ -410,6 +417,7 @@ const WARM = {
     { text: ' 60m', tone: 'ok' },
     { text: ' cache', tone: 'dim' },
   ],
+  card: card('60m left'),
   tone: 'ok',
   priority: 6,
   button: KEEP,
@@ -443,10 +451,11 @@ test('publishes the warn segment with the keepwarm button while cooling', OWNED,
     text: `◔ 4m  rewrite ${COST}`,
     rich: [
       { text: 'cache 4m left', tone: 'warn', ring: 7 },
-      { text: ' 4m', tone: 'warn' },
-      { text: ' cache  rewrite ', tone: 'dim' },
-      { text: COST, tone: 'warn' },
+      { text: ' cache drops in 4m', tone: 'warn' },
+      { text: ' · next message rewrites ', tone: 'dim' },
+      { text: `200k tokens ${COST}`, tone: 'warn' },
     ],
+    card: card('4m left'),
     parts: [
       { text: '◔ 4m', tone: 'warn' },
       { text: '  rewrite ', tone: 'dim' },
@@ -479,6 +488,7 @@ test('publishes the cold segment without a button', OWNED, async ($, on) => {
       { text: 'cache cold', tone: 'dim', ring: 0 },
       { text: ` cold 12m  rewrite ${COST}`, tone: 'dim' },
     ],
+    card: card('cold for 12m'),
     tone: 'dim',
     priority: 6,
   })
@@ -495,6 +505,7 @@ test('publishes the kept-warm segment with the stop button, without its end', OW
       { text: 'cache kept warm', tone: 'info', ring: 100 },
       { text: ' kept warm', tone: 'info' },
     ],
+    card: card(`kept warm until ${clockTime(START + 4 * 60 * MIN)}`),
     tone: 'info',
     priority: 6,
     button: { label: 'stop', hotkey: '1', command: 'keepwarm' },

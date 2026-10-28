@@ -294,7 +294,27 @@ const segment = (): Segment => {
   const cost = `≈ ${usd(rewriteCost(S.ctx, S.model, S.ttlMin))}`
   const button = (label: string) => ({ label, hotkey: '1', command: 'keepwarm' })
   const detail = tally()
-  const more = detail ? { detail } : {}
+  // The hover card on the desktop app: the cache's state, what it holds and what it cost.
+  const card = [
+    {
+      label: 'Cache',
+      value:
+        state === 'kept'
+          ? `kept warm until ${clock(S.keepWarmUntil)}`
+          : state === 'cold'
+            ? `cold for ${minutes(-left)}`
+            : `${minutes(left)} left`,
+    },
+    { label: 'Lifetime', value: `${S.ttlMin >= 60 ? '1 hour' : '5 minutes'}${S.isMeasured ? '' : ', assumed'}` },
+    { label: 'Context', value: `${tokens(S.ctx)} tokens` },
+    { label: 'Rewrite', value: cost },
+    ...(S.pings === 0 ? [] : [{ label: 'Pings', value: `${S.pings} · ${usd(S.pingUsd)}` }]),
+    ...(S.rewrites === 0 ? [] : [{ label: 'Rewrites', value: `${S.rewrites} · ${usd(S.rewriteUsd)}` }]),
+    ...(S.retryAt ? [{ label: 'Retry', value: `${S.retries} of ${RETRY_MIN.length}` }] : []),
+    ...(S.isKeepWarm && S.isAwaitingTurn ? [{ label: 'Ping', value: 'waits for the next turn' }] : []),
+    ...(S.isAlways ? [{ label: 'Always', value: 'on' }] : []),
+  ]
+  const more = { ...(detail ? { detail } : {}), card }
   // Where the band draws pictures, the circle is a ring that empties with the time left.
   const ring = Math.round((Math.max(0, left) / (S.ttlMin * MIN)) * 100)
   if (state === 'kept') {
@@ -329,11 +349,13 @@ const segment = (): Segment => {
     return {
       text: `${time}  rewrite ${cost}`,
       ...more,
+      // The desktop app has the room to say what is at stake: when the cache drops, and what the next
+      // message then writes again.
       rich: [
         { text: `cache ${minutes(left)} left`, tone: 'warn', ring },
-        { text: ` ${minutes(left)}`, tone: 'warn' },
-        { text: ' cache  rewrite ', tone: 'dim' },
-        { text: cost, tone: 'warn' },
+        { text: ` cache drops in ${minutes(left)}`, tone: 'warn' },
+        { text: ' · next message rewrites ', tone: 'dim' },
+        { text: `${tokens(S.ctx)} tokens ${cost}`, tone: 'warn' },
       ],
       parts: [
         { text: time, tone: 'warn' },
