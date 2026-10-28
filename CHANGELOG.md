@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.53.0] - 2026-10-28
+
+### ✨ Added
+
+- `ak-usage` — the context row of the card adds the tokens used and the window's size:
+  `68% · 680k of 1M tokens`.
+
+### 🔄 Changed
+
+- `ak-mods` — **a calmer Mods pane**: the standard mark and the on/off switch sit beside the title,
+  a plain **Show details** link opens a row, and the note on resetting switches is a footnote. On
+  the desktop app each mod sits on a faint rounded surface of its own.
+- `ak-mods` — a ring or icon has room on its right, so the text beside it no longer touches it.
+
 ## [1.52.0] - 2026-10-28
 
 ### ✨ Added
