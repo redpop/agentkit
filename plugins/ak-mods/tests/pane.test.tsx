@@ -82,6 +82,10 @@ const NARROW = { ...PANE.props, bodyColumns: 40 }
 const warningOf = async (ui: { find: (q: { type: string; text: RegExp }) => Promise<{ text: string } | undefined> }) =>
   (await ui.find({ type: 'Text', text: /fits? the band/ }))?.text
 
+/** The Text that reads exactly `text`: `find` matches a part of the text, and so its parent too. */
+const exactly = async (ui: { findAll: (q: { type: string }) => Promise<{ text: string; props: Record<string, unknown> }[]> }, text: string) =>
+  (await ui.findAll({ type: 'Text' })).find(one => one.text === text)
+
 test('empty pane says no mods', { plugins: PLUGINS }, async ($, on) => {
   engine(on)
 
@@ -491,9 +495,9 @@ test("a row draws its segment in the band's colour", { plugins: MODS }, async ($
   await callAs($, 'ak-a', 'set', { name: 'ak-a', on: true })
 
   for (const [tone, props] of [
-    ['info', { color: 'cyan' }],
-    ['warn', { color: 'yellow' }],
-    ['alert', { color: 'red', bold: true }],
+    ['info', { color: 'suggestion' }],
+    ['warn', { color: 'warning' }],
+    ['alert', { color: 'error', bold: true }],
     ['dim', { dimColor: true }],
   ] as const) {
     await callAs($, 'ak-a', 'segment', { text: `state ${tone}`, tone })
@@ -506,6 +510,19 @@ test("a row draws its segment in the band's colour", { plugins: MODS }, async ($
   await callAs($, 'ak-a', 'segment', { text: 'state ok', tone: 'ok' })
   const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
   expect((await ui.find({ type: 'Text', text: 'state ok' }))?.props.color).toBeUndefined()
+  await ui.unmount()
+})
+
+test("a row draws its segment's parts as the band does", { plugins: MODS }, async ($, on) => {
+  engine(on)
+  await callAs($, 'ak-a', 'declare', { name: 'ak-a', title: 'Alpha', summary: 's', details: 'd' })
+  await callAs($, 'ak-a', 'set', { name: 'ak-a', on: true })
+  await callAs($, 'ak-a', 'segment', { text: 'ctx ▰▱', parts: [{ text: 'ctx ', tone: 'dim' }, { text: '▰▱' }] })
+
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  expect(await ui.find({ type: 'Text', text: 'ctx ▰▱' })).toMatchObject({ props: { tabular: true } })
+  expect(await exactly(ui, 'ctx ')).toMatchObject({ props: { dimColor: true } })
+  expect((await exactly(ui, '▰▱'))?.props.color).toBeUndefined()
   await ui.unmount()
 })
 

@@ -2,7 +2,7 @@ import { atom, update } from 'claude-code'
 import type { EngineInterface, RenderInput } from 'claude-code'
 
 import { layout } from './band'
-import { drawable, toneProps } from './band-render'
+import { drawable, segmentText } from './band-render'
 
 const EXPANDED = atom({ plugin: 'ak-mods', key: 'expanded' } as const, {})
 
@@ -45,52 +45,56 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
   return (
     <Box flexDirection="column">
       {list.length === 0 && <Text dimColor>No AgentKit mods installed.</Text>}
-      {list.map(row => (
-        <Box flexDirection="column" marginBottom={1}>
-          <Text bold>{row.title}</Text>
-          <Text dimColor>{row.summary}</Text>
-          {current.has(row.name) && (
+      {list.map(row => {
+        const one = current.get(row.name)
+
+        return (
+          <Box flexDirection="column" marginBottom={1}>
+            <Text bold>{row.title}</Text>
+            <Text dimColor>{row.summary}</Text>
+            {one !== undefined && (
+              <Box>
+                {segmentText(Text, one, `text-${row.name}`)}
+                {one.detail !== undefined && (
+                  <Text key={`detail-${row.name}`} dimColor>{` · ${one.detail}`}</Text>
+                )}
+                {one.button !== undefined && [
+                  <Text key={`gap-${row.name}`}> </Text>,
+                  <Button
+                    key={`seg-${row.name}`}
+                    label={one.button.label}
+                    onPress={() => {
+                      const button = one.button
+                      // A command the host refuses changes nothing in the pane.
+                      $.command.run({ command: button?.command ?? '', args: button?.args ?? '' }).catch(() => {})
+                    }}
+                  />,
+                ]}
+              </Box>
+            )}
+            {expanded[row.name] === true && <Text dimColor>{row.details}</Text>}
             <Box>
-              <Text {...toneProps(current.get(row.name)?.tone)}>{current.get(row.name)?.text}</Text>
-              {current.get(row.name)?.detail !== undefined && (
-                <Text key={`detail-${row.name}`} dimColor>{` · ${current.get(row.name)?.detail}`}</Text>
-              )}
-              {current.get(row.name)?.button !== undefined && [
-                <Text key={`gap-${row.name}`}> </Text>,
-                <Button
-                  key={`seg-${row.name}`}
-                  label={current.get(row.name)?.button?.label ?? ''}
-                  onPress={() => {
-                    const button = current.get(row.name)?.button
-                    // A command the host refuses changes nothing in the pane.
-                    $.command.run({ command: button?.command ?? '', args: button?.args ?? '' }).catch(() => {})
-                  }}
-                />,
-              ]}
+              <Button
+                key={`on-${row.name}`}
+                label={row.isOn ? '● On' : '○ Off'}
+                onPress={() => $.mods.set({ name: row.name, on: !row.isOn })}
+              />
+              <Text> </Text>
+              <Button
+                key={`std-${row.name}`}
+                label={row.isStandard ? '★ Standard' : '☆ Standard'}
+                onPress={() => $.mods.setStandard({ name: row.name, standard: !row.isStandard })}
+              />
+              <Text> </Text>
+              <Button
+                key={`more-${row.name}`}
+                label={expanded[row.name] === true ? 'Less' : 'More'}
+                onPress={() => update($, EXPANDED, map => ({ ...map, [row.name]: map[row.name] !== true }))}
+              />
             </Box>
-          )}
-          {expanded[row.name] === true && <Text dimColor>{row.details}</Text>}
-          <Box>
-            <Button
-              key={`on-${row.name}`}
-              label={row.isOn ? '● On' : '○ Off'}
-              onPress={() => $.mods.set({ name: row.name, on: !row.isOn })}
-            />
-            <Text> </Text>
-            <Button
-              key={`std-${row.name}`}
-              label={row.isStandard ? '★ Standard' : '☆ Standard'}
-              onPress={() => $.mods.setStandard({ name: row.name, standard: !row.isStandard })}
-            />
-            <Text> </Text>
-            <Button
-              key={`more-${row.name}`}
-              label={expanded[row.name] === true ? 'Less' : 'More'}
-              onPress={() => update($, EXPANDED, map => ({ ...map, [row.name]: map[row.name] !== true }))}
-            />
           </Box>
-        </Box>
-      ))}
+        )
+      })}
       {dropped !== undefined && <Text dimColor>{dropped}</Text>}
       <Text dimColor>{FOOTER}</Text>
     </Box>

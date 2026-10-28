@@ -79,11 +79,13 @@ export const layout = (segments: readonly Segment[], columns: number): Layout =>
     if (rows !== undefined) return { rows, hidden: sorted.slice(keep).map(one => one.name) }
   }
 
-  // Not even the first fits beside the button: keep it alone, cut to the room left.
+  // Not even the first fits beside the button: keep it alone, cut to the room left. Its parts no
+  // longer join to a cut text, so it draws in one run.
   const [first, ...rest] = sorted
+  const text = first === undefined ? '' : cut(first.text, Math.max(1, columns - toggleWidth(rest.length)))
 
   return {
-    rows: first === undefined ? [] : [[{ ...first, text: cut(first.text, Math.max(1, columns - toggleWidth(rest.length))) }]],
+    rows: first === undefined ? [] : [[text === first.text ? first : { ...first, text, parts: undefined }]],
     hidden: rest.map(one => one.name),
   }
 }

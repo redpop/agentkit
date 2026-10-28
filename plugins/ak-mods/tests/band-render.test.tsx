@@ -74,6 +74,10 @@ const rowsOf = async (ui: { findAll: (q: { key?: string; type?: string }) => Pro
   return rows.map(row => row.text)
 }
 
+/** The Text that reads exactly `text`: `find` matches a part of the text, and so its parent too. */
+const exactly = async (ui: { findAll: (q: { type: string }) => Promise<{ text: string; props: Record<string, unknown> }[]> }, text: string) =>
+  (await ui.findAll({ type: 'Text' })).find(one => one.text === text)
+
 test('no segments draws nothing beyond next(e)', { plugins: [consumer('ak-a')] }, async ($, on) => {
   engine(on)
   await call($, 'ak-a', 'declare', { name: 'ak-a', title: 'A', summary: 's', details: 'd' })
@@ -100,7 +104,7 @@ test("an off mod's segment is not drawn", { plugins: [consumer('ak-a'), consumer
   }
 })
 
-test('one row for two segments joined by │', { plugins: [consumer('ak-a'), consumer('ak-b')] }, async ($, on) => {
+test('one row for two segments parted by space alone', { plugins: [consumer('ak-a'), consumer('ak-b')] }, async ($, on) => {
   engine(on)
   await publish($, 'ak-a', 'A', { text: 'alpha', tone: 'ok' })
   await publish($, 'ak-b', 'B', { text: 'beta', tone: 'alert' })
@@ -112,9 +116,12 @@ test('one row for two segments joined by │', { plugins: [consumer('ak-a'), con
     expect(await ui.find({ key: 'band-row-1' })).toBeUndefined()
     // `ok` is the text colour: colour marks only what needs attention.
     expect((await ui.find({ type: 'Text', text: 'alpha' }))?.props.color).toBeUndefined()
-    expect(await ui.find({ type: 'Text', text: 'beta' })).toMatchObject({ props: { color: 'red', bold: true } })
-    expect(await ui.find({ type: 'Text', text: '│' })).toMatchObject({ props: { dimColor: true } })
-    expect(await rowsOf(ui)).toContain('alpha│betamods')
+    // Theme keys, so the colours follow the person's theme.
+    expect(await ui.find({ type: 'Text', text: 'beta' })).toMatchObject({ props: { color: 'error', bold: true } })
+    // No rule between the segments: a cell of space, three with the row's gaps.
+    expect(await ui.find({ type: 'Text', text: '│' })).toBeUndefined()
+    expect(await ui.find({ key: 'sep-ak-b' })).toMatchObject({ type: 'Box', props: { minWidth: 1 } })
+    expect(await rowsOf(ui)).toContain('alphabetamods')
     // The line beneath stays below the band.
     expect(await ui.drawn()).toMatchObject({
       type: 'Box',
@@ -468,9 +475,58 @@ test(
       const odd = await ui.find({ type: 'Text', text: 'odd' })
       expect(odd).toBeDefined()
       expect(odd?.props.color).toBeUndefined()
-      expect(await ui.find({ type: 'Text', text: 'fine' })).toMatchObject({ props: { color: 'cyan' } })
-      expect((await ui.find({ key: 'band-row-0' }))?.text).toBe('odd│finemods')
+      expect(await ui.find({ type: 'Text', text: 'fine' })).toMatchObject({ props: { color: 'suggestion' } })
+      expect((await ui.find({ key: 'band-row-0' }))?.text).toBe('oddfinemods')
       await ui.unmount()
     }
   },
 )
+
+test('a segment draws its parts, each in its tone or else the segment\'s, in digits of one width', { plugins: [consumer('ak-a')] }, async ($, on) => {
+  engine(on)
+  await publish($, 'ak-a', 'A', {
+    text: 'ctx ▰▱ 81%',
+    tone: 'warn',
+    parts: [{ text: 'ctx ', tone: 'dim' }, { text: '▰▱' }, { text: ' 81%', tone: 'alert' }],
+  })
+
+  for (const surface of ['terminal', 'desktop'] as const) {
+    const ui = await $.ui.mount({ ...BAND, surface })
+    expect(await ui.find({ type: 'Text', text: 'ctx ▰▱ 81%' })).toMatchObject({ props: { tabular: true } })
+    expect(await exactly(ui, 'ctx ')).toMatchObject({ props: { dimColor: true } })
+    expect(await exactly(ui, '▰▱')).toMatchObject({ props: { color: 'warning' } })
+    expect(await exactly(ui, ' 81%')).toMatchObject({ props: { color: 'error', bold: true } })
+    await ui.unmount()
+  }
+})
+
+test(
+  'parts that do not join to the text, or are no list of texts, leave the text in one run',
+  { plugins: [consumer('ak-a'), consumer('ak-b'), consumer('ak-c')] },
+  async ($, on) => {
+    engine(on)
+    await publish($, 'ak-a', 'A', { text: 'alpha', parts: [{ text: 'alp' }, { text: 'XX' }] })
+    await publish($, 'ak-b', 'B', { text: 'beta', parts: [{ text: 'be' }, 'ta'] })
+    await publish($, 'ak-c', 'C', { text: 'gamma', tone: 'info', parts: 'gamma' })
+
+    const ui = await $.ui.mount(BAND)
+    for (const text of ['alpha', 'beta', 'gamma']) {
+      expect(await ui.find({ type: 'Text', text })).toMatchObject({ children: [text] })
+    }
+    expect(await exactly(ui, 'alp')).toBeUndefined()
+    expect(await exactly(ui, 'be')).toBeUndefined()
+    expect((await ui.find({ type: 'Text', text: 'gamma' }))?.props.color).toBe('suggestion')
+    await ui.unmount()
+  },
+)
+
+test('a control character in a part draws as a space, as in the text', { plugins: [consumer('ak-a')] }, async ($, on) => {
+  engine(on)
+  await publish($, 'ak-a', 'A', { text: 'a\nb', parts: [{ text: 'a\n' }, { text: 'b', tone: 'warn' }] })
+
+  const ui = await $.ui.mount(BAND)
+  expect(await ui.find({ type: 'Text', text: 'a b' })).toBeDefined()
+  expect(await exactly(ui, 'a ')).toBeDefined()
+  expect(await exactly(ui, 'b')).toMatchObject({ props: { color: 'warning' } })
+  await ui.unmount()
+})

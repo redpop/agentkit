@@ -7,10 +7,18 @@ export type ModsRow = ModsInfo & { isOn: boolean; isStandard: boolean }
 /** A segment's colour: its state, not its mod. `ok` draws in the text colour; only the others colour it. */
 export type ModsTone = 'ok' | 'warn' | 'alert' | 'info' | 'dim'
 
+/** A run of a segment's text in its own tone; without one, in the segment's. */
+export type ModsPart = { text: string; tone?: ModsTone }
+
 /** What a mod shows in the shared band; ak-mods adds its name and title. */
 export type ModsSegment = {
   /** One line: a control character draws as a space, as in the button's label. */
   text: string
+  /**
+   * `text` cut into runs, each drawn in its own tone, so a label can sit dim beside its value.
+   * Joined they must read as `text`; else `text` draws in one run.
+   */
+  parts?: ModsPart[]
   /** More of the same state, shown dim after the text in the Mods pane only, never in the band. One line, as `text`. */
   detail?: string
   tone?: ModsTone

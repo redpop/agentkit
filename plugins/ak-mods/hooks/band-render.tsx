@@ -1,6 +1,6 @@
-import type { EngineInterface, Next, RenderInput } from 'claude-code'
+import type { ElementConstructor, EngineInterface, Next, RenderInput, TextProps } from 'claude-code'
 
-import type { ModsInfo, ModsRow, ModsSegment, ModsTone } from '../types'
+import type { ModsInfo, ModsPart, ModsRow, ModsSegment, ModsTone } from '../types'
 import { bandWidth, layout, TOGGLE_HOTKEY, toggleLabel } from './band'
 import type { Segment } from './band'
 import { togglePane } from './toggle'
@@ -23,25 +23,44 @@ const spaced = (text: string): string => text.replace(CONTROL, ' ')
 const hotkeyOf = (hotkey: unknown): string | undefined =>
   typeof hotkey === 'string' && hotkey.length === 1 && spaced(hotkey) === hotkey ? hotkey : undefined
 
+const toneOf = (tone: unknown): ModsTone | undefined =>
+  typeof tone === 'string' && TONES.includes(tone) ? (tone as ModsTone) : undefined
+
+/** The runs of a segment's text, or undefined when they are no list of texts or do not join to it. */
+const partsOf = (parts: unknown, text: string): ModsPart[] | undefined => {
+  if (!Array.isArray(parts)) return undefined
+  const runs = (parts as Partial<Record<keyof ModsPart, unknown>>[]).map(part =>
+    typeof part?.text === 'string' ? { text: spaced(part.text), tone: toneOf(part.tone) } : undefined,
+  )
+  if (runs.some(run => run === undefined)) return undefined
+  const joined = runs as ModsPart[]
+
+  return joined.map(run => run.text).join('') === text ? joined.filter(run => run.text !== '') : undefined
+}
+
 /**
  * A stored segment as the band can draw it, or undefined. Segments are stored
  * unchecked: an unknown tone draws uncoloured, a priority that is no number
- * takes the default, a control character in a text, a label or a command
- * draws as a space, a hotkey that is not one printable character is left
- * out, a button without a label or command is left out, a detail that is
- * no text is left out, and a segment without text is not drawn.
+ * takes the default, a control character in a text, a part, a label or a
+ * command draws as a space, a hotkey that is not one printable character is
+ * left out, a button without a label or command is left out, a detail that
+ * is no text is left out, parts that do not join to the text are left out,
+ * and a segment without text is not drawn.
  */
 const checked = (info: ModsInfo, stored: unknown): Segment | undefined => {
   const one = (stored ?? {}) as Partial<Record<keyof ModsSegment, unknown>>
   if (typeof one.text !== 'string' || one.text === '') return undefined
   const button = (one.button ?? {}) as Partial<Record<string, unknown>>
 
+  const text = spaced(one.text)
+
   return {
     name: info.name,
     title: info.title,
-    text: spaced(one.text),
+    text,
+    parts: partsOf(one.parts, text),
     detail: typeof one.detail === 'string' && one.detail !== '' ? spaced(one.detail) : undefined,
-    tone: typeof one.tone === 'string' && TONES.includes(one.tone) ? (one.tone as ModsTone) : undefined,
+    tone: toneOf(one.tone),
     priority: typeof one.priority === 'number' && Number.isFinite(one.priority) ? one.priority : undefined,
     button:
       typeof button.label === 'string' && typeof button.command === 'string'
@@ -58,18 +77,41 @@ const checked = (info: ModsInfo, stored: unknown): Segment | undefined => {
 /**
  * How a tone draws, the same in the band and the Mods pane. Colour marks what
  * needs attention: `ok` draws in the text colour, so a band at rest stays
- * quiet and yellow or red stands out.
+ * quiet and a warning or an error stands out. The colours are theme keys:
+ * they follow the person's theme, light or dark.
  */
-export const toneProps = (tone: ModsTone | undefined): { color?: 'yellow' | 'red' | 'cyan'; bold?: true; dimColor?: true } =>
+export const toneProps = (
+  tone: ModsTone | undefined,
+): { color?: 'warning' | 'error' | 'suggestion'; bold?: true; dimColor?: true } =>
   tone === 'warn'
-    ? { color: 'yellow' }
+    ? { color: 'warning' }
     : tone === 'alert'
-      ? { color: 'red', bold: true }
+      ? { color: 'error', bold: true }
       : tone === 'info'
-        ? { color: 'cyan' }
+        ? { color: 'suggestion' }
         : tone === 'dim'
           ? { dimColor: true }
           : {}
+
+/**
+ * A segment's text as the band and the Mods pane draw it: in one run in its
+ * tone, or in its parts, each in its own tone or else the segment's. Its
+ * digits are of one width, so a figure that counts down does not shift.
+ */
+export const segmentText = (Text: ElementConstructor<TextProps>, one: Segment, key: string) =>
+  one.parts === undefined ? (
+    <Text key={key} tabular {...toneProps(one.tone)}>
+      {one.text}
+    </Text>
+  ) : (
+    <Text key={key} tabular>
+      {one.parts.map((part, at) => (
+        <Text key={`${key}-${at}`} {...toneProps(part.tone ?? one.tone)}>
+          {part.text}
+        </Text>
+      ))}
+    </Text>
+  )
 
 /**
  * The segments of the switched-on declared mods, each checked. A publish can
@@ -118,22 +160,15 @@ export async function renderBand(
 
   const below = await next(e)
   const { Box, Button, Text } = $.ui.resolve(e)
-  const toned = (one: Segment) => (
-    <Text key={`text-${one.name}`} {...toneProps(one.tone)}>
-      {one.text}
-    </Text>
-  )
-  const separator = (key: string) => (
-    <Text key={key} dimColor>
-      │
-    </Text>
-  )
+  // A cell of space between two segments, three with its two gaps: no rule
+  // draws there, the space alone parts them.
+  const separator = (key: string) => <Box key={key} minWidth={1} />
   // Every space is a gap of the Box, one cell wide: a surface that draws its
-  // buttons with chrome spaces them alike, so the separators sit centred.
-  // Buttons draw plain (`1: label`, `m: mods +N`): the widths `layout` counts,
-  // with the separator and its two gaps as three, a segment's text and button
-  // one apart. The `mods` button sits at the right edge of the last row, at
-  // least three from the last segment.
+  // buttons with chrome spaces them alike. Buttons draw plain (`1: label`,
+  // `m: mods +N`): the widths `layout` counts, with the separator and its two
+  // gaps as three, a segment's text and button one apart. The `mods` button
+  // sits at the right edge of the last row, at least three from the last
+  // segment.
 
   const band = (
     <Box flexDirection="column">
@@ -142,7 +177,7 @@ export async function renderBand(
           {row.flatMap((one, at) => [
             ...(at > 0 ? [separator(`sep-${one.name}`)] : []),
             <Box key={`segment-${one.name}`} flexDirection="row" columnGap={1}>
-              {toned(one)}
+              {segmentText(Text, one, `text-${one.name}`)}
               {one.button !== undefined && (
                 <Button
                   key={`seg-${one.name}`}

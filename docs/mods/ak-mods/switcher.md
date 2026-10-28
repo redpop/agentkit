@@ -25,15 +25,18 @@ segment is always visible.
 ## Band
 
 `ak-mods` owns one band above the prompt for all AgentKit mods. Each switched-on mod contributes
-one short segment: a text, a tone, and at most one button. A button runs the mod's slash command,
+one short segment: a text, a tone, and at most one button. The text may come in parts, each in its
+own tone, so a label sits dim beside its value. A button runs the mod's slash command,
 so pressing it does what the command does. The band ends with a `mods` button, hotkey `m`, that
 does what `/ak-mods` does: it opens the Mods pane, or closes it while it is shown. No mod's button
 takes the hotkey `m` in the band. With no switched-on mod showing a segment, there is no band and no
 button; `/ak-mods` still opens the pane.
 
 The band stays quiet at rest. Colour marks only what needs attention: `ok` draws in the text colour,
-`warn` yellow, `alert` red, `info` cyan, and `dim` dimmed. A dim `│` separates the segments, with
-one cell on each side. The `mods` button sits dimmed at the right edge of the last row.
+`warn` in the theme's warning colour, `alert` in its error colour, `info` in its suggestion colour,
+and `dim` dimmed. The colours are theme keys, so they follow a light or a dark theme. Three cells of
+space part the segments, with no rule between them. Digits draw at one width, so a figure that
+counts down does not shift. The `mods` button sits dimmed at the right edge of the last row.
 
 When the segments do not fit the width, the band degrades in steps:
 

@@ -95,6 +95,16 @@ test('layout keeps an overlong single segment alone, cut with an ellipsis', () =
   expect(result.hidden).toEqual(['b'])
 })
 
+test('layout drops the parts of a segment it cuts, and keeps those of one it does not', () => {
+  const parts = [{ text: 'x'.repeat(50) }, { text: 'x'.repeat(50), tone: 'warn' as const }]
+  const cutOne = layout([seg('a', 'x'.repeat(100), { parts })], 40).rows[0]?.[0]
+  expect(cutOne?.text).toBe(`${'x'.repeat(29)}…`)
+  expect(cutOne?.parts).toBeUndefined()
+
+  const whole = [{ text: 'ab' }, { text: 'cd', tone: 'warn' as const }]
+  expect(layout([seg('a', 'abcd', { parts: whole })], 40).rows[0]?.[0]?.parts).toEqual(whole)
+})
+
 test('layout counts button label and hotkey in the width', () => {
   const button = { label: 'Go', hotkey: 'g', command: 'go' }
   // 20 + (2 + 1 + 3) = 26 each; two plus separator = 55 > 50
