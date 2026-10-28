@@ -402,11 +402,23 @@ const standIn = ($: Engine, args: 'on' | 'off' | 'fail' | 'break' | 'heal') =>
 
 const COST = `≈ ${usd(rewriteCost(200010, 'claude-sonnet-5-5', 60))}`
 const KEEP = { label: 'keep warm', hotkey: '1', command: 'keepwarm' }
+// The warm segment at a full hour, its rich runs a full ring.
+const WARM = {
+  text: '● 60m',
+  rich: [
+    { text: 'cache 60m left', tone: 'ok', ring: 100 },
+    { text: ' 60m', tone: 'ok' },
+    { text: ' cache', tone: 'dim' },
+  ],
+  tone: 'ok',
+  priority: 6,
+  button: KEEP,
+}
 
 test('publishes the ok segment while warm', OWNED, async ($, on) => {
   const { toasts } = engine(on, { usage: usage(200000, 0), calls: 0 })
   await startChat($)
-  expect(segments(toasts).at(-1)).toEqual({ text: '● 60m', tone: 'ok', priority: 6, button: KEEP })
+  expect(segments(toasts).at(-1)).toEqual(WARM)
 })
 
 // Run from ak-mods' button, /keepwarm is nested in ak-mods' own call, where an inline publish
@@ -429,6 +441,12 @@ test('publishes the warn segment with the keepwarm button while cooling', OWNED,
   await clock.advance(56 * MIN)
   expect(segments(toasts).at(-1)).toEqual({
     text: `◔ 4m  rewrite ${COST}`,
+    rich: [
+      { text: 'cache 4m left', tone: 'warn', ring: 7 },
+      { text: ' 4m', tone: 'warn' },
+      { text: ' cache  rewrite ', tone: 'dim' },
+      { text: COST, tone: 'warn' },
+    ],
     parts: [
       { text: '◔ 4m', tone: 'warn' },
       { text: '  rewrite ', tone: 'dim' },
@@ -455,7 +473,15 @@ test('publishes the cold segment without a button', OWNED, async ($, on) => {
   const { clock, toasts } = engine(on, { usage: usage(200000, 0), calls: 0 })
   await startChat($)
   await clock.advance(72 * MIN)
-  expect(segments(toasts).at(-1)).toEqual({ text: `○ cold 12m  rewrite ${COST}`, tone: 'dim', priority: 6 })
+  expect(segments(toasts).at(-1)).toEqual({
+    text: `○ cold 12m  rewrite ${COST}`,
+    rich: [
+      { text: 'cache cold', tone: 'dim', ring: 0 },
+      { text: ` cold 12m  rewrite ${COST}`, tone: 'dim' },
+    ],
+    tone: 'dim',
+    priority: 6,
+  })
 })
 
 test('publishes the kept-warm segment with the stop button, without its end', OWNED, async ($, on) => {
@@ -465,6 +491,10 @@ test('publishes the kept-warm segment with the stop button, without its end', OW
   await clock.settle()
   expect(segments(toasts).at(-1)).toEqual({
     text: '◆ kept warm',
+    rich: [
+      { text: 'cache kept warm', tone: 'info', ring: 100 },
+      { text: ' kept warm', tone: 'info' },
+    ],
     tone: 'info',
     priority: 6,
     button: { label: 'stop', hotkey: '1', command: 'keepwarm' },
@@ -580,7 +610,7 @@ test('on, off and on again publish the segment once', OWNED, async ($, on) => {
   await standIn($, 'on')
   const count = segments(toasts).length
   await clock.advance(0)
-  expect(segments(toasts).slice(count)).toEqual([{ text: '● 60m', tone: 'ok', priority: 6, button: KEEP }])
+  expect(segments(toasts).slice(count)).toEqual([WARM])
 })
 
 test('a refused publish clears the earlier segment and sends again later', OWNED, async ($, on) => {

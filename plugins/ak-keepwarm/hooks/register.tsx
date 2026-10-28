@@ -295,13 +295,46 @@ const segment = (): Segment => {
   const button = (label: string) => ({ label, hotkey: '1', command: 'keepwarm' })
   const detail = tally()
   const more = detail ? { detail } : {}
-  if (state === 'kept') return { text: '◆ kept warm', ...more, tone: 'info', priority: 6, button: button('stop') }
+  // Where the band draws pictures, the circle is a ring that empties with the time left.
+  const ring = Math.round((Math.max(0, left) / (S.ttlMin * MIN)) * 100)
+  if (state === 'kept') {
+    return {
+      text: '◆ kept warm',
+      rich: [
+        { text: 'cache kept warm', tone: 'info', ring: 100 },
+        { text: ' kept warm', tone: 'info' },
+      ],
+      ...more,
+      tone: 'info',
+      priority: 6,
+      button: button('stop'),
+    }
+  }
   const time = `${drain(left)} ${minutes(left)}`
-  if (state === 'warm') return { text: time, ...more, tone: 'ok', priority: 6, button: button('keep warm') }
+  if (state === 'warm') {
+    return {
+      text: time,
+      rich: [
+        { text: `cache ${minutes(left)} left`, tone: 'ok', ring },
+        { text: ` ${minutes(left)}`, tone: 'ok' },
+        { text: ' cache', tone: 'dim' },
+      ],
+      ...more,
+      tone: 'ok',
+      priority: 6,
+      button: button('keep warm'),
+    }
+  }
   if (state === 'cooling') {
     return {
       text: `${time}  rewrite ${cost}`,
       ...more,
+      rich: [
+        { text: `cache ${minutes(left)} left`, tone: 'warn', ring },
+        { text: ` ${minutes(left)}`, tone: 'warn' },
+        { text: ' cache  rewrite ', tone: 'dim' },
+        { text: cost, tone: 'warn' },
+      ],
       parts: [
         { text: time, tone: 'warn' },
         { text: '  rewrite ', tone: 'dim' },
@@ -313,7 +346,16 @@ const segment = (): Segment => {
     }
   }
 
-  return { text: `○ cold ${minutes(-left)}  rewrite ${cost}`, ...more, tone: 'dim', priority: 6 }
+  return {
+    text: `○ cold ${minutes(-left)}  rewrite ${cost}`,
+    rich: [
+      { text: 'cache cold', tone: 'dim', ring: 0 },
+      { text: ` cold ${minutes(-left)}  rewrite ${cost}`, tone: 'dim' },
+    ],
+    ...more,
+    tone: 'dim',
+    priority: 6,
+  }
 }
 
 // Hands the segment to ak-mods when it changed. A failed send clears the last one, so a stale

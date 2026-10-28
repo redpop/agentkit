@@ -36,6 +36,9 @@ above the prompt, once the chat has made a request:
 | `◔ 4m  rewrite ≈ $0.42` | Under 5 minutes left, in the warning colour, and what a rewrite of the context would cost |
 | `○ cold 12m  rewrite ≈ $0.42` | The cache expired that long ago; a ping cannot help, and the button is hidden |
 
+On the desktop app the circle is a ring that empties with the time left, beside the time and the
+word `cache`: `◕ 42m cache`. Kept warm, the ring is full in the info colour; cold, it is empty.
+
 In every state the Mods pane adds what this chat's cache cost so far, once there is something to
 count: the pings and the rewrites of a cache that had been warm, each with its cost, `· 3 pings
 $0.02 · 1 rewrite $0.80`. It also says when a ping waits for a retry (`ping retry 1 of 3`) or for
