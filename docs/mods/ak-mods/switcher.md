@@ -12,8 +12,9 @@ another tab is brought forward.
 ## Pane
 
 One row per mod that declared itself: title and summary, then three buttons. A switched-on mod
-that publishes a segment also shows it in its row, with the segment's button; the pane draws on
-every surface, so this is where a segment is always visible.
+that publishes a segment also shows it in its row, in its band colour and with the segment's
+button, and its detail after it, dimmed; the pane draws on every surface, so this is where a
+segment is always visible.
 
 | Button | Effect |
 |--------|--------|

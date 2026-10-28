@@ -56,6 +56,22 @@ const checked = (info: ModsInfo, stored: unknown): Segment | undefined => {
 }
 
 /**
+ * How a tone draws, the same in the band and the Mods pane. Colour marks what
+ * needs attention: `ok` draws in the text colour, so a band at rest stays
+ * quiet and yellow or red stands out.
+ */
+export const toneProps = (tone: ModsTone | undefined): { color?: 'yellow' | 'red' | 'cyan'; bold?: true; dimColor?: true } =>
+  tone === 'warn'
+    ? { color: 'yellow' }
+    : tone === 'alert'
+      ? { color: 'red', bold: true }
+      : tone === 'info'
+        ? { color: 'cyan' }
+        : tone === 'dim'
+          ? { dimColor: true }
+          : {}
+
+/**
  * The segments of the switched-on declared mods, each checked. A publish can
  * land after its mod's switch-off cleared it: the switch decides. The rows
  * are `$.mods.list()`'s, whose switches are the chat's even while a resume
@@ -102,31 +118,11 @@ export async function renderBand(
 
   const below = await next(e)
   const { Box, Button, Text } = $.ui.resolve(e)
-  // Colour marks what needs attention: `ok` draws in the text colour, so a
-  // band at rest stays quiet and yellow or red stands out.
-  const toned = (one: Segment) => {
-    const key = `text-${one.name}`
-
-    return one.tone === 'warn' ? (
-      <Text key={key} color="yellow">
-        {one.text}
-      </Text>
-    ) : one.tone === 'alert' ? (
-      <Text key={key} color="red" bold>
-        {one.text}
-      </Text>
-    ) : one.tone === 'info' ? (
-      <Text key={key} color="cyan">
-        {one.text}
-      </Text>
-    ) : one.tone === 'dim' ? (
-      <Text key={key} dimColor>
-        {one.text}
-      </Text>
-    ) : (
-      <Text key={key}>{one.text}</Text>
-    )
-  }
+  const toned = (one: Segment) => (
+    <Text key={`text-${one.name}`} {...toneProps(one.tone)}>
+      {one.text}
+    </Text>
+  )
   const separator = (key: string) => (
     <Text key={key} dimColor>
       │

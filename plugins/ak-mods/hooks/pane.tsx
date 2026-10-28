@@ -2,7 +2,7 @@ import { atom, update } from 'claude-code'
 import type { EngineInterface, RenderInput } from 'claude-code'
 
 import { layout } from './band'
-import { drawable } from './band-render'
+import { drawable, toneProps } from './band-render'
 
 const EXPANDED = atom({ plugin: 'ak-mods', key: 'expanded' } as const, {})
 
@@ -38,8 +38,8 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
   const hidden =
     segments.length > 0 && (e.surface === 'terminal' || e.surface === 'desktop') ? layout(segments, width).hidden : []
   const dropped = warning(hidden, new Map(list.map(row => [row.name, row.title])))
-  // Each row's current segment too: the pane draws on every surface, the band
-  // only on the terminal and the desktop app.
+  // Each row's current segment too, in its band colour: the pane draws on every
+  // surface, the band only on the terminal and the desktop app.
   const current = new Map(segments.map(one => [one.name, one]))
 
   return (
@@ -51,7 +51,7 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
           <Text dimColor>{row.summary}</Text>
           {current.has(row.name) && (
             <Box>
-              <Text>{current.get(row.name)?.text}</Text>
+              <Text {...toneProps(current.get(row.name)?.tone)}>{current.get(row.name)?.text}</Text>
               {current.get(row.name)?.detail !== undefined && (
                 <Text key={`detail-${row.name}`} dimColor>{` · ${current.get(row.name)?.detail}`}</Text>
               )}

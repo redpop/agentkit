@@ -485,6 +485,30 @@ test("a row shows its segment's detail, dim, after the text", { plugins: MODS },
   await ui.unmount()
 })
 
+test("a row draws its segment in the band's colour", { plugins: MODS }, async ($, on) => {
+  engine(on)
+  await callAs($, 'ak-a', 'declare', { name: 'ak-a', title: 'Alpha', summary: 's', details: 'd' })
+  await callAs($, 'ak-a', 'set', { name: 'ak-a', on: true })
+
+  for (const [tone, props] of [
+    ['info', { color: 'cyan' }],
+    ['warn', { color: 'yellow' }],
+    ['alert', { color: 'red', bold: true }],
+    ['dim', { dimColor: true }],
+  ] as const) {
+    await callAs($, 'ak-a', 'segment', { text: `state ${tone}`, tone })
+    const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+    expect(await ui.find({ type: 'Text', text: `state ${tone}` })).toMatchObject({ props })
+    await ui.unmount()
+  }
+
+  // `ok` stays the text colour, as in the band.
+  await callAs($, 'ak-a', 'segment', { text: 'state ok', tone: 'ok' })
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  expect((await ui.find({ type: 'Text', text: 'state ok' }))?.props.color).toBeUndefined()
+  await ui.unmount()
+})
+
 test("an off mod's row shows no segment", { plugins: MODS }, async ($, on) => {
   engine(on)
   await callAs($, 'ak-a', 'declare', { name: 'ak-a', title: 'Alpha', summary: 's', details: 'd' })
