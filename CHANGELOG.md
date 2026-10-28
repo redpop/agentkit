@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.44.0] - 2026-10-28
+
+### ✨ Added
+
+- `ak-usage` — **a new mod that shows usage as one compact segment.** `ctx 67% · 5h 42%`: how full
+  this session's context is, and how much of the account's 5-hour limit is used, every session
+  counted. The 7-day window joins from 75 %; the colour follows the fullest figure, yellow from 75 %
+  and red from 90 %. Inspired by Token Weather from claude-code-playground (Anthropic, Apache-2.0);
+  no code is taken over.
+
 ## [1.43.0] - 2026-10-28
 
 ### ✨ Added
