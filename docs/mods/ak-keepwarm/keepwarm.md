@@ -35,7 +35,7 @@ above the prompt, once the chat has made a request:
 The **keep warm** / **stop warm** button toggles the loop (key `1`); it runs `/keepwarm`. The band
 draws on the terminal and the desktop app; the Mods pane shows the segment and its button in the
 mod's row on every surface.
-The context size is not shown, so a mod about tokens can own that figure.
+The context size is not shown: the [Usage](../ak-usage/usage.md) mod shows how full it is.
 
 Without `ak-mods` (or when it refuses the mod, or a publish fails for good), the mod draws its own
 band instead, never both. That band shows the same states (`◐ cache cools in 4m`,

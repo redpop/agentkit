@@ -13,6 +13,7 @@ Requires Claude Code 2.1.309 or later (hooks-module support).
 | [Mod switcher](ak-mods/switcher.md) | ak-mods | The Mods pane: ○ Off / ● On, ☆ / ★ Standard, and More/Less per mod; the shared band |
 | [Keep warm](ak-keepwarm/keepwarm.md) | ak-keepwarm | Keeps the prompt cache warm with a small ping before it expires |
 | [Session id](ak-session-id/session-id.md) | ak-session-id | Copies this session's id, to tell another session's agent which one is meant |
+| [Usage](ak-usage/usage.md) | ak-usage | Shows the context fill and the 5-hour limit as one compact segment |
 
 ## Writing a mod
 

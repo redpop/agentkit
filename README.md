@@ -1,6 +1,6 @@
 # AgentKit
 
-Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) — 13 plugins with 25 skills, 8 agents, a mod switcher, a keep-warm mod, a session-id mod, and domain knowledge bases for Git workflows, security, React, and more.
+Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) — 14 plugins with 25 skills, 8 agents, a mod switcher with keep-warm, session-id and usage mods, and domain knowledge bases for Git workflows, security, React, and more.
 
 ## Plugins
 
@@ -18,6 +18,7 @@ Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/
 | [**ak-review**](#ak-review--quality-assurance) | 9 | — | CodeRabbit review, code explanation, finalize workflow, workflow management, dependency update skill generation, external review delegation, unattended external-tool execution with guided setup, validation hooks |
 | [**ak-security**](#ak-security--security-guidelines) | 3 | — | OWASP security guidelines, LLM security, Semgrep static analysis |
 | [**ak-session-id**](#ak-session-id--copy-the-session-id) | — | — | Mod: `/session-id` copies this session's id for another session's agent; its band segment shows the id's end with a copy button |
+| [**ak-usage**](#ak-usage--context-and-rate-limit-at-a-glance) | — | — | Mod: one compact band segment with the context fill and the 5-hour limit (`ctx 67% · 5h 42%`) |
 | [**ak-writing**](#ak-writing--prose-quality) | 1 | — | Remove AI-slop patterns from German and English prose: docs, commits, emails, blog posts, slides |
 
 ## Installation
@@ -50,6 +51,7 @@ Install all plugins:
 /plugin install ak-react@ak-marketplace
 /plugin install ak-security@ak-marketplace
 /plugin install ak-session-id@ak-marketplace
+/plugin install ak-usage@ak-marketplace
 /plugin install ak-writing@ak-marketplace
 ```
 
@@ -202,6 +204,13 @@ the `local_…` id the session tools address.
 | Command | Purpose | Example |
 |---------|---------|---------|
 | [`/session-id`](docs/mods/ak-session-id/session-id.md) | Copy this session's id, or the engine id | `/session-id`, `/session-id engine` |
+
+### ak-usage — Context and Rate Limit at a Glance
+
+A mod (needs `ak-mods`, installed with it) that shows one compact segment in the shared band above
+the prompt: how full this session's context is and how much of the account's 5-hour limit is used,
+every session counted (`ctx 67% · 5h 42%`). The 7-day window joins from 75 %. See
+[Usage](docs/mods/ak-usage/usage.md).
 
 ### ak-notifications — macOS Notifications
 
