@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.49.0] - 2026-10-28
+
+### ✨ Added
+
+- `ak-keepwarm` — **`/keepwarm always`** keeps every chat warm until 6 hours after its last turn, in
+  later sessions too; `/keepwarm off` ends it. Spans take minutes: `/keepwarm 90m`, `2h30m`.
+- `ak-keepwarm` — the Mods pane counts the rewrites of a lost cache with their cost, beside the
+  pings: `· 3 pings $0.02 · 1 rewrite $0.80`.
+
+### 🔄 Changed
+
+- `ak-keepwarm` — keep warm survives a restart, a reload of the mod and a resume: each chat's
+  window is saved and picked up again. After a restart a due ping waits for the next turn.
+- `ak-keepwarm` — a ping the API turns away as busy (429, 529, 5xx) is sent again after 1, 2 and 4
+  minutes while it can still land, instead of ending keep warm. A ping that reads nothing ends it.
+
+### 🐛 Fixed
+
+- `ak-keepwarm` — Haiku 5.5 is priced at its own rates, with the long-prompt card above 100K
+  tokens; it was priced as Haiku 4.5, ten times as much.
+
 ## [1.48.0] - 2026-10-28
 
 ### ✨ Added
