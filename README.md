@@ -1,6 +1,6 @@
 # AgentKit
 
-Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) — 12 plugins with 25 skills, 8 agents, a mod switcher, a keep-warm mod, and domain knowledge bases for Git workflows, security, React, and more.
+Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) — 13 plugins with 25 skills, 8 agents, a mod switcher, a keep-warm mod, a session-id mod, and domain knowledge bases for Git workflows, security, React, and more.
 
 ## Plugins
 
@@ -17,6 +17,7 @@ Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/
 | [**ak-react**](#ak-react--react--nextjs-development) | 2 | — | React and Next.js best practices, performance optimization, code scanning |
 | [**ak-review**](#ak-review--quality-assurance) | 9 | — | CodeRabbit review, code explanation, finalize workflow, workflow management, dependency update skill generation, external review delegation, unattended external-tool execution with guided setup, validation hooks |
 | [**ak-security**](#ak-security--security-guidelines) | 3 | — | OWASP security guidelines, LLM security, Semgrep static analysis |
+| [**ak-session-id**](#ak-session-id--copy-the-session-id) | — | — | Mod: `/session-id` copies this session's id for another session's agent; its band segment shows the id's end with a copy button |
 | [**ak-writing**](#ak-writing--prose-quality) | 1 | — | Remove AI-slop patterns from German and English prose: docs, commits, emails, blog posts, slides |
 
 ## Installation
@@ -42,11 +43,13 @@ Install all plugins:
 /plugin install ak-meta@ak-marketplace
 /plugin install ak-improve@ak-marketplace
 /plugin install ak-js@ak-marketplace
+/plugin install ak-keepwarm@ak-marketplace
 /plugin install ak-knowledge@ak-marketplace
 /plugin install ak-mods@ak-marketplace
 /plugin install ak-notifications@ak-marketplace
 /plugin install ak-react@ak-marketplace
 /plugin install ak-security@ak-marketplace
+/plugin install ak-session-id@ak-marketplace
 /plugin install ak-writing@ak-marketplace
 ```
 
@@ -186,6 +189,19 @@ ping shortly before it expires. Based on Cache Keeper by Nate Herk (MIT).
 | Command | Purpose | Example |
 |---------|---------|---------|
 | [`/keepwarm`](docs/mods/ak-keepwarm/keepwarm.md) | Keep the cache warm for 4 hours (or N hours), or turn it off | `/keepwarm 2`, `/keepwarm off` |
+
+### ak-session-id — Copy the Session Id
+
+A mod (needs `ak-mods`, installed with it) that copies this session's id, so an agent in another
+session can be told which one is meant: session names are not unique, the id is. Its segment in the
+shared band above the prompt shows the id's end with a **copy** button. In the desktop app it copies
+the `local_…` id the session tools address.
+
+#### Commands
+
+| Command | Purpose | Example |
+|---------|---------|---------|
+| [`/session-id`](docs/mods/ak-session-id/session-id.md) | Copy this session's id, or the engine id | `/session-id`, `/session-id engine` |
 
 ### ak-notifications — macOS Notifications
 

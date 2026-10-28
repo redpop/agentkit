@@ -9,4 +9,5 @@ Hooks are automated actions triggered by Claude Code tool events. They run shell
 | [Notification Hooks](ak-notifications/notification-hooks.md) | ak-notifications | Permission/Idle prompts | Sound alerts and desktop notifications |
 | [Mod switcher](../mods/ak-mods/switcher.md) | ak-mods | Session start/end, commands, rendering | Hooks module (TSX) behind the Mods pane and the shared band |
 | [Keep warm](../mods/ak-keepwarm/keepwarm.md) | ak-keepwarm | Turn steps, commands, rendering | Hooks module (TSX) that pings the prompt cache |
+| [Session id](../mods/ak-session-id/session-id.md) | ak-session-id | Session start/end, commands, rendering | Hooks module (TSX) that copies the session id |
 | [Validation Hooks](ak-review/validation-hooks.md) | ak-review | After Write/Edit | Markdown, JSON, shell validation |

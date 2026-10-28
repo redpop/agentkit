@@ -6,12 +6,13 @@ This file provides guidance to AI agents (Claude Code, Warp AI, etc.) when worki
 
 ## Project overview
 
-Claude Code plugin marketplace (`ak-marketplace`) with 12 independently installable plugins, 25 skills, 8 agents, a mod switcher, a keep-warm mod, and domain knowledge bases. Built on the official Claude Code Plugin Architecture.
+Claude Code plugin marketplace (`ak-marketplace`) with 13 independently installable plugins, 25 skills, 8 agents, a mod switcher, a keep-warm mod, a
+session-id mod, and domain knowledge bases. Built on the official Claude Code Plugin Architecture.
 
 ## Dev environment
 
-No build step required — the codebase is Markdown, JSON, and shell scripts, plus two TSX
-hooks modules (`ak-mods`, `ak-keepwarm`) that Claude Code loads directly.
+No build step required — the codebase is Markdown, JSON, and shell scripts, plus three TSX
+hooks modules (`ak-mods`, `ak-keepwarm`, `ak-session-id`) that Claude Code loads directly.
 
 **Test a plugin locally:**
 
@@ -44,7 +45,7 @@ python3 -m json.tool plugins/ak-review/.claude-plugin/plugin.json > /dev/null
 shellcheck plugins/ak-review/hooks/markdown-format.sh
 ```
 
-**Validate and test the hooks modules (`ak-mods`, `ak-keepwarm`):**
+**Validate and test the hooks modules (`ak-mods`, `ak-keepwarm`, `ak-session-id`):**
 
 ```bash
 claude plugin validate plugins/ak-mods
@@ -52,6 +53,8 @@ claude plugin test plugins/ak-mods
 claude plugin test plugins/ak-mods/tests/fixture
 claude plugin validate plugins/ak-keepwarm
 claude plugin test plugins/ak-keepwarm
+claude plugin validate plugins/ak-session-id
+claude plugin test plugins/ak-session-id
 ```
 
 The third command loads the test-only fixture mod with `ak-mods` absent and proves it fails
@@ -59,7 +62,7 @@ open. `tests/fixture/` is a harness (version 0.0.0), not a plugin: it gets no ma
 
 Type-check (zero errors expected). `claude -p` never lays `.claude-plugin/types/`, so build a
 tsconfig outside the repo from the API declarations the plugin-authoring skill ships
-(`$DTS` = its `types/claude-code.d.ts`; the fixture and `ak-keepwarm` also need the `ak-mods`
+(`$DTS` = its `types/claude-code.d.ts`; the fixture and the mods also need the `ak-mods`
 contract). The file
 exists once a Claude Code session has loaded the `plugin-authoring` skill, which names its folder;
 the path varies per machine and Claude Code version; with several, the recipe takes the newest
@@ -79,8 +82,10 @@ echo "{\"compilerOptions\":{$O},\"include\":[\"$T/types\",\"$F/hooks\",\"$F/type
 echo "{\"compilerOptions\":{$O},\"include\":[\"$T/fx\",\"$F/tests/fixture\"]}" > "$T/fixture.json"
 K=$R/plugins/ak-keepwarm
 echo "{\"compilerOptions\":{$O},\"include\":[\"$T/fx\",\"$K/hooks\",\"$K/tests\"]}" > "$T/keepwarm.json"
+S=$R/plugins/ak-session-id
+echo "{\"compilerOptions\":{$O},\"include\":[\"$T/fx\",\"$S/hooks\",\"$S/tests\"]}" > "$T/session-id.json"
 npx -y -p typescript@5 tsc -p "$T/mods.json" && npx -y -p typescript@5 tsc -p "$T/fixture.json" &&
-  npx -y -p typescript@5 tsc -p "$T/keepwarm.json"
+  npx -y -p typescript@5 tsc -p "$T/keepwarm.json" && npx -y -p typescript@5 tsc -p "$T/session-id.json"
 )
 ```
 
@@ -105,7 +110,7 @@ plugins/{plugin-name}/
 ├── agents/{name}.md               ← Sub-agents (via Task tool)
 ├── knowledge/                     ← Domain reference files (optional)
 ├── hooks/hooks.json               ← Hook definitions (optional)
-├── hooks/register.tsx             ← Hooks modules (TSX, optional; ak-mods, ak-keepwarm)
+├── hooks/register.tsx             ← Hooks modules (TSX, optional; ak-mods and its mods)
 ├── types/index.d.ts               ← Types a plugin adds to `$` (optional; ak-mods)
 └── README.md
 ```
@@ -119,6 +124,7 @@ plugins/{plugin-name}/
 | `ak-knowledge` | 4 | 1 | |
 | `ak-mods` | - | - | hooks module (TSX), types/ |
 | `ak-keepwarm` | - | - | hooks module (TSX), tests/, LICENSE (upstream MIT) |
+| `ak-session-id` | - | - | hooks module (TSX), tests/ |
 | `ak-notifications` | - | - | hooks |
 | `ak-react` | 2 | - | knowledge/ (1 file) |
 | `ak-security` | 3 | - | knowledge/ (43 files) |
@@ -188,7 +194,7 @@ Rules for `git log`, not review criteria for diffs.
   in the body.
 
 Versions stay synchronized across `marketplace.json` and all `plugin.json` files (currently
-`1.42.2`) — that one **is** checkable in a diff. The one exception is the test-only harness
+`1.43.0`) — that one **is** checkable in a diff. The one exception is the test-only harness
 `plugins/ak-mods/tests/fixture`, which stays at `0.0.0`.
 
 ## Task completion workflow

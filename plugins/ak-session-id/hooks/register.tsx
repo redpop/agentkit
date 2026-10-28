@@ -1,0 +1,168 @@
+// Session id: copies this session's id, so an agent in another session can be told which one is
+// meant. Session names are not unique; the id is.
+
+import type { EngineInterface, Register, RenderSurface } from 'claude-code'
+
+const NAME = 'ak-session-id'
+// How much of the id the band shows: enough to tell sessions apart at a glance.
+const TAIL = 6
+
+type Segment = Parameters<EngineInterface['mods']['segment']>[0]
+
+// A session has two ids: the engine's, which names the transcript file, and in the desktop app the
+// host's (`local_…`), which the desktop's session tools address. The host's comes from the
+// environment alone; `isEngine` asks for the engine's even there.
+const pick = async ($: EngineInterface, isEngine: boolean): Promise<string> => {
+  const host = isEngine ? undefined : await $.env.get('CLAUDE_CODE_HOST_SESSION_ID')
+
+  return host !== undefined && host !== '' ? host : await $.session.id()
+}
+
+const tail = (id: string): string => `session …${id.slice(-TAIL)}`
+
+// Copies the id and says so. Should no clipboard take it, the answer names the whole id and why, so
+// it can be copied by hand.
+const copy = async ($: EngineInterface, isEngine: boolean, surface?: RenderSurface): Promise<string> => {
+  const id = await pick($, isEngine)
+  const copied = await $.ui.copy(surface === undefined ? { text: id } : { text: id, surface })
+
+  return copied.isCopied ? `Copied session id ${id}` : `Session id ${id} (not copied: ${copied.reason})`
+}
+
+// The id as the shared band shows it, with the button that copies it. Low priority: when the band
+// runs out of room, this segment goes first.
+const segment = async ($: EngineInterface): Promise<Segment> => ({
+  text: tail(await pick($, false)),
+  tone: 'dim',
+  priority: 2,
+  button: { label: 'copy', hotkey: 'c', command: 'session-id' },
+})
+
+export const register: Register = on => {
+  // Whether ak-mods switches this mod: false once its declare was refused or
+  // threw (no ak-mods loaded, or it failed). Then the mod runs on.
+  let isSwitched = true
+  // Counts this mod's switch changes: a republish scheduled for one change is dropped once another
+  // followed it.
+  let switches = 0
+
+  // Off only when ak-mods switches the mod and says so. A call that throws
+  // leaves the mod on (fail-open).
+  const isOff = async (isOn: () => Promise<boolean>): Promise<boolean> => {
+    if (!isSwitched) return false
+    try {
+      return !(await isOn())
+    } catch {
+      return false
+    }
+  }
+
+  // Publishes while ak-mods switches the mod and it is on. A publish that throws hands the drawing
+  // back to the mod's own band (fail-open).
+  const publish = async (isOn: () => Promise<boolean>, send: () => Promise<void>) => {
+    if (!isSwitched || (await isOff(isOn))) return
+    try {
+      await send()
+    } catch {
+      isSwitched = false
+    }
+  }
+
+  on('session.start', async ($, e, next) => {
+    try {
+      isSwitched = await $.mods.declare({
+        name: NAME,
+        title: 'Session id',
+        summary: "Copies this session's id, to tell another session's agent which one is meant.",
+        details:
+          'Its segment in the shared band above the prompt shows the end of the id; copy (key c) ' +
+          'puts the whole id on the clipboard. /session-id does the same. In the desktop app it ' +
+          'copies the local_… id the session tools address, elsewhere the engine id; ' +
+          '/session-id engine copies the engine id even there.',
+      })
+    } catch {
+      isSwitched = false
+    }
+    await $.command.register({
+      name: 'session-id',
+      description: "Copy this session's id, or /session-id engine for the engine's",
+      argumentHint: '[engine]',
+      immediate: true,
+    })
+    await publish(() => $.mods.isOn({ name: NAME }), async () => $.mods.segment(await segment($)))
+    $.ui.invalidate('ui.render')
+
+    return next(e)
+  })
+
+  // /clear, /resume and /branch end the chat, and ak-mods clears every segment with it; the engine
+  // id changes too. Publish again once the end has passed. A `session.end` hook, not
+  // `classic.SessionStart`: where Claude Code's built-in guard loads, a user's mod gets no classic
+  // event.
+  on('session.end', async ($, e, next) => {
+    $.clock.after(0, () => {
+      publish(() => $.mods.isOn({ name: NAME }), async () => $.mods.segment(await segment($)))
+        .then(() => $.ui.invalidate('ui.render'))
+        .catch(() => {})
+    })
+
+    return next(e)
+  }).catch(($, e, next) => next(e))
+
+  // The mod's own command turns it on, then copies. Its answer is a toast too: run from the band's
+  // button, the command's text is not shown.
+  on('command.run', { command: 'session-id' }, async ($, e) => {
+    if (await isOff(() => $.mods.isOn({ name: NAME }))) await $.mods.set({ name: NAME, on: true })
+    const arg = String(e.args || '').trim().toLowerCase()
+    if (arg !== '' && arg !== 'engine') return { text: 'Usage: /session-id [engine]' }
+    const text = await copy($, arg === 'engine')
+    $.ui.toast(text)
+
+    return { text }
+  })
+
+  // The mod's own band, drawn only while ak-mods does not switch the mod:
+  // otherwise ak-mods draws its segment, never both.
+  on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
+    if (isSwitched) return next(e)
+    const below = await next(e)
+    if (e.props?.hasSurvey) return below
+
+    const { Box, Text, Button } = $.ui.resolve(e)
+    const press = (surface: RenderSurface) => {
+      copy($, false, surface)
+        .then(text => $.ui.toast(text))
+        .catch(() => {})
+    }
+    const mine = (
+      <Box flexDirection="row" columnGap={2}>
+        <Text dimColor>{tail(await pick($, false))}</Text>
+        <Button key="session-id" label="copy" hotkey="c" plain onPress={pressed => press(pressed.surface)} />
+      </Box>
+    )
+
+    return <Box flexDirection="column">{below ? [mine, below] : [mine]}</Box>
+  })
+
+  // This mod's switch changed, and the write landed: when on, publish its segment again (ak-mods
+  // cleared it at the switch-off). Not from inside this hook: it runs within the `set` of ak-mods,
+  // where a segment call resolves without reaching ak-mods.
+  on('state.set', { plugin: 'ak-mods', key: 'on' }, async ($, e, next) => {
+    const done = await next(e)
+    const isOn = e.value[NAME] === true
+    if (isSwitched && done.value?.isSet === true && isOn !== (e.previous?.[NAME] === true)) {
+      const change = ++switches
+      if (isOn) {
+        $.clock.after(0, () => {
+          if (change !== switches) return
+          publish(async () => true, async () => $.mods.segment(await segment($)))
+            .then(() => $.ui.invalidate('ui.render'))
+            .catch(() => {})
+        })
+      }
+      $.ui.invalidate('ui.render')
+    }
+
+    return done
+  }).catch(($, e, next) => next(e))
+}
