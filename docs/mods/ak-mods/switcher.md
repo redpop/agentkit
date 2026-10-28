@@ -6,7 +6,8 @@ Requires Claude Code 2.1.309 or later (hooks-module support).
 
 ## Command
 
-`/ak-mods` opens the **Mods** pane.
+`/ak-mods` opens the **Mods** pane, or closes it while it is the pane shown. A Mods pane behind
+another tab is brought forward.
 
 ## Pane
 
@@ -24,21 +25,25 @@ every surface, so this is where a segment is always visible.
 
 `ak-mods` owns one band above the prompt for all AgentKit mods. Each switched-on mod contributes
 one short segment: a text, a tone, and at most one button. A button runs the mod's slash command,
-so pressing it does what the command does. With no switched-on mod showing a segment, there is no
-band.
+so pressing it does what the command does. The band ends with a `mods` button, hotkey `m`, that
+does what `/ak-mods` does: it opens the Mods pane, or closes it while it is shown. No mod's button
+takes the hotkey `m` in the band. With no switched-on mod showing a segment, there is no band and no
+button; `/ak-mods` still opens the pane.
 
 When the segments do not fit the width, the band degrades in steps:
 
 1. All segments fit: one row.
 2. They do not fit: two rows, never more.
-3. They still do not fit: the segments with the lowest priority drop out, and a `+N` chip ends the
-   band. Pressing the chip opens the Mods pane.
+3. They still do not fit: the segments with the lowest priority drop out, and the `mods` button
+   counts them: `mods +2`.
+
+The last row always keeps room for the button.
 
 The Mods pane then names the dropped mods in a dim line, `N mods do not fit the band: …`, so you can
-switch some off. The pane counts with the band's width as it was last recorded: pressing the `+N`
-chip records the band's own width, and `/ak-mods` records the terminal's, less the five columns of
-the band's `[-]`. Before either, the pane counts with its own width. The chip and that line are the
-only signals; there is no toast.
+switch some off. The pane counts with the band's width as it was last recorded: pressing the `mods`
+button records the band's own width, and `/ak-mods` records the terminal's, less the five columns of
+the band's `[-]`. Before either, the pane counts with its own width. The button's count and that line
+are the only signals; there is no toast.
 
 The band draws on the terminal and on the desktop app. Every row of the Mods pane also shows its
 mod's current segment and button, so a mod's state and its action are reachable on every surface.

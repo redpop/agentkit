@@ -14,7 +14,7 @@ export type ModsSegment = {
   tone?: ModsTone
   /** Higher stays visible longer when the band runs out of room; 5 when left out. */
   priority?: number
-  /** `hotkey` is one printable character; any other is left out. */
+  /** `hotkey` is one printable character; any other is left out, and `m` is the band's own. */
   button?: { label: string; hotkey?: string; command: string; args?: string }
 }
 
@@ -50,7 +50,7 @@ declare module 'claude-code' {
       segments: Record<string, ModsSegment>
       /**
        * The band's width in cells (its `bodyColumns`: the terminal's less the five of the engine's
-       * `[-]`), as `/ak-mods` or the band's `+N` chip last recorded it; `bandWidth` in
+       * `[-]`), as `/ak-mods` or the band's `mods` button last recorded it; `bandWidth` in
        * `hooks/band.ts` defines it. What the pane counts the band's cut with.
        */
       width: number

@@ -14,16 +14,18 @@ Requires Claude Code 2.1.309 or later (hooks-module support).
 
 ## Use
 
-Run `/ak-mods` to open the pane. Each mod has three buttons:
+Run `/ak-mods` to open the pane, and again to close it. Each mod has three buttons:
 
 - **○ Off** / **● On** switches the mod for this chat; the label shows its state.
 - **☆ Standard** / **★ Standard** marks or unmarks the mod to start on in every new chat; the
   filled star means it is marked.
 - **More / Less** shows or hides the mod's details.
 
-Each switched-on mod shows one segment in a single band above the prompt. When they do not fit, the
-band grows to two rows, then drops the lowest-priority segments and ends with a `+N` chip that
-opens the pane. The pane then names the mods that do not fit. The band draws on the terminal and
+Each switched-on mod shows one segment in a single band above the prompt. The band ends with a
+`mods` button (hotkey `m`) that opens the pane, or closes it while it is shown. When the segments do
+not fit, the band grows to two rows, then drops the lowest-priority segments, and the button counts
+them: `mods +2`. The pane then names the mods that do not fit. With no segment there is no band, and
+`/ak-mods` is the way in. The band draws on the terminal and
 the desktop app. Every row of the pane also shows its mod's current segment and button, on every
 surface.
 

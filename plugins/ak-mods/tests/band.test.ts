@@ -56,14 +56,29 @@ test('layout stops at the first segment that does not fit', () => {
   expect(result.hidden).toEqual(['c', 'd'])
 })
 
-test('layout reserves room for the chip on the last row', () => {
+test('layout fills the first row only as far as leaves the mods button room on the second', () => {
+  // 25 + 3 + 25 + 3 + 25 = 81 fills one row of 81, but the button needs 10 more.
+  const text = 'x'.repeat(25)
+  const result = layout([seg('a', text), seg('b', text), seg('c', text)], 81)
+
+  expect(names(result.rows)).toEqual([['a', 'b'], ['c']])
+  expect(result.hidden).toEqual([])
+})
+
+test('layout reserves room for the mods button even when nothing is dropped', () => {
+  // 70 + 10 for `m: mods` with its separator: 80 fits, 79 cuts.
+  expect(layout([seg('a', 'x'.repeat(70))], 80).rows[0]?.[0]?.text).toBe('x'.repeat(70))
+  expect(layout([seg('a', 'x'.repeat(70))], 79).rows[0]?.[0]?.text).toBe(`${'x'.repeat(68)}…`)
+})
+
+test('layout reserves room for the mods button on the last row', () => {
   const text = 'x'.repeat(38)
   const result = layout([seg('a', text), seg('b', text), seg('c', text), seg('d', text), seg('e', text)], 80)
   const last = result.rows[result.rows.length - 1] ?? []
   const width = last.reduce((sum, one) => sum + one.text.length, 0) + 3 * (last.length - 1)
 
   expect(result.hidden.length).toBeGreaterThan(0)
-  expect(width + 3 + 2 + String(result.hidden.length).length).toBeLessThanOrEqual(80)
+  expect(width + 3 + 'm: '.length + `mods +${result.hidden.length}`.length).toBeLessThanOrEqual(80)
 })
 
 test('layout gives no rows for no segments', () => {
@@ -75,7 +90,8 @@ test('layout keeps an overlong single segment alone, cut with an ellipsis', () =
 
   expect(result.rows.length).toBe(1)
   expect(result.rows[0]?.length).toBe(1)
-  expect(result.rows[0]?.[0]?.text).toBe(`${'x'.repeat(39)}…`)
+  // 40 less 13 for `m: mods +1` with its separator.
+  expect(result.rows[0]?.[0]?.text).toBe(`${'x'.repeat(26)}…`)
   expect(result.hidden).toEqual(['b'])
 })
 
@@ -86,9 +102,9 @@ test('layout counts button label and hotkey in the width', () => {
 
   expect(result.rows.length).toBe(2)
 
-  // Without a hotkey the extra is label.length + 1 = 3: 23 + 3 + 23 = 49
+  // Without a hotkey the extra is label.length + 1 = 3: 23 + 3 + 23 = 49, and 10 for the mods button
   const plain = { label: 'Go', command: 'go' }
-  const fits = layout([seg('a', 'x'.repeat(20), { button: plain }), seg('b', 'x'.repeat(20), { button: plain })], 49)
+  const fits = layout([seg('a', 'x'.repeat(20), { button: plain }), seg('b', 'x'.repeat(20), { button: plain })], 59)
 
   expect(fits.rows.length).toBe(1)
 })

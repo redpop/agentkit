@@ -381,7 +381,7 @@ test(
   },
 )
 
-test("the band's +N chip records the band's width, so the pane warns as the band drops", { plugins: MODS }, async ($, on) => {
+test("the band's mods button records the band's width, so the pane warns as the band drops", { plugins: MODS }, async ($, on) => {
   placing(on)
   on('ui.render', { component: 'AbovePrompt' }, $ => {
     const { Text } = $.ui.resolve({ surface: 'terminal', component: 'AbovePrompt' })
@@ -402,8 +402,8 @@ test("the band's +N chip records the band's width, so the pane warns as the band
     surface: 'terminal',
     props: { hasSurvey: false, isWorking: false, maxRows: 10, bodyColumns: 75, scroll: { offset: 0, bodyRows: 9 }, view: {} },
   })
-  expect(await band.find({ key: 'more-segments' })).toMatchObject({ text: '+1' })
-  await band.press({ key: 'more-segments' })
+  expect(await band.find({ key: 'mods-toggle' })).toMatchObject({ text: 'mods +1' })
+  await band.press({ key: 'mods-toggle' })
   await band.unmount()
 
   const pane = await $.ui.mount({ ...PANE, surface: 'terminal', props: NARROW })
@@ -434,6 +434,28 @@ test('/ak-mods opens the pane', { plugins: PLUGINS }, async ($, on) => {
   const ran = await runCommand($, 'ak-mods')
   expect(ran.text).toBe('Opened the Mods pane.')
   expect(opened).toEqual([{ id: 'ak-mods', title: 'Mods' }])
+})
+
+test('/ak-mods closes the pane while it is shown, and opens it again', { plugins: PLUGINS }, async ($, on) => {
+  engine(on)
+  // The engine's record of open panes: an open adds the pane, shown; a close removes it.
+  const open = new Set<string>()
+  on('ui.open', (_, e) => {
+    open.add(e.id)
+
+    return { value: { isPlaced: true } }
+  })
+  on('ui.close', (_, e) => {
+    open.delete(e.id)
+
+    return { value: undefined }
+  })
+  on('ui.panes', () => ({ value: [...open].map(id => ({ id, title: 'Mods', isShown: true, isFocused: false, isPlaced: true })) }))
+
+  expect((await runCommand($, 'ak-mods')).text).toBe('Opened the Mods pane.')
+  expect((await runCommand($, 'ak-mods')).text).toBe('Closed the Mods pane.')
+  expect(open.size).toBe(0)
+  expect((await runCommand($, 'ak-mods')).text).toBe('Opened the Mods pane.')
 })
 
 // The pane draws on every surface, the band only on two: each row carries

@@ -175,7 +175,7 @@ Requires Claude Code 2.1.309 or later (hooks-module support).
 
 | Command | Purpose | Example |
 |---------|---------|---------|
-| [`/ak-mods`](docs/mods/ak-mods/switcher.md) | Open the Mods pane: ○ Off / ● On, ☆ / ★ Standard, and More/Less per mod | `/ak-mods` |
+| [`/ak-mods`](docs/mods/ak-mods/switcher.md) | Open or close the Mods pane: ○ Off / ● On, ☆ / ★ Standard, and More/Less per mod; the band's `mods` button does the same | `/ak-mods` |
 
 See [Mods](docs/mods/) for how switches behave and
 [Writing an AgentKit mod](docs/mods/writing-a-mod.md) for the contract a mod follows.

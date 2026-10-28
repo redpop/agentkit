@@ -113,7 +113,7 @@ test('one row for two segments joined by │', { plugins: [consumer('ak-a'), con
     expect(await ui.find({ type: 'Text', text: 'alpha' })).toMatchObject({ props: { color: 'green' } })
     expect(await ui.find({ type: 'Text', text: 'beta' })).toMatchObject({ props: { color: 'red', bold: true } })
     expect(await ui.find({ type: 'Text', text: ' │ ' })).toMatchObject({ props: { dimColor: true } })
-    expect(await rowsOf(ui)).toContain('alpha │ beta')
+    expect(await rowsOf(ui)).toContain('alpha │ beta │ mods')
     // The line beneath stays below the band.
     expect(await ui.drawn()).toMatchObject({
       type: 'Box',
@@ -129,35 +129,111 @@ test('second row when too wide', { plugins: [consumer('ak-a'), consumer('ak-b')]
   await publish($, 'ak-b', 'B', { text: 'beta-two' })
 
   for (const surface of SURFACES) {
-    const ui = await $.ui.mount({ ...BAND, surface, props: { ...BAND.props, bodyColumns: 12 } })
+    // One row needs 30 with the `mods` button; two rows need 18, the button on the second.
+    const ui = await $.ui.mount({ ...BAND, surface, props: { ...BAND.props, bodyColumns: 20 } })
     expect((await ui.find({ key: 'band-row-0' }))?.text).toBe('alpha-one')
-    expect((await ui.find({ key: 'band-row-1' }))?.text).toBe('beta-two')
+    expect((await ui.find({ key: 'band-row-1' }))?.text).toBe('beta-two │ mods')
     await ui.unmount()
   }
 })
 
+/** A `ui.panes` that lists the Mods pane, `isShown` as told, and a `ui.close` that records. */
+const listing = (on: On, isShown: boolean) => {
+  const closed: unknown[] = []
+  on('ui.panes', () => ({ value: [{ id: 'ak-mods', title: 'Mods', isShown, isFocused: false, isPlaced: true }] }))
+  on('ui.close', (_, e) => {
+    closed.push(e)
+
+    return { value: undefined }
+  })
+
+  return closed
+}
+
+/** A `ui.open` that places the pane and records. */
+const opening = (on: On) => {
+  const opened: unknown[] = []
+  on('ui.open', (_, e) => {
+    opened.push(e)
+
+    return { value: { isPlaced: true } }
+  })
+
+  return opened
+}
+
+test('the band ends in a mods button with the hotkey m; with the pane closed it opens it', { plugins: [consumer('ak-a')] }, async ($, on) => {
+  engine(on)
+  const opened = opening(on)
+  await publish($, 'ak-a', 'A', { text: 'ready' })
+
+  for (const surface of ['terminal', 'desktop'] as const) {
+    const ui = await $.ui.mount({ ...BAND, surface })
+    expect(await ui.find({ key: 'mods-toggle' })).toMatchObject({ text: 'mods', props: { hotkey: 'm', plain: true } })
+    expect((await ui.find({ key: 'band-row-0' }))?.text).toBe('ready │ mods')
+    await ui.press({ key: 'mods-toggle' })
+    expect(opened).toEqual([{ id: 'ak-mods', title: 'Mods' }])
+    opened.length = 0
+    await ui.unmount()
+  }
+})
+
+test('the mods button closes the Mods pane while it is shown', { plugins: [consumer('ak-a')] }, async ($, on) => {
+  engine(on)
+  const opened = opening(on)
+  const closed = listing(on, true)
+  await publish($, 'ak-a', 'A', { text: 'ready' })
+
+  const ui = await $.ui.mount(BAND)
+  await ui.press({ key: 'mods-toggle' })
+  expect(closed).toMatchObject([{ id: 'ak-mods' }])
+  expect(opened).toEqual([])
+  await ui.unmount()
+})
+
+test('the mods button opens the Mods pane while it sits behind another tab', { plugins: [consumer('ak-a')] }, async ($, on) => {
+  engine(on)
+  const opened = opening(on)
+  const closed = listing(on, false)
+  await publish($, 'ak-a', 'A', { text: 'ready' })
+
+  const ui = await $.ui.mount(BAND)
+  await ui.press({ key: 'mods-toggle' })
+  expect(opened).toEqual([{ id: 'ak-mods', title: 'Mods' }])
+  expect(closed).toEqual([])
+  await ui.unmount()
+})
+
+test('the mods button opens the Mods pane when the panes cannot be listed', { plugins: [consumer('ak-a')] }, async ($, on) => {
+  engine(on)
+  const opened = opening(on)
+  on('ui.panes', () => ({ deny: 'panes down' }))
+  await publish($, 'ak-a', 'A', { text: 'ready' })
+
+  const ui = await $.ui.mount(BAND)
+  await ui.press({ key: 'mods-toggle' })
+  expect(opened).toEqual([{ id: 'ak-mods', title: 'Mods' }])
+  await ui.unmount()
+})
+
 test(
-  '+N chip when dropped, pressing it opens the Mods pane',
+  'the mods button counts the dropped: mods +N',
   { plugins: [consumer('ak-a'), consumer('ak-b'), consumer('ak-c')] },
   async ($, on) => {
     engine(on)
-    const opened: unknown[] = []
-    on('ui.open', (_, e) => {
-      opened.push(e)
-
-      return { value: { isPlaced: true } }
-    })
-    await publish($, 'ak-a', 'A', { text: 'aaaaaaaa' })
-    await publish($, 'ak-b', 'B', { text: 'bbbbbbbb' })
-    await publish($, 'ak-c', 'C', { text: 'cccccccc' })
+    const opened = opening(on)
+    await publish($, 'ak-a', 'A', { text: 'a'.repeat(12) })
+    await publish($, 'ak-b', 'B', { text: 'b'.repeat(12) })
+    await publish($, 'ak-c', 'C', { text: 'c'.repeat(12) })
 
     for (const surface of SURFACES) {
-      const ui = await $.ui.mount({ ...BAND, surface, props: { ...BAND.props, bodyColumns: 16 } })
-      expect(await ui.find({ type: 'Text', text: 'cccccccc' })).toBeUndefined()
-      expect(await ui.find({ key: 'more-segments' })).toMatchObject({ text: '+1', props: { plain: true } })
-      // The chip ends the last row.
-      expect((await ui.find({ key: 'band-row-1' }))?.text).toContain('+1')
-      await ui.press({ key: 'more-segments' })
+      // 25 columns: one segment a row, the second beside `mods +1`; the third is dropped.
+      const ui = await $.ui.mount({ ...BAND, surface, props: { ...BAND.props, bodyColumns: 25 } })
+      expect(await ui.find({ type: 'Text', text: 'c'.repeat(12) })).toBeUndefined()
+      expect(await ui.find({ key: 'mods-toggle' })).toMatchObject({ text: 'mods +1', props: { plain: true } })
+      // The button ends the last row.
+      expect((await ui.find({ key: 'band-row-1' }))?.text).toBe(`${'b'.repeat(12)} │ mods +1`)
+      await ui.press({ key: 'mods-toggle' })
       expect(opened).toEqual([{ id: 'ak-mods', title: 'Mods' }])
       await ui.unmount()
     }
@@ -218,7 +294,7 @@ test('a button whose command the host refuses does not reject', { plugins: [cons
 })
 
 test(
-  'a refused pane open from the +N chip does not reject',
+  'a refused pane open from the mods button does not reject',
   { plugins: [REFUSING, consumer('ak-a'), consumer('ak-b'), consumer('ak-c')] },
   async ($, on) => {
     engine(on)
@@ -226,8 +302,8 @@ test(
     await publish($, 'ak-b', 'B', { text: 'bbbbbbbb' })
     await publish($, 'ak-c', 'C', { text: 'cccccccc' })
 
-    const ui = await $.ui.mount({ ...BAND, props: { ...BAND.props, bodyColumns: 16 } })
-    await ui.press({ key: 'more-segments' })
+    const ui = await $.ui.mount(BAND)
+    await ui.press({ key: 'mods-toggle' })
     await ui.unmount()
   },
 )
@@ -238,7 +314,7 @@ const widthDown: Register = on => {
 }
 
 test(
-  'the +N chip opens the Mods pane when the width cannot be recorded',
+  'the mods button opens the Mods pane when the width cannot be recorded',
   { plugins: [consumer('ak-a'), consumer('ak-b'), consumer('ak-c'), { name: 'ak-width-down', tier: 'append', register: widthDown }] },
   async ($, on) => {
     engine(on)
@@ -252,8 +328,8 @@ test(
     await publish($, 'ak-b', 'B', { text: 'bbbbbbbb' })
     await publish($, 'ak-c', 'C', { text: 'cccccccc' })
 
-    const ui = await $.ui.mount({ ...BAND, props: { ...BAND.props, bodyColumns: 16 } })
-    await ui.press({ key: 'more-segments' })
+    const ui = await $.ui.mount(BAND)
+    await ui.press({ key: 'mods-toggle' })
     expect(opened).toEqual([{ id: 'ak-mods', title: 'Mods' }])
     await ui.unmount()
   },
@@ -273,6 +349,17 @@ test('hotkey clash: first by title keeps it', { plugins: [consumer('ak-a'), cons
     expect(later?.props.hotkey).toBeUndefined()
     await ui.unmount()
   }
+})
+
+test("a mod's hotkey m yields to the mods button", { plugins: [consumer('ak-a')] }, async ($, on) => {
+  engine(on)
+  await publish($, 'ak-a', 'A', { text: 'a', button: { label: 'more', hotkey: 'm', command: 'x' } })
+
+  const ui = await $.ui.mount(BAND)
+  expect(await ui.find({ key: 'seg-ak-a' })).toMatchObject({ text: 'more' })
+  expect((await ui.find({ key: 'seg-ak-a' }))?.props.hotkey).toBeUndefined()
+  expect((await ui.find({ key: 'mods-toggle' }))?.props.hotkey).toBe('m')
+  await ui.unmount()
 })
 
 test(
@@ -299,15 +386,15 @@ test(
   },
 )
 
-test('hotkey clash: a mod hidden behind +N does not take the hotkey', { plugins: [consumer('ak-a'), consumer('ak-b')] }, async ($, on) => {
+test('hotkey clash: a mod hidden behind the mods button does not take the hotkey', { plugins: [consumer('ak-a'), consumer('ak-b')] }, async ($, on) => {
   engine(on)
   // First by title, but the lowest priority: it is the one dropped.
   await publish($, 'ak-a', 'alpha', { text: 'aaaaaaaaaa', priority: 1, button: { label: 'aa', hotkey: '1', command: 'x' } })
   await publish($, 'ak-b', 'Beta', { text: 'b', priority: 9, button: { label: 'bb', hotkey: '1', command: 'x' } })
 
-  const ui = await $.ui.mount({ ...BAND, props: { ...BAND.props, bodyColumns: 14 } })
+  const ui = await $.ui.mount({ ...BAND, props: { ...BAND.props, bodyColumns: 20 } })
   expect(await ui.find({ key: 'seg-ak-a' })).toBeUndefined()
-  expect(await ui.find({ key: 'more-segments' })).toMatchObject({ text: '+1' })
+  expect(await ui.find({ key: 'mods-toggle' })).toMatchObject({ text: 'mods +1' })
   expect((await ui.find({ key: 'seg-ak-b' }))?.props.hotkey).toBe('1')
   await ui.unmount()
 })
@@ -356,7 +443,7 @@ test(
       expect(odd).toBeDefined()
       expect(odd?.props.color).toBeUndefined()
       expect(await ui.find({ type: 'Text', text: 'fine' })).toMatchObject({ props: { color: 'cyan' } })
-      expect((await ui.find({ key: 'band-row-0' }))?.text).toBe('odd │ fine')
+      expect((await ui.find({ key: 'band-row-0' }))?.text).toBe('odd │ fine │ mods')
       await ui.unmount()
     }
   },

@@ -4,6 +4,7 @@ import type { Mods } from '../types'
 import { bandWidth } from './band'
 import { renderBand } from './band-render'
 import { renderPane } from './pane'
+import { togglePane } from './toggle'
 import { initialOn, isAgentKit, namesOf, pruneKeys, rows, savedOf, upsert } from './switches'
 
 // `$` (here `built`) is spelled `built.state.get(REF)` at every call site: the
@@ -12,7 +13,6 @@ const DECLARED = { plugin: 'ak-mods', key: 'declared' } as const
 const ON = { plugin: 'ak-mods', key: 'on' } as const
 const STANDARD = { plugin: 'ak-mods', key: 'standard' } as const
 const SEGMENTS = { plugin: 'ak-mods', key: 'segments' } as const
-const WIDTH = { plugin: 'ak-mods', key: 'width' } as const
 
 // How many other sessions' switches the store keeps; older ones are dropped at start.
 const KEPT_SESSIONS = 100
@@ -70,7 +70,7 @@ export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     await $.command.register({
       name: 'ak-mods',
-      description: 'Open the Mods pane: turn AgentKit mods on or off for this chat',
+      description: 'Open or close the Mods pane: turn AgentKit mods on or off for this chat',
     })
     const id = await restoreChat?.()
 
@@ -116,17 +116,13 @@ export const register: Register = on => {
   })
 
   // The band's width (see `bandWidth`), from the terminal's as the command
-  // runs: a drawing may not write state. The band's `+N` chip records it too.
+  // runs: a drawing may not write state. The band's `mods` button records it
+  // too. No usable width keeps the last one; with none at all the pane counts
+  // with its own width.
   on('command.run', { command: 'ak-mods' }, async ($, e) => {
-    const width = bandWidth({ terminalColumns: e.presentation.columns })
-    // No usable width, or a failed write, keeps the last one; with none at
-    // all the pane counts with its own width. The pane opens either way.
-    if (width !== undefined) {
-      await $.state.set(WIDTH, width).catch(() => undefined)
-    }
-    await $.ui.open({ id: 'ak-mods', title: 'Mods' })
+    const done = await togglePane($, bandWidth({ terminalColumns: e.presentation.columns }))
 
-    return { text: 'Opened the Mods pane.' }
+    return { text: done === 'opened' ? 'Opened the Mods pane.' : 'Closed the Mods pane.' }
   })
 
   on('ui.render', { component: 'Pane', requestId: 'ak-mods' }, ($, e) => renderPane($, e))

@@ -1,8 +1,9 @@
 import type { EngineInterface, Next, RenderInput } from 'claude-code'
 
 import type { ModsInfo, ModsRow, ModsSegment, ModsTone } from '../types'
-import { bandWidth, layout } from './band'
+import { bandWidth, layout, TOGGLE_HOTKEY, toggleLabel } from './band'
 import type { Segment } from './band'
+import { togglePane } from './toggle'
 
 const TONES: readonly string[] = ['ok', 'warn', 'alert', 'info', 'dim'] satisfies ModsTone[]
 
@@ -67,8 +68,9 @@ export const drawable = (rows: readonly ModsRow[], stored: Record<string, unknow
 
 /**
  * Draws the shared band above the prompt on the terminal and the desktop
- * app: the segments of the switched-on mods in up to two rows, a `+N` chip
- * for those that did not fit, then whatever lies beneath.
+ * app: the segments of the switched-on mods in up to two rows, a `mods`
+ * button that opens and closes the Mods pane and counts those that did not
+ * fit, then whatever lies beneath.
  */
 export async function renderBand(
   $: EngineInterface,
@@ -89,11 +91,12 @@ export async function renderBand(
   const { rows, hidden } = layout(segments, e.props.bodyColumns)
 
   // Two shown mods on one hotkey: the first by title keeps it, the later goes
-  // without. A mod behind the `+N` chip takes none.
+  // without. A mod behind the `mods` button takes none, and none takes the
+  // button's own.
   const hotkeys = new Map<string, string>()
   for (const one of rows.flat().sort(compareTitles)) {
     const hotkey = one.button?.hotkey
-    if (hotkey !== undefined && ![...hotkeys.values()].includes(hotkey)) hotkeys.set(one.name, hotkey)
+    if (hotkey !== undefined && hotkey !== TOGGLE_HOTKEY && ![...hotkeys.values()].includes(hotkey)) hotkeys.set(one.name, hotkey)
   }
 
   const below = await next(e)
@@ -130,7 +133,7 @@ export async function renderBand(
       {' │ '}
     </Text>
   )
-  // Buttons draw plain (`1: label`, `+N`): the widths `layout` counts.
+  // Buttons draw plain (`1: label`, `m: mods +N`): the widths `layout` counts.
 
   const band = (
     <Box flexDirection="column">
@@ -155,22 +158,16 @@ export async function renderBand(
                   />,
                 ]),
           ])}
-          {index === rows.length - 1 && hidden.length > 0 && [
-            separator('sep-more'),
+          {index === rows.length - 1 && [
+            separator('sep-mods'),
             <Button
-              key="more-segments"
-              label={`+${hidden.length}`}
+              key="mods-toggle"
+              label={toggleLabel(hidden.length)}
+              hotkey={TOGGLE_HOTKEY}
               plain
               onPress={() => {
-                // The band's width (see `bandWidth`) first, so the pane counts
-                // the cut the band made. A failed write still opens the pane;
-                // a failed open leaves the band as it is.
-                const width = bandWidth({ bodyColumns: e.props.bodyColumns })
-                const recorded =
-                  width === undefined
-                    ? Promise.resolve(undefined)
-                    : $.state.set({ plugin: 'ak-mods', key: 'width' }, width).catch(() => undefined)
-                recorded.then(() => $.ui.open({ id: 'ak-mods', title: 'Mods' })).catch(() => {})
+                // A failed close or open leaves the band as it is.
+                togglePane($, bandWidth({ bodyColumns: e.props.bodyColumns })).catch(() => {})
               }}
             />,
           ]}

@@ -208,7 +208,7 @@ export const register: Register = on => {
   from one plugin to another. A segment is one line: a control character (a newline, ESC) in the
   text or the label draws as a space, and a `hotkey` that is not exactly one printable character is
   left out. When two shown mods ask for one hotkey, the first by title keeps it; a mod dropped
-  behind the `+N` chip takes none.
+  from the band takes none, and `m` is the band's own `mods` button's, never a mod's.
 - **One segment per mod.** Publishing again replaces it; `$.mods.segment(undefined)` clears it.
   `ak-mods` clears it itself when the mod is switched off and when the chat ends, whatever ends it.
   So the mod publishes at `session.start`, again whenever what the segment shows changes, after a
@@ -227,8 +227,9 @@ export const register: Register = on => {
   right after has been seen to read as on in the delayed call, so the recipe counts the switch
   changes and drops a publish scheduled for an earlier one.
 - **When the band runs out of room** it degrades in steps: one row; then two rows, never more; then
-  the segments with the lowest priority drop out (ties by title) and a `+N` chip ends the band.
-  The chip opens the Mods pane, which names the dropped mods: `N mods do not fit the band: …`.
+  the segments with the lowest priority drop out (ties by title), and the `mods` button that ends
+  the band counts them (`mods +2`). It opens the Mods pane, which names the dropped mods: `N mods
+  do not fit the band: …`.
   There is no toast.
 - **The band draws on the terminal and the desktop app**, the two apps that draw `AbovePrompt`.
   Every row of the Mods pane also shows its mod's current segment and button, on every surface.

@@ -31,7 +31,7 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
 
   // The cut the band makes, counted again here, on the surfaces that draw the
   // band. It counts with the band's width (see `bandWidth`) as `/ak-mods` or
-  // the band's `+N` chip last recorded it (a docked pane is narrower than the
+  // the band's `mods` button last recorded it (a docked pane is narrower than the
   // band), the pane's own only before that is known: approximate after a
   // resize, until either records it again.
   const segments = drawable(list, stored)
