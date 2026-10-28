@@ -474,6 +474,17 @@ test("a row shows its mod's current segment, on every surface", { plugins: MODS 
   }
 })
 
+test("a row shows its segment's detail, dim, after the text", { plugins: MODS }, async ($, on) => {
+  engine(on)
+  await callAs($, 'ak-a', 'declare', { name: 'ak-a', title: 'Alpha', summary: 's', details: 'd' })
+  await callAs($, 'ak-a', 'set', { name: 'ak-a', on: true })
+  await callAs($, 'ak-a', 'segment', { text: '◆ kept warm', detail: '1 ping $0.01' })
+
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  expect(await ui.find({ type: 'Text', text: ' · 1 ping $0.01' })).toMatchObject({ props: { dimColor: true } })
+  await ui.unmount()
+})
+
 test("an off mod's row shows no segment", { plugins: MODS }, async ($, on) => {
   engine(on)
   await callAs($, 'ak-a', 'declare', { name: 'ak-a', title: 'Alpha', summary: 's', details: 'd' })

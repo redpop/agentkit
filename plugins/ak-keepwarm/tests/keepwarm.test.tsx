@@ -308,12 +308,13 @@ test('publishes the kept-warm segment with the stop button, without its end', OW
   })
 })
 
-test('the kept-warm segment counts the pings and their cost once there is one', OWNED, async ($, on) => {
+test('the kept-warm segment carries the pings and their cost as its detail, once there is one', OWNED, async ($, on) => {
   const { clock, toasts } = engine(on, { usage: usage(200000, 0), calls: 0 })
   await startChat($)
   await keepwarm($)
   await clock.advance(55 * MIN)
-  expect(segments(toasts).at(-1)?.text).toMatch(/^◆ kept warm · 1 ping \$/)
+  expect(segments(toasts).at(-1)?.text).toBe('◆ kept warm')
+  expect(segments(toasts).at(-1)?.detail).toMatch(/^1 ping \$/)
 })
 
 test('no segment before the first request', OWNED, async ($, on) => {

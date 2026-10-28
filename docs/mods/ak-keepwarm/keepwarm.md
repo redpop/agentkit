@@ -27,8 +27,7 @@ above the prompt, once the chat has made a request:
 
 | Segment | Meaning |
 |---------|---------|
-| `◆ kept warm` | Keep warm is on; no ping was needed yet |
-| `◆ kept warm · 3 pings $0.02` | Keep warm is on: pings so far and their cost. When it ends, the start toast says |
+| `◆ kept warm` | Keep warm is on. The Mods pane adds the pings so far and their cost, `· 3 pings $0.02`; when it ends, the start toast says |
 | `● cache warm 42m` | Time left before the cache expires |
 | `◐ cools in 4m · rewrite ≈ $0.42` | Under 5 minutes left, and what a rewrite of the context would cost |
 | `○ cold 12m · rewrite ≈ $0.42` | The cache expired that long ago; a ping cannot help, and the button is hidden |

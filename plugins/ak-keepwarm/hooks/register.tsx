@@ -108,10 +108,10 @@ const tick = async ($: EngineInterface, isOff: boolean) => {
   else await keepWarmStep($)
 }
 
-// Keep warm as the band shows it: short, so the band stays one row. The pings and their cost join
-// once there is one; when it ends is the start toast's.
-const keptWarm = (): string =>
-  S.pings === 0 ? '◆ kept warm' : `◆ kept warm · ${S.pings} ping${S.pings === 1 ? '' : 's'} ${usd(S.pingUsd)}`
+// The pings so far and their cost, from the first: shown in the Mods pane, not the band, which
+// stays one row. When keep warm ends is the start toast's.
+const pinged = (): string | undefined =>
+  S.pings === 0 ? undefined : `${S.pings} ping${S.pings === 1 ? '' : 's'} ${usd(S.pingUsd)}`
 
 // The cache state as the shared band shows it: no segment before the first request. The rewrite
 // estimate rides along only while it matters, as the cache cools or is cold.
@@ -121,7 +121,11 @@ const segment = (): Segment => {
   const left = msLeft() ?? 0
   const rewrite = ` · rewrite ≈ ${usd(rewriteCost(S.ctx, S.model, S.ttlMin))}`
   const button = (label: string) => ({ label, hotkey: '1', command: 'keepwarm' })
-  if (state === 'kept') return { text: keptWarm(), tone: 'info', priority: 6, button: button('stop') }
+  if (state === 'kept') {
+    const detail = pinged()
+
+    return { text: '◆ kept warm', ...(detail ? { detail } : {}), tone: 'info', priority: 6, button: button('stop') }
+  }
   if (state === 'warm') return { text: `● cache warm ${minutes(left)}`, tone: 'ok', priority: 6, button: button('keep warm') }
   if (state === 'cooling') {
     return { text: `◐ cools in ${minutes(left)}${rewrite}`, tone: 'warn', priority: 6, button: button('keep warm') }
@@ -331,7 +335,7 @@ export const register: Register = on => {
     }
     const status =
       state === 'kept' ? (
-        <Text color="cyan">{keptWarm()}</Text>
+        <Text color="cyan">◆ kept warm</Text>
       ) : state === 'warm' ? (
         <Text>{`● cache warm ${minutes(left)}`}</Text>
       ) : state === 'cooling' ? (

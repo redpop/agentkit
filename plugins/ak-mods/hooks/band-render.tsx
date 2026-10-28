@@ -28,8 +28,8 @@ const hotkeyOf = (hotkey: unknown): string | undefined =>
  * unchecked: an unknown tone draws uncoloured, a priority that is no number
  * takes the default, a control character in a text, a label or a command
  * draws as a space, a hotkey that is not one printable character is left
- * out, a button without a label or command is left out, and a segment
- * without text is not drawn.
+ * out, a button without a label or command is left out, a detail that is
+ * no text is left out, and a segment without text is not drawn.
  */
 const checked = (info: ModsInfo, stored: unknown): Segment | undefined => {
   const one = (stored ?? {}) as Partial<Record<keyof ModsSegment, unknown>>
@@ -40,6 +40,7 @@ const checked = (info: ModsInfo, stored: unknown): Segment | undefined => {
     name: info.name,
     title: info.title,
     text: spaced(one.text),
+    detail: typeof one.detail === 'string' && one.detail !== '' ? spaced(one.detail) : undefined,
     tone: typeof one.tone === 'string' && TONES.includes(one.tone) ? (one.tone as ModsTone) : undefined,
     priority: typeof one.priority === 'number' && Number.isFinite(one.priority) ? one.priority : undefined,
     button:

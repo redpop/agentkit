@@ -201,12 +201,14 @@ export const register: Register = on => {
   same code runs in a mod and in the tests.
 - **The band is shared.** `ak-mods` owns one band above the prompt for all mods. A mod does not
   draw a band beside it: it publishes one segment with `$.mods.segment(...)`, and `ak-mods` draws
-  the segments of the switched-on mods. A segment is plain data: `text`, an optional `tone` (`ok`,
-  `warn`, `alert`, `info` or `dim`; `ak-mods` picks the colour, and `ok` stays the text colour), an optional `priority` (default
-  5; higher stays longer) and at most one `button` (`label`, an optional `hotkey`, the `command` it
-  runs, its `args`). The button runs a slash command the mod already answers, so no handler crosses
-  from one plugin to another. A segment is one line: a control character (a newline, ESC) in the
-  text or the label draws as a space, and a `hotkey` that is not exactly one printable character is
+  the segments of the switched-on mods. A segment is plain data: `text`, an optional `detail` (more
+  of the same state, shown dim after the text in the Mods pane only, never in the band), an
+  optional `tone` (`ok`, `warn`, `alert`, `info` or `dim`; `ak-mods` picks the colour, and `ok`
+  stays the text colour), an optional `priority` (default 5; higher stays longer) and at most one
+  `button` (`label`, an optional `hotkey`, the `command` it runs, its `args`). The button runs a
+  slash command the mod already answers, so no handler crosses from one plugin to another. A
+  segment is one line: a control character (a newline, ESC) in the text, the detail or the label
+  draws as a space, and a `hotkey` that is not exactly one printable character is
   left out. When two shown mods ask for one hotkey, the first by title keeps it; a mod dropped
   from the band takes none, and `m` is the band's own `mods` button's, never a mod's.
 - **One segment per mod.** Publishing again replaces it; `$.mods.segment(undefined)` clears it.

@@ -11,6 +11,8 @@ export type ModsTone = 'ok' | 'warn' | 'alert' | 'info' | 'dim'
 export type ModsSegment = {
   /** One line: a control character draws as a space, as in the button's label. */
   text: string
+  /** More of the same state, shown dim after the text in the Mods pane only, never in the band. One line, as `text`. */
+  detail?: string
   tone?: ModsTone
   /** Higher stays visible longer when the band runs out of room; 5 when left out. */
   priority?: number

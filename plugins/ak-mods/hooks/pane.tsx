@@ -52,6 +52,9 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
           {current.has(row.name) && (
             <Box>
               <Text>{current.get(row.name)?.text}</Text>
+              {current.get(row.name)?.detail !== undefined && (
+                <Text key={`detail-${row.name}`} dimColor>{` · ${current.get(row.name)?.detail}`}</Text>
+              )}
               {current.get(row.name)?.button !== undefined && [
                 <Text key={`gap-${row.name}`}> </Text>,
                 <Button
