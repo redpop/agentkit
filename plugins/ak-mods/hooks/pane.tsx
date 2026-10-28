@@ -49,22 +49,56 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
       {list.map(row => {
         const one = current.get(row.name)
         // A surface that draws pictures lists the card's rows under the segment, each value once, while
-        // the row is open (`More`); closed, the segment alone. The terminal adds the detail after it.
+        // the row is open (the details link); closed, the segment alone. The terminal adds the detail after it.
         const isOpen = expanded[row.name] === true
         const rows = e.surface !== 'terminal' ? one?.card : undefined
 
+        // A row reads top to bottom: the title with its two switches on the right, what the mod does,
+        // its live segment, then what opens under the details link. The switch is the one framed button; the
+        // standard mark and the details link stay plain, so the live state leads.
+        // On a surface that draws pictures each mod sits on a faint surface of its own, rounded and
+        // edged by a hairline, as grouped settings do: where a mod begins and ends shows without a
+        // rule between them. A translucent grey reads on a light and a dark theme alike. The terminal
+        // parts the mods by space.
+        const surface =
+          e.surface === 'terminal'
+            ? { marginBottom: 2 }
+            : {
+                marginBottom: 1,
+                paddingX: 1,
+                paddingY: 1,
+                borderStyle: 'round',
+                borderColor: 'rgba(127,127,127,0.22)',
+                backgroundColor: 'rgba(127,127,127,0.06)',
+              }
+
         return (
-          <Box flexDirection="column" marginBottom={1}>
-            <Text bold>{row.title}</Text>
+          <Box flexDirection="column" {...surface}>
+            <Box flexDirection="row" alignItems="center" columnGap={2}>
+              <Box flexGrow={1}>
+                <Text bold>{row.title}</Text>
+              </Box>
+              <Button
+                key={`std-${row.name}`}
+                label={row.isStandard ? t.standard : t.notStandard}
+                plain
+                dimColor={!row.isStandard}
+                onPress={() => $.mods.setStandard({ name: row.name, standard: !row.isStandard })}
+              />
+              <Button
+                key={`on-${row.name}`}
+                label={row.isOn ? t.on : t.off}
+                onPress={() => $.mods.set({ name: row.name, on: !row.isOn })}
+              />
+            </Box>
             <Text dimColor>{row.summary}</Text>
             {one !== undefined && (
-              <Box>
+              <Box flexDirection="row" alignItems="center" columnGap={1} marginTop={1}>
                 {segmentView(draws, e.surface, one, `text-${row.name}`)}
                 {rows === undefined && one.detail !== undefined && (
-                  <Text key={`detail-${row.name}`} dimColor>{` · ${one.detail}`}</Text>
+                  <Text key={`detail-${row.name}`} dimColor>{`· ${one.detail}`}</Text>
                 )}
-                {one.button !== undefined && [
-                  <Text key={`gap-${row.name}`}> </Text>,
+                {one.button !== undefined && (
                   <Button
                     key={`seg-${row.name}`}
                     label={one.button.label}
@@ -73,28 +107,27 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
                       // A command the host refuses changes nothing in the pane.
                       $.command.run({ command: button?.command ?? '', args: button?.args ?? '' }).catch(() => {})
                     }}
-                  />,
-                ]}
+                  />
+                )}
               </Box>
             )}
-            {isOpen && rows !== undefined && <Box flexDirection="column">{cardRows(draws, rows, `rows-${row.name}`)}</Box>}
-            {isOpen && <Text dimColor>{row.details}</Text>}
-            <Box>
-              <Button
-                key={`on-${row.name}`}
-                label={row.isOn ? t.on : t.off}
-                onPress={() => $.mods.set({ name: row.name, on: !row.isOn })}
-              />
-              <Text> </Text>
-              <Button
-                key={`std-${row.name}`}
-                label={row.isStandard ? t.standard : t.notStandard}
-                onPress={() => $.mods.setStandard({ name: row.name, standard: !row.isStandard })}
-              />
-              <Text> </Text>
+            {isOpen && rows !== undefined && (
+              <Box flexDirection="column" marginTop={1}>
+                {cardRows(draws, rows, `rows-${row.name}`)}
+              </Box>
+            )}
+            {isOpen && (
+              <Box marginTop={1}>
+                <Text dimColor>{row.details}</Text>
+              </Box>
+            )}
+            <Box marginTop={1}>
+              {/* A disclosure, not an action: plain and dim, framed by nothing, below the mod's own buttons. */}
               <Button
                 key={`more-${row.name}`}
                 label={isOpen ? t.less : t.more}
+                plain
+                dimColor
                 onPress={() => update($, EXPANDED, map => ({ ...map, [row.name]: map[row.name] !== true }))}
               />
             </Box>
@@ -102,7 +135,12 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
         )
       })}
       {dropped !== undefined && <Text dimColor>{dropped}</Text>}
-      <Text dimColor>{t.footer}</Text>
+      {/* A footnote to the whole pane, not to the last mod: set apart by space alone, small and dim. */}
+      <Box marginTop={1}>
+        <Text size="footnote" dimColor>
+          {t.footer}
+        </Text>
+      </Box>
     </Box>
   )
 }

@@ -155,7 +155,8 @@ export const ringSvg = (percent: number, tone: ModsTone | undefined): string => 
   const arc = (round * percent) / 100
 
   return (
-    '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">' +
+    // 4 px of air right of the ring, so the text beside it does not touch it.
+    '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="16" viewBox="0 0 20 16">' +
     `<style>.t{stroke:${TRACK.light}}.f{stroke:${light}}` +
     `@media (prefers-color-scheme: dark){.t{stroke:${TRACK.dark}}.f{stroke:${dark}}}</style>` +
     '<circle class="t" cx="8" cy="8" r="6" fill="none" stroke-width="2.6"/>' +
@@ -172,7 +173,8 @@ export const iconSvg = (icon: ModsIcon, tone: ModsTone | undefined): string => {
   const { light, dark } = RING_TONES[tone ?? 'ok']
 
   return (
-    '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" ' +
+    // 6 units of air right of the icon, as beside a ring.
+    '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="16" viewBox="0 0 30 24" fill="none" ' +
     'stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">' +
     `<style>g{stroke:${light}}@media (prefers-color-scheme: dark){g{stroke:${dark}}}</style>` +
     `<g>${ICONS[icon]}</g></svg>`
@@ -197,9 +199,9 @@ export const segmentView = ({ Box, Text, Svg }: Draws, surface: string, one: Seg
     <Box key={key} flexDirection="row" alignItems="center">
       {one.rich.map((part, at) =>
         part.ring !== undefined ? (
-          <Svg key={`${key}-${at}`} source={ringSvg(part.ring, part.tone ?? one.tone)} alt={part.text} width={16} height={16} />
+          <Svg key={`${key}-${at}`} source={ringSvg(part.ring, part.tone ?? one.tone)} alt={part.text} width={20} height={16} />
         ) : part.icon !== undefined ? (
-          <Svg key={`${key}-${at}`} source={iconSvg(part.icon, part.tone ?? one.tone)} alt={part.text} width={16} height={16} />
+          <Svg key={`${key}-${at}`} source={iconSvg(part.icon, part.tone ?? one.tone)} alt={part.text} width={20} height={16} />
         ) : (
           <Text key={`${key}-${at}`} tabular {...toneProps(part.tone ?? one.tone)}>
             {part.text}

@@ -60,8 +60,8 @@ const EN = {
   off: '○ Off',
   standard: '★ Standard',
   notStandard: '☆ Standard',
-  more: 'More',
-  less: 'Less',
+  more: 'Show details',
+  less: 'Hide details',
   toggle: 'mods',
   dropped: (count: number, titles: string) => `${count} ${count === 1 ? 'mod does' : 'mods do'} not fit the band: ${titles}`,
 }
@@ -75,8 +75,8 @@ const DE: typeof EN = {
   off: '○ Aus',
   standard: '★ Standard',
   notStandard: '☆ Standard',
-  more: 'Mehr',
-  less: 'Weniger',
+  more: 'Details anzeigen',
+  less: 'Details ausblenden',
   toggle: 'Mods',
   dropped: (count: number, titles: string) => `${count} ${count === 1 ? 'Mod passt' : 'Mods passen'} nicht ins Band: ${titles}`,
 }

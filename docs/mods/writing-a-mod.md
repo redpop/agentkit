@@ -211,7 +211,7 @@ export const register: Register = on => {
   `{ label, value }` (the card the desktop app shows while the pointer is over the segment: dim
   labels in one column beside their values; without rows the card shows `detail`, a line a part;
   the Mods pane on the desktop app lists the rows in place of the detail, in a row opened with
-  More),
+  Show details),
   an optional `detail` (more
   of the same state, shown dim after the text in the Mods pane only, never in the band), an
   optional `tone` (`ok`, `warn`, `alert`, `info` or `dim`; `ak-mods` picks the colour, and `ok`

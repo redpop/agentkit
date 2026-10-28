@@ -105,7 +105,7 @@ test('with Claude Code set to German, the pane speaks German', { plugins: PLUGIN
 
   const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
   expect((await ui.find({ key: 'on-ak-fixture' }))?.text).toBe('○ Aus')
-  expect((await ui.find({ key: 'more-ak-fixture' }))?.text).toBe('Mehr')
+  expect((await ui.find({ key: 'more-ak-fixture' }))?.text).toBe('Details anzeigen')
   expect(await ui.find({ type: 'Text', text: texts('de').footer })).toBeDefined()
   await ui.unmount()
 })
@@ -120,7 +120,7 @@ test('a row shows title, summary and switches', { plugins: PLUGINS }, async ($, 
     expect((await ui.find({ type: 'Text', text: 's' }))?.text).toBe('s')
     expect((await ui.find({ key: 'on-ak-fixture' }))?.text).toBe('○ Off')
     expect((await ui.find({ key: 'std-ak-fixture' }))?.text).toBe('☆ Standard')
-    expect((await ui.find({ key: 'more-ak-fixture' }))?.text).toBe('More')
+    expect((await ui.find({ key: 'more-ak-fixture' }))?.text).toBe('Show details')
     await ui.unmount()
   }
 })
@@ -156,7 +156,7 @@ test('More reveals details', { plugins: PLUGINS }, async ($, on) => {
   expect(await ui.find({ type: 'Text', text: /^d$/ })).toBeUndefined()
   await ui.press({ key: 'more-ak-fixture' })
   expect(await ui.find({ type: 'Text', text: /^d$/ })).toBeDefined()
-  expect((await ui.find({ key: 'more-ak-fixture' }))?.text).toBe('Less')
+  expect((await ui.find({ key: 'more-ak-fixture' }))?.text).toBe('Hide details')
   await ui.unmount()
 })
 
@@ -499,7 +499,7 @@ test("a row shows its segment's detail, dim, after the text", { plugins: MODS },
   await callAs($, 'ak-a', 'segment', { text: '◆ kept warm', detail: '1 ping $0.01' })
 
   const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
-  expect(await ui.find({ type: 'Text', text: ' · 1 ping $0.01' })).toMatchObject({ props: { dimColor: true } })
+  expect(await ui.find({ type: 'Text', text: '· 1 ping $0.01' })).toMatchObject({ props: { dimColor: true } })
   await ui.unmount()
 })
 
@@ -597,7 +597,7 @@ test('on the desktop app an open row lists its card under the segment, each valu
   await desk.unmount()
 
   const term = await $.ui.mount({ ...PANE, surface: 'terminal' })
-  expect(await exactly(term, ' · ctx 42% · 5h 7% (resets 11:10pm)')).toBeDefined()
+  expect(await exactly(term, '· ctx 42% · 5h 7% (resets 11:10pm)')).toBeDefined()
   expect(await exactly(term, '5-hour limit')).toBeUndefined()
   await term.unmount()
 })
