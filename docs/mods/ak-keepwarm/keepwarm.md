@@ -56,6 +56,10 @@ Without `ak-mods` (or when it refuses the mod, or a publish fails for good), the
 band instead, never both. That band shows the same states (`◐ cache cools in 4m`,
 `○ cache cold 12m`), the context size and the rewrite estimate, with the same button.
 
+The mod's texts follow Claude Code's `language` setting, else `LC_ALL`, `LC_MESSAGES` or `LANG`:
+German or English. In German times read on a 24-hour clock and the segment says `◆ warm gehalten`;
+the command and its arguments stay `/keepwarm always`, `/keepwarm off`.
+
 ## How it works
 
 - Each main-loop request tells whether it read or rewrote the cache. A rewrite after 5 to 60 idle

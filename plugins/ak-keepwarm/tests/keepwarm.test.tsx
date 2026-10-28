@@ -1,5 +1,5 @@
 import { expect, mock, test } from 'claude-code/testing'
-import type { EngineInterface, ModelForkResult, On, Register } from 'claude-code'
+import type { ConfigRow, EngineInterface, ModelForkResult, On, Register } from 'claude-code'
 import type { Engine } from 'claude-code/testing'
 
 import { clock as clockTime, usd } from '../hooks/fmt'
@@ -706,4 +706,20 @@ test('after a restart the saved window keeps the chat warm again', OWNED, async 
 
   await clock.advance(43 * MIN)
   expect(fork.calls).toBe(1)
+})
+
+test('with Claude Code set to German, keep warm speaks German on a 24-hour clock', OWNED, async ($, on) => {
+  const { clock, toasts } = engine(on, { usage: usage(200000, 0), calls: 0 })
+  on('config.list', () => ({ value: [{ key: 'language', label: 'Language', value: 'German' }] as unknown as ConfigRow[] }))
+  await startChat($)
+  expect(segments(toasts).at(-1)).toMatchObject({ text: '● 60m', button: { label: 'warm halten' } })
+  expect(segments(toasts).at(-1)?.card?.[0]).toEqual({ label: 'Cache', value: 'noch 60m' })
+
+  await keepwarm($)
+  expect(toasts.find(t => t.startsWith('Halte diesen Cache bis'))).toMatch(/bis \d\d:\d\d warm/)
+  await clock.settle()
+  expect(segments(toasts).at(-1)).toMatchObject({ text: '◆ warm gehalten', button: { label: 'stopp' } })
+
+  await keepwarm($, 'soon')
+  expect(toasts.at(-1)).toContain('nicht "soon"')
 })

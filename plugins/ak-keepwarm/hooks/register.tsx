@@ -9,7 +9,8 @@
 
 import type { EngineInterface, Register, Timer } from 'claude-code'
 
-import { clock, minutes, tokens, usd } from './fmt'
+import { minutes, tokens, usd } from './fmt'
+import { languageFor, learnLanguage, texts, type Lang } from './i18n'
 import { cachedShare, requestCost, rewriteCost, totalInput, type Usage } from './pricing'
 
 const NAME = 'ak-keepwarm'
@@ -53,6 +54,17 @@ const S = {
 
 // The fields of S saved per chat, so keep warm survives a reload of the mod and a restart.
 const SAVED = ['model', 'lastActivity', 'ctx', 'ttlMin', 'isMeasured', 'keepWarmUntil', 'pings', 'pingUsd', 'rewrites', 'rewriteUsd'] as const
+
+// The language of the texts, read at the session's start and at each restore.
+let lang: Lang = 'en'
+const T = () => texts(lang)
+
+// A time of day on the language's clock: `11:10pm`, `23:10`.
+const clock = (ts: number): string => {
+  const d = new Date(ts)
+
+  return T().clock(d.getHours(), d.getMinutes())
+}
 
 // The chat whose state S holds; undefined until the first restore.
 let chatId: string | undefined
@@ -116,6 +128,7 @@ const restore = async ($: EngineInterface) => {
   } catch {
     return
   }
+  lang = await languageFor($)
   if (id === chatId) return
   chatId = id
   reset()
@@ -170,8 +183,8 @@ const startKeepWarm = ($: EngineInterface, ms: number, isRoll = false) => {
   if (!isRoll) {
     $.ui.toast(
       S.isAlways
-        ? `Keeping every chat warm until ${minutes(ALWAYS_MS)} after its last turn. /keepwarm off stops it.`
-        : `Keeping this cache warm until ${clock(until)}. A ping reads the cache before it expires.`,
+        ? T().startedAlways(minutes(ALWAYS_MS))
+        : T().started(clock(until)),
     )
   }
   S.isKeepWarm = true
@@ -188,7 +201,7 @@ const stopKeepWarm = ($: EngineInterface, why: string) => {
   S.retryAt = 0
   S.isAwaitingTurn = false
   save($)
-  $.ui.toast(`Keep warm off (${why}). ${S.pings} ping(s), ${usd(S.pingUsd)}.`, { timeoutMs: 8000 })
+  $.ui.toast(T().stopped(why, S.pings, usd(S.pingUsd)), { timeoutMs: 8000 })
 }
 
 // Turns `always` on or off for every chat, here and in later sessions.
@@ -206,7 +219,7 @@ const isBusy = (status: number | null): boolean => status === 429 || status === 
 // cache expires. One with nothing to fork waits for the next turn.
 const keepWarmStep = async ($: EngineInterface) => {
   if (!S.isKeepWarm) return
-  if (now >= S.keepWarmUntil) return stopKeepWarm($, 'time limit reached')
+  if (now >= S.keepWarmUntil) return stopKeepWarm($, T().why.limit)
   if (S.isWorking || !S.lastActivity || S.isAwaitingTurn) return
   const expiry = S.lastActivity + S.ttlMin * MIN
   if (S.retryAt) {
@@ -215,7 +228,7 @@ const keepWarmStep = async ($: EngineInterface) => {
     const margin = S.ttlMin >= 60 ? 8 * MIN : 90000
     if (now < expiry - margin) return
   }
-  if (now >= expiry) return stopKeepWarm($, 'the cache expired before the ping')
+  if (now >= expiry) return stopKeepWarm($, T().why.expired)
 
   let reply: Awaited<ReturnType<EngineInterface['model']['fork']>> | null = null
   try {
@@ -238,18 +251,18 @@ const keepWarmStep = async ($: EngineInterface) => {
       return
     }
 
-    return stopKeepWarm($, 'the API stayed busy, so the cache may go cold')
+    return stopKeepWarm($, T().why.busy)
   }
-  if (!reply || !reply.isAnswered) return stopKeepWarm($, 'the ping got no answer, so the cache may already be cold')
+  if (!reply || !reply.isAnswered) return stopKeepWarm($, T().why.unanswered)
 
   const u = reply.usage
   S.pings += 1
   S.pingUsd += requestCost(u, S.model, S.ttlMin)
   S.retries = 0
   S.retryAt = 0
-  if (!(u.cache_read_input_tokens || 0)) return stopKeepWarm($, 'the ping read nothing from the cache')
+  if (!(u.cache_read_input_tokens || 0)) return stopKeepWarm($, T().why.unread)
   if ((u.cache_creation_input_tokens || 0) > 0.1 * (u.cache_read_input_tokens || 0)) {
-    return stopKeepWarm($, `the ping wrote ${tokens(u.cache_creation_input_tokens)} tokens instead of reading the cache`)
+    return stopKeepWarm($, T().why.wrote(tokens(u.cache_creation_input_tokens)))
   }
   S.lastActivity = now
   save($)
@@ -258,7 +271,7 @@ const keepWarmStep = async ($: EngineInterface) => {
 const tick = async ($: EngineInterface, isOff: boolean) => {
   await restore($)
   now = await $.clock.now()
-  if (isOff) stopKeepWarm($, 'the mod is off')
+  if (isOff) stopKeepWarm($, T().why.modOff)
   else await keepWarmStep($)
 }
 
@@ -266,11 +279,11 @@ const tick = async ($: EngineInterface, isOff: boolean) => {
 // pane, not the band, which stays one row. When keep warm ends is the start toast's.
 const tally = (): string | undefined => {
   const parts = [
-    S.pings === 0 ? '' : `${S.pings} ping${S.pings === 1 ? '' : 's'} ${usd(S.pingUsd)}`,
-    S.rewrites === 0 ? '' : `${S.rewrites} rewrite${S.rewrites === 1 ? '' : 's'} ${usd(S.rewriteUsd)}`,
-    S.retryAt ? `ping retry ${S.retries} of ${RETRY_MIN.length}` : '',
-    S.isKeepWarm && S.isAwaitingTurn ? 'waiting for the next turn' : '',
-    S.isAlways ? 'always' : '',
+    S.pings === 0 ? '' : T().pings(S.pings, usd(S.pingUsd)),
+    S.rewrites === 0 ? '' : T().rewrites(S.rewrites, usd(S.rewriteUsd)),
+    S.retryAt ? T().retry(S.retries, RETRY_MIN.length) : '',
+    S.isKeepWarm && S.isAwaitingTurn ? T().waiting : '',
+    S.isAlways ? T().always : '',
   ].filter(Boolean)
 
   return parts.length === 0 ? undefined : parts.join(' · ')
@@ -290,6 +303,7 @@ const drain = (left: number): string => {
 const segment = (): Segment => {
   const state = S.isKeepWarm ? 'kept' : cacheState()
   if (state === 'unknown') return undefined
+  const t = T()
   const left = msLeft() ?? 0
   const cost = `≈ ${usd(rewriteCost(S.ctx, S.model, S.ttlMin))}`
   const button = (label: string) => ({ label, hotkey: '1', command: 'keepwarm' })
@@ -297,37 +311,37 @@ const segment = (): Segment => {
   // The hover card on the desktop app: the cache's state, what it holds and what it cost.
   const card = [
     {
-      label: 'Cache',
+      label: t.card.cache,
       value:
         state === 'kept'
-          ? `kept warm until ${clock(S.keepWarmUntil)}`
+          ? t.keptUntil(clock(S.keepWarmUntil))
           : state === 'cold'
-            ? `cold for ${minutes(-left)}`
-            : `${minutes(left)} left`,
+            ? t.coldFor(minutes(-left))
+            : t.left(minutes(left)),
     },
-    { label: 'Lifetime', value: `${S.ttlMin >= 60 ? '1 hour' : '5 minutes'}${S.isMeasured ? '' : ', assumed'}` },
-    { label: 'Context', value: `${tokens(S.ctx)} tokens` },
-    { label: 'Rewrite', value: cost },
-    ...(S.pings === 0 ? [] : [{ label: 'Pings', value: `${S.pings} · ${usd(S.pingUsd)}` }]),
-    ...(S.rewrites === 0 ? [] : [{ label: 'Rewrites', value: `${S.rewrites} · ${usd(S.rewriteUsd)}` }]),
-    ...(S.retryAt ? [{ label: 'Retry', value: `${S.retries} of ${RETRY_MIN.length}` }] : []),
-    ...(S.isKeepWarm && S.isAwaitingTurn ? [{ label: 'Ping', value: 'waits for the next turn' }] : []),
-    ...(S.isAlways ? [{ label: 'Always', value: 'on' }] : []),
+    { label: t.card.lifetime, value: `${S.ttlMin >= 60 ? t.hour : t.fiveMinutes}${S.isMeasured ? '' : t.assumed}` },
+    { label: t.card.context, value: t.tokens(tokens(S.ctx)) },
+    { label: t.card.rewrite, value: cost },
+    ...(S.pings === 0 ? [] : [{ label: t.card.pings, value: `${S.pings} · ${usd(S.pingUsd)}` }]),
+    ...(S.rewrites === 0 ? [] : [{ label: t.card.rewrites, value: `${S.rewrites} · ${usd(S.rewriteUsd)}` }]),
+    ...(S.retryAt ? [{ label: t.card.retry, value: t.of(S.retries, RETRY_MIN.length) }] : []),
+    ...(S.isKeepWarm && S.isAwaitingTurn ? [{ label: t.card.ping, value: t.waitsTurn }] : []),
+    ...(S.isAlways ? [{ label: t.card.always, value: t.on }] : []),
   ]
   const more = { ...(detail ? { detail } : {}), card }
   // Where the band draws pictures, the circle is a ring that empties with the time left.
   const ring = Math.round((Math.max(0, left) / (S.ttlMin * MIN)) * 100)
   if (state === 'kept') {
     return {
-      text: '◆ kept warm',
+      text: `◆ ${t.keptWarm}`,
       rich: [
-        { text: 'cache kept warm', tone: 'info', ring: 100 },
-        { text: ' kept warm', tone: 'info' },
+        { text: t.ringKept, tone: 'info', ring: 100 },
+        { text: ` ${t.keptWarm}`, tone: 'info' },
       ],
       ...more,
       tone: 'info',
       priority: 6,
-      button: button('stop'),
+      button: button(t.stop),
     }
   }
   const time = `${drain(left)} ${minutes(left)}`
@@ -335,44 +349,44 @@ const segment = (): Segment => {
     return {
       text: time,
       rich: [
-        { text: `cache ${minutes(left)} left`, tone: 'ok', ring },
+        { text: t.ringLeft(minutes(left)), tone: 'ok', ring },
         { text: ` ${minutes(left)}`, tone: 'ok' },
-        { text: ' cache', tone: 'dim' },
+        { text: ` ${t.cacheWord}`, tone: 'dim' },
       ],
       ...more,
       tone: 'ok',
       priority: 6,
-      button: button('keep warm'),
+      button: button(t.keep),
     }
   }
   if (state === 'cooling') {
     return {
-      text: `${time}  rewrite ${cost}`,
+      text: `${time}  ${t.rewrite} ${cost}`,
       ...more,
       // The desktop app has the room to say what is at stake: when the cache drops, and what the next
       // message then writes again.
       rich: [
-        { text: `cache ${minutes(left)} left`, tone: 'warn', ring },
-        { text: ` cache drops in ${minutes(left)}`, tone: 'warn' },
-        { text: ' · next message rewrites ', tone: 'dim' },
-        { text: `${tokens(S.ctx)} tokens ${cost}`, tone: 'warn' },
+        { text: t.ringLeft(minutes(left)), tone: 'warn', ring },
+        { text: ` ${t.drops(minutes(left))}`, tone: 'warn' },
+        { text: ` · ${t.nextRewrites} `, tone: 'dim' },
+        { text: t.tokensAt(tokens(S.ctx), cost), tone: 'warn' },
       ],
       parts: [
         { text: time, tone: 'warn' },
-        { text: '  rewrite ', tone: 'dim' },
+        { text: `  ${t.rewrite} `, tone: 'dim' },
         { text: cost, tone: 'warn' },
       ],
       tone: 'warn',
       priority: 6,
-      button: button('keep warm'),
+      button: button(t.keep),
     }
   }
 
   return {
-    text: `○ cold ${minutes(-left)}  rewrite ${cost}`,
+    text: `○ ${t.cold} ${minutes(-left)}  ${t.rewrite} ${cost}`,
     rich: [
-      { text: 'cache cold', tone: 'dim', ring: 0 },
-      { text: ` cold ${minutes(-left)}  rewrite ${cost}`, tone: 'dim' },
+      { text: t.ringCold, tone: 'dim', ring: 0 },
+      { text: ` ${t.cold} ${minutes(-left)}  ${t.rewrite} ${cost}`, tone: 'dim' },
     ],
     ...more,
     tone: 'dim',
@@ -472,26 +486,16 @@ export const register: Register = on => {
   }
 
   on('session.start', async ($, e, next) => {
+    lang = await learnLanguage($)
+    const t = T()
     try {
-      isSwitched = await $.mods.declare({
-        name: NAME,
-        title: 'Keep warm',
-        summary: 'Keeps the prompt cache warm with a small ping before it expires.',
-        details:
-          'Its segment in the shared band above the prompt shows how long the cache stays warm. ' +
-          '/keepwarm [90m|2h30m|hours|always|off] sends a small ping shortly before the cache would ' +
-          'expire (default 4 hours); the cache read restarts its timer. always keeps every chat warm ' +
-          'until 6 hours after its last turn. A ping the API turns away as busy is sent again; if a ' +
-          'ping writes to the cache instead of reading it, keep warm turns itself off. Here the ' +
-          'pings and the rewrites of a lost cache are counted with their cost. Keep warm survives a ' +
-          'restart: it resumes with the next turn.',
-      })
+      isSwitched = await $.mods.declare({ name: NAME, title: t.title, summary: t.summary, details: t.details })
     } catch {
       isSwitched = false
     }
     await $.command.register({
       name: 'keepwarm',
-      description: "Keep this session's prompt cache warm (default 4 hours), or /keepwarm off",
+      description: t.command,
       argumentHint: '[90m|2h30m|hours|always|off]',
       immediate: true,
     })
@@ -581,14 +585,14 @@ export const register: Register = on => {
     if (arg === 'off' || (arg === '' && S.isKeepWarm)) {
       // Stopping by hand ends `always` too: else the next turn would start it again.
       setAlways($, false)
-      stopKeepWarm($, 'turned off')
+      stopKeepWarm($, T().why.byHand)
     } else if (arg === 'always') {
       setAlways($, true)
       startKeepWarm($, ALWAYS_MS)
     } else if (arg === '' || span !== undefined) {
       startKeepWarm($, span ?? DEFAULT_MS)
     } else {
-      $.ui.toast(`/keepwarm takes a span (90m, 2h30m, 6h, up to 24h), always or off; not "${arg}".`, { timeoutMs: 8000 })
+      $.ui.toast(T().badSpan(arg), { timeoutMs: 8000 })
     }
     // Off the hook: run from ak-mods' button, this command is nested in ak-mods' own call, where a
     // publish would resolve without reaching ak-mods.
@@ -617,28 +621,28 @@ export const register: Register = on => {
       now = await $.clock.now()
       if (S.isKeepWarm) {
         setAlways($, false)
-        stopKeepWarm($, 'turned off')
+        stopKeepWarm($, T().why.byHand)
       } else startKeepWarm($, DEFAULT_MS)
       $.ui.invalidate('ui.render')
     }
     const status =
       state === 'kept' ? (
-        <Text color="suggestion">◆ kept warm</Text>
+        <Text color="suggestion">{`◆ ${T().keptWarm}`}</Text>
       ) : state === 'warm' ? (
-        <Text>{`● cache warm ${minutes(left)}`}</Text>
+        <Text>{T().ownWarm(minutes(left))}</Text>
       ) : state === 'cooling' ? (
-        <Text color="warning" bold>{`◐ cache cools in ${minutes(left)}`}</Text>
+        <Text color="warning" bold>{T().ownCools(minutes(left))}</Text>
       ) : (
-        <Text dimColor>{`○ cache cold ${minutes(-left)}`}</Text>
+        <Text dimColor>{T().ownCold(minutes(-left))}</Text>
       )
     const mine = (
       <Box flexDirection="row" columnGap={2}>
         <Box flexDirection="row">
           {status}
-          <Text dimColor>{` │ ctx ${tokens(S.ctx)} │ rewrite ≈ ${usd(rewriteCost(S.ctx, S.model, S.ttlMin))}`}</Text>
+          <Text dimColor>{` │ ctx ${tokens(S.ctx)} │ ${T().rewrite} ≈ ${usd(rewriteCost(S.ctx, S.model, S.ttlMin))}`}</Text>
         </Box>
         {state !== 'cold' && (
-          <Button key="keepwarm" label={S.isKeepWarm ? 'stop' : 'keep warm'} hotkey="1" plain onPress={press} />
+          <Button key="keepwarm" label={S.isKeepWarm ? T().stop : T().keep} hotkey="1" plain onPress={press} />
         )}
       </Box>
     )
@@ -655,7 +659,7 @@ export const register: Register = on => {
     const done = await next(e)
     const isOn = e.value[NAME] === true
     if (isSwitched && done.value?.isSet === true && isOn !== (e.previous?.[NAME] === true)) {
-      if (!isOn) stopKeepWarm($, 'the mod is off')
+      if (!isOn) stopKeepWarm($, T().why.modOff)
       forget()
       const change = ++switches
       if (isOn) {
