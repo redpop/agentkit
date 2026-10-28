@@ -23,7 +23,7 @@ const segment = async ($: EngineInterface): Promise<Segment> => {
     return undefined
   }
 
-  return now === undefined ? undefined : { text: now.text, tone: now.tone, priority: 4 }
+  return now === undefined ? undefined : { text: now.text, tone: now.tone, priority: 7 }
 }
 
 export const register: Register = on => {

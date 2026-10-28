@@ -156,7 +156,7 @@ test('publishes the figures after each main-loop turn, not after a subagent', OW
 
   set(figures(134400, 41.6))
   await turn($)
-  expect(segments(toasts).at(-1)).toEqual({ text: 'ctx 67% · 5h 42%', tone: 'ok', priority: 4 })
+  expect(segments(toasts).at(-1)).toEqual({ text: 'ctx 67% · 5h 42%', tone: 'ok', priority: 7 })
 
   set(figures(190000, 41.6))
   await turn($, 'agent-1')

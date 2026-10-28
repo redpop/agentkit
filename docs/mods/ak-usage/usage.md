@@ -24,8 +24,8 @@ prompt, once a response has reported figures:
 | `ctx 67%` | No rate limit was reported, as with an API key |
 
 The colour follows the fullest figure shown: green below 75 %, yellow from 75 %, red from 90 %. The
-segment has priority 4: when the band runs out of room, it is dropped after the session id (2) and
-before keep warm (6). It has no button.
+segment has priority 7: it comes first in the band, before keep warm (6) and the session id (2),
+and when the band runs out of room it is dropped last. It has no button.
 
 Without `ak-mods` (or when it refuses the mod, or a publish fails), the mod draws its own band
 instead, never both, with the same text and colour.
