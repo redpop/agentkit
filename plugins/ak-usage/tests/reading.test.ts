@@ -22,6 +22,11 @@ test('the context alone where no rate limit is reported', () => {
       { text: '▬▬▬', tone: 'ok' },
       { text: '▬▬', tone: 'dim' },
     ],
+    rich: [
+      { text: 'ctx 67%', tone: 'ok', ring: 67 },
+      { text: ' 67%', tone: 'ok' },
+      { text: ' ctx', tone: 'dim' },
+    ],
     detail: 'ctx 67%',
     tone: 'ok',
   })
@@ -116,4 +121,16 @@ test('a window at 90 % or more is an alert, keyed by its kind and reset', () => 
     { key: `five_hour@${five.resetsAt}`, text: '5-hour limit at 92 %, resets 11:10pm' },
   ])
   expect(alerts([{ kind: 'seven_day', percentUsed: 90 }], NOW)).toEqual([{ key: 'seven_day@', text: '7-day limit at 90 %' }])
+})
+
+test('where the band draws pictures, each figure is a ring with its percentage and label, a short window with its reset', () => {
+  const now = reading(windows(resets('five_hour', 81, at(28, 23, 10))), NOW)
+  expect(now?.rich).toEqual([
+    { text: '5h 81%', tone: 'warn', ring: 81 },
+    { text: ' 81%', tone: 'warn' },
+    { text: ' 5h', tone: 'dim' },
+    { text: '  resets 11:10pm', tone: 'dim' },
+  ])
+  const two = reading({ ...usage(134400, { five_hour: 7 }) }, NOW)
+  expect(two?.rich.map(part => part.text).join('')).toBe('ctx 67% 67% ctx   5h 7% 7% 5h')
 })

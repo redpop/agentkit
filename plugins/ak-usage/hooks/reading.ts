@@ -20,9 +20,9 @@ const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
 type Tone = 'ok' | 'warn' | 'alert'
 
-type Part = { text: string; tone: Tone | 'dim' }
+type Part = { text: string; tone: Tone | 'dim'; ring?: number }
 
-export type Reading = { text: string; parts: Part[]; detail: string; tone: Tone }
+export type Reading = { text: string; parts: Part[]; rich: Part[]; detail: string; tone: Tone }
 
 // A window at 90 % or more: `key` names it until it resets, `text` is the toast.
 export type Alert = { key: string; text: string }
@@ -98,7 +98,8 @@ const figuresOf = (usage: SessionUsage, now: number): Figure[] => {
  * the reset draw dim, its filled cells and percentage in its own figure's tone; the segment's tone
  * follows the fullest figure. A window whose reset has passed is left out until the next response
  * reports it again. The detail holds every percentage and reset: `ctx 67% · 5h 42% (resets 11:10pm)`.
- * Undefined while there is nothing to show.
+ * Where the band draws pictures, the rich runs show each figure as a ring with its percentage and
+ * label. Undefined while there is nothing to show.
  */
 export const reading = (usage: SessionUsage, now: number): Reading | undefined => {
   const figures = figuresOf(usage, now)
@@ -118,9 +119,20 @@ export const reading = (usage: SessionUsage, now: number): Reading | undefined =
     })
     .filter(part => part.text !== '')
 
+  // Where the band draws pictures, each figure is a ring with its percentage and label beside it:
+  // `◔ 42% 5h`. Rings and percentages in the figure's tone, labels and resets dim.
+  const rich = figures.flatMap(({ label, percent, resetsAt }, at): Part[] => [
+    ...(at > 0 ? [{ text: '   ', tone: 'dim' as const }] : []),
+    { text: `${label} ${percent}%`, tone: toneOf(percent), ring: percent },
+    { text: ` ${percent}%`, tone: toneOf(percent) },
+    { text: ` ${label}`, tone: 'dim' },
+    ...(percent >= WARN && resetsAt !== undefined ? [{ text: `  ${reset(resetsAt)}`, tone: 'dim' as const }] : []),
+  ])
+
   return {
     text: parts.map(part => part.text).join(''),
     parts,
+    rich,
     detail: figures
       .map(({ label, percent, resetsAt }) => `${label} ${percent}%${resetsAt === undefined ? '' : ` (${reset(resetsAt)})`}`)
       .join(' · '),
