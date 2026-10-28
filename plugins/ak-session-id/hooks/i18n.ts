@@ -62,6 +62,9 @@ const EN = {
   command: "Copy this session's id, or /session-id engine for the engine's",
   usage: 'Usage: /session-id [engine]',
   copy: 'copy',
+  copiedShort: 'copied',
+  desktopId: 'Desktop id',
+  engineId: 'Engine id',
   copied: (id: string) => `Copied session id ${id}`,
   notCopied: (id: string, reason: string) => `Session id ${id} (not copied: ${reason})`,
 }
@@ -77,6 +80,9 @@ const DE: typeof EN = {
   command: 'Die ID dieser Session kopieren, oder /session-id engine für die der Engine',
   usage: 'Aufruf: /session-id [engine]',
   copy: 'kopieren',
+  copiedShort: 'kopiert',
+  desktopId: 'Desktop-ID',
+  engineId: 'Engine-ID',
   copied: (id: string) => `Session-ID ${id} kopiert`,
   notCopied: (id: string, reason: string) => `Session-ID ${id} (nicht kopiert: ${reason})`,
 }

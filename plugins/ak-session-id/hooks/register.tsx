@@ -8,6 +8,11 @@ import { languageFor, learnLanguage, texts } from './i18n'
 const NAME = 'ak-session-id'
 // How much of the id the band shows: enough to tell sessions apart at a glance.
 const TAIL = 6
+// How long the segment says the id was copied.
+const COPIED_MS = 2000
+
+// Until when the segment says the id was copied: a check mark in place of the id.
+let copiedUntil = 0
 
 type Segment = Parameters<EngineInterface['mods']['segment']>[0]
 
@@ -28,18 +33,49 @@ const copy = async ($: EngineInterface, isEngine: boolean, surface?: RenderSurfa
   const id = await pick($, isEngine)
   const copied = await $.ui.copy(surface === undefined ? { text: id } : { text: id, surface })
   const t = texts(await languageFor($))
+  if (copied.isCopied) copiedUntil = (await $.clock.now()) + COPIED_MS
 
   return copied.isCopied ? t.copied(id) : t.notCopied(id, copied.reason)
 }
 
 // The id as the shared band shows it, with the button that copies it. Low priority: when the band
-// runs out of room, this segment goes first.
-const segment = async ($: EngineInterface): Promise<Segment> => ({
-  text: tail(await pick($, false)),
-  tone: 'dim',
-  priority: 2,
-  button: { label: texts(await languageFor($)).copy, hotkey: 'c', command: 'session-id' },
-})
+// runs out of room, this segment goes first. On the desktop app an id icon stands for the word,
+// and the card holds both ids whole. For a moment after a copy, a check mark says it landed.
+const segment = async ($: EngineInterface): Promise<Segment> => {
+  const t = texts(await languageFor($))
+  const shown = await pick($, false)
+  const host = await $.env.get('CLAUDE_CODE_HOST_SESSION_ID')
+  const engine = await $.session.id()
+  const card = [
+    ...(host !== undefined && host !== '' ? [{ label: t.desktopId, value: host }] : []),
+    { label: t.engineId, value: engine },
+  ]
+  const button = { label: t.copy, hotkey: 'c', command: 'session-id' }
+  if ((await $.clock.now()) < copiedUntil) {
+    return {
+      text: `✓ ${t.copiedShort}`,
+      rich: [
+        { text: t.copiedShort, icon: 'check' },
+        { text: ` ${t.copiedShort}` },
+      ],
+      card,
+      priority: 2,
+      button,
+    }
+  }
+
+  return {
+    text: tail(shown),
+    rich: [
+      { text: 'id', icon: 'id' },
+      { text: ` …${shown.slice(-TAIL)}` },
+    ],
+    card,
+    tone: 'dim',
+    priority: 2,
+    button,
+  }
+}
 
 export const register: Register = on => {
   // Whether ak-mods switches this mod: false once its declare was refused or
@@ -112,6 +148,14 @@ export const register: Register = on => {
     if (arg !== '' && arg !== 'engine') return { text: texts(await languageFor($)).usage }
     const text = await copy($, arg === 'engine')
     $.ui.toast(text)
+    // Off the hook, as the band's button runs this inside ak-mods' own call: the check mark now,
+    // the id again once it has been read.
+    const republish = () =>
+      publish(() => $.mods.isOn({ name: NAME }), async () => $.mods.segment(await segment($)))
+        .then(() => $.ui.invalidate('ui.render'))
+        .catch(() => {})
+    $.clock.after(0, republish)
+    $.clock.after(COPIED_MS + 50, republish)
 
     return { text }
   })

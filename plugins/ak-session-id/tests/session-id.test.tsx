@@ -190,7 +190,35 @@ test('publishes the end of the desktop id with the copy button', OWNED, async ($
   const { toasts } = engine(on)
   await start($)
 
-  expect(segments(toasts).at(-1)).toEqual({ text: `id …${HOST.slice(-6)}`, tone: 'dim', priority: 2, button: COPY })
+  expect(segments(toasts).at(-1)).toEqual({
+    text: `id …${HOST.slice(-6)}`,
+    rich: [{ text: 'id', icon: 'id' }, { text: ` …${HOST.slice(-6)}` }],
+    card: [
+      { label: 'Desktop id', value: HOST },
+      { label: 'Engine id', value: ENGINE },
+    ],
+    tone: 'dim',
+    priority: 2,
+    button: COPY,
+  })
+})
+
+test('a copy shows a check mark for two seconds, then the id again', OWNED, async ($, on) => {
+  const { clock, toasts } = engine(on)
+  await start($)
+
+  await sessionId($)
+  await clock.advance(10)
+  expect(segments(toasts).at(-1)).toMatchObject({ text: '✓ copied', rich: [{ text: 'copied', icon: 'check' }, { text: ' copied' }] })
+  await clock.advance(2100)
+  expect(segments(toasts).at(-1)?.text).toBe(`id …${HOST.slice(-6)}`)
+})
+
+test('outside the desktop app the card holds the engine id alone', OWNED, async ($, on) => {
+  const { toasts } = engine(on, { host: null })
+  await start($)
+
+  expect(segments(toasts).at(-1)?.card).toEqual([{ label: 'Engine id', value: ENGINE }])
 })
 
 test('draws no band of its own while ak-mods owns the drawing', OWNED, async ($, on) => {
@@ -244,6 +272,9 @@ test('/session-id turns the mod on when it is off', OWNED, async ($, on) => {
   await sessionId($)
   await clock.settle()
   expect(copied).toEqual([{ text: HOST }])
+  // Switched on and published: the check mark first, the id once it has been read.
+  expect(segments(toasts).at(-1)?.text).toBe('✓ copied')
+  await clock.advance(2100)
   expect(segments(toasts).at(-1)?.text).toBe(`id …${HOST.slice(-6)}`)
 })
 
