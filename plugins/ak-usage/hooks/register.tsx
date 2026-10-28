@@ -112,11 +112,19 @@ export const register: Register = on => {
     if (now === undefined) return below
 
     const { Box, Text } = $.ui.resolve(e)
-    // As in the shared band: colour only from 75 %, the text colour below.
-    const color = now.tone === 'alert' ? 'error' : now.tone === 'warn' ? 'warning' : undefined
+    // As in the shared band: each part in its own tone, colour only from 75 %, the text colour below.
+    // The bars need the parts: their filled and empty cells differ in tone alone.
+    const toneProps = (tone: string | undefined) =>
+      tone === 'alert' ? { color: 'error' } : tone === 'warn' ? { color: 'warning' } : tone === 'dim' ? { dimColor: true } : {}
     const mine = (
       <Box flexDirection="row">
-        <Text color={color}>{now.text}</Text>
+        <Text>
+          {(now.parts ?? [now]).map((part, at) => (
+            <Text key={`part-${at}`} {...toneProps(part.tone)}>
+              {part.text}
+            </Text>
+          ))}
+        </Text>
       </Box>
     )
 

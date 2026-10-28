@@ -5,12 +5,16 @@ import type { SessionUsage } from 'claude-code'
 export const WARN = 75
 export const ALERT = 90
 
-// The cells of a figure's bar: each one a fifth of the window.
+// The cells of a figure's bar: each one a fifth of the window. Filled and empty cells are the same
+// glyph, the empty ones dim, so the bar reads as one line in any font. One cell wide.
 const CELLS = 5
+const CELL = '▬'
 
 type Tone = 'ok' | 'warn' | 'alert'
 
-export type Reading = { text: string; parts: { text: string; tone: Tone | 'dim' }[]; detail: string; tone: Tone }
+type Part = { text: string; tone: Tone | 'dim' }
+
+export type Reading = { text: string; parts: Part[]; detail: string; tone: Tone }
 
 // The context's fill, a whole percentage; undefined before the first response has reported one.
 const contextPercent = ({ context }: SessionUsage): number | undefined => {
@@ -28,18 +32,22 @@ const windowPercent = ({ rateLimits }: SessionUsage, kind: string): number | und
 
 const toneOf = (percent: number): Tone => (percent >= ALERT ? 'alert' : percent >= WARN ? 'warn' : 'ok')
 
-// A figure's fill in five cells, to the nearest fifth.
-const bar = (percent: number): string => {
+// A figure's fill in five cells, to the nearest fifth: the filled run in its tone, the rest dim.
+const bar = (percent: number): Part[] => {
   const filled = Math.min(CELLS, Math.max(0, Math.round(percent / (100 / CELLS))))
 
-  return '▰'.repeat(filled) + '▱'.repeat(CELLS - filled)
+  return [
+    { text: CELL.repeat(filled), tone: toneOf(percent) },
+    { text: CELL.repeat(CELLS - filled), tone: 'dim' },
+  ]
 }
 
 /**
- * The compact line the band shows: a bar a figure, `ctx ▰▰▰▱▱  5h ▰▰▱▱▱`, the week joining once it
- * runs short. A figure from 75 % adds its percentage, as it needs attention. The labels draw dim,
- * each bar and percentage in its own figure's tone; the segment's tone follows the fullest figure.
- * The detail holds every percentage: `ctx 67% · 5h 42%`. Undefined while there is nothing to show.
+ * The compact line the band shows: a bar a figure, `ctx ▬▬▬▬▬  5h ▬▬▬▬▬`, the week joining once it
+ * runs short. A figure from 75 % adds its percentage, as it needs attention. Only the parts tell the
+ * fill: the labels and a bar's empty cells draw dim, its filled cells and percentage in its own
+ * figure's tone; the segment's tone follows the fullest figure. The detail holds every percentage:
+ * `ctx 67% · 5h 42%`. Undefined while there is nothing to show.
  */
 export const reading = (usage: SessionUsage): Reading | undefined => {
   const week = windowPercent(usage, 'seven_day')
@@ -50,10 +58,13 @@ export const reading = (usage: SessionUsage): Reading | undefined => {
   ].filter((one): one is { label: string; percent: number } => one.percent !== undefined)
   if (figures.length === 0) return undefined
 
-  const parts = figures.flatMap(({ label, percent }, at) => [
-    { text: `${at > 0 ? '  ' : ''}${label} `, tone: 'dim' as const },
-    { text: percent >= WARN ? `${bar(percent)} ${percent}%` : bar(percent), tone: toneOf(percent) },
-  ])
+  const parts = figures
+    .flatMap(({ label, percent }, at): Part[] => [
+      { text: `${at > 0 ? '  ' : ''}${label} `, tone: 'dim' },
+      ...bar(percent),
+      { text: percent >= WARN ? ` ${percent}%` : '', tone: toneOf(percent) },
+    ])
+    .filter(part => part.text !== '')
 
   return {
     text: parts.map(part => part.text).join(''),

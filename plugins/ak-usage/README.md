@@ -1,8 +1,9 @@
 # ak-usage
 
 Shows how full this session's context is and how much of the account's 5-hour limit is used. A mod:
-one compact segment in the shared band above the prompt, `ctx ▰▰▰▱▱  5h ▰▰▱▱▱`. Needs `ak-mods`, which
-installs with it, switches the mod on or off per chat and draws the band.
+one compact segment in the shared band above the prompt, `ctx ▬▬▬▬▬  5h ▬▬▬▬▬`, each bar's empty
+cells dim. Needs `ak-mods`, which installs with it, switches the mod on or off per chat and draws
+the band.
 
 Requires Claude Code 2.1.309 or later (hooks-module support).
 
