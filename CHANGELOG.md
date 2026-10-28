@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.47.0] - 2026-10-28
+
+### ✨ Added
+
+- `ak-mods` — **a segment may carry `parts`**: its text cut into runs, each in its own tone, so a
+  label can sit dim beside its value. Joined they must read as the text; otherwise the text draws in
+  one run. The Mods pane draws them the same way.
+
+### 🔄 Changed
+
+- `ak-mods` — **the band drops its `│` rule**: space alone parts the segments. Tones draw in theme
+  colours (`warning`, `error`, `suggestion`) that follow a light or a dark theme, and digits keep
+  one width, so a countdown does not shift on the desktop app.
+- `ak-usage` — each figure is a five-cell bar, `ctx ▰▰▰▱▱  5h ▰▰▱▱▱`, its label dim. A figure from
+  75 % adds its percentage, and only that figure is coloured. The Mods pane keeps every percentage.
+- `ak-keepwarm` — the time left reads `◕ 42m`: the circle empties as the cache runs down, the colour
+  says how urgent it is. Cooling reads `◔ 4m  rewrite ≈ $0.42`, the label dim; cold keeps its word.
+- `ak-session-id` — the band label reads `id …4e5f6a` instead of `session …4e5f6a`.
+
 ## [1.46.1] - 2026-10-28
 
 ### 🐛 Fixed
