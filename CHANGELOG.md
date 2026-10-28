@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.47.1] - 2026-10-28
+
+### 🐛 Fixed
+
+- `ak-usage` — the bars read as a line on the desktop app too: every cell is `▬`, the empty ones
+  dim, in place of `▰▱`, which drew slanted and thin there. The mod's own band, without `ak-mods`,
+  dims the empty cells as well.
+
 ## [1.47.0] - 2026-10-28
 
 ### ✨ Added
