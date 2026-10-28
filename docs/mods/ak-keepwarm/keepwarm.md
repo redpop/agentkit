@@ -28,9 +28,9 @@ above the prompt, once the chat has made a request:
 | Segment | Meaning |
 |---------|---------|
 | `◆ kept warm` | Keep warm is on. The Mods pane adds the pings so far and their cost, `· 3 pings $0.02`; when it ends, the start toast says |
-| `● cache warm 42m` | Time left before the cache expires |
-| `◐ cools in 4m · rewrite ≈ $0.42` | Under 5 minutes left, and what a rewrite of the context would cost |
-| `○ cold 12m · rewrite ≈ $0.42` | The cache expired that long ago; a ping cannot help, and the button is hidden |
+| `◕ 42m` | Time left before the cache expires; the circle empties with it (`●` `◕` `◑` `◔`) |
+| `◔ 4m  rewrite ≈ $0.42` | Under 5 minutes left, in the warning colour, and what a rewrite of the context would cost |
+| `○ cold 12m  rewrite ≈ $0.42` | The cache expired that long ago; a ping cannot help, and the button is hidden |
 
 The **keep warm** / **stop** button toggles the loop (key `1`); it runs `/keepwarm`. The band
 draws on the terminal and the desktop app; the Mods pane shows the segment and its button in the

@@ -113,25 +113,45 @@ const tick = async ($: EngineInterface, isOff: boolean) => {
 const pinged = (): string | undefined =>
   S.pings === 0 ? undefined : `${S.pings} ping${S.pings === 1 ? '' : 's'} ${usd(S.pingUsd)}`
 
-// The cache state as the shared band shows it: no segment before the first request. The rewrite
-// estimate rides along only while it matters, as the cache cools or is cold.
+// How much of the cache's time is left, as a circle that empties: full, three quarters, half, a
+// quarter. The colour says how urgent it is, the circle how far it has run down.
+const drain = (left: number): string => {
+  const share = left / (S.ttlMin * MIN)
+
+  return share > 0.75 ? '●' : share > 0.5 ? '◕' : share > 0.25 ? '◑' : '◔'
+}
+
+// The cache state as the shared band shows it: no segment before the first request. The circle
+// and the time left say it is warm; only cold says so in a word. The rewrite estimate rides along
+// only while it matters, as the cache cools or is cold, its label dim.
 const segment = (): Segment => {
   const state = S.isKeepWarm ? 'kept' : cacheState()
   if (state === 'unknown') return undefined
   const left = msLeft() ?? 0
-  const rewrite = ` · rewrite ≈ ${usd(rewriteCost(S.ctx, S.model, S.ttlMin))}`
+  const cost = `≈ ${usd(rewriteCost(S.ctx, S.model, S.ttlMin))}`
   const button = (label: string) => ({ label, hotkey: '1', command: 'keepwarm' })
   if (state === 'kept') {
     const detail = pinged()
 
     return { text: '◆ kept warm', ...(detail ? { detail } : {}), tone: 'info', priority: 6, button: button('stop') }
   }
-  if (state === 'warm') return { text: `● cache warm ${minutes(left)}`, tone: 'ok', priority: 6, button: button('keep warm') }
+  const time = `${drain(left)} ${minutes(left)}`
+  if (state === 'warm') return { text: time, tone: 'ok', priority: 6, button: button('keep warm') }
   if (state === 'cooling') {
-    return { text: `◐ cools in ${minutes(left)}${rewrite}`, tone: 'warn', priority: 6, button: button('keep warm') }
+    return {
+      text: `${time}  rewrite ${cost}`,
+      parts: [
+        { text: time, tone: 'warn' },
+        { text: '  rewrite ', tone: 'dim' },
+        { text: cost, tone: 'warn' },
+      ],
+      tone: 'warn',
+      priority: 6,
+      button: button('keep warm'),
+    }
   }
 
-  return { text: `○ cold ${minutes(-left)}${rewrite}`, tone: 'dim', priority: 6 }
+  return { text: `○ cold ${minutes(-left)}  rewrite ${cost}`, tone: 'dim', priority: 6 }
 }
 
 // Hands the segment to ak-mods when it changed. A failed send clears the last one, so a stale
@@ -335,11 +355,11 @@ export const register: Register = on => {
     }
     const status =
       state === 'kept' ? (
-        <Text color="cyan">◆ kept warm</Text>
+        <Text color="suggestion">◆ kept warm</Text>
       ) : state === 'warm' ? (
         <Text>{`● cache warm ${minutes(left)}`}</Text>
       ) : state === 'cooling' ? (
-        <Text color="yellow" bold>{`◐ cache cools in ${minutes(left)}`}</Text>
+        <Text color="warning" bold>{`◐ cache cools in ${minutes(left)}`}</Text>
       ) : (
         <Text dimColor>{`○ cache cold ${minutes(-left)}`}</Text>
       )
