@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.52.0] - 2026-10-28
+
+### ✨ Added
+
+- `ak-mods` — **line icons**: a rich run may carry `icon` (`id`, `copy`, `check`), drawn on the
+  desktop app from a small set of ak-mods' own in one stroke, following light or dark.
+- `ak-session-id` — on the desktop app the id carries an icon, `# …f0f70f`; its card holds the
+  desktop id and the engine id whole; a copy shows `✓ copied` for two seconds.
+
+### 🔄 Changed
+
+- `ak-mods` — the Mods pane on the desktop app no longer repeats each value: a segment with card
+  rows lists them under it in place of its detail, folded under **More** with the mod's details.
+
 ## [1.51.0] - 2026-10-28
 
 ### ✨ Added
