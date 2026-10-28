@@ -203,7 +203,10 @@ export const register: Register = on => {
   draw a band beside it: it publishes one segment with `$.mods.segment(...)`, and `ak-mods` draws
   the segments of the switched-on mods. A segment is plain data: `text`, optional `parts` (the
   text cut into runs `{ text, tone? }`, so a label draws dim beside its value; joined they must
-  read as `text`, else `text` draws in one run), an optional `detail` (more
+  read as `text`, else `text` draws in one run), optional `rich` (the segment as the desktop app
+  draws it, in place of `text` and `parts`: runs as in `parts`, and a run with a `ring` from 0 to
+  100 draws as a ring filled that far, its `text` what a reader that cannot see the ring gets;
+  the terminal draws `text`, and the band counts its room by `text`), an optional `detail` (more
   of the same state, shown dim after the text in the Mods pane only, never in the band), an
   optional `tone` (`ok`, `warn`, `alert`, `info` or `dim`; `ak-mods` picks the colour, and `ok`
   stays the text colour; a part without a tone takes the segment's), an optional `priority`

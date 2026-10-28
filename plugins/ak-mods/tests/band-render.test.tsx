@@ -500,6 +500,28 @@ test('a segment draws its parts, each in its tone or else the segment\'s, in dig
   }
 })
 
+test('on the desktop app a segment draws its rich runs, a ring as a picture; the terminal draws its text', { plugins: [consumer('ak-a')] }, async ($, on) => {
+  engine(on)
+  await publish($, 'ak-a', 'A', {
+    text: 'ctx ▬▬▬',
+    rich: [{ text: 'ctx 42%', tone: 'warn', ring: 142 }, { text: ' 42%' }, { text: ' ctx', tone: 'dim' }],
+  })
+
+  const desk = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  const ring = await desk.find({ type: 'Svg' })
+  expect(ring?.props.alt).toBe('ctx 42%')
+  // A ring past 100 is held to a full one.
+  expect(String(ring?.props.source)).toContain(`stroke-dasharray="${(2 * Math.PI * 6).toFixed(2)} `)
+  expect(await exactly(desk, ' ctx')).toMatchObject({ props: { dimColor: true } })
+  expect(await desk.find({ type: 'Text', text: 'ctx ▬▬▬' })).toBeUndefined()
+  await desk.unmount()
+
+  const term = await $.ui.mount({ ...BAND, surface: 'terminal' })
+  expect(await term.find({ type: 'Svg' })).toBeUndefined()
+  expect(await term.find({ type: 'Text', text: 'ctx ▬▬▬' })).toBeDefined()
+  await term.unmount()
+})
+
 test(
   'parts that do not join to the text, or are no list of texts, leave the text in one run',
   { plugins: [consumer('ak-a'), consumer('ak-b'), consumer('ak-c')] },

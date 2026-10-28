@@ -2,7 +2,7 @@ import { atom, update } from 'claude-code'
 import type { EngineInterface, RenderInput } from 'claude-code'
 
 import { layout } from './band'
-import { drawable, segmentText } from './band-render'
+import { drawable, segmentView } from './band-render'
 
 const EXPANDED = atom({ plugin: 'ak-mods', key: 'expanded' } as const, {})
 
@@ -18,7 +18,8 @@ const warning = (hidden: readonly string[], titles: ReadonlyMap<string, string>)
 
 /** Draws the Mods pane: one row per declared mod, with its three buttons. Texts wrap. */
 export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
-  const { Box, Button, Text } = $.ui.resolve(e)
+  const draws = $.ui.resolve(e)
+  const { Box, Button, Text } = draws
   // The reads subscribe the pane: a switch, a declare or a publish redraws it
   // (the list reads the switches and the declared mods).
   const [list, { value: expanded = {} }, { value: stored = {} }, { value: width = e.props.bodyColumns }] =
@@ -54,7 +55,7 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
             <Text dimColor>{row.summary}</Text>
             {one !== undefined && (
               <Box>
-                {segmentText(Text, one, `text-${row.name}`)}
+                {segmentView(draws, e.surface, one, `text-${row.name}`)}
                 {one.detail !== undefined && (
                   <Text key={`detail-${row.name}`} dimColor>{` · ${one.detail}`}</Text>
                 )}

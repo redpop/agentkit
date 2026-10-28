@@ -80,12 +80,12 @@ export const layout = (segments: readonly Segment[], columns: number): Layout =>
   }
 
   // Not even the first fits beside the button: keep it alone, cut to the room left. Its parts no
-  // longer join to a cut text, so it draws in one run.
+  // longer join to a cut text, so it draws in one run, its rich runs left out with them.
   const [first, ...rest] = sorted
   const text = first === undefined ? '' : cut(first.text, Math.max(1, columns - toggleWidth(rest.length)))
 
   return {
-    rows: first === undefined ? [] : [[text === first.text ? first : { ...first, text, parts: undefined }]],
+    rows: first === undefined ? [] : [[text === first.text ? first : { ...first, text, parts: undefined, rich: undefined }]],
     hidden: rest.map(one => one.name),
   }
 }

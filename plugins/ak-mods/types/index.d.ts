@@ -7,8 +7,12 @@ export type ModsRow = ModsInfo & { isOn: boolean; isStandard: boolean }
 /** A segment's colour: its state, not its mod. `ok` draws in the text colour; only the others colour it. */
 export type ModsTone = 'ok' | 'warn' | 'alert' | 'info' | 'dim'
 
-/** A run of a segment's text in its own tone; without one, in the segment's. */
-export type ModsPart = { text: string; tone?: ModsTone }
+/**
+ * A run of a segment's text in its own tone; without one, in the segment's. In `rich`, a run with a
+ * `ring` (0 to 100) draws as a ring filled that far instead of its text, which a reader that cannot
+ * see the ring gets in its place.
+ */
+export type ModsPart = { text: string; tone?: ModsTone; ring?: number }
 
 /** What a mod shows in the shared band; ak-mods adds its name and title. */
 export type ModsSegment = {
@@ -19,6 +23,12 @@ export type ModsSegment = {
    * Joined they must read as `text`; else `text` draws in one run.
    */
   parts?: ModsPart[]
+  /**
+   * The segment as a surface that draws pictures shows it (the desktop app), in place of `text` and
+   * `parts`: runs as in `parts`, any with a `ring`. The terminal draws `text`. Joined, the runs'
+   * texts are what the segment says there; the band still counts its room by `text`.
+   */
+  rich?: ModsPart[]
   /** More of the same state, shown dim after the text in the Mods pane only, never in the band. One line, as `text`. */
   detail?: string
   tone?: ModsTone

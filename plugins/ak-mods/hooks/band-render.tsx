@@ -1,4 +1,4 @@
-import type { ElementConstructor, EngineInterface, Next, RenderInput, TextProps } from 'claude-code'
+import type { BoxProps, ElementConstructor, EngineInterface, Next, RenderInput, SvgProps, TextProps } from 'claude-code'
 
 import type { ModsInfo, ModsPart, ModsRow, ModsSegment, ModsTone } from '../types'
 import { bandWidth, layout, TOGGLE_HOTKEY, toggleLabel } from './band'
@@ -38,6 +38,21 @@ const partsOf = (parts: unknown, text: string): ModsPart[] | undefined => {
   return joined.map(run => run.text).join('') === text ? joined.filter(run => run.text !== '') : undefined
 }
 
+const ringOf = (ring: unknown): number | undefined =>
+  typeof ring === 'number' && Number.isFinite(ring) ? Math.min(100, Math.max(0, ring)) : undefined
+
+/** The rich runs of a segment, or undefined when they are no list of texts or say nothing. */
+const richOf = (rich: unknown): ModsPart[] | undefined => {
+  if (!Array.isArray(rich)) return undefined
+  const runs = (rich as Partial<Record<keyof ModsPart, unknown>>[]).map(part =>
+    typeof part?.text === 'string' ? { text: spaced(part.text), tone: toneOf(part.tone), ring: ringOf(part.ring) } : undefined,
+  )
+  if (runs.some(run => run === undefined)) return undefined
+  const kept = (runs as ModsPart[]).filter(run => run.text !== '' || run.ring !== undefined)
+
+  return kept.length > 0 ? kept : undefined
+}
+
 /**
  * A stored segment as the band can draw it, or undefined. Segments are stored
  * unchecked: an unknown tone draws uncoloured, a priority that is no number
@@ -45,7 +60,8 @@ const partsOf = (parts: unknown, text: string): ModsPart[] | undefined => {
  * command draws as a space, a hotkey that is not one printable character is
  * left out, a button without a label or command is left out, a detail that
  * is no text is left out, parts that do not join to the text are left out,
- * and a segment without text is not drawn.
+ * rich runs that are no list of texts are left out, a ring is held to 0 to
+ * 100, and a segment without text is not drawn.
  */
 const checked = (info: ModsInfo, stored: unknown): Segment | undefined => {
   const one = (stored ?? {}) as Partial<Record<keyof ModsSegment, unknown>>
@@ -59,6 +75,7 @@ const checked = (info: ModsInfo, stored: unknown): Segment | undefined => {
     title: info.title,
     text,
     parts: partsOf(one.parts, text),
+    rich: richOf(one.rich),
     detail: typeof one.detail === 'string' && one.detail !== '' ? spaced(one.detail) : undefined,
     tone: toneOf(one.tone),
     priority: typeof one.priority === 'number' && Number.isFinite(one.priority) ? one.priority : undefined,
@@ -92,6 +109,66 @@ export const toneProps = (
         : tone === 'dim'
           ? { dimColor: true }
           : {}
+
+// A ring's colours: the light theme's in the markup, the dark theme's through the colour-scheme
+// query of the picture itself, as the desktop gives the band no light or dark signal. A ring at
+// rest draws in the text colour, as a tone does.
+const INK = { light: '#2b2a27', dark: '#ecebe6' }
+const TRACK = { light: '#d9d6cf', dark: '#4a4945' }
+const RING_TONES: Record<ModsTone, { light: string; dark: string }> = {
+  ok: INK,
+  warn: { light: '#b7791f', dark: '#e3a53b' },
+  alert: { light: '#c53030', dark: '#f0675c' },
+  info: { light: '#2b6cb0', dark: '#64a7ea' },
+  dim: { light: '#9a968d', dark: '#8a877f' },
+}
+
+/** A ring filled `percent` of the way round from the top, clockwise, in a tone's colour. */
+export const ringSvg = (percent: number, tone: ModsTone | undefined): string => {
+  const { light, dark } = RING_TONES[tone ?? 'ok']
+  const round = 2 * Math.PI * 6
+  const arc = (round * percent) / 100
+
+  return (
+    '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">' +
+    `<style>.t{stroke:${TRACK.light}}.f{stroke:${light}}` +
+    `@media (prefers-color-scheme: dark){.t{stroke:${TRACK.dark}}.f{stroke:${dark}}}</style>` +
+    '<circle class="t" cx="8" cy="8" r="6" fill="none" stroke-width="2.6"/>' +
+    (arc > 0
+      ? `<circle class="f" cx="8" cy="8" r="6" fill="none" stroke-width="2.6" stroke-linecap="round" ` +
+        `stroke-dasharray="${arc.toFixed(2)} ${round.toFixed(2)}" transform="rotate(-90 8 8)"/>`
+      : '') +
+    '</svg>'
+  )
+}
+
+type Draws = {
+  Box: ElementConstructor<BoxProps>
+  Text: ElementConstructor<TextProps>
+  Svg?: ElementConstructor<SvgProps>
+}
+
+/**
+ * A segment as a surface that draws pictures shows it: its rich runs, a ring
+ * as a picture in the line, the rest as text in its tone. The terminal draws
+ * no pictures; there, and for a segment without rich runs, its text.
+ */
+export const segmentView = ({ Box, Text, Svg }: Draws, surface: string, one: Segment, key: string) =>
+  surface === 'terminal' || Svg === undefined || one.rich === undefined ? (
+    segmentText(Text, one, key)
+  ) : (
+    <Box key={key} flexDirection="row" alignItems="center">
+      {one.rich.map((part, at) =>
+        part.ring === undefined ? (
+          <Text key={`${key}-${at}`} tabular {...toneProps(part.tone ?? one.tone)}>
+            {part.text}
+          </Text>
+        ) : (
+          <Svg key={`${key}-${at}`} source={ringSvg(part.ring, part.tone ?? one.tone)} alt={part.text} width={16} height={16} />
+        ),
+      )}
+    </Box>
+  )
 
 /**
  * A segment's text as the band and the Mods pane draw it: in one run in its
@@ -159,7 +236,8 @@ export async function renderBand(
   }
 
   const below = await next(e)
-  const { Box, Button, Text } = $.ui.resolve(e)
+  const draws = $.ui.resolve(e)
+  const { Box, Button, Text } = draws
   // A cell of space between two segments, three with its two gaps: no rule
   // draws there, the space alone parts them.
   const separator = (key: string) => <Box key={key} minWidth={1} />
@@ -177,7 +255,7 @@ export async function renderBand(
           {row.flatMap((one, at) => [
             ...(at > 0 ? [separator(`sep-${one.name}`)] : []),
             <Box key={`segment-${one.name}`} flexDirection="row" columnGap={1}>
-              {segmentText(Text, one, `text-${one.name}`)}
+              {segmentView(draws, e.surface, one, `text-${one.name}`)}
               {one.button !== undefined && (
                 <Button
                   key={`seg-${one.name}`}
