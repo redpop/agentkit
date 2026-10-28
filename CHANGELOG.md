@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.45.0] - 2026-10-28
+
+### ✨ Added
+
+- `ak-mods` — **the band ends with a `mods` button that opens and closes the Mods pane.** Hotkey
+  `m`; it closes the pane while it is the one shown, and opens it otherwise, bringing a pane behind
+  another tab forward. `/ak-mods` toggles the same way. With no segment there is no band, and
+  `/ak-mods` stays the way in.
+
+### 🔄 Changed
+
+- `ak-mods` — the `+N` chip is gone: the `mods` button counts the dropped segments instead
+  (`mods +2`). The last row always keeps room for the button, and a mod's button no longer gets the
+  hotkey `m`. Two rows are now split so the second keeps that room, rather than filling the first.
+
 ## [1.44.1] - 2026-10-28
 
 ### 🐛 Fixed
