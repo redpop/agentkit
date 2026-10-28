@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.48.0] - 2026-10-28
+
+### ✨ Added
+
+- `ak-usage` — **a window shows when it resets**: from 75 % in the band, `5h ▬▬▬▬▬ 81%  resets
+  11:10pm`, and always in the Mods pane. A window past 90 % gets one toast until it resets.
+
+### 🔄 Changed
+
+- `ak-usage` — a window whose reset has passed leaves the band until the next response, instead of
+  showing the figure of a window that is over. A bar lights one cell once anything is used, so 7 %
+  no longer reads as an empty bar.
+
 ## [1.47.1] - 2026-10-28
 
 ### 🐛 Fixed
