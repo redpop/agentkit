@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.50.0] - 2026-10-28
+
+### ✨ Added
+
+- `ak-mods` — **rings on the desktop app**: a segment may carry `rich` runs for surfaces that draw
+  pictures, any run a ring filled to a share. The band and the Mods pane draw them on the desktop
+  app; the terminal draws the text. Each ring follows the app's light or dark appearance.
+
+### 🔄 Changed
+
+- `ak-usage` — on the desktop app each figure is a ring with its percentage and label,
+  `◔ 67% ctx   ◔ 42% 5h`; the terminal keeps the bars.
+- `ak-keepwarm` — on the desktop app the cache's time is a ring that empties with it,
+  `◕ 42m cache`; full and blue while kept warm, empty when cold.
+
 ## [1.49.0] - 2026-10-28
 
 ### ✨ Added
