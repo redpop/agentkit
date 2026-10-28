@@ -7,12 +7,16 @@ export type ModsRow = ModsInfo & { isOn: boolean; isStandard: boolean }
 /** A segment's colour: its state, not its mod. `ok` draws in the text colour; only the others colour it. */
 export type ModsTone = 'ok' | 'warn' | 'alert' | 'info' | 'dim'
 
+/** The line icons ak-mods draws: an id (`#`), a copy, a check mark. */
+export type ModsIcon = 'id' | 'copy' | 'check'
+
 /**
  * A run of a segment's text in its own tone; without one, in the segment's. In `rich`, a run with a
- * `ring` (0 to 100) draws as a ring filled that far instead of its text, which a reader that cannot
- * see the ring gets in its place.
+ * `ring` (0 to 100) draws as a ring filled that far, one with an `icon` as that line icon, instead
+ * of its text, which a reader that cannot see the picture gets in its place. A ring wins over an
+ * icon.
  */
-export type ModsPart = { text: string; tone?: ModsTone; ring?: number }
+export type ModsPart = { text: string; tone?: ModsTone; ring?: number; icon?: ModsIcon }
 
 /** One row of a segment's hover card: a label and its value, one line each. */
 export type ModsCardRow = { label: string; value: string }

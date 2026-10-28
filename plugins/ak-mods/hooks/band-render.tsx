@@ -1,6 +1,6 @@
 import type { BoxProps, ElementConstructor, EngineInterface, Next, RenderInput, SvgProps, TextProps } from 'claude-code'
 
-import type { ModsCardRow, ModsInfo, ModsPart, ModsRow, ModsSegment, ModsTone } from '../types'
+import type { ModsCardRow, ModsIcon, ModsInfo, ModsPart, ModsRow, ModsSegment, ModsTone } from '../types'
 import { bandWidth, layout, TOGGLE_HOTKEY, toggleLabel } from './band'
 import type { Segment } from './band'
 import { languageFor, texts } from './i18n'
@@ -39,6 +39,16 @@ const partsOf = (parts: unknown, text: string): ModsPart[] | undefined => {
   return joined.map(run => run.text).join('') === text ? joined.filter(run => run.text !== '') : undefined
 }
 
+// The line icons, on a 24-unit grid in one stroke: drawn, not glyphs, so they look alike everywhere.
+const ICONS: Record<ModsIcon, string> = {
+  id: '<path d="M5 9h14M5 15h14M10.5 4 8.5 20M15.5 4l-2 16"/>',
+  copy: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/>',
+  check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+}
+
+const iconOf = (icon: unknown): ModsIcon | undefined =>
+  typeof icon === 'string' && Object.hasOwn(ICONS, icon) ? (icon as ModsIcon) : undefined
+
 const ringOf = (ring: unknown): number | undefined =>
   typeof ring === 'number' && Number.isFinite(ring) ? Math.min(100, Math.max(0, ring)) : undefined
 
@@ -46,10 +56,12 @@ const ringOf = (ring: unknown): number | undefined =>
 const richOf = (rich: unknown): ModsPart[] | undefined => {
   if (!Array.isArray(rich)) return undefined
   const runs = (rich as Partial<Record<keyof ModsPart, unknown>>[]).map(part =>
-    typeof part?.text === 'string' ? { text: spaced(part.text), tone: toneOf(part.tone), ring: ringOf(part.ring) } : undefined,
+    typeof part?.text === 'string'
+      ? { text: spaced(part.text), tone: toneOf(part.tone), ring: ringOf(part.ring), icon: iconOf(part.icon) }
+      : undefined,
   )
   if (runs.some(run => run === undefined)) return undefined
-  const kept = (runs as ModsPart[]).filter(run => run.text !== '' || run.ring !== undefined)
+  const kept = (runs as ModsPart[]).filter(run => run.text !== '' || run.ring !== undefined || run.icon !== undefined)
 
   return kept.length > 0 ? kept : undefined
 }
@@ -72,7 +84,7 @@ const cardOf = (card: unknown): ModsCardRow[] | undefined => {
  * left out, a button without a label or command is left out, a detail that
  * is no text is left out, parts that do not join to the text are left out,
  * rich runs that are no list of texts are left out, a ring is held to 0 to
- * 100, card rows that are no list of label and value texts are left out, and
+ * 100, an icon ak-mods does not draw is left out, card rows that are no list of label and value texts are left out, and
  * a segment without text is not drawn.
  */
 const checked = (info: ModsInfo, stored: unknown): Segment | undefined => {
@@ -155,6 +167,18 @@ export const ringSvg = (percent: number, tone: ModsTone | undefined): string => 
   )
 }
 
+/** A line icon in a tone's colour, which follows the app's light or dark appearance as a ring's does. */
+export const iconSvg = (icon: ModsIcon, tone: ModsTone | undefined): string => {
+  const { light, dark } = RING_TONES[tone ?? 'ok']
+
+  return (
+    '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" ' +
+    'stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">' +
+    `<style>g{stroke:${light}}@media (prefers-color-scheme: dark){g{stroke:${dark}}}</style>` +
+    `<g>${ICONS[icon]}</g></svg>`
+  )
+}
+
 type Draws = {
   Box: ElementConstructor<BoxProps>
   Text: ElementConstructor<TextProps>
@@ -172,12 +196,14 @@ export const segmentView = ({ Box, Text, Svg }: Draws, surface: string, one: Seg
   ) : (
     <Box key={key} flexDirection="row" alignItems="center">
       {one.rich.map((part, at) =>
-        part.ring === undefined ? (
+        part.ring !== undefined ? (
+          <Svg key={`${key}-${at}`} source={ringSvg(part.ring, part.tone ?? one.tone)} alt={part.text} width={16} height={16} />
+        ) : part.icon !== undefined ? (
+          <Svg key={`${key}-${at}`} source={iconSvg(part.icon, part.tone ?? one.tone)} alt={part.text} width={16} height={16} />
+        ) : (
           <Text key={`${key}-${at}`} tabular {...toneProps(part.tone ?? one.tone)}>
             {part.text}
           </Text>
-        ) : (
-          <Svg key={`${key}-${at}`} source={ringSvg(part.ring, part.tone ?? one.tone)} alt={part.text} width={16} height={16} />
         ),
       )}
     </Box>
@@ -190,11 +216,30 @@ export const segmentView = ({ Box, Text, Svg }: Draws, surface: string, one: Seg
  * part. Placed above the segment, against its left edge, or its right edge for
  * a segment in the right half of the row, so it stays in the window.
  */
-export const detailCard = ({ Box, Text }: Draws, one: Segment, key: string, isRight: boolean) => {
+/**
+ * Card rows as a table: the dim labels in one column, as wide as the longest,
+ * the values beside them. The hover card and the Mods pane draw them alike.
+ */
+export const cardRows = ({ Box, Text }: Draws, rows: readonly ModsCardRow[], key: string) => {
+  // A desktop Box counts its width in text cells.
+  const column = Math.max(0, ...rows.map(row => row.label.length))
+
+  return rows.map((row, at) => (
+    <Box key={`${key}-${at}`} flexDirection="row" columnGap={2}>
+      {column > 0 && (
+        <Box width={column} flexShrink={0}>
+          <Text dimColor>{row.label}</Text>
+        </Box>
+      )}
+      <Text tabular>{row.value}</Text>
+    </Box>
+  ))
+}
+
+export const detailCard = (draws: Draws, one: Segment, key: string, isRight: boolean) => {
+  const { Box, Text } = draws
   const rows = one.card ?? one.detail?.split(' · ').map(line => ({ label: '', value: line }))
   if (rows === undefined) return null
-  // The label column is as wide as its longest label; a desktop Box counts its width in text cells.
-  const column = Math.max(0, ...rows.map(row => row.label.length))
 
   // No key on the card itself: a keyed Box would scope its own hover, which a hidden Box never gets.
   return (
@@ -214,16 +259,7 @@ export const detailCard = ({ Box, Text }: Draws, one: Segment, key: string, isRi
       <Box marginBottom={1}>
         <Text bold>{one.title}</Text>
       </Box>
-      {rows.map((row, at) => (
-        <Box key={`${key}-${at}`} flexDirection="row" columnGap={2}>
-          {column > 0 && (
-            <Box width={column} flexShrink={0}>
-              <Text dimColor>{row.label}</Text>
-            </Box>
-          )}
-          <Text tabular>{row.value}</Text>
-        </Box>
-      ))}
+      {cardRows(draws, rows, key)}
     </Box>
   )
 }

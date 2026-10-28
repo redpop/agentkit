@@ -557,6 +557,21 @@ test('card rows draw as dim labels in one column beside their values, in place o
   await desk.unmount()
 })
 
+test('on the desktop app an icon run draws as a line icon; an icon ak-mods does not draw leaves its text', { plugins: [consumer('ak-a')] }, async ($, on) => {
+  engine(on)
+  await publish($, 'ak-a', 'A', {
+    text: 'id …f0f70f',
+    rich: [{ text: 'id', icon: 'id' }, { text: ' …f0f70f' }, { text: 'odd', icon: 'rocket' }],
+  })
+
+  const desk = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  const icons = await desk.findAll({ type: 'Svg' })
+  expect(icons.map(one => one.props.alt)).toEqual(['id'])
+  expect(String(icons[0]?.props.source)).toContain('stroke-linecap="round"')
+  expect(await exactly(desk, 'odd')).toBeDefined()
+  await desk.unmount()
+})
+
 test(
   'parts that do not join to the text, or are no list of texts, leave the text in one run',
   { plugins: [consumer('ak-a'), consumer('ak-b'), consumer('ak-c')] },

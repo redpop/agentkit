@@ -2,7 +2,7 @@ import { atom, update } from 'claude-code'
 import type { EngineInterface, RenderInput } from 'claude-code'
 
 import { layout } from './band'
-import { drawable, segmentView } from './band-render'
+import { cardRows, drawable, segmentView } from './band-render'
 import { languageFor, texts } from './i18n'
 
 const EXPANDED = atom({ plugin: 'ak-mods', key: 'expanded' } as const, {})
@@ -48,6 +48,10 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
       {list.length === 0 && <Text dimColor>No AgentKit mods installed.</Text>}
       {list.map(row => {
         const one = current.get(row.name)
+        // A surface that draws pictures lists the card's rows under the segment, each value once, while
+        // the row is open (`More`); closed, the segment alone. The terminal adds the detail after it.
+        const isOpen = expanded[row.name] === true
+        const rows = e.surface !== 'terminal' ? one?.card : undefined
 
         return (
           <Box flexDirection="column" marginBottom={1}>
@@ -56,7 +60,7 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
             {one !== undefined && (
               <Box>
                 {segmentView(draws, e.surface, one, `text-${row.name}`)}
-                {one.detail !== undefined && (
+                {rows === undefined && one.detail !== undefined && (
                   <Text key={`detail-${row.name}`} dimColor>{` · ${one.detail}`}</Text>
                 )}
                 {one.button !== undefined && [
@@ -73,7 +77,8 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
                 ]}
               </Box>
             )}
-            {expanded[row.name] === true && <Text dimColor>{row.details}</Text>}
+            {isOpen && rows !== undefined && <Box flexDirection="column">{cardRows(draws, rows, `rows-${row.name}`)}</Box>}
+            {isOpen && <Text dimColor>{row.details}</Text>}
             <Box>
               <Button
                 key={`on-${row.name}`}
@@ -89,7 +94,7 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
               <Text> </Text>
               <Button
                 key={`more-${row.name}`}
-                label={expanded[row.name] === true ? t.less : t.more}
+                label={isOpen ? t.less : t.more}
                 onPress={() => update($, EXPANDED, map => ({ ...map, [row.name]: map[row.name] !== true }))}
               />
             </Box>

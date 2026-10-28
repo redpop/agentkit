@@ -14,13 +14,15 @@ another tab is brought forward.
 One row per mod that declared itself: title and summary, then three buttons. A switched-on mod
 that publishes a segment also shows it in its row, in its band colour and with the segment's
 button, and its detail after it, dimmed; the pane draws on every surface, so this is where a
-segment is always visible.
+segment is always visible. On the desktop app a segment with card rows shows no detail there:
+opened with **More**, the row lists the card's rows under the segment, labels dim in one column,
+each value once, above the mod's details.
 
 | Button | Effect |
 |--------|--------|
 | ○ Off / ● On | Switches the mod for this chat; the label shows its state |
 | ☆ Standard / ★ Standard | Marks or unmarks the mod to start on in every new chat; ★ means marked |
-| More / Less | Shows or hides the mod's details |
+| More / Less | Shows or hides the mod's details, and on the desktop app its card rows |
 
 ## Band
 

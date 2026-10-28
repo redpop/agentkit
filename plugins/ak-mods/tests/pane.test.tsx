@@ -573,3 +573,31 @@ test("the row's segment button runs its command", { plugins: MODS }, async ($, o
   expect(ran).toEqual(['zap now'])
   await ui.unmount()
 })
+
+test('on the desktop app an open row lists its card under the segment, each value once; the terminal keeps the detail', { plugins: PLUGINS }, async ($, on) => {
+  engine(on)
+  await callAs($, 'ak-fixture', 'declare', { name: 'ak-fixture', title: 'Fixture', summary: 's', details: 'd' })
+  await callAs($, 'ak-fixture', 'set', { name: 'ak-fixture', on: true })
+  await callAs($, 'ak-fixture', 'segment', {
+    text: 'ctx ▬▬▬',
+    detail: 'ctx 42% · 5h 7% (resets 11:10pm)',
+    card: [
+      { label: 'Context', value: '42%' },
+      { label: '5-hour limit', value: '7% · resets 11:10pm' },
+    ],
+  })
+
+  const desk = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  expect(await desk.find({ type: 'Text', text: / · ctx 42%/ })).toBeUndefined()
+  // Closed by default: the segment alone.
+  expect(await exactly(desk, '5-hour limit')).toBeUndefined()
+  await desk.press({ key: 'more-ak-fixture' })
+  expect(await exactly(desk, '5-hour limit')).toMatchObject({ props: { dimColor: true } })
+  expect(await exactly(desk, '7% · resets 11:10pm')).toBeDefined()
+  await desk.unmount()
+
+  const term = await $.ui.mount({ ...PANE, surface: 'terminal' })
+  expect(await exactly(term, ' · ctx 42% · 5h 7% (resets 11:10pm)')).toBeDefined()
+  expect(await exactly(term, '5-hour limit')).toBeUndefined()
+  await term.unmount()
+})
