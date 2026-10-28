@@ -4,3 +4,6 @@ docs/superpowers/
 .claude/worktrees/
 .claude/ak-review.local.json
 docs/handoffs/
+
+# Laid by Claude Code beside a hot-reloaded mod: it extends the generated, ignored .claude-plugin/types/
+plugins/*/tsconfig.json
