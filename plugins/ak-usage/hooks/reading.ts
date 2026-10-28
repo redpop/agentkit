@@ -1,5 +1,7 @@
 import type { SessionRateLimit, SessionUsage } from 'claude-code'
 
+import { texts, type Lang } from './i18n'
+
 // From here a figure is drawn as a warning, and from ALERT as an alert. The 7-day window shows only
 // from WARN on: below it, it says nothing the 5-hour window does not.
 export const WARN = 75
@@ -10,13 +12,11 @@ export const ALERT = 90
 const CELLS = 5
 const CELL = '▬'
 
-// The rate-limit windows a reading names: the band's label, the toast's title.
+// The rate-limit windows a reading names, by the band's label; their titles are the language's.
 const WINDOWS = [
-  { kind: 'five_hour', label: '5h', title: '5-hour limit' },
-  { kind: 'seven_day', label: '7d', title: '7-day limit' },
+  { kind: 'five_hour', label: '5h' },
+  { kind: 'seven_day', label: '7d' },
 ] as const
-
-const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
 type Tone = 'ok' | 'warn' | 'alert'
 
@@ -56,13 +56,14 @@ const windowOf = (rateLimits: readonly SessionRateLimit[], kind: string, now: nu
 
 const toneOf = (percent: number): Tone => (percent >= ALERT ? 'alert' : percent >= WARN ? 'warn' : 'ok')
 
-// The local time of a reset, `11:10pm`, with its weekday when it falls on another day: `Sat 10:00am`.
-export const resetClock = (at: number, now: number): string => {
+// The local time of a reset in the language's clock, `11:10pm` or `23:10`, with its weekday when it
+// falls on another day: `Sat 10:00am`, `Sa 10:00`.
+export const resetClock = (at: number, now: number, lang: Lang = 'en'): string => {
+  const t = texts(lang)
   const day = new Date(at)
-  const h = day.getHours()
-  const time = (h % 12 || 12) + ':' + String(day.getMinutes()).padStart(2, '0') + (h >= 12 ? 'pm' : 'am')
+  const time = t.time(day.getHours(), day.getMinutes())
 
-  return day.toDateString() === new Date(now).toDateString() ? time : `${DAYS[day.getDay()]} ${time}`
+  return day.toDateString() === new Date(now).toDateString() ? time : `${t.days[day.getDay()]} ${time}`
 }
 
 // A figure's fill in five cells, to the nearest fifth, and one cell at least once anything is used:
@@ -103,11 +104,12 @@ const figuresOf = (usage: SessionUsage, now: number): Figure[] => {
  * Where the band draws pictures, the rich runs show each figure as a ring with its percentage and
  * label. Undefined while there is nothing to show.
  */
-export const reading = (usage: SessionUsage, now: number): Reading | undefined => {
+export const reading = (usage: SessionUsage, now: number, lang: Lang = 'en'): Reading | undefined => {
   const figures = figuresOf(usage, now)
   if (figures.length === 0) return undefined
 
-  const reset = (resetsAt: number | undefined) => (resetsAt === undefined ? '' : `resets ${resetClock(resetsAt, now)}`)
+  const t = texts(lang)
+  const reset = (resetsAt: number | undefined) => (resetsAt === undefined ? '' : t.resets(resetClock(resetsAt, now, lang)))
   const parts = figures
     .flatMap(({ label, percent, resetsAt }, at): Part[] => {
       const isShort = percent >= WARN
@@ -134,14 +136,14 @@ export const reading = (usage: SessionUsage, now: number): Reading | undefined =
   // The hover card has the room for every window, the week below 75 % too, each with its reset.
   const context = contextPercent(usage)
   const card: Row[] = [
-    ...(context === undefined ? [] : [{ label: 'Context', value: `${context}%` }]),
-    ...WINDOWS.flatMap(({ kind, title }) => {
+    ...(context === undefined ? [] : [{ label: t.context, value: `${context}%` }]),
+    ...WINDOWS.flatMap(({ kind }) => {
       const limit = windowOf(usage.rateLimits, kind, now)
       if (limit === undefined) return []
       const resetsAt = resetOf(limit)
       const value = `${Math.round(limit.percentUsed)}%${resetsAt === undefined ? '' : ` · ${reset(resetsAt)}`}`
 
-      return [{ label: title, value }]
+      return [{ label: t.windows[kind] ?? kind, value }]
     }),
   ]
 
@@ -165,12 +167,13 @@ export const nextReset = (usage: SessionUsage, now: number): number | undefined 
 }
 
 /** The rate-limit windows at 90 % or more: `5-hour limit at 92 %, resets 11:10pm`. */
-export const alerts = (rateLimits: readonly SessionRateLimit[], now: number): Alert[] =>
-  WINDOWS.flatMap(({ kind, title }) => {
+export const alerts = (rateLimits: readonly SessionRateLimit[], now: number, lang: Lang = 'en'): Alert[] =>
+  WINDOWS.flatMap(({ kind }) => {
     const limit = windowOf(rateLimits, kind, now)
     if (limit === undefined || Math.round(limit.percentUsed) < ALERT) return []
+    const t = texts(lang)
     const resetsAt = resetOf(limit)
-    const reset = resetsAt === undefined ? '' : `, resets ${resetClock(resetsAt, now)}`
+    const reset = resetsAt === undefined ? '' : t.resets(resetClock(resetsAt, now, lang))
 
-    return [{ key: `${kind}@${limit.resetsAt ?? ''}`, text: `${title} at ${Math.round(limit.percentUsed)} %${reset}` }]
+    return [{ key: `${kind}@${limit.resetsAt ?? ''}`, text: t.alert(t.windows[kind] ?? kind, Math.round(limit.percentUsed), reset) }]
   })

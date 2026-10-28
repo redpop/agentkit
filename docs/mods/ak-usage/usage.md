@@ -43,6 +43,10 @@ window with its reset.
 Without `ak-mods` (or when it refuses the mod, or a publish fails), the mod draws its own band
 instead, never both, with the same parts and colours.
 
+The mod's texts follow Claude Code's `language` setting, else `LC_ALL`, `LC_MESSAGES` or `LANG`:
+German or English. In German a reset reads on a 24-hour clock, `Reset 23:10`, `Reset Sa 10:00`;
+`ctx`, `5h` and `7d` stay as they are.
+
 ## How it works
 
 - The figures come from `$.session.usage()`, the status line's own: the context's fill against the

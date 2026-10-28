@@ -7,6 +7,7 @@
 
 import type { EngineInterface, Register, Timer } from 'claude-code'
 
+import { languageFor, learnLanguage, texts } from './i18n'
 import { alerts, nextReset, reading } from './reading'
 
 const NAME = 'ak-usage'
@@ -18,7 +19,7 @@ type Segment = Parameters<EngineInterface['mods']['segment']>[0]
 const segment = async ($: EngineInterface): Promise<Segment> => {
   let now: ReturnType<typeof reading>
   try {
-    now = reading(await $.session.usage(), await $.clock.now())
+    now = reading(await $.session.usage(), await $.clock.now(), await languageFor($))
   } catch {
     return undefined
   }
@@ -86,19 +87,9 @@ export const register: Register = on => {
   }
 
   on('session.start', async ($, e, next) => {
+    const t = texts(await learnLanguage($))
     try {
-      isSwitched = await $.mods.declare({
-        name: NAME,
-        title: 'Usage',
-        summary: "Shows how full this session's context is and how much of the 5-hour limit is used.",
-        details:
-          'Its segment in the shared band above the prompt shows a bar of five cells a figure: the ' +
-          'context of this session, and the 5-hour window of the account, every session counted. ' +
-          'The 7-day window joins from 75 %. A figure from 75 % adds its percentage and turns the ' +
-          'warning colour, from 90 % the error colour; a window then adds when it resets, and a ' +
-          'toast says so once. Here every percentage and reset follows the bars. The windows are ' +
-          'as the last response of this session reported them, and leave the band once they reset.',
-      })
+      isSwitched = await $.mods.declare({ name: NAME, title: t.title, summary: t.summary, details: t.details })
     } catch {
       isSwitched = false
     }
@@ -122,7 +113,7 @@ export const register: Register = on => {
   on('session.measure', async ($, e, next) => {
     const done = await next(e)
     if (!e.changed.includes('rateLimits') || (await isOff(() => $.mods.isOn({ name: NAME })))) return done
-    for (const one of alerts(e.rateLimits, await $.clock.now())) {
+    for (const one of alerts(e.rateLimits, await $.clock.now(), await languageFor($))) {
       if (toasted.has(one.key)) continue
       toasted.add(one.key)
       $.ui.toast(one.text)

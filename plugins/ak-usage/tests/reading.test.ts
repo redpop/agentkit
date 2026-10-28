@@ -149,3 +149,19 @@ test('the hover card shows every window still current, the week below 75 % too, 
   // A window whose reset has passed leaves the card as it leaves the band.
   expect(reading(windows(resets('five_hour', 42, at(28, 19))), NOW)).toBeUndefined()
 })
+
+test('in German the resets read on a 24-hour clock with German weekdays, the card and the toast in German', () => {
+  const now = reading(
+    { ...usage(134400), rateLimits: [resets('five_hour', 81, at(28, 23, 10)), resets('seven_day', 40, at(31, 10))] },
+    NOW,
+    'de',
+  )
+  expect(now?.text).toBe('ctx ▬▬▬▬▬  5h ▬▬▬▬▬ 81%  Reset 23:10')
+  expect(now?.card).toEqual([
+    { label: 'Kontext', value: '67%' },
+    { label: '5-Stunden-Limit', value: '81% · Reset 23:10' },
+    { label: '7-Tage-Limit', value: '40% · Reset Sa 10:00' },
+  ])
+  expect(alerts([resets('five_hour', 92, at(28, 23, 10))], NOW, 'de')[0]?.text).toBe('5-Stunden-Limit bei 92 %, Reset 23:10')
+  expect(resetClock(at(28, 9, 5), NOW, 'de')).toBe('09:05')
+})
