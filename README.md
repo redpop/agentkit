@@ -210,7 +210,8 @@ the `local_…` id the session tools address.
 A mod (needs `ak-mods`, installed with it) that shows one compact segment in the shared band above
 the prompt: how full this session's context is and how much of the account's 5-hour limit is used,
 every session counted, a bar of five cells each (`ctx ▬▬▬▬▬  5h ▬▬▬▬▬`, the empty cells dim). The
-7-day window joins from 75 %. See
+7-day window joins from 75 %; from there a window shows when it resets, and past 90 % a toast says
+so once. See
 [Usage](docs/mods/ak-usage/usage.md).
 
 ### ak-notifications — macOS Notifications

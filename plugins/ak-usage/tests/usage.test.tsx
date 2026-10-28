@@ -17,10 +17,13 @@ const BAND = {
   },
 } as const
 
-const figures = (tokens: number | undefined, fiveHour?: number): SessionUsage => ({
+const figures = (tokens: number | undefined, fiveHour?: number, resetsAt?: number): SessionUsage => ({
   startedAt: 0,
   context: { tokens, window: 200000 },
-  rateLimits: fiveHour === undefined ? [] : [{ kind: 'five_hour', percentUsed: fiveHour }],
+  rateLimits:
+    fiveHour === undefined
+      ? []
+      : [{ kind: 'five_hour', percentUsed: fiveHour, ...(resetsAt === undefined ? {} : { resetsAt: new Date(resetsAt).toISOString() }) }],
 })
 
 // The engine beneath the plugin: the usage it answers, settable by the test, or a read that fails;
@@ -38,6 +41,7 @@ const engine = (on: On, { isFailing = false } = {}) => {
   on('session.end', (_, e) => ({ sessionId: e.sessionId }))
   on('command.register', (_, e) => ({ value: { command: e.name } }))
   on('turn.complete', () => ({ text: 'hi' }))
+  on('session.measure', (_, e) => ({ changed: e.changed }))
   on('ui.toast', (_, e) => {
     toasts.push(e.text)
 
@@ -76,6 +80,40 @@ test('without ak-mods the own band shows the figures once there are some', async
     expect(await ui.find({ type: 'Text', text: 'engine' })).toBeDefined()
     await ui.unmount()
   }
+})
+
+test('a window whose reset passes leaves the own band', async ($, on) => {
+  const { clock, set } = engine(on)
+  await start($)
+  set(figures(134400, 41.6, 60000))
+  await turn($)
+
+  const ui = await $.ui.mount(BAND)
+  expect(await ui.find({ type: 'Text', text: /5h/ })).toBeDefined()
+  await clock.advance(61000)
+  expect(await ui.find({ type: 'Text', text: /5h/ })).toBeUndefined()
+  expect(await ui.find({ type: 'Text', text: 'ctx ▬▬▬▬▬' })).toBeDefined()
+  await ui.unmount()
+})
+
+// A measurement as the engine pushes it, its rate-limit windows moved.
+const measure = ($: Engine, fiveHour: number, resetsAt: number) =>
+  $.session.measure({ ...figures(undefined, fiveHour, resetsAt), changed: ['rateLimits'] })
+
+test('a window past 90 % is toasted once until it resets', async ($, on) => {
+  const { toasts } = engine(on)
+  await start($)
+
+  await measure($, 85, 60000)
+  expect(toasts.filter(t => t.startsWith('5-hour'))).toEqual([])
+  await measure($, 91, 60000)
+  await measure($, 95, 60000)
+  expect(toasts.filter(t => t.startsWith('5-hour'))).toHaveLength(1)
+  expect(toasts.find(t => t.startsWith('5-hour'))).toMatch(/^5-hour limit at 91 %, resets /)
+
+  // The next window is a new one.
+  await measure($, 92, 18060000)
+  expect(toasts.filter(t => t.startsWith('5-hour'))).toHaveLength(2)
 })
 
 test('a failing usage read draws nothing of its own', async ($, on) => {
@@ -164,6 +202,26 @@ test('publishes the figures after each main-loop turn, not after a subagent', OW
   set(figures(190000, 41.6))
   await turn($, 'agent-1')
   expect(segments(toasts).at(-1)?.detail).toBe('ctx 67% · 5h 42%')
+})
+
+test('publishes again once a window shown resets, without it', OWNED, async ($, on) => {
+  const { clock, toasts, set } = engine(on)
+  await start($)
+  set(figures(134400, 41.6, 60000))
+  await turn($)
+  expect(segments(toasts).at(-1)?.text).toBe('ctx ▬▬▬▬▬  5h ▬▬▬▬▬')
+
+  await clock.advance(61000)
+  expect(segments(toasts).at(-1)).toMatchObject({ text: 'ctx ▬▬▬▬▬', detail: 'ctx 67%' })
+})
+
+test('switched off it toasts no window past 90 %', OWNED, async ($, on) => {
+  const { toasts } = engine(on)
+  await start($)
+  await standIn($, 'off')
+
+  await measure($, 95, 60000)
+  expect(toasts.filter(t => t.startsWith('5-hour'))).toEqual([])
 })
 
 test('draws no band of its own while ak-mods owns the drawing', OWNED, async ($, on) => {

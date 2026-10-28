@@ -17,9 +17,11 @@ Requires Claude Code 2.1.309 or later (hooks-module support).
 
 - `ctx` is this session's context; `5h` is the account's 5-hour window, every session counted, as
   this session's last response reported it.
-- Each figure is a bar of five cells. `7d` joins from 75 %. A figure from 75 % adds its percentage
-  and draws in the warning colour, from 90 % in the error colour. The Mods pane shows every
-  percentage.
+- Each figure is a bar of five cells, one lit once anything is used. `7d` joins from 75 %. A figure
+  from 75 % adds its percentage, and a window when it resets; it draws in the warning colour, from
+  90 % in the error colour, and a window past 90 % gets one toast. The Mods pane shows every
+  percentage and reset.
+- A window whose reset has passed leaves the band until the next response.
 
 See [the mod docs](../../docs/mods/ak-usage/usage.md).
 

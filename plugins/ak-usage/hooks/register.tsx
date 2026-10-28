@@ -5,9 +5,9 @@
 // The context is this session's own. The rate-limit windows are the account's: they count every
 // session, as the last API response of this one reported them.
 
-import type { EngineInterface, Register } from 'claude-code'
+import type { EngineInterface, Register, Timer } from 'claude-code'
 
-import { reading } from './reading'
+import { alerts, nextReset, reading } from './reading'
 
 const NAME = 'ak-usage'
 
@@ -18,12 +18,39 @@ type Segment = Parameters<EngineInterface['mods']['segment']>[0]
 const segment = async ($: EngineInterface): Promise<Segment> => {
   let now: ReturnType<typeof reading>
   try {
-    now = reading(await $.session.usage())
+    now = reading(await $.session.usage(), await $.clock.now())
   } catch {
     return undefined
   }
 
   return now === undefined ? undefined : { ...now, priority: 7 }
+}
+
+// Publishes while ak-mods switches the mod and it is on, else does nothing.
+type Publish = (isOn: () => Promise<boolean>, send: () => Promise<void>) => Promise<void>
+
+// Fires at the next reset of a window the reading shows, which then leaves the band.
+let resetTimer: Timer | undefined
+
+// Publishes the figures, draws the own band again and waits for the next reset of a window shown.
+// Past it the window is left out, so the wait does not repeat.
+const refresh = async ($: EngineInterface, publish: Publish): Promise<void> => {
+  await publish(() => $.mods.isOn({ name: NAME }), async () => $.mods.segment(await segment($)))
+  $.ui.invalidate('ui.render')
+  resetTimer?.cancel()
+  resetTimer = undefined
+  let at: number | undefined
+  let now = 0
+  try {
+    now = await $.clock.now()
+    at = nextReset(await $.session.usage(), now)
+  } catch {
+    return
+  }
+  if (at === undefined) return
+  resetTimer = $.clock.after(at - now + 1000, () => {
+    refresh($, publish).catch(() => {})
+  })
 }
 
 export const register: Register = on => {
@@ -33,6 +60,8 @@ export const register: Register = on => {
   // Counts this mod's switch changes: a republish scheduled for one change is dropped once another
   // followed it.
   let switches = 0
+  // The windows already toasted past 90 %, by kind and reset: each one once until it resets.
+  const toasted = new Set<string>()
 
   // Off only when ak-mods switches the mod and says so. A call that throws
   // leaves the mod on (fail-open).
@@ -66,14 +95,14 @@ export const register: Register = on => {
           'Its segment in the shared band above the prompt shows a bar of five cells a figure: the ' +
           'context of this session, and the 5-hour window of the account, every session counted. ' +
           'The 7-day window joins from 75 %. A figure from 75 % adds its percentage and turns the ' +
-          'warning colour, from 90 % the error colour. Here every percentage follows the bars. The ' +
-          'windows are as the last response of this session reported them.',
+          'warning colour, from 90 % the error colour; a window then adds when it resets, and a ' +
+          'toast says so once. Here every percentage and reset follows the bars. The windows are ' +
+          'as the last response of this session reported them, and leave the band once they reset.',
       })
     } catch {
       isSwitched = false
     }
-    await publish(() => $.mods.isOn({ name: NAME }), async () => $.mods.segment(await segment($)))
-    $.ui.invalidate('ui.render')
+    await refresh($, publish)
 
     return next(e)
   })
@@ -83,20 +112,31 @@ export const register: Register = on => {
   on('turn.complete', async ($, e, next) => {
     const done = await next(e)
     if (e.agentId) return done
-    await publish(() => $.mods.isOn({ name: NAME }), async () => $.mods.segment(await segment($)))
-    $.ui.invalidate('ui.render')
+    await refresh($, publish)
 
     return done
   })
+
+  // A window past 90 % gets one toast until it resets. Its bar turns red as well, but the band may be
+  // out of sight.
+  on('session.measure', async ($, e, next) => {
+    const done = await next(e)
+    if (!e.changed.includes('rateLimits') || (await isOff(() => $.mods.isOn({ name: NAME })))) return done
+    for (const one of alerts(e.rateLimits, await $.clock.now())) {
+      if (toasted.has(one.key)) continue
+      toasted.add(one.key)
+      $.ui.toast(one.text)
+    }
+
+    return done
+  }).catch(($, e, next) => next(e))
 
   // /clear, /resume and /branch end the chat, and ak-mods clears every segment with it. Publish
   // again once the end has passed. A `session.end` hook, not `classic.SessionStart`: where Claude
   // Code's built-in guard loads, a user's mod gets no classic event.
   on('session.end', async ($, e, next) => {
     $.clock.after(0, () => {
-      publish(() => $.mods.isOn({ name: NAME }), async () => $.mods.segment(await segment($)))
-        .then(() => $.ui.invalidate('ui.render'))
-        .catch(() => {})
+      refresh($, publish).catch(() => {})
     })
 
     return next(e)
