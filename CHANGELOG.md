@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.58.7] - 2026-10-29
+
+### 🐛 Fixed
+
+- `ak-mods` — on the desktop app a figure in the band no longer draws its value and its label as two
+  buttons, and the space between two figures is no empty button. Where a press only opens the Mods
+  pane, the value alone is pressed; its dim label and any coloured text stay text.
+
 ## [1.58.6] - 2026-10-29
 
 ### 🐛 Fixed
