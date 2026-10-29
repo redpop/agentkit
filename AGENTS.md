@@ -189,6 +189,16 @@ Two forms. Shell hooks use the wrapper `{"description": "...", "hooks": {...}}`;
 scripts must always `exit 0`. A hooks module (`ak-mods` and its mods) names TypeScript files
 instead: `{ "modules": ["./register.tsx"] }`.
 
+### Mods
+
+A request to build or change a mod ("write a mod", a band segment, a pane, a toast) means an
+AgentKit mod in this repository: its own plugin in `plugins/ak-<name>/`, switched by `ak-mods`.
+Read [Writing an AgentKit mod](docs/mods/writing-a-mod.md) first and follow its recipe, rules and
+testing section. Claude Code's `plugin-authoring` skill is the reference for the hooks API and its
+types, but it writes a mod into a session folder outside the repository and knows nothing of the
+`ak-mods` contract: build here, not there. `plugins/ak-usage` and `plugins/ak-gitlab` are complete
+examples.
+
 ## Commit and PR guidelines
 
 Rules for `git log`, not review criteria for diffs.
