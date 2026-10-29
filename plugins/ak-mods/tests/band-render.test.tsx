@@ -725,3 +725,69 @@ test('compact parts that do not join to its text are dropped, the compact text k
   expect(await exactly(ui, 'ab')).toBeDefined()
   await ui.unmount()
 })
+
+// Too wide in full for the 80-column band, so it draws compact: a ring and the minutes.
+const KEEP = {
+  text: 'x'.repeat(60),
+  compact: { text: 'warm', rich: [{ text: 'r', ring: 50 }, { text: ' 37m' }] },
+  button: { label: 'keep warm', hotkey: '1', command: 'fixture-keep' },
+}
+
+test('on the desktop app a compact segment is its button, without a hotkey', { plugins: [consumer('ak-a')] }, async ($, on) => {
+  engine(on)
+  const ran: string[] = []
+  on('command.run', { command: 'fixture-keep' }, (_, e) => {
+    ran.push(e.command)
+
+    return {}
+  })
+  await publish($, 'ak-a', 'A', KEEP)
+
+  const ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  expect(await ui.find({ key: 'seg-ak-a' })).toBeUndefined()
+  const press = await ui.find({ key: 'text-ak-a-press-1' })
+  expect(press).toMatchObject({ text: ' 37m', props: { plain: true } })
+  expect(press?.props.hotkey).toBeUndefined()
+  await ui.press({ key: 'text-ak-a-press-1' })
+  expect(ran).toEqual(['fixture-keep'])
+  await ui.unmount()
+})
+
+test('a compact segment arms no hotkey', { plugins: [consumer('ak-a')] }, async ($, on) => {
+  engine(on)
+  await publish($, 'ak-a', 'A', KEEP)
+
+  for (const surface of ['terminal', 'desktop'] as const) {
+    const ui = await $.ui.mount({ ...BAND, surface })
+    const hotkeys = (await ui.findAll({ type: 'Button' })).map(one => one.props.hotkey)
+    expect(hotkeys.filter(one => one !== undefined)).toEqual(['m'])
+    await ui.unmount()
+  }
+})
+
+test('the terminal draws a compact segment without its button', { plugins: [consumer('ak-a')] }, async ($, on) => {
+  engine(on)
+  await publish($, 'ak-a', 'A', KEEP)
+
+  const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
+  expect(await exactly(ui, 'warm')).toBeDefined()
+  expect(await ui.find({ key: 'seg-ak-a' })).toBeUndefined()
+  await ui.unmount()
+})
+
+test('a compact segment with a pane-only button opens the Mods pane', { plugins: [consumer('ak-a')] }, async ($, on) => {
+  engine(on)
+  const opened = opening(on)
+  await publish($, 'ak-a', 'A', {
+    ...KEEP,
+    // Wide enough to draw compact without the pane-only button's room.
+    text: 'x'.repeat(75),
+    card: [{ label: 'Cache', value: 'kept' }],
+    button: { label: 'stop', hotkey: '1', command: 'fixture-stop', isPaneOnly: true },
+  })
+
+  const ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  await ui.press({ key: 'text-ak-a-press-1' })
+  expect(opened).toEqual([{ id: 'ak-mods', title: 'Mods' }])
+  await ui.unmount()
+})

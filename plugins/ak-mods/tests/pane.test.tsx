@@ -636,3 +636,19 @@ test('on the desktop app an open row lists its card under the segment, each valu
   expect(await exactly(term, '5-hour limit')).toBeUndefined()
   await term.unmount()
 })
+
+test('the pane counts the dropped mods as the compact band does', { plugins: MODS }, async ($, on) => {
+  engine(on)
+  // 40 columns in full, 25 compact: the 40-column band holds one compact segment a row and drops the third.
+  for (const [name, title] of [['ak-a', 'Alpha'], ['ak-b', 'Beta'], ['ak-c', 'Gamma']] as const) {
+    await callAs($, name, 'declare', { name, title, summary: 's', details: 'd' })
+    await callAs($, name, 'set', { name, on: true })
+    await callAs($, name, 'segment', { text: 'x'.repeat(40), compact: { text: 'c'.repeat(25) } })
+  }
+
+  for (const surface of SURFACES) {
+    const ui = await $.ui.mount({ ...PANE, surface, props: NARROW })
+    expect(await warningOf(ui)).toBe('1 mod does not fit the band: Gamma')
+    await ui.unmount()
+  }
+})

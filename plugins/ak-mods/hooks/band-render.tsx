@@ -353,10 +353,10 @@ export async function renderBand(
   const { rows, hidden } = layout(segments, e.props.bodyColumns, isPictured)
 
   // Two shown mods on one hotkey: the first by title keeps it, the later goes
-  // without. A mod behind the `mods` button takes none, and none takes the
-  // button's own.
+  // without. A mod behind the `mods` button takes none, a compact one takes
+  // none, and none takes the button's own.
   const hotkeys = new Map<string, string>()
-  for (const one of rows.flat().sort(compareTitles)) {
+  for (const one of rows.flat().filter(one => one.isCompact !== true).sort(compareTitles)) {
     const hotkey = one.button?.hotkey
     if (hotkey !== undefined && hotkey !== TOGGLE_HOTKEY && ![...hotkeys.values()].includes(hotkey)) hotkeys.set(one.name, hotkey)
   }
@@ -387,7 +387,10 @@ export async function renderBand(
                   card's rows show, and pressed again closes it. Nothing covers the chat or moves it:
                   the band cuts off what it draws outside itself, and a card drawn inside it would
                   push the chat up. A segment whose button is on its text runs that instead. */}
-              {e.surface === 'desktop' && one.button?.isOnText === true
+              {/* A compact segment's button is its text on the desktop app, with no hotkey: the band
+                  is short of room, and a key that shows nowhere would run unseen. The terminal,
+                  which cannot press text, leaves it out. */}
+              {e.surface === 'desktop' && (one.button?.isOnText === true || (one.isCompact === true && one.button !== undefined))
                 ? // The text is the segment's own button: a press runs its command, its hotkey with it.
                   segmentView(draws, e.surface, one, `text-${one.name}`, () => {
                     $.command.run({ command: one.button?.command ?? '', args: one.button?.args ?? '' }).catch(() => {})
@@ -397,7 +400,7 @@ export async function renderBand(
                       toggleMod($, bandWidth({ bodyColumns: e.props.bodyColumns }), one.name).catch(() => {})
                     })
                   : segmentView(draws, e.surface, one, `text-${one.name}`)}
-              {one.button !== undefined && !(e.surface === 'desktop' && one.button.isOnText === true) && (
+              {one.button !== undefined && one.isCompact !== true && !(e.surface === 'desktop' && one.button.isOnText === true) && (
                 <Button
                   key={`seg-${one.name}`}
                   label={one.button.label}
