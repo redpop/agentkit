@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.59.1] - 2026-10-29
+
+### 🐛 Fixed
+
+- `ak-gitlab` — **Get errors** finds the log when only a bridge failed: it prefers a failed job of
+  the pipeline itself and otherwise follows the bridge to its downstream pipeline's first failed
+  job. A log cut at the 4 MiB read limit says in the draft that its end is missing.
+- `ak-gitlab` — a pipeline started from outside Claude that finished between two fetches now gets
+  its toast; only a pipeline older than the session counts as seen before. A second manual job in
+  the same pipeline gets a toast of its own.
+- `ak-gitlab` — two triggers in the same moment run `glab` once, and a failed estimate call no
+  longer fails the whole fetch.
+
+### 📝 Documentation
+
+- `ak-gitlab` and the changelog name the English labels in English text; the German ones appear
+  only where the language is described.
+- [Writing an AgentKit mod](docs/mods/writing-a-mod.md) adds what building `ak-gitlab` taught: `$`
+  reaches helpers only through top-level declarations, a tool call's fields sit on the event, the
+  test's own `$` has no host nouns, `mock.env` for German texts, and a link to the desktop renderer
+  quirks. `AGENTS.md` points agents to the guide before they build a mod.
+
 ## [1.59.0] - 2026-10-29
 
 ### ✨ Added
