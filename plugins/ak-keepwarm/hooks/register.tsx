@@ -145,22 +145,29 @@ const restore = async ($: EngineInterface) => {
   }
 }
 
+// Reads first and takes over the result only while the chat is still current: a load for another
+// chat that started meanwhile owns S then, and this one's late answer must not land in it.
 const load = async ($: EngineInterface, id: string) => {
   chatId = id
   reset()
-  now = await $.clock.now()
+  let isAlways: boolean
+  let saved: unknown
   try {
-    S.isAlways = (await $.store.get('always')) === true
-    const saved = await $.store.get(`chat:${id}`)
-    if (saved && typeof saved === 'object') {
-      const record = saved as Record<string, unknown>
-      for (const key of SAVED) {
-        if (typeof record[key] === typeof S[key]) Object.assign(S, { [key]: record[key] })
-      }
-    }
+    isAlways = (await $.store.get('always')) === true
+    saved = await $.store.get(`chat:${id}`)
   } catch {
-    chatId = undefined
+    if (chatId === id) chatId = undefined
     return
+  }
+  if (chatId !== id) return
+  now = await $.clock.now()
+  if (chatId !== id) return
+  S.isAlways = isAlways
+  if (saved && typeof saved === 'object') {
+    const record = saved as Record<string, unknown>
+    for (const key of SAVED) {
+      if (typeof record[key] === typeof S[key]) Object.assign(S, { [key]: record[key] })
+    }
   }
   S.isKeepWarm = S.keepWarmUntil > now
 }
