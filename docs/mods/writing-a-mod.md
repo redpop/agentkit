@@ -208,7 +208,7 @@ export const register: Register = on => {
   a ring filled that far, one with an `icon` (`id`, `copy` or `check`) as that line icon from
   ak-mods' own set, its `text` what a reader that cannot see the picture gets; the terminal draws
   `text`, and the band counts its room by what each draws, a ring or an icon as three cells, a
-  character there as 0.9 of a cell), optional `card` rows `{ label, value }` (the card the Mods
+  character there as 0.95 of a cell), optional `card` rows `{ label, value }` (the card the Mods
   pane shows on the desktop app, where a press on the segment's text opens its row, its plain runs:
   a run in a colour or dim stays text so it keeps it: dim labels in one column beside their values;
   without rows the card shows `detail`, a line a part; the Mods pane on the desktop app lists the

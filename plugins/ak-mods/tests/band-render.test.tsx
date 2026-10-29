@@ -880,3 +880,15 @@ test('on the desktop app a dim text that runs an action stays its button, dimmed
   expect(await ui.find({ key: 'text-ak-a-press-1' })).toMatchObject({ text: ' …797d', props: { dimColor: true } })
   await ui.unmount()
 })
+
+test('a segment never shrinks: its text does not wrap inside a row it only just fits', { plugins: [consumer('ak-a'), consumer('ak-b')] }, async ($, on) => {
+  engine(on)
+  await publish($, 'ak-a', 'A', { text: 'alpha' })
+  await publish($, 'ak-b', 'B', { text: 'warm gehalten' })
+
+  for (const surface of ['terminal', 'desktop'] as const) {
+    const ui = await $.ui.mount({ ...BAND, surface })
+    expect(await ui.find({ key: 'segment-ak-b' })).toMatchObject({ props: { flexShrink: 0 } })
+    await ui.unmount()
+  }
+})

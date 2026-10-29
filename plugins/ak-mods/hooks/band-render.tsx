@@ -421,7 +421,9 @@ export async function renderBand(
         <Box key={`band-row-${index}`} flexDirection="row" columnGap={1}>
           {row.flatMap((one, at) => [
             ...(at > 0 ? [separator(`sep-${one.name}`)] : []),
-            <Box key={`segment-${one.name}`} flexDirection="row" columnGap={1}>
+            // A segment keeps its width: where the band's count of a row is short by a little, the
+            // row runs over its end rather than wrap a segment's text onto a second line.
+            <Box key={`segment-${one.name}`} flexDirection="row" columnGap={1} flexShrink={0}>
               {/* On the desktop app a segment with a card is a way to it: its text, a plain button
                   marked under the pointer as buttons are, opens the Mods pane at its mod, where the
                   card's rows show, and pressed again closes it. Nothing covers the chat or moves it:
