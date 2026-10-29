@@ -405,3 +405,29 @@ test(
     expect(await call($, 'ak-a', 'store', 'ended')).toBe('clear')
   },
 )
+
+// A mod's own `session.end` runs beneath ak-mods: a reset written before it would read there as the
+// mod being switched off in the chat that ended.
+// A plugin runs apart from the test: it keeps what it saw in its own state, and `/ak-watch` answers it.
+const watcher: Register = on => {
+  on('session.end', async ($, e, next) => {
+    await $.state.set({ plugin: 'ak-watch', key: 'seen' }, (await $.state.get({ plugin: 'ak-mods', key: 'on' })).value)
+
+    return next(e)
+  })
+  on('command.run', async ($, e, next) => {
+    if (e.command !== 'ak-watch') return next(e)
+
+    return { text: JSON.stringify((await $.state.get({ plugin: 'ak-watch', key: 'seen' })).value ?? null) }
+  })
+}
+
+for (const reason of ['clear', 'resume'] as const) {
+  test(`the hooks beneath a ${reason} still see the ended chat's switches`, { plugins: [...PLUGINS, { name: 'ak-watch', register: watcher }] }, async ($, on) => {
+    engine(on, { 'session:S1': { 'ak-b': true } })
+    await start($)
+    await $.session.end({ reason, sessionId: 'S1', resume: { id: 'S1' } })
+
+    expect(JSON.parse((await runCommand($, 'ak-watch')).text ?? 'null')).toEqual({ 'ak-b': true })
+  })
+}

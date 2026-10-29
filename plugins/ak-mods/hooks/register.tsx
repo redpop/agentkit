@@ -102,16 +102,18 @@ export const register: Register = on => {
     // Segments belong to the chat that showed them, whatever ends it. A
     // failed clear keeps them, not the switches of the chat that ended.
     await $.state.set(SEGMENTS, {}).catch(() => undefined)
+    // The hooks beneath first: a mod's own `session.end` resets what it keeps for the chat that
+    // ended, and a reset of the switches before it would read there as the mod switched off.
+    const done = await next(e)
     if (e.reason === 'clear' || e.reason === 'resume') {
       restoring = undefined
-      // A failed reset keeps the ended chat's switches until the next write;
-      // the hooks beneath still run.
+      // A failed reset keeps the ended chat's switches until the next write.
       await $.state
         .set(ON, e.reason === 'clear' ? initialOn(namesOf(await $.store.get('standard')), undefined) : {})
         .catch(() => undefined)
     }
 
-    return next(e)
+    return done
   })
 
   // The band's width (see `bandWidth`), from the terminal's as the command
