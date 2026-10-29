@@ -166,9 +166,13 @@ test('a toast for each final state a pipeline reaches', () => {
   expect(toastFor(green, 'de')).toEqual({ key: `4711:${green.pipeline?.finishedAt}`, text: 'Pipeline !12 grün (4:51)' })
   expect(toastFor(mr(pipeline('failed', FAILED, 168_000)), 'de')?.text).toBe('Pipeline !12 fehlgeschlagen: test:unit')
   expect(toastFor(mr(pipeline('manual', [job('deploy', 'deploy', 'manual')])), 'de')).toEqual({
-    key: '4711:manual',
+    key: '4711:manual:deploy',
     text: 'Pipeline !12 wartet auf deploy',
   })
+  // A second manual gate in the same pipeline is a state of its own.
+  expect(toastFor(mr(pipeline('manual', [job('deploy', 'deploy', 'success'), job('release', 'release', 'manual')])), 'de')?.key).toBe(
+    '4711:manual:release',
+  )
   expect(toastFor(mr(pipeline('running', RUNNING)), 'de')).toBeUndefined()
   expect(toastFor(mr(pipeline('canceled', GREEN, 60_000)), 'de')).toBeUndefined()
   expect(toastFor(mr(), 'de')).toBeUndefined()

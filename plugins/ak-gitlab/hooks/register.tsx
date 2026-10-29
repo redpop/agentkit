@@ -7,11 +7,11 @@
 
 import type { EngineInterface, Register, Timer } from 'claude-code'
 
-import { fetchStatus, fetchTrace, openUrl } from './glab'
+import { fetchFailure, fetchStatus, openUrl } from './glab'
 import { languageFor, learnLanguage, texts } from './i18n'
 import { draftFor, excerpt } from './joblog'
 import type { Status } from './model'
-import { firstFailed, phaseOf } from './model'
+import { phaseOf } from './model'
 import type { Segment } from './view'
 import { cardFor, segmentFor, toastFor } from './view'
 
@@ -43,6 +43,8 @@ type Watch = {
   toasted: Set<string>
   seen: Set<number>
   isAuthToasted: boolean
+  // When the session started: a pipeline created later gets its toast even when first seen settled.
+  since: number
   inflight: Promise<void> | undefined
   lastEnded: number
   poll: Timer | undefined
@@ -56,6 +58,7 @@ const watching = (): Watch => ({
   toasted: new Set(),
   seen: new Set(),
   isAuthToasted: false,
+  since: Number.POSITIVE_INFINITY,
   inflight: undefined,
   lastEnded: Number.NEGATIVE_INFINITY,
   poll: undefined,
@@ -100,28 +103,32 @@ function arm($: EngineInterface, watch: Watch, gate: Gate): void {
   }
 }
 
-/** A toast for each state a pipeline reaches while the mod watches it; none for the state it had at first sight. */
+/**
+ * A toast for each state a pipeline reaches while the mod watches it. A pipeline that was there
+ * before the session started gets none for the state it had at first sight.
+ */
 async function announce($: EngineInterface, watch: Watch): Promise<void> {
   const { status } = watch
   if (status.kind !== 'mr' || status.mr.pipeline === undefined) return
-  const { id } = status.mr.pipeline
+  const { id, createdAt } = status.mr.pipeline
   const toast = toastFor(status.mr, await languageFor($))
-  const isFirstSight = !watch.seen.has(id)
+  const isOld = !watch.seen.has(id) && Date.parse(createdAt) < watch.since
   watch.seen.add(id)
   if (toast === undefined || watch.toasted.has(toast.key)) return
   watch.toasted.add(toast.key)
-  if (!isFirstSight) $.ui.toast(toast.text)
+  if (!isOld) $.ui.toast(toast.text)
 }
 
 /** Fetches the status and draws it; at most one fetch at a time, none right after another. */
 async function refresh($: EngineInterface, watch: Watch, gate: Gate): Promise<void> {
   if (watch.inflight !== undefined) return watch.inflight
-  if ((await $.clock.now()) - watch.lastEnded < QUIET_MS) return
-  if (await gate.isOff(() => $.mods.isOn({ name: NAME }))) {
-    stop(watch)
-    return
-  }
+  // Claimed before the first wait, so a trigger in the same moment joins this fetch.
   watch.inflight = (async () => {
+    if ((await $.clock.now()) - watch.lastEnded < QUIET_MS) return
+    if (await gate.isOff(() => $.mods.isOn({ name: NAME }))) {
+      stop(watch)
+      return
+    }
     const next = await fetchStatus($, watch.estimates)
     watch.lastEnded = await $.clock.now()
     if (next.kind === 'unavailable' && next.reason === 'error') {
@@ -184,6 +191,7 @@ export const register: Register = on => {
 
   on('session.start', async ($, e, next) => {
     const t = texts(await learnLanguage($))
+    watch.since = await $.clock.now()
     try {
       isSwitched = await $.mods.declare({ name: NAME, title: t.title, summary: t.summary, details: t.details })
     } catch {
@@ -246,13 +254,12 @@ export const register: Register = on => {
     const lang = await languageFor($)
     const t = texts(lang)
     const { status } = watch
-    const failed = status.kind === 'mr' && status.mr.pipeline !== undefined ? firstFailed(status.mr.pipeline) : undefined
-    const trace = failed === undefined ? undefined : await fetchTrace($, failed.id)
-    if (status.kind !== 'mr' || failed === undefined || trace === undefined) {
+    const failure = status.kind === 'mr' && status.mr.pipeline !== undefined ? await fetchFailure($, status.mr.pipeline) : undefined
+    if (status.kind !== 'mr' || failure === undefined) {
       $.ui.toast(t.noLog)
       return {}
     }
-    const body = draftFor(status.mr, failed, excerpt(trace), lang)
+    const body = draftFor(status.mr, failure.job, excerpt(failure.trace), lang, failure.isCut)
     const box = await $.prompt.read()
     const filled = await $.prompt.fill({ text: box.text === '' ? body : `\n\n${body}`, mode: 'append' })
     if (!filled.isFilled) $.ui.toast(t.noBox)

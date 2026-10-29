@@ -1,8 +1,18 @@
 // The merge request of the current branch and its head pipeline, as the mod reasons about them:
 // plain values, mapped from GitLab's answers in `glab.ts` and nowhere else.
 
-/** One job of a pipeline; a bridge to a downstream pipeline counts as one too. */
-export type Job = { id: number; name: string; stage: string; status: string; allowFailure: boolean }
+/**
+ * One job of a pipeline; a bridge to a downstream pipeline counts as one too, and names that
+ * pipeline in `downstream`.
+ */
+export type Job = {
+  id: number
+  name: string
+  stage: string
+  status: string
+  allowFailure: boolean
+  downstream?: { project: number; pipeline: number }
+}
 
 /** A merge request's head pipeline with its jobs, in the order GitLab lists them. */
 export type Pipeline = {

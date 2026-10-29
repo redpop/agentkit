@@ -5,7 +5,7 @@
 import type { EngineInterface } from 'claude-code'
 
 import type { Job, Mr, Pipeline, Status, Unavailable } from './model'
-import { meanMs, phaseOf } from './model'
+import { isBlocking, meanMs, phaseOf } from './model'
 
 const TIMEOUT_MS = 10_000
 
@@ -26,8 +26,11 @@ const NOT_STARTED = /ENOENT|not found|no such file/i
 
 // Function declarations, not arrows: past an import the hooks loader follows `$` only into those.
 
-/** What glab writes for an API path; throws `Refused` with the reason when it does not answer. */
-async function run($: EngineInterface, path: string): Promise<string> {
+/**
+ * What glab writes for an API path, and whether it was cut at the read limit; throws `Refused`
+ * with the reason when it does not answer.
+ */
+async function run($: EngineInterface, path: string): Promise<{ stdout: string; isCut: boolean }> {
   let result
   try {
     result = await $.process.run(['glab', 'api', path], { timeoutMs: TIMEOUT_MS })
@@ -38,12 +41,12 @@ async function run($: EngineInterface, path: string): Promise<string> {
     throw new Refused(NOT_GITLAB.test(result.stderr) ? 'not-gitlab' : NO_AUTH.test(result.stderr) ? 'no-auth' : 'error')
   }
 
-  return result.stdout
+  return { stdout: result.stdout, isCut: result.isStdoutTruncated }
 }
 
 /** The JSON glab answers for an API path; throws `Refused` when there is none. */
 async function api($: EngineInterface, path: string): Promise<unknown> {
-  const stdout = await run($, path)
+  const { stdout } = await run($, path)
   try {
     return JSON.parse(stdout)
   } catch {
@@ -57,13 +60,18 @@ const record = (value: unknown): Raw | undefined => (typeof value === 'object' &
 const list = (value: unknown): Raw[] => (Array.isArray(value) ? value.map(record).filter((one): one is Raw => one !== undefined) : [])
 const text = (value: unknown): string | undefined => (typeof value === 'string' ? value : undefined)
 
-const job = (raw: Raw): Job => ({
-  id: Number(raw.id),
-  name: text(raw.name) ?? '',
-  stage: text(raw.stage) ?? '',
-  status: text(raw.status) ?? '',
-  allowFailure: raw.allow_failure === true,
-})
+const job = (raw: Raw): Job => {
+  const downstream = record(raw.downstream_pipeline)
+
+  return {
+    id: Number(raw.id),
+    name: text(raw.name) ?? '',
+    stage: text(raw.stage) ?? '',
+    status: text(raw.status) ?? '',
+    allowFailure: raw.allow_failure === true,
+    ...(downstream === undefined ? {} : { downstream: { project: Number(downstream.project_id), pipeline: Number(downstream.id) } }),
+  }
+}
 
 /** The jobs of a pipeline and its bridges to downstream pipelines, each bridge one job. */
 async function jobsOf($: EngineInterface, id: number): Promise<Job[]> {
@@ -117,10 +125,14 @@ export async function fetchStatus($: EngineInterface, estimates: Map<number, num
       ...(finishedAt === undefined ? {} : { finishedAt }),
       jobs: [],
     }
-    // The estimate shows only while the pipeline runs: fetched then, once, beside the jobs.
+    // The estimate shows only while the pipeline runs: fetched then, once, beside the jobs. One
+    // that fails leaves the estimate out and is asked again next time.
     const isEstimated = !estimates.has(id) && phaseOf(bare) === 'running'
-    const [jobs, estimate] = await Promise.all([jobsOf($, id), isEstimated ? estimateFor($, id) : undefined])
-    if (isEstimated) estimates.set(id, estimate)
+    const [jobs, estimate] = await Promise.all([
+      jobsOf($, id),
+      isEstimated ? estimateFor($, id).then(ms => ({ ms }), () => undefined) : undefined,
+    ])
+    if (estimate !== undefined) estimates.set(id, estimate.ms)
     const pipeline: Pipeline = { ...bare, jobs }
     const estimateMs = estimates.get(id)
 
@@ -130,9 +142,33 @@ export async function fetchStatus($: EngineInterface, estimates: Map<number, num
   }
 }
 
-/** A job's raw log; undefined when glab does not hand it over. */
-export async function fetchTrace($: EngineInterface, jobId: number): Promise<string | undefined> {
-  return run($, `projects/:id/jobs/${jobId}/trace`).catch(() => undefined)
+/** A failed job and its raw log, and whether the log was cut at the read limit. */
+export type Failure = { job: Job; trace: string; isCut: boolean }
+
+/**
+ * The job that failed the pipeline, with its log: a job of its own first; else a failed bridge's
+ * downstream pipeline, one level down, and its first failed job. Undefined when glab hands none over.
+ */
+export async function fetchFailure($: EngineInterface, pipeline: Pipeline): Promise<Failure | undefined> {
+  try {
+    const own = pipeline.jobs.find(one => isBlocking(one) && one.downstream === undefined)
+    if (own !== undefined) {
+      const { stdout, isCut } = await run($, `projects/:id/jobs/${own.id}/trace`)
+
+      return { job: own, trace: stdout, isCut }
+    }
+    const downstream = pipeline.jobs.find(one => isBlocking(one) && one.downstream !== undefined)?.downstream
+    if (downstream === undefined) return undefined
+    const failed = list(await api($, `projects/${downstream.project}/pipelines/${downstream.pipeline}/jobs?per_page=100`))
+      .map(job)
+      .find(isBlocking)
+    if (failed === undefined) return undefined
+    const { stdout, isCut } = await run($, `projects/${downstream.project}/jobs/${failed.id}/trace`)
+
+    return { job: failed, trace: stdout, isCut }
+  } catch {
+    return undefined
+  }
 }
 
 /** Opens a page in the default browser (macOS `open`). */

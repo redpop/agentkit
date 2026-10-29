@@ -328,6 +328,36 @@ test('a prompt and a main-loop turn fetch, a subagent turn does not', OWNED, asy
   expect(fetches(runs)).toBe(before + 2)
 })
 
+test('triggers in the same moment fetch once', OWNED, async ($, on) => {
+  const { clock, runs, set } = engine(on)
+  set({ [MRS]: { stdout: [] } })
+  await start($)
+  await clock.settle()
+  await clock.advance(5_000)
+  const before = fetches(runs)
+  await $.prompt.submit({ text: 'weiter', wait: false, origin: { kind: 'composer' } })
+  await turn($)
+  await clock.settle()
+  expect(fetches(runs)).toBe(before + 1)
+})
+
+test('a pipeline that starts and ends between two fetches still toasts', OWNED, async ($, on) => {
+  const { clock, toasts, set } = engine(on)
+  set({ [MRS]: { stdout: [] } })
+  await start($)
+  await clock.settle()
+  // Pushed from outside: created after the session started, already green when first seen.
+  const late = gitlab('success', ['success', 'success'], '2026-10-29T10:09:51Z')
+  const detail = late[MR]?.stdout as { head_pipeline: Record<string, string> }
+  detail.head_pipeline.created_at = '2026-10-29T10:05:00Z'
+  detail.head_pipeline.started_at = '2026-10-29T10:05:00Z'
+  set(late)
+  await clock.advance(5_000)
+  await turn($)
+  await clock.settle()
+  expect(plain(toasts)).toEqual(['Pipeline !12 grün (4:51)'])
+})
+
 test('open runs the browser on the merge request', OWNED, async ($, on) => {
   const { clock, runs, set } = engine(on)
   set(RUNNING)

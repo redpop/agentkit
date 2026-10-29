@@ -1,7 +1,8 @@
 import { expect, test } from 'claude-code/testing'
 import type { EngineInterface, ProcessRunResult } from 'claude-code'
 
-import { fetchStatus, fetchTrace, openUrl } from '../hooks/glab'
+import { fetchFailure, fetchStatus, openUrl } from '../hooks/glab'
+import type { Pipeline } from '../hooks/model'
 
 const MRS = 'glab api projects/:id/merge_requests?source_branch=:branch&state=opened&order_by=updated_at&per_page=1'
 const MR = 'glab api projects/:id/merge_requests/12'
@@ -9,7 +10,7 @@ const JOBS = 'glab api projects/:id/pipelines/4711/jobs?per_page=100'
 const BRIDGES = 'glab api projects/:id/pipelines/4711/bridges?per_page=100'
 const GREEN = 'glab api projects/:id/pipelines?status=success&per_page=5'
 
-type Answer = { exitCode?: number; stdout?: unknown; stderr?: string } | 'missing' | 'hanging'
+type Answer = { exitCode?: number; stdout?: unknown; stderr?: string; isCut?: boolean } | 'missing' | 'hanging'
 
 // The host beneath: each command line answers as the test sets it; an unset one exits 1. Every
 // command line is recorded, with its options. A test's own `$` has no `process`: the module gets a
@@ -27,7 +28,7 @@ const host = (answers: Record<string, Answer> | (() => Answer)) => {
       exitCode: answer.exitCode ?? 0,
       stdout: typeof answer.stdout === 'string' ? answer.stdout : JSON.stringify(answer.stdout ?? ''),
       stderr: answer.stderr ?? '',
-      isStdoutTruncated: false,
+      isStdoutTruncated: answer.isCut === true,
       isStderrTruncated: false,
     }
   }
@@ -140,13 +141,65 @@ test('glab missing, not logged in, not a GitLab project, or another failure', as
   }
 })
 
-test('the trace of a job, none when glab refuses', async () => {
+test('a failed estimate leaves the estimate out, not the pipeline', async () => {
+  const { $ } = host({ ...RUNNING, [GREEN]: { exitCode: 1, stderr: 'glab: 500 Internal Server Error' } })
+  const status = await fetchStatus($, new Map())
+  expect(status.kind).toBe('mr')
+  expect(status.kind === 'mr' ? status.mr.pipeline?.jobs.length : 0).toBe(3)
+  expect(status.kind === 'mr' ? status.estimateMs : 0).toBeUndefined()
+})
+
+const failing = (jobs: Pipeline['jobs']): Pipeline => ({
+  id: 4711,
+  status: 'failed',
+  webUrl: 'https://gitlab.example.com/group/project/-/pipelines/4711',
+  createdAt: '2026-10-29T09:59:50Z',
+  jobs,
+})
+const UNIT = { id: 2, name: 'test:unit', stage: 'test', status: 'failed', allowFailure: false }
+const BRIDGE = { id: 3, name: 'deploy', stage: 'deploy', status: 'failed', allowFailure: false, downstream: { project: 77, pipeline: 900 } }
+
+test("a failed job's log, none when glab refuses it", async () => {
   const { $ } = host({
     'glab api projects/:id/jobs/2/trace': { stdout: 'ERROR: boom\n' },
-    'glab api projects/:id/jobs/3/trace': { exitCode: 1, stderr: '404 Not Found' },
   })
-  expect(await fetchTrace($, 2)).toBe('ERROR: boom\n')
-  expect(await fetchTrace($, 3)).toBeUndefined()
+  expect(await fetchFailure($, failing([UNIT]))).toEqual({ job: UNIT, trace: 'ERROR: boom\n', isCut: false })
+  expect(await fetchFailure(host({}).$, failing([UNIT]))).toBeUndefined()
+})
+
+test('a job of its own goes before a failed bridge', async () => {
+  const { $ } = host({ 'glab api projects/:id/jobs/2/trace': { stdout: 'ERROR: boom\n' } })
+  expect((await fetchFailure($, failing([BRIDGE, UNIT])))?.job.name).toBe('test:unit')
+})
+
+test('a failed bridge leads to the first failed job of its downstream pipeline', async () => {
+  const { $ } = host({
+    'glab api projects/77/pipelines/900/jobs?per_page=100': {
+      stdout: [
+        { id: 51, name: 'smoke', stage: 'verify', status: 'success', allow_failure: false },
+        { id: 52, name: 'e2e', stage: 'verify', status: 'failed', allow_failure: false },
+      ],
+    },
+    'glab api projects/77/jobs/52/trace': { stdout: 'FAILED e2e\n', isCut: true },
+  })
+  expect(await fetchFailure($, failing([BRIDGE]))).toEqual({
+    job: { id: 52, name: 'e2e', stage: 'verify', status: 'failed', allowFailure: false },
+    trace: 'FAILED e2e\n',
+    isCut: true,
+  })
+})
+
+test("a bridge's downstream pipeline comes from GitLab's answer", async () => {
+  const { $ } = host({
+    ...RUNNING,
+    [BRIDGES]: {
+      stdout: [
+        { id: 3, name: 'deploy', stage: 'deploy', status: 'failed', allow_failure: false, downstream_pipeline: { id: 900, project_id: 77 } },
+      ],
+    },
+  })
+  const status = await fetchStatus($, new Map())
+  expect(status.kind === 'mr' ? status.mr.pipeline?.jobs.at(-1)?.downstream : undefined).toEqual({ project: 77, pipeline: 900 })
 })
 
 test('a merge request opens in the browser', async () => {

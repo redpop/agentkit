@@ -65,3 +65,12 @@ test('the draft names the merge request, job and stage, the excerpt fenced', () 
     'Die Pipeline von !12 ist im Job test:unit (Stage test) fehlgeschlagen. Auszug aus dem Log:\n\n```text\nERROR: boom\n```',
   )
 })
+
+test('a log cut at 4 MiB says that its end is missing', () => {
+  const mr: Mr = { iid: 12, title: 'Add the login form', webUrl: 'https://gitlab.example.com/x', target: 'main', isDraft: false }
+  const job: Job = { id: 9, name: 'test:unit', stage: 'test', status: 'failed', allowFailure: false }
+  expect(draftFor(mr, job, 'line 1', 'de', true)).toBe(
+    'Die Pipeline von !12 ist im Job test:unit (Stage test) fehlgeschlagen. Auszug aus dem Log:\n\n' +
+      'Das Log ist länger als 4 MiB; sein Ende fehlt im Auszug.\n\n```text\nline 1\n```',
+  )
+})

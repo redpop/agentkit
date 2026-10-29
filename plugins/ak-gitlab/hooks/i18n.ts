@@ -88,6 +88,7 @@ const EN = {
   noMr: 'No open merge request for this branch',
   noBox: 'Prompt box not available, excerpt not inserted',
   noLog: 'Job log not readable',
+  cut: 'The log is longer than 4 MiB; its end is missing from the excerpt.',
   draft: (iid: number, job: string, stage: string) =>
     `The pipeline of !${iid} failed in job ${job} (stage ${stage}). Excerpt from the log:`,
 }
@@ -130,6 +131,7 @@ const DE: typeof EN = {
   noMr: 'Kein offener Merge Request für diesen Branch',
   noBox: 'Eingabefeld nicht verfügbar, Auszug nicht eingefügt',
   noLog: 'Job-Log nicht lesbar',
+  cut: 'Das Log ist länger als 4 MiB; sein Ende fehlt im Auszug.',
   draft: (iid: number, job: string, stage: string) =>
     `Die Pipeline von !${iid} ist im Job ${job} (Stage ${stage}) fehlgeschlagen. Auszug aus dem Log:`,
 }

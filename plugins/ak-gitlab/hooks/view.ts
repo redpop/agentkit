@@ -168,7 +168,11 @@ export function toastFor(mr: Mr, lang: Lang): { key: string; text: string } | un
     case 'failed':
       return { key: finished, text: t.failed(mr.iid, firstFailed(pipeline)?.name ?? '') }
     case 'manual':
-      return { key: `${pipeline.id}:manual`, text: t.waits(mr.iid, held(pipeline)?.name ?? '') }
+      {
+      const name = held(pipeline)?.name ?? ''
+
+      return { key: `${pipeline.id}:manual:${name}`, text: t.waits(mr.iid, name) }
+    }
     default:
       return undefined
   }

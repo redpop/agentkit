@@ -59,6 +59,10 @@ The excerpt holds the lines that look like errors, three lines around each, and 
 without colours or GitLab's section markers, under a sentence that names the merge request, job and
 stage. It goes after what is already typed, as a draft: nothing is sent until you press Enter.
 
+The job is the first one that failed the pipeline itself. When only a bridge failed, the mod follows
+it one level down to the downstream pipeline and takes that pipeline's first failed job. A log
+longer than 4 MiB is read up to that limit; the draft then says that its end is missing.
+
 ## How it works
 
 - GitLab is read through `glab api`, which resolves the project and the branch from the repository
@@ -72,8 +76,9 @@ stage. It goes after what is already typed, as a draft: nothing is sent until yo
 - A fetch that fails keeps the last segment. When glab is not logged in, the segment goes and a
   toast says so once; when glab is missing or the repository is not on GitLab, the mod stays silent.
 - A toast says when the pipeline turns green, fails or stops at a manual job, once per state it
-  reaches: a retried job that turns the same pipeline green toasts again. A pipeline that had
-  already finished when the mod first saw it gets none.
+  reaches: a retried job that turns the same pipeline green toasts again, and so does a second
+  manual job. A pipeline that had already finished before the session started gets none; one
+  created later gets its toast even when it finished between two fetches.
 
 ## Credit
 
