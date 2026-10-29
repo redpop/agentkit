@@ -66,8 +66,9 @@ stage. It goes after what is already typed, as a draft: nothing is sent until yo
 - It asks every 15 seconds while a pipeline runs; every 2.5 minutes while a merge request is open
   and its pipeline is settled or missing, since pushes also come from outside Claude; and at once on
   session start, on every prompt and main-loop turn, and after a `git checkout`, `git switch`,
-  `git push` or `glab mr create` that Claude runs. Without an open merge request it waits for the
-  next of those. Switched off, it asks nothing.
+  `git push` or `glab mr create` that Claude runs, and once more 10 seconds later, when GitLab has
+  attached the new pipeline. Without an open merge request it waits for the next of those.
+  Switched off, it asks nothing.
 - A fetch that fails keeps the last segment. When glab is not logged in, the segment goes and a
   toast says so once; when glab is missing or the repository is not on GitLab, the mod stays silent.
 - A toast says when the pipeline turns green, fails or stops at a manual job, once per state it

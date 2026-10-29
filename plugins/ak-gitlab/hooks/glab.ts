@@ -35,7 +35,7 @@ async function run($: EngineInterface, path: string): Promise<string> {
     throw new Refused(NOT_STARTED.test(String(error)) ? 'no-glab' : 'error')
   }
   if (result.exitCode !== 0) {
-    throw new Refused(NO_AUTH.test(result.stderr) ? 'no-auth' : NOT_GITLAB.test(result.stderr) ? 'not-gitlab' : 'error')
+    throw new Refused(NOT_GITLAB.test(result.stderr) ? 'not-gitlab' : NO_AUTH.test(result.stderr) ? 'no-auth' : 'error')
   }
 
   return result.stdout

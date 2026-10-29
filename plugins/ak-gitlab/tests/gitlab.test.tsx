@@ -170,7 +170,7 @@ const fetches = (runs: string[]) => runs.filter(line => line === MRS).length
 
 test('no segment outside GitLab', OWNED, async ($, on) => {
   const { clock, toasts, set } = engine(on)
-  set({ [MRS]: { exitCode: 1, stderr: 'none of the git remotes configured for this repository point to a known GitLab host' } })
+  set({ [MRS]: { exitCode: 1, stderr: 'none of the git remotes configured for this repository point to a known GitLab host. Please use `glab auth login` to authenticate and configure a new host for glab.' } })
   await start($)
   await clock.settle()
   expect(segments(toasts).filter(one => one !== undefined)).toEqual([])
@@ -291,6 +291,22 @@ test('a push fetches at once, another command does not', OWNED, async ($, on) =>
   await bash($, 'git push origin feat/login')
   await clock.settle()
   expect(fetches(runs)).toBe(before + 1)
+})
+
+test('a push looks again once GitLab had time to start the pipeline', OWNED, async ($, on) => {
+  const { clock, runs, set } = engine(on)
+  set(SUCCESS)
+  await start($)
+  await clock.settle()
+  await clock.advance(5_000)
+  const before = fetches(runs)
+  await bash($, 'git push origin feat/login')
+  await clock.settle()
+  expect(fetches(runs)).toBe(before + 1)
+  // The new head pipeline shows up a few seconds after the push, long before the slow poll.
+  set(RUNNING)
+  await clock.advance(10_000)
+  expect(fetches(runs)).toBe(before + 2)
 })
 
 test('a prompt and a main-loop turn fetch, a subagent turn does not', OWNED, async ($, on) => {

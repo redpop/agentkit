@@ -19,6 +19,8 @@ const NAME = 'ak-gitlab'
 const FAST_MS = 15_000
 const SLOW_MS = 150_000
 const TICK_MS = 5_000
+// GitLab attaches a push's pipeline to the merge request a few seconds later: look again then.
+const AFTER_PUSH_MS = 10_000
 // Fetches closer than this to the last one are dropped: a prompt, its turn and a push come together.
 const QUIET_MS = 3_000
 // The Bash commands after which the branch or its pipeline may have changed.
@@ -142,8 +144,8 @@ async function refresh($: EngineInterface, watch: Watch, gate: Gate): Promise<vo
 }
 
 /** A fetch off the hook that asked: it runs glab, which the prompt or the turn should not wait for. */
-function soon($: EngineInterface, watch: Watch, gate: Gate): void {
-  $.clock.after(0, () => {
+function soon($: EngineInterface, watch: Watch, gate: Gate, ms = 0): void {
+  $.clock.after(ms, () => {
     refresh($, watch, gate).catch(() => {})
   })
 }
@@ -209,10 +211,14 @@ export const register: Register = on => {
     return done
   }).catch(($, e, next) => next(e))
 
-  // A checkout, switch or push, or a new merge request: look at once.
+  // A checkout, switch or push, or a new merge request: look at once, and again once GitLab has
+  // attached the new pipeline.
   on('tool.call', { tool: 'Bash' }, async ($, e, next) => {
     const done = await next(e)
-    if (MOVES.test(e.command)) soon($, watch, gate)
+    if (MOVES.test(e.command)) {
+      soon($, watch, gate)
+      soon($, watch, gate, AFTER_PUSH_MS)
+    }
 
     return done
   }).catch(($, e, next) => next(e))

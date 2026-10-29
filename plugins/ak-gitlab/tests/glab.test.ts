@@ -127,7 +127,7 @@ test('glab missing, not logged in, not a GitLab project, or another failure', as
     ['hanging', 'error'],
     [{ exitCode: 1, stderr: 'glab: 401 Unauthorized' }, 'no-auth'],
     [{ exitCode: 1, stderr: 'You are not logged in to any GitLab hosts' }, 'no-auth'],
-    [{ exitCode: 1, stderr: 'none of the git remotes configured for this repository point to a known GitLab host' }, 'not-gitlab'],
+    [{ exitCode: 1, stderr: 'none of the git remotes configured for this repository point to a known GitLab host. Please use `glab auth login` to authenticate and configure a new host for glab.' }, 'not-gitlab'],
     [{ exitCode: 128, stderr: 'fatal: not a git repository (or any of the parent directories): .git' }, 'not-gitlab'],
     [{ exitCode: 1, stderr: 'glab: 500 Internal Server Error' }, 'error'],
     [{ stdout: 'not json' }, 'error'],

@@ -11,7 +11,7 @@ and domain knowledge bases. Built on the official Claude Code Plugin Architectur
 
 ## Dev environment
 
-No build step required — the codebase is Markdown, JSON, and shell scripts, plus four TSX
+No build step required — the codebase is Markdown, JSON, and shell scripts, plus five TSX
 hooks modules (`ak-mods`, `ak-keepwarm`, `ak-session-id`, `ak-usage`, `ak-gitlab`) that Claude Code loads directly.
 
 **Test a plugin locally:**
