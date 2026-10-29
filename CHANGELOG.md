@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.56.1] - 2026-10-29
+
+### 🐛 Fixed
+
+- `ak-mods` — on the desktop app the band no longer breaks into two rows while it has room: it
+  counts each segment as it draws there, its rings and icons as pictures rather than by the
+  terminal's text, and a button on the text no longer as a button of its own. Two cells now part
+  the segments there instead of three.
+
 ## [1.56.0] - 2026-10-29
 
 ### 🔄 Changed
