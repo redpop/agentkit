@@ -342,6 +342,14 @@ const segment = (): Segment => {
         { text: t.ringKept, tone: 'info', ring: 100 },
         { text: ` ${t.keptWarm}`, tone: 'info' },
       ],
+      // Short of room, the band keeps what matters most: that the cache is kept warm.
+      compact: {
+        text: `◆ ${t.warmShort}`,
+        rich: [
+          { text: t.ringKept, tone: 'info', ring: 100 },
+          { text: ` ${t.warmShort}`, tone: 'info' },
+        ],
+      },
       ...more,
       tone: 'info',
       priority: 6,
@@ -359,6 +367,14 @@ const segment = (): Segment => {
         { text: ` ${minutes(left)}`, tone: 'ok' },
         { text: ` ${t.cacheWord}`, tone: 'dim' },
       ],
+      // Short of room: the ring and the time left; the compact text is the keep button.
+      compact: {
+        text: time,
+        rich: [
+          { text: t.ringLeft(minutes(left)), tone: 'ok', ring },
+          { text: ` ${minutes(left)}`, tone: 'ok' },
+        ],
+      },
       ...more,
       tone: 'ok',
       priority: 6,
@@ -377,6 +393,13 @@ const segment = (): Segment => {
         { text: ` · ${t.nextRewrites} `, tone: 'dim' },
         { text: t.tokensAt(tokens(S.ctx), cost), tone: 'warn' },
       ],
+      compact: {
+        text: time,
+        rich: [
+          { text: t.ringLeft(minutes(left)), tone: 'warn', ring },
+          { text: ` ${minutes(left)}`, tone: 'warn' },
+        ],
+      },
       parts: [
         { text: time, tone: 'warn' },
         { text: `  ${t.rewrite} `, tone: 'dim' },
@@ -399,6 +422,14 @@ const segment = (): Segment => {
       { text: ` ${cost}`, tone: rewrite >= NOTABLE_USD ? 'warn' : 'ok' },
       { text: ` ${t.cacheWord}`, tone: 'dim' },
     ],
+    // Short of room: the empty ring and what the next message costs. No button, as in full.
+    compact: {
+      text: `○ ${cost}`,
+      rich: [
+        { text: t.ringCold, tone: 'dim', ring: 0 },
+        { text: ` ${cost}`, tone: rewrite >= NOTABLE_USD ? 'warn' : 'ok' },
+      ],
+    },
     ...more,
     tone: 'dim',
     priority: 6,

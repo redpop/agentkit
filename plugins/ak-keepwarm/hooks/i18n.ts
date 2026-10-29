@@ -88,6 +88,7 @@ const EN = {
   always: 'always',
   // The band.
   keptWarm: 'kept warm',
+  warmShort: 'warm',
   cacheWord: 'cache',
   cold: 'cold',
   rewrite: 'rewrite',
@@ -162,6 +163,7 @@ const DE: typeof EN = {
   waiting: 'wartet auf die nächste Antwort',
   always: 'immer',
   keptWarm: 'warm gehalten',
+  warmShort: 'warm',
   cacheWord: 'Cache',
   cold: 'kalt',
   rewrite: 'Neuschreiben',

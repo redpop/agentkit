@@ -417,6 +417,13 @@ const WARM = {
     { text: ' 60m', tone: 'ok' },
     { text: ' cache', tone: 'dim' },
   ],
+  compact: {
+    text: '● 60m',
+    rich: [
+      { text: 'cache 60m left', tone: 'ok', ring: 100 },
+      { text: ' 60m', tone: 'ok' },
+    ],
+  },
   card: card('60m left'),
   tone: 'ok',
   priority: 6,
@@ -455,6 +462,13 @@ test('publishes the warn segment with the keepwarm button while cooling', OWNED,
       { text: ' · next message rewrites ', tone: 'dim' },
       { text: `200k tokens ${COST}`, tone: 'warn' },
     ],
+    compact: {
+      text: '◔ 4m',
+      rich: [
+        { text: 'cache 4m left', tone: 'warn', ring: 7 },
+        { text: ' 4m', tone: 'warn' },
+      ],
+    },
     card: card('4m left'),
     parts: [
       { text: '◔ 4m', tone: 'warn' },
@@ -489,6 +503,13 @@ test('publishes the cold segment without a button', OWNED, async ($, on) => {
       { text: ` ${COST}`, tone: 'ok' },
       { text: ' cache', tone: 'dim' },
     ],
+    compact: {
+      text: `○ ${COST}`,
+      rich: [
+        { text: 'cache cold', tone: 'dim', ring: 0 },
+        { text: ` ${COST}`, tone: 'ok' },
+      ],
+    },
     card: card('cold for 12m'),
     tone: 'dim',
     priority: 6,
@@ -516,6 +537,13 @@ test('publishes the kept-warm segment with the stop button, without its end', OW
       { text: 'cache kept warm', tone: 'info', ring: 100 },
       { text: ' kept warm', tone: 'info' },
     ],
+    compact: {
+      text: '◆ warm',
+      rich: [
+        { text: 'cache kept warm', tone: 'info', ring: 100 },
+        { text: ' warm', tone: 'info' },
+      ],
+    },
     card: card(`kept warm until ${clockTime(START + 4 * 60 * MIN)}`),
     tone: 'info',
     priority: 6,
