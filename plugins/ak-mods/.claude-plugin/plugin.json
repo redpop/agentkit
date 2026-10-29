@@ -1,7 +1,7 @@
 {
   "name": "ak-mods",
   "description": "Mod switcher: a pane that turns each AgentKit mod on or off for this session, with standard mods that start on in every new chat, and draws the one band they share",
-  "version": "1.58.7",
+  "version": "1.58.8",
   "author": {
     "name": "redpop",
     "url": "https://github.com/redpop"

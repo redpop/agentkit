@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.58.8] - 2026-10-29
+
+### 🐛 Fixed
+
+- `ak-mods` — on the desktop app the band no longer turns compact while it has room: it counts its
+  text at 0.85 of a cell, as its proportional face is narrower than the code font a cell is
+  measured in.
+
 ## [1.58.7] - 2026-10-29
 
 ### 🐛 Fixed
