@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.55.0] - 2026-10-29
+
+### 🔄 Changed
+
+- `ak-mods` — on the desktop app a segment's card no longer opens on hover, where it flashed up as
+  the pointer crossed the band. The segment's text is now a plain button, marked under the pointer:
+  a press opens the Mods pane with that mod's row open alone, scrolled into view, where the card's
+  rows show, and a second press closes the row and the pane. Nothing covers the chat or moves it,
+  and the hover tint is gone.
+- `ak-mods` — a segment's button may be `isPaneOnly`: the Mods pane shows it, the band leaves it
+  out, room included, for an action seldom taken.
+- `ak-keepwarm` — while the cache is kept warm the band shows the state alone; **stop** sits in the
+  mod's row of the Mods pane, and `/keepwarm` stops it as before.
+- `ak-mods` — a segment's button may be `isOnText`: on the desktop app the segment's text is the
+  button, hotkey included, and no button stands beside it.
+- `ak-session-id` — on the desktop app a press on the id copies it (key `c`); the **copy** button
+  stays on the terminal and in the Mods pane.
+- `ak-mods` — the Mods pane opens one row at a time: **Show details** on one closes any other, so
+  the pane stays short enough to see the row asked for.
+
 ## [1.54.0] - 2026-10-29
 
 ### 🔄 Changed
