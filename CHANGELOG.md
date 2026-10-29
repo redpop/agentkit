@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.57.0] - 2026-10-29
+
+### ✨ Added
+
+- `ak-mods` — when the band is short of room, every segment with a compact form switches to it,
+  the whole band together, before the band takes a second row. A compact segment's button is its
+  text on the desktop app, with no hotkey; the terminal leaves it to the Mods pane. A mod publishes
+  the form as `compact` beside `text`; a segment without one draws in full as before.
+- `ak-usage` — compact, each figure's percentage alone: `ctx 67%  5h 42%`, a ring beside each on
+  the desktop app.
+- `ak-keepwarm` — compact, `◆ warm` while kept warm, the ring and the time left while warm, the
+  empty ring and the rewrite cost when cold. While the cache is warm or cooling, a press on it
+  starts keep warm; cold, it opens the Mods pane.
+- `ak-session-id` — compact, the id icon and the last four characters; a press still copies.
+
 ## [1.56.1] - 2026-10-29
 
 ### 🐛 Fixed
