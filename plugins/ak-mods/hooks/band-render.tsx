@@ -236,7 +236,11 @@ export const segmentView = (
   let isArmed = false
   const pressable = (at: number, children: ReturnType<ElementConstructor<TextProps>>[], parts: ModsPart[] = []) => {
     const look = lookOf(parts[0])
-    if (press === undefined || Button === undefined || (keepsColor && look === 'color')) return children
+    if (press === undefined || Button === undefined) return children
+    // Space alone presses nothing. Where the press only opens the pane, the value is the button and
+    // what frames it stays text: a dim label in its dimness, a coloured run in its colour.
+    if (parts.length > 0 && parts.every(part => part.text.trim() === '')) return children
+    if (keepsColor && look !== 'plain') return children
     const armed = isArmed ? undefined : hotkey
     isArmed = true
     // Drawn uncoloured, a stretch of dim runs keeps its dimness on the Button itself.

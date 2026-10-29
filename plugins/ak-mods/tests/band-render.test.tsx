@@ -645,10 +645,10 @@ test('on the desktop app the text between pictures is the button; the rings stay
   })
 
   const desk = await $.ui.mount({ ...BAND, surface: 'desktop' })
-  // One button a stretch of text in one look: ' 42%' and the dim ' ctx' after the first ring,
-  // ' 7%' after the second.
+  // The value is the button, its dim label text beside it: ' 42%' after the first ring, ' 7%' after the second.
   expect((await desk.find({ key: 'text-ak-a-press-1' }))?.text).toBe(' 42%')
-  expect(await desk.find({ key: 'text-ak-a-press-2' })).toMatchObject({ text: ' ctx', props: { dimColor: true } })
+  expect(await desk.find({ key: 'text-ak-a-press-2' })).toBeUndefined()
+  expect(await exactly(desk, ' ctx')).toMatchObject({ type: 'Text', props: { dimColor: true } })
   expect((await desk.find({ key: 'text-ak-a-press-4' }))?.text).toBe(' 7%')
   expect(await desk.findAll({ type: 'Svg' })).toHaveLength(2)
   await desk.press({ key: 'text-ak-a-press-4' })
@@ -830,13 +830,14 @@ test('on the desktop app a toned run that only opens the pane keeps its colour a
   // A Button draws its label alone, uncoloured: the toned run stays text, in its colour.
   expect(await exactly(ui, ' warm')).toMatchObject({ type: 'Text', props: { color: '#4889cd' } })
   expect(await ui.find({ key: 'text-ak-a-press-1' })).toBeUndefined()
-  // The untoned run beside it still opens the pane.
-  await ui.press({ key: 'text-ak-a-press-2' })
-  expect(opened).toEqual([{ id: 'ak-mods', title: 'Mods' }])
+  // Its dim label stays text too: nothing here is the press, `m` opens the pane.
+  expect(await ui.find({ key: 'text-ak-a-press-2' })).toBeUndefined()
+  expect(await exactly(ui, ' cache')).toMatchObject({ type: 'Text', props: { dimColor: true } })
+  expect(opened).toEqual([])
   await ui.unmount()
 })
 
-test('on the desktop app a dim label beside a pressable value stays dim: its own Button, dimmed', { plugins: [consumer('ak-a')] }, async ($, on) => {
+test('on the desktop app a dim label beside a pressable value stays dim text, the value alone the button', { plugins: [consumer('ak-a')] }, async ($, on) => {
   engine(on)
   await publish($, 'ak-a', 'A', {
     text: 'ctx 42%',
@@ -845,9 +846,37 @@ test('on the desktop app a dim label beside a pressable value stays dim: its own
   })
 
   const ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
-  // A Button draws its text in one style: the value and its label are two.
+  // A Button draws its text in one look: the value is the button, its label dim text beside it.
   expect(await ui.find({ key: 'text-ak-a-press-1' })).toMatchObject({ text: ' 42%' })
-  expect((await ui.find({ key: 'text-ak-a-press-1' }))?.props.dimColor).toBeUndefined()
-  expect(await ui.find({ key: 'text-ak-a-press-2' })).toMatchObject({ text: ' ctx', props: { dimColor: true } })
+  expect(await ui.find({ key: 'text-ak-a-press-2' })).toBeUndefined()
+  expect(await exactly(ui, ' ctx')).toMatchObject({ type: 'Text', props: { dimColor: true } })
+  await ui.unmount()
+})
+
+test('on the desktop app the space between two figures is no button', { plugins: [consumer('ak-a')] }, async ($, on) => {
+  engine(on)
+  await publish($, 'ak-a', 'A', {
+    text: 'ctx 51%  5h 18%',
+    rich: [{ text: 'ctx 51%', ring: 51 }, { text: ' 51%' }, { text: '  ', tone: 'dim' }, { text: '5h 18%', ring: 18 }, { text: ' 18%' }],
+    card: [{ label: 'Context', value: '51%' }],
+  })
+
+  const ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  const pressed = (await ui.findAll({ type: 'Button' })).map(one => one.text)
+  expect(pressed).toEqual([' 51%', ' 18%', 'mods'])
+  await ui.unmount()
+})
+
+test('on the desktop app a dim text that runs an action stays its button, dimmed', { plugins: [consumer('ak-a')] }, async ($, on) => {
+  engine(on)
+  await publish($, 'ak-a', 'A', {
+    text: 'id …797d',
+    tone: 'dim',
+    rich: [{ text: 'id', icon: 'id' }, { text: ' …797d' }],
+    button: { label: 'copy', hotkey: 'c', command: 'fixture-copy', isOnText: true },
+  })
+
+  const ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  expect(await ui.find({ key: 'text-ak-a-press-1' })).toMatchObject({ text: ' …797d', props: { dimColor: true } })
   await ui.unmount()
 })
