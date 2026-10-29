@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.60.0] - 2026-10-29
+
+### ✨ Added
+
+- `ak-pause` — a new mod: one segment in the shared band shows how long you have worked without a
+  break, counted across every session through the mod's own store. Ten minutes without input count
+  as a break; only your own prompts and typing count as input, not a background task's
+  notification, a routine or another agent's message. The time is a ring that fills to an hour
+  (`23 min straight`), plain for 50 minutes, then in the info, warning (60) and error (90) colours.
+  After 45 minutes a water hint joins with a **Drank** button that clears it; from 22:00 a dim
+  `Call it a day?`. Once a block, across sessions, it nudges at a quiet moment: a toast after a turn
+  from 60 minutes, or a notification when a turn has run for 3 minutes from 50, never within 5
+  seconds of a keystroke. Nothing of it reaches Claude's context.
+
 ## [1.59.1] - 2026-10-29
 
 ### 🐛 Fixed
