@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.54.0] - 2026-10-29
+
+### 🔄 Changed
+
+- `ak-mods` — on the desktop app a segment's card opens over its ring or icon, not anywhere on the
+  segment, and a tint behind the ring or icon shows there is a card to see. A pointer passing over
+  the band on its way to the chat so rarely opens one; the desktop app offers no hover delay. A
+  segment without a ring or icon keeps its card over its whole width.
+
+### 🐛 Fixed
+
+- `ak-mods` — in a narrow Mods pane a mod's header no longer cuts off its switch. The header holds
+  the title and the on/off switch alone: the title wraps, the switch keeps its size. The standard
+  mark moves to the foot of the row, beside **Show details**, and under it when the two do not fit.
+
 ## [1.53.0] - 2026-10-28
 
 ### ✨ Added
