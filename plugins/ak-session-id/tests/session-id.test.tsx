@@ -293,3 +293,18 @@ test('with Claude Code set to German, the button and the answer are German', OWN
   expect((await sessionId($)).text).toBe(`Session-ID ${HOST} kopiert`)
   expect((await sessionId($, 'what')).text).toBe('Aufruf: /session-id [engine]')
 })
+
+test('an id that turns current only after the end is published by the next turn', OWNED, async ($, on) => {
+  const { clock, toasts, renew } = engine(on, { host: null })
+  on('turn.start', (_, e) => ({ turnId: e.turnId }))
+  await start($)
+  await clock.settle()
+
+  // The end's republish still reads the ended chat's id; the new one turns current after it.
+  await $.session.end({ reason: 'clear', sessionId: ENGINE, resume: { id: ENGINE } })
+  await clock.settle()
+  renew('aaaaaaaa-0000-4000-8000-000000123456')
+  await $.turn.start({ turnId: 'T1', text: 'hi' })
+  await clock.settle()
+  expect(segments(toasts).at(-1)?.text).toBe('id …123456')
+})

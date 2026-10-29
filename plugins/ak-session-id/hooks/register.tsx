@@ -15,6 +15,8 @@ const COPIED_MS = 2000
 
 // Until when the segment says the id was copied: a check mark in place of the id.
 let copiedUntil = 0
+// The engine id the segment was last built from: a turn that finds another publishes again.
+let shownEngine: string | undefined
 
 type Segment = Parameters<EngineInterface['mods']['segment']>[0]
 
@@ -48,6 +50,7 @@ const segment = async ($: EngineInterface): Promise<Segment> => {
   const shown = await pick($, false)
   const host = await $.env.get('CLAUDE_CODE_HOST_SESSION_ID')
   const engine = await $.session.id()
+  shownEngine = engine
   const card = [
     ...(host !== undefined && host !== '' ? [{ label: t.desktopId, value: host }] : []),
     { label: t.engineId, value: engine },
@@ -155,6 +158,20 @@ export const register: Register = on => {
         .then(() => $.ui.invalidate('ui.render'))
         .catch(() => {})
     })
+
+    return next(e)
+  }).catch(($, e, next) => next(e))
+
+  // The id the end's republish read may still be the ended chat's: the next main-loop turn finds
+  // the new one and publishes again.
+  on('turn.start', async ($, e, next) => {
+    if (e.agentId === undefined && shownEngine !== undefined && (await $.session.id()) !== shownEngine) {
+      $.clock.after(0, () => {
+        publish(() => $.mods.isOn({ name: NAME }), async () => $.mods.segment(await segment($)))
+          .then(() => $.ui.invalidate('ui.render'))
+          .catch(() => {})
+      })
+    }
 
     return next(e)
   }).catch(($, e, next) => next(e))
