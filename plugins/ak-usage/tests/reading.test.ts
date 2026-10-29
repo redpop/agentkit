@@ -27,10 +27,46 @@ test('the context alone where no rate limit is reported', () => {
       { text: ' 67%', tone: 'ok' },
       { text: ' ctx', tone: 'dim' },
     ],
+    compact: {
+      text: 'ctx 67%',
+      parts: [
+        { text: 'ctx ', tone: 'dim' },
+        { text: '67%', tone: 'ok' },
+      ],
+      rich: [
+        { text: 'ctx 67%', tone: 'ok', ring: 67 },
+        { text: ' 67%', tone: 'ok' },
+      ],
+    },
     detail: 'ctx 67%',
     card: [{ label: 'Context', value: '67% · 134k of 200k tokens' }],
     tone: 'ok',
   })
+})
+
+test('the compact form keeps each percentage, labels on the terminal only', () => {
+  expect(reading(usage(134400, { five_hour: 2 }), 0)?.compact).toEqual({
+    text: 'ctx 67%  5h 2%',
+    parts: [
+      { text: 'ctx ', tone: 'dim' },
+      { text: '67%', tone: 'ok' },
+      { text: '  5h ', tone: 'dim' },
+      { text: '2%', tone: 'ok' },
+    ],
+    rich: [
+      { text: 'ctx 67%', tone: 'ok', ring: 67 },
+      { text: ' 67%', tone: 'ok' },
+      { text: '  ', tone: 'dim' },
+      { text: '5h 2%', tone: 'ok', ring: 2 },
+      { text: ' 2%', tone: 'ok' },
+    ],
+  })
+})
+
+test('the compact form leaves the reset out', () => {
+  const at = Date.UTC(2026, 0, 1, 12)
+  const now = reading({ ...usage(134400), rateLimits: [{ kind: 'five_hour', percentUsed: 81, resetsAt: new Date(at + 3600000).toISOString() }] }, at)
+  expect(now?.compact.text).toBe('ctx 67%  5h 81%')
 })
 
 test('the context and the 5-hour window, the week hidden below 75 %', () => {

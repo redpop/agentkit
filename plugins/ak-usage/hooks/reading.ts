@@ -24,7 +24,7 @@ type Part = { text: string; tone: Tone | 'dim'; ring?: number }
 
 type Row = { label: string; value: string }
 
-export type Reading = { text: string; parts: Part[]; rich: Part[]; detail: string; card: Row[]; tone: Tone }
+export type Reading = { text: string; parts: Part[]; rich: Part[]; compact: { text: string; parts: Part[]; rich: Part[] }; detail: string; card: Row[]; tone: Tone }
 
 // A window at 90 % or more: `key` names it until it resets, `text` is the toast.
 export type Alert = { key: string; text: string }
@@ -140,6 +140,22 @@ export const reading = (usage: SessionUsage, now: number, lang: Lang = 'en'): Re
     ...(percent >= WARN && resetsAt !== undefined ? [{ text: `  ${reset(resetsAt)}`, tone: 'dim' as const }] : []),
   ])
 
+  // Where the band is short of room, each figure's percentage alone: `ctx 67%  5h 2%`, and on the
+  // desktop app its ring and percentage, the order telling the figures apart. No bars, no resets.
+  const compactParts = figures.flatMap(({ label, percent }, at): Part[] => [
+    { text: `${at > 0 ? '  ' : ''}${label} `, tone: 'dim' },
+    { text: `${percent}%`, tone: toneOf(percent) },
+  ])
+  const compact = {
+    text: compactParts.map(part => part.text).join(''),
+    parts: compactParts,
+    rich: figures.flatMap(({ label, percent }, at): Part[] => [
+      ...(at > 0 ? [{ text: '  ', tone: 'dim' as const }] : []),
+      { text: `${label} ${percent}%`, tone: toneOf(percent), ring: percent },
+      { text: ` ${percent}%`, tone: toneOf(percent) },
+    ]),
+  }
+
   // The hover card has the room for every window, the week below 75 % too, each with its reset.
   const context = contextPercent(usage)
   const card: Row[] = [
@@ -160,6 +176,7 @@ export const reading = (usage: SessionUsage, now: number, lang: Lang = 'en'): Re
     text: parts.map(part => part.text).join(''),
     parts,
     rich,
+    compact,
     card,
     detail: figures
       .map(({ label, percent, resetsAt }) => `${label} ${percent}%${resetsAt === undefined ? '' : ` (${reset(resetsAt)})`}`)
