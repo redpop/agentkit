@@ -2,11 +2,17 @@ import type { ModsSegment, ModsTone } from '../types'
 
 export type Tone = ModsTone
 
-/** A mod's published segment with the name and title ak-mods knows it by. */
-export type Segment = ModsSegment & { name: string; title: string }
+/**
+ * A mod's published segment with the name and title ak-mods knows it by. `isCompact` marks one
+ * `layout` switched to its compact form.
+ */
+export type Segment = ModsSegment & { name: string; title: string; isCompact?: true }
 
-/** Up to two rows of segments; `hidden` holds the mod names that did not fit. */
-export type Layout = { rows: readonly (readonly Segment[])[]; hidden: readonly string[] }
+/**
+ * Up to two rows of segments; `hidden` holds the mod names that did not fit. `isCompact` once the
+ * band is past its first step: its segments with a compact form are in it.
+ */
+export type Layout = { rows: readonly (readonly Segment[])[]; hidden: readonly string[]; isCompact: boolean }
 
 const ROW_SEPARATOR = 3
 
@@ -42,7 +48,8 @@ const textWidth = (segment: Segment, isPictured: boolean): number => {
  */
 const widthOf = (segment: Segment, isPictured: boolean): number => {
   const text = textWidth(segment, isPictured)
-  const button = isPictured && segment.button?.isOnText === true ? undefined : segment.button
+  // A compact segment's button is on its text or left out: it takes no room of its own.
+  const button = segment.isCompact === true || (isPictured && segment.button?.isOnText === true) ? undefined : segment.button
 
   return (
     text +
@@ -92,22 +99,35 @@ const pack = (segments: readonly Segment[], columns: number, reserve: number, is
   return undefined
 }
 
+/** A segment in its compact form, marked so; one without a compact form as it is. */
+export const compacted = (one: Segment): Segment => {
+  const { compact, ...rest } = one
+
+  return compact === undefined ? one : { ...rest, text: compact.text, parts: compact.parts, rich: compact.rich, isCompact: true }
+}
+
 /**
- * Lays segments out in one row, then two, then drops the lowest priority ones.
+ * Lays segments out in one row; short of room, switches every segment with a
+ * compact form to it, then takes two rows, then drops the lowest priority ones.
  * The last row always keeps room for the `mods` button, which counts the dropped.
  * `isPictured` for a band that draws pictures (the desktop app): segments count
  * as they draw there, see `widthOf`.
  */
 export const layout = (segments: readonly Segment[], columns: number, isPictured = false): Layout => {
-  const sorted = ordered(segments)
+  const full = ordered(segments)
+  const single = pack(full, columns, toggleWidth(0), isPictured)
+
+  if (single !== undefined && single.length <= 1) return { rows: single, hidden: [], isCompact: false }
+
+  const sorted = full.map(compacted)
   const all = pack(sorted, columns, toggleWidth(0), isPictured)
 
-  if (all !== undefined) return { rows: all, hidden: [] }
+  if (all !== undefined) return { rows: all, hidden: [], isCompact: true }
 
   for (let keep = sorted.length - 1; keep > 0; keep--) {
     const rows = pack(sorted.slice(0, keep), columns, toggleWidth(sorted.length - keep), isPictured)
 
-    if (rows !== undefined) return { rows, hidden: sorted.slice(keep).map(one => one.name) }
+    if (rows !== undefined) return { rows, hidden: sorted.slice(keep).map(one => one.name), isCompact: true }
   }
 
   // Not even the first fits beside the button: keep it alone, cut to the room left. Its parts no
@@ -131,6 +151,7 @@ export const layout = (segments: readonly Segment[], columns: number, isPictured
             ],
           ],
     hidden: rest.map(one => one.name),
+    isCompact: true,
   }
 }
 

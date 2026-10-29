@@ -37,11 +37,18 @@ export type ModsSegment = {
    * icon as three cells.
    */
   rich?: ModsPart[]
+  /**
+   * The segment as the band draws it when it is short of room: before taking a second row, the band
+   * draws every segment that has one in this form. `text`, `parts` and `rich` as on the segment.
+   * Without it, the segment draws in full there. A compact segment's button draws on its text where
+   * the band can press text (the desktop app), with no hotkey, and the terminal leaves it out.
+   */
+  compact?: { text: string; parts?: ModsPart[]; rich?: ModsPart[] }
   /** More of the same state, shown dim after the text in the Mods pane only, never in the band. One line, as `text`. */
   detail?: string
   /**
-   * The rows of the card the desktop app shows while the pointer is over the segment: a dim label
-   * beside its value, the labels in one column. Without them the card shows `detail`, a line a part.
+   * The rows of the card the desktop app shows in the Mods pane, which a press on the segment's text
+   * opens at its row: a dim label beside its value, the labels in one column. Without them the card shows `detail`, a line a part.
    */
   card?: ModsCardRow[]
   tone?: ModsTone

@@ -66,6 +66,15 @@ const richOf = (rich: unknown): ModsPart[] | undefined => {
   return kept.length > 0 ? kept : undefined
 }
 
+/** A segment's compact form, or undefined when it has no text; its parts and rich runs checked as the segment's. */
+const compactOf = (compact: unknown): ModsSegment['compact'] => {
+  const one = (compact ?? {}) as Partial<Record<'text' | 'parts' | 'rich', unknown>>
+  if (typeof one.text !== 'string' || one.text === '') return undefined
+  const text = spaced(one.text)
+
+  return { text, parts: partsOf(one.parts, text), rich: richOf(one.rich) }
+}
+
 /** The rows of a segment's card, or undefined when they are no list of label and value texts or none. */
 const cardOf = (card: unknown): ModsCardRow[] | undefined => {
   if (!Array.isArray(card) || card.length === 0) return undefined
@@ -84,8 +93,9 @@ const cardOf = (card: unknown): ModsCardRow[] | undefined => {
  * left out, a button without a label or command is left out, a detail that
  * is no text is left out, parts that do not join to the text are left out,
  * rich runs that are no list of texts are left out, a ring is held to 0 to
- * 100, an icon ak-mods does not draw is left out, card rows that are no list of label and value texts are left out, and
- * a segment without text is not drawn.
+ * 100, an icon ak-mods does not draw is left out, card rows that are no list of label and value texts are left out, a
+ * compact form without text is left out, its parts and rich runs checked as the segment's, and a segment without text
+ * is not drawn.
  */
 const checked = (info: ModsInfo, stored: unknown): Segment | undefined => {
   const one = (stored ?? {}) as Partial<Record<keyof ModsSegment, unknown>>
@@ -100,6 +110,7 @@ const checked = (info: ModsInfo, stored: unknown): Segment | undefined => {
     text,
     parts: partsOf(one.parts, text),
     rich: richOf(one.rich),
+    compact: compactOf(one.compact),
     detail: typeof one.detail === 'string' && one.detail !== '' ? spaced(one.detail) : undefined,
     card: cardOf(one.card),
     tone: toneOf(one.tone),

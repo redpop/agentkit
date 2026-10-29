@@ -707,3 +707,21 @@ test('a control character in a part draws as a space, as in the text', { plugins
   expect(await exactly(ui, 'b')).toMatchObject({ props: { color: 'warning' } })
   await ui.unmount()
 })
+
+test('a compact form without text is dropped, the segment drawn full', { plugins: [consumer('ak-a')] }, async ($, on) => {
+  engine(on)
+  await publish($, 'ak-a', 'A', { text: 'x'.repeat(30), compact: { text: '' } })
+
+  const ui = await $.ui.mount({ ...BAND, props: { ...BAND.props, bodyColumns: 20 } })
+  expect(await exactly(ui, `${'x'.repeat(9)}…`)).toBeDefined()
+  await ui.unmount()
+})
+
+test('compact parts that do not join to its text are dropped, the compact text kept', { plugins: [consumer('ak-a')] }, async ($, on) => {
+  engine(on)
+  await publish($, 'ak-a', 'A', { text: 'x'.repeat(30), compact: { text: 'ab', parts: [{ text: 'x' }] } })
+
+  const ui = await $.ui.mount({ ...BAND, props: { ...BAND.props, bodyColumns: 20 } })
+  expect(await exactly(ui, 'ab')).toBeDefined()
+  await ui.unmount()
+})

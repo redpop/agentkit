@@ -82,7 +82,7 @@ test('layout reserves room for the mods button on the last row', () => {
 })
 
 test('layout gives no rows for no segments', () => {
-  expect(layout([], 80)).toEqual({ rows: [], hidden: [] })
+  expect(layout([], 80)).toEqual({ rows: [], hidden: [], isCompact: false })
 })
 
 test('layout keeps an overlong single segment alone, cut with an ellipsis', () => {
@@ -155,4 +155,57 @@ test('layout parts the segments of a pictured band by two cells', () => {
 
   expect(layout(two, 52).rows.length).toBe(2)
   expect(layout(two, 52, true).rows.length).toBe(1)
+})
+
+const compact = { text: 'c'.repeat(5) }
+
+test('layout keeps full forms on one row while they fit', () => {
+  const result = layout([seg('a', 'x'.repeat(20), { compact }), seg('b', 'y'.repeat(20), { compact })], 80)
+
+  expect(result.isCompact).toBe(false)
+  expect(result.rows.length).toBe(1)
+  expect(result.rows[0]?.[0]?.text).toBe('x'.repeat(20))
+})
+
+test('layout switches the whole band to compact before a second row', () => {
+  // full: 30 + 3 + 30 + 10 = 73 > 60; compact: 5 + 3 + 30 + 10 = 48, b having no compact form
+  const result = layout([seg('a', 'x'.repeat(30), { compact }), seg('b', 'y'.repeat(30))], 60)
+
+  expect(result.isCompact).toBe(true)
+  expect(result.rows.length).toBe(1)
+  expect(result.rows[0]?.map(one => [one.text, one.isCompact])).toEqual([
+    ['ccccc', true],
+    ['y'.repeat(30), undefined],
+  ])
+})
+
+test('layout puts compact forms on two rows when one is too few', () => {
+  const wide = { text: 'c'.repeat(30) }
+  const result = layout([seg('a', 'x'.repeat(40), { compact: wide }), seg('b', 'y'.repeat(40), { compact: wide })], 50)
+
+  expect(result.isCompact).toBe(true)
+  expect(result.rows.length).toBe(2)
+})
+
+test('a compact segment counts no button width', () => {
+  const button = { label: 'keep warm', hotkey: '1', command: 'k' }
+  // compact 5 + 3 + 5 + 10 = 23 <= 25 only without the button's 13
+  const result = layout([seg('a', 'x'.repeat(40), { compact, button }), seg('b', 'y'.repeat(40), { compact, button })], 25)
+
+  expect(result.hidden).toEqual([])
+  expect(result.rows.flat().map(one => one.text)).toEqual(['ccccc', 'ccccc'])
+})
+
+test('without any compact form the band lays out as before, two full rows', () => {
+  const result = layout([seg('a', 'x'.repeat(30)), seg('b', 'y'.repeat(30))], 60)
+
+  expect(result.rows.length).toBe(2)
+  expect(result.rows.flat().every(one => one.isCompact === undefined)).toBe(true)
+})
+
+test('compact steps drop the lowest priority', () => {
+  const result = layout([seg('a', 'x'.repeat(30), { compact, priority: 9 }), seg('b', 'y'.repeat(60), { priority: 1 })], 30)
+
+  expect(result.hidden).toEqual(['b'])
+  expect(result.rows[0]?.[0]?.text).toBe('ccccc')
 })
