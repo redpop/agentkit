@@ -1,7 +1,7 @@
 {
   "name": "ak-session-id",
   "description": "Mod: copies this session's id (/session-id), so another session's agent can be told which one is meant, with a segment in the shared band",
-  "version": "1.57.1",
+  "version": "1.57.2",
   "author": {
     "name": "redpop",
     "url": "https://github.com/redpop"

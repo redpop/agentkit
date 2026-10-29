@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.57.2] - 2026-10-29
+
+### 🐛 Fixed
+
+- `ak-mods` — on the desktop app a segment's text now takes its tone's colour: warnings yellow,
+  errors red, the kept-warm state blue. The desktop app paints no theme key on text, so these drew
+  in the plain text colour before; the terminal keeps the theme's colours.
+
 ## [1.57.1] - 2026-10-29
 
 ### 🐛 Fixed
