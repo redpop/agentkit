@@ -408,17 +408,17 @@ test(
 
 // A mod's own `session.end` runs beneath ak-mods: a reset written before it would read there as the
 // mod being switched off in the chat that ended.
-// A plugin runs apart from the test: it keeps what it saw in its own state, and `/ak-watch` answers it.
+// A plugin runs apart from the test: it keeps what it saw in its store, and `/ak-watch` answers it.
 const watcher: Register = on => {
   on('session.end', async ($, e, next) => {
-    await $.state.set({ plugin: 'ak-watch', key: 'seen' }, (await $.state.get({ plugin: 'ak-mods', key: 'on' })).value)
+    await $.store.set('seen', (await $.state.get({ plugin: 'ak-mods', key: 'on' })).value)
 
     return next(e)
   })
   on('command.run', async ($, e, next) => {
     if (e.command !== 'ak-watch') return next(e)
 
-    return { text: JSON.stringify((await $.state.get({ plugin: 'ak-watch', key: 'seen' })).value ?? null) }
+    return { text: JSON.stringify((await $.store.get('seen')) ?? null) }
   })
 }
 

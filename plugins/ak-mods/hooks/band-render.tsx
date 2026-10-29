@@ -225,15 +225,22 @@ export const segmentView = (
   hotkey?: string,
   keepsColor = false,
 ) => {
-  const isColored = (part: ModsPart | undefined) => keepsColor && toneProps(part?.tone ?? one.tone, surface).color !== undefined
+  // A run's look as a Button can carry it: coloured, dim or plain. A Button draws its text in one
+  // look, so a pressable line is cut where the look changes.
+  const lookOf = (part: ModsPart | undefined) => {
+    const props = toneProps(part?.tone ?? one.tone, surface)
+
+    return props.color !== undefined ? 'color' : props.dimColor === true ? 'dim' : 'plain'
+  }
   // The hotkey arms the first stretch alone: one key, one press.
   let isArmed = false
   const pressable = (at: number, children: ReturnType<ElementConstructor<TextProps>>[], parts: ModsPart[] = []) => {
-    if (press === undefined || Button === undefined || parts.some(isColored)) return children
+    const look = lookOf(parts[0])
+    if (press === undefined || Button === undefined || (keepsColor && look === 'color')) return children
     const armed = isArmed ? undefined : hotkey
     isArmed = true
-    // Drawn uncoloured, a stretch of dim runs alone keeps its dimness on the Button itself.
-    const isDim = parts.length > 0 && parts.every(part => (part.tone ?? one.tone) === 'dim')
+    // Drawn uncoloured, a stretch of dim runs keeps its dimness on the Button itself.
+    const isDim = parts.length > 0 && look === 'dim'
 
     return (
       <Button
@@ -251,13 +258,14 @@ export const segmentView = (
     return pressable(0, [segmentText(Text, one, key, surface)])
   }
 
-  // The runs in stretches: each picture alone, the text between them together, a coloured run
-  // apart from the rest where it keeps its colour.
+  // The runs in stretches: each picture alone, the text between them together, cut where the look
+  // changes when the text is pressed.
   const stretches: { at: number; parts: ModsPart[] }[] = []
   one.rich.forEach((part, at) => {
     const last = stretches[stretches.length - 1]
     const isPicture = part.ring !== undefined || part.icon !== undefined
-    if (!isPicture && last !== undefined && !isGlyph(last.parts[0]) && isColored(part) === isColored(last.parts[0])) last.parts.push(part)
+    const isSameLook = press === undefined || lookOf(part) === lookOf(last?.parts[0])
+    if (!isPicture && last !== undefined && !isGlyph(last.parts[0]) && isSameLook) last.parts.push(part)
     else stretches.push({ at, parts: [part] })
   })
 

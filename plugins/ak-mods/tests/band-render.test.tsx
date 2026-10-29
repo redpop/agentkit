@@ -645,8 +645,10 @@ test('on the desktop app the text between pictures is the button; the rings stay
   })
 
   const desk = await $.ui.mount({ ...BAND, surface: 'desktop' })
-  // One button a stretch of text: ' 42% ctx' after the first ring, ' 7%' after the second.
-  expect((await desk.find({ key: 'text-ak-a-press-1' }))?.text).toBe(' 42% ctx')
+  // One button a stretch of text in one look: ' 42%' and the dim ' ctx' after the first ring,
+  // ' 7%' after the second.
+  expect((await desk.find({ key: 'text-ak-a-press-1' }))?.text).toBe(' 42%')
+  expect(await desk.find({ key: 'text-ak-a-press-2' })).toMatchObject({ text: ' ctx', props: { dimColor: true } })
   expect((await desk.find({ key: 'text-ak-a-press-4' }))?.text).toBe(' 7%')
   expect(await desk.findAll({ type: 'Svg' })).toHaveLength(2)
   await desk.press({ key: 'text-ak-a-press-4' })
@@ -831,5 +833,21 @@ test('on the desktop app a toned run that only opens the pane keeps its colour a
   // The untoned run beside it still opens the pane.
   await ui.press({ key: 'text-ak-a-press-2' })
   expect(opened).toEqual([{ id: 'ak-mods', title: 'Mods' }])
+  await ui.unmount()
+})
+
+test('on the desktop app a dim label beside a pressable value stays dim: its own Button, dimmed', { plugins: [consumer('ak-a')] }, async ($, on) => {
+  engine(on)
+  await publish($, 'ak-a', 'A', {
+    text: 'ctx 42%',
+    rich: [{ text: 'ctx 42%', ring: 42 }, { text: ' 42%', tone: 'ok' }, { text: ' ctx', tone: 'dim' }],
+    card: [{ label: 'Context', value: '42%' }],
+  })
+
+  const ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  // A Button draws its text in one style: the value and its label are two.
+  expect(await ui.find({ key: 'text-ak-a-press-1' })).toMatchObject({ text: ' 42%' })
+  expect((await ui.find({ key: 'text-ak-a-press-1' }))?.props.dimColor).toBeUndefined()
+  expect(await ui.find({ key: 'text-ak-a-press-2' })).toMatchObject({ text: ' ctx', props: { dimColor: true } })
   await ui.unmount()
 })
