@@ -5,6 +5,24 @@ Shows how long you have worked without a break, counted across every session, as
 Requires Claude Code 2.1.309 or later (hooks-module support). Switched per chat in the
 [Mods pane](../ak-mods/switcher.md).
 
+## In short
+
+- **The time** (`4 min am Stück`) is how long you have worked without a break. The ring beside it
+  fills to an hour.
+- **What counts as work** is what you do in Claude: sending a prompt, or typing in the prompt box
+  without sending it. The mod sees nothing outside Claude. Fifteen minutes in your editor or browser
+  alone look like a break to it.
+- **Ten minutes** without input in Claude end the block: the segment shows `Pause`, and the next
+  input starts again at 0. This is how the mod notices that you were away, not how long a break
+  should be; it does not tell you that.
+- **At 60 minutes** the colour turns to warning, and after Claude's next answer one toast suggests a
+  break. From 50 minutes, a turn that runs for 3 minutes brings a notification instead. One hint
+  per block, never while you type.
+- **Water** joins 45 minutes after the block began or after you last drank. **Getrunken** clears it;
+  a break does too.
+- **The card** in the Mods pane, a press on the segment away, shows since when you work, the last
+  break, today's breaks and longest block, and the last water.
+
 ## Why
 
 Working with Claude Code makes long stretches at the screen easy: there is always a next prompt.
