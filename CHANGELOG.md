@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.58.2] - 2026-10-29
+
+### 🐛 Fixed
+
+- `ak-mods` — on the desktop app a segment's coloured text keeps its colour in the band, such as
+  **warm gehalten** in blue. Where a press on the text only opens the Mods pane, a coloured run now
+  stays text, as a button draws its text uncoloured there; the rest still opens the pane, and `m`
+  always does. A press that runs an action, such as keep warm or copy, is unchanged.
+
 ## [1.58.1] - 2026-10-29
 
 ### 🐛 Fixed
