@@ -291,6 +291,20 @@ export const register: Register = on => {
   codes such as `ctx` and `5h` stay as they are. `$.env.get` takes each name written out, and a
   helper that takes `$` from an imported file is a function declaration, as the hooks loader
   follows `$` only into those.
+- **`$` reaches a helper only through a top-level declaration.** In the module's own file too: a
+  `$` passed to an arrow or to a closure inside `register` stops the module from loading
+  (`$ is passed to "…", which is not a function declared at the top of this file`). A mod with state
+  of its own keeps it in one object that `register` creates and passes along, and its helpers
+  (`refresh($, watch, gate)`, `show($, watch, gate)`) are function declarations at the top;
+  `plugins/ak-gitlab/hooks/register.tsx` does this. Inside such a helper, a callback that spells
+  `$.clock.after(…)` or passes `$` on to another top-level declaration is fine.
+- **A tool call's fields sit on the event itself.** A `tool.call` hook on `Bash` reads the command
+  as `e.command`, not `e.input.command`; the types in the engine's `claude-code.d.ts` name each
+  tool's fields.
+- **The desktop app draws a hooks module's UI its own way.** What it ignores, pads or wraps
+  differently from the terminal is collected in
+  [Desktop renderer quirks](../solutions/best-practices/desktop-renderer-quirks-hooks-ui-2026-10-29.md);
+  read it before laying out a segment or a card.
 
 ## Testing
 
@@ -339,3 +353,21 @@ To test a mod's publish path in its own tests, stand in for `ak-mods`, as
 - It models the blind spot above: a `segment` call made while its `set` runs is dropped. A
   stand-in that stores it would pass a mod that publishes from inside the switch hook, which the
   real `ak-mods` loses.
+
+What the test kit gives a test, and what it does not:
+
+- **The test's own `$` carries the engine's events, not the host's nouns.** It has no `process`,
+  `http` or `fs`, and it raises an event with its input object (`$.prompt.submit({ text, wait,
+  origin })`), not with a plugin's arguments. A helper module that takes `$` (a module that runs a
+  CLI, say) is tested with a `$` of its own that carries the one noun it uses, as
+  `plugins/ak-gitlab/tests/glab.test.ts` does with `{ process: { run } }`.
+- **Inside the mod, the host's calls go through hooks the test registers.** A mod's
+  `$.process.run(argv, init)` reaches the test's `on('process.run', (_, e) => ({ value: … }))`,
+  with `e.argv` and `e.init`; a call such as `prompt.read` answers `{ value }` the same way, an
+  event such as `prompt.fill` answers its result (`{ isFilled }`). Answer by the joined argv and
+  record each call, and a test can count fetches.
+- **The texts are English unless the test says otherwise.** `mock.env(on, { LANG: 'de_DE.UTF-8' })`
+  runs the mod in German, for tests that pin the German strings.
+- **`mock.clock` runs the timers due at one moment one after another**, so two triggers in the
+  same moment do not race in a test. Guard against the race in the code anyway (claim the work
+  before the first `await`), and keep a test that pins the outcome.
