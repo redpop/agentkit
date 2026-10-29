@@ -212,7 +212,9 @@ type Draws = {
  * no pictures; there, and for a segment without rich runs, its text. Given
  * `press`, the text is a plain button that runs it, each stretch of text
  * between pictures one: a Button holds text alone, so the pictures stay
- * beside it.
+ * beside it. The desktop app draws a Button's text uncoloured: with
+ * `keepsColor`, for a press that only opens the Mods pane, a run in a colour
+ * stays text in its own stretch, and the press is on the rest.
  */
 export const segmentView = (
   { Box, Text, Svg, Button }: Draws,
@@ -221,16 +223,26 @@ export const segmentView = (
   key: string,
   press?: () => void,
   hotkey?: string,
+  keepsColor = false,
 ) => {
+  const isColored = (part: ModsPart | undefined) => keepsColor && toneProps(part?.tone ?? one.tone, surface).color !== undefined
   // The hotkey arms the first stretch alone: one key, one press.
   let isArmed = false
-  const pressable = (at: number, children: ReturnType<ElementConstructor<TextProps>>[]) => {
-    if (press === undefined || Button === undefined) return children
+  const pressable = (at: number, children: ReturnType<ElementConstructor<TextProps>>[], parts: ModsPart[] = []) => {
+    if (press === undefined || Button === undefined || parts.some(isColored)) return children
     const armed = isArmed ? undefined : hotkey
     isArmed = true
+    // Drawn uncoloured, a stretch of dim runs alone keeps its dimness on the Button itself.
+    const isDim = parts.length > 0 && parts.every(part => (part.tone ?? one.tone) === 'dim')
 
     return (
-      <Button key={`${key}-press-${at}`} plain onPress={press} {...(armed === undefined ? {} : { hotkey: armed })}>
+      <Button
+        key={`${key}-press-${at}`}
+        plain
+        onPress={press}
+        {...(isDim ? { dimColor: true } : {})}
+        {...(armed === undefined ? {} : { hotkey: armed })}
+      >
         {children}
       </Button>
     )
@@ -239,12 +251,13 @@ export const segmentView = (
     return pressable(0, [segmentText(Text, one, key, surface)])
   }
 
-  // The runs in stretches: each picture alone, the text between them together.
+  // The runs in stretches: each picture alone, the text between them together, a coloured run
+  // apart from the rest where it keeps its colour.
   const stretches: { at: number; parts: ModsPart[] }[] = []
   one.rich.forEach((part, at) => {
     const last = stretches[stretches.length - 1]
     const isPicture = part.ring !== undefined || part.icon !== undefined
-    if (!isPicture && last !== undefined && !isGlyph(last.parts[0])) last.parts.push(part)
+    if (!isPicture && last !== undefined && !isGlyph(last.parts[0]) && isColored(part) === isColored(last.parts[0])) last.parts.push(part)
     else stretches.push({ at, parts: [part] })
   })
 
@@ -263,6 +276,7 @@ export const segmentView = (
                 {part?.text}
               </Text>
             )),
+            first === undefined ? [] : [first, ...rest],
           )
         ),
       )}
@@ -401,9 +415,18 @@ export async function renderBand(
                     $.command.run({ command: one.button?.command ?? '', args: one.button?.args ?? '' }).catch(() => {})
                   }, hotkeys.get(one.name))
                 : e.surface === 'desktop' && cardRowsOf(one) !== undefined
-                  ? segmentView(draws, e.surface, one, `text-${one.name}`, () => {
-                      toggleMod($, bandWidth({ bodyColumns: e.props.bodyColumns }), one.name).catch(() => {})
-                    })
+                  ? // Only the pane opens here, as `m` opens it too: a coloured run keeps its colour.
+                    segmentView(
+                      draws,
+                      e.surface,
+                      one,
+                      `text-${one.name}`,
+                      () => {
+                        toggleMod($, bandWidth({ bodyColumns: e.props.bodyColumns }), one.name).catch(() => {})
+                      },
+                      undefined,
+                      true,
+                    )
                   : segmentView(draws, e.surface, one, `text-${one.name}`)}
               {one.button !== undefined && one.isCompact !== true && !(e.surface === 'desktop' && one.button.isOnText === true) && (
                 <Button

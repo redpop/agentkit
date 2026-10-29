@@ -209,7 +209,8 @@ export const register: Register = on => {
   ak-mods' own set, its `text` what a reader that cannot see the picture gets; the terminal draws
   `text`, and the band counts its room by what each draws, a ring or an icon as three cells),
   optional `card` rows `{ label, value }` (the card the Mods pane shows on the desktop app, where a
-  press on the segment's text opens its row: dim labels in one column beside their values; without
+  press on the segment's text opens its row, save a run in a colour, which stays text so it keeps
+  it: dim labels in one column beside their values; without
   rows the card shows `detail`, a line a part; the Mods pane on the desktop app lists the rows in
   place of the detail, in a row opened by its chevron), an optional `compact` `{ text, parts?,
   rich? }` (the segment as the band draws it when it is short of room, before it takes a second row:

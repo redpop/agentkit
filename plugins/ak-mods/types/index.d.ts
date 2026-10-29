@@ -50,7 +50,7 @@ export type ModsSegment = {
   detail?: string
   /**
    * The rows of the card the desktop app shows in the Mods pane, which a press on the segment's text
-   * opens at its row: a dim label beside its value, the labels in one column. Without them the card shows `detail`, a line a part.
+   * opens at its row (a run in a colour stays text there, as a Button draws its text uncoloured): a dim label beside its value, the labels in one column. Without them the card shows `detail`, a line a part.
    */
   card?: ModsCardRow[]
   tone?: ModsTone

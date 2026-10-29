@@ -814,3 +814,22 @@ test('on the desktop app the info tone draws its text in a fixed colour', { plug
   expect(await exactly(ui, ' warm')).toMatchObject({ props: { color: '#4889cd' } })
   await ui.unmount()
 })
+
+test('on the desktop app a toned run that only opens the pane keeps its colour and stays text', { plugins: [consumer('ak-a')] }, async ($, on) => {
+  engine(on)
+  const opened = opening(on)
+  await publish($, 'ak-a', 'A', {
+    text: 'kept',
+    rich: [{ text: 'r', ring: 100 }, { text: ' warm', tone: 'info' }, { text: ' cache', tone: 'dim' }],
+    card: [{ label: 'Cache', value: 'kept' }],
+  })
+
+  const ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  // A Button draws its label alone, uncoloured: the toned run stays text, in its colour.
+  expect(await exactly(ui, ' warm')).toMatchObject({ type: 'Text', props: { color: '#4889cd' } })
+  expect(await ui.find({ key: 'text-ak-a-press-1' })).toBeUndefined()
+  // The untoned run beside it still opens the pane.
+  await ui.press({ key: 'text-ak-a-press-2' })
+  expect(opened).toEqual([{ id: 'ak-mods', title: 'Mods' }])
+  await ui.unmount()
+})

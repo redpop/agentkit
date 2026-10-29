@@ -57,8 +57,9 @@ the next turn, and `always` while that is on.
 
 The **keep warm** button starts the loop (key `1`); it runs `/keepwarm`. While the cache is kept
 warm the band shows the state alone: stopping is seldom and never urgent, so the **stop** button
-sits in the mod's row of the Mods pane, which the band's `mods` button (`m`) opens, and on the
-desktop app a press on the segment's text. `/keepwarm` stops it too. The band draws on the terminal
+sits in the mod's row of the Mods pane, which the band's `mods` button (`m`) opens; the kept-warm
+text draws in its colour there, which a press target on the desktop app would lose, so it is no
+way in itself. `/keepwarm` stops it too. The band draws on the terminal
 and the desktop app; the Mods pane shows the segment and its button in the mod's row on every
 surface. The context size is not shown: the [Usage](../ak-usage/usage.md) mod shows how full it is.
 
