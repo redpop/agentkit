@@ -18,7 +18,9 @@ Requires Claude Code 2.1.309 or later (hooks-module support).
   elsewhere the engine id.
 - `/session-id engine` copies the engine id even in the desktop app.
 - Its segment in the band above the prompt shows the id's last six characters. On the desktop app a
-  press on the id copies it (key `c`); on the terminal a **copy** button does. Without `ak-mods` the
+  press on the id copies it (key `c`); on the terminal a **copy** button does. When the band is
+  short of room it turns compact (`#…5f6a`): the desktop copies on a press without the key, and the
+  terminal leaves the button to the Mods pane. Without `ak-mods` the
   mod draws its own band with the same button.
 
 See [the mod docs](../../docs/mods/ak-session-id/session-id.md).

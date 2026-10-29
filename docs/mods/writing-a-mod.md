@@ -226,8 +226,8 @@ export const register: Register = on => {
   no handler crosses from one plugin to another. A segment is one line: a control character (a
   newline, ESC) in the text, a part, the detail or the label draws as a space, and a `hotkey` that
   is not exactly one printable character is left out. When two shown mods ask for one hotkey, the
-  first by title keeps it; a mod dropped from the band takes none, and `m` is the band's own `mods`
-  button's, never a mod's.
+  first by title keeps it; a mod dropped from the band takes none, a mod drawn compact takes none
+  (another may then take it), and `m` is the band's own `mods` button's, never a mod's.
 - **One segment per mod.** Publishing again replaces it; `$.mods.segment(undefined)` clears it.
   `ak-mods` clears it itself when the mod is switched off and when the chat ends, whatever ends it.
   So the mod publishes at `session.start`, again whenever what the segment shows changes, after a

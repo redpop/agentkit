@@ -791,3 +791,16 @@ test('a compact segment with a pane-only button opens the Mods pane', { plugins:
   expect(opened).toEqual([{ id: 'ak-mods', title: 'Mods' }])
   await ui.unmount()
 })
+
+test('in a compact band a segment without a compact form keeps its button and hotkey', { plugins: [consumer('ak-a'), consumer('ak-b')] }, async ($, on) => {
+  engine(on)
+  await publish($, 'ak-a', 'A', KEEP)
+  await publish($, 'ak-b', 'B', { text: 'b', button: { label: 'go', hotkey: '1', command: 'fixture-go' } })
+
+  for (const surface of ['terminal', 'desktop'] as const) {
+    const ui = await $.ui.mount({ ...BAND, surface })
+    // The compact segment gave up `1`; the full one takes it.
+    expect(await ui.find({ key: 'seg-ak-b' })).toMatchObject({ text: 'go', props: { hotkey: '1' } })
+    await ui.unmount()
+  }
+})

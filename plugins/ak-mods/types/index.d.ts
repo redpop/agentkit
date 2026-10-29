@@ -41,7 +41,9 @@ export type ModsSegment = {
    * The segment as the band draws it when it is short of room: before taking a second row, the band
    * draws every segment that has one in this form. `text`, `parts` and `rich` as on the segment.
    * Without it, the segment draws in full there. A compact segment's button draws on its text where
-   * the band can press text (the desktop app), with no hotkey, and the terminal leaves it out.
+   * the band can press text (the desktop app), with no hotkey, and the terminal leaves it out. Keep a
+   * run of text in `rich` beside any ring or icon: a picture alone cannot be pressed, and the button
+   * would be lost there.
    */
   compact?: { text: string; parts?: ModsPart[]; rich?: ModsPart[] }
   /** More of the same state, shown dim after the text in the Mods pane only, never in the band. One line, as `text`. */
