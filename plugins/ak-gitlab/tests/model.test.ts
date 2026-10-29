@@ -1,6 +1,6 @@
 import { expect, test } from 'claude-code/testing'
 
-import { firstFailed, isSettled, meanMs, phaseOf, progressOf } from '../hooks/model'
+import { firstFailed, meanMs, phaseOf, progressOf } from '../hooks/model'
 import type { Job, Pipeline } from '../hooks/model'
 
 const job = (status: string, extra: Partial<Job> = {}): Job => ({
@@ -56,11 +56,6 @@ test('the first failed job is the first that may not fail', () => {
   const blocking = job('failed', { id: 2, name: 'test:unit' })
   expect(firstFailed(pipeline('failed', [allowed, blocking]))?.name).toBe('test:unit')
   expect(firstFailed(pipeline('failed', [allowed]))).toBeUndefined()
-})
-
-test('settled phases stop the fast poll', () => {
-  for (const phase of ['manual', 'failed', 'success', 'canceled'] as const) expect(isSettled(phase)).toBe(true)
-  for (const phase of ['none', 'running'] as const) expect(isSettled(phase)).toBe(false)
 })
 
 test('the mean of the durations, none without any', () => {

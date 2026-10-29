@@ -9,7 +9,7 @@ const JOBS = 'glab api projects/:id/pipelines/4711/jobs?per_page=100'
 const BRIDGES = 'glab api projects/:id/pipelines/4711/bridges?per_page=100'
 const GREEN = 'glab api projects/:id/pipelines?status=success&per_page=5'
 
-type Answer = { exitCode?: number; stdout?: unknown; stderr?: string } | 'missing'
+type Answer = { exitCode?: number; stdout?: unknown; stderr?: string } | 'missing' | 'hanging'
 
 // The host beneath: each command line answers as the test sets it; an unset one exits 1. Every
 // command line is recorded, with its options. A test's own `$` has no `process`: the module gets a
@@ -21,6 +21,7 @@ const host = (answers: Record<string, Answer> | (() => Answer)) => {
     calls.push({ line, timeoutMs: init?.timeoutMs })
     const answer = typeof answers === 'function' ? answers() : (answers[line] ?? { exitCode: 1, stderr: 'unexpected call' })
     if (answer === 'missing') throw new Error('spawn glab ENOENT')
+    if (answer === 'hanging') throw new Error('process.run: glab still running after 10000 ms')
 
     return {
       exitCode: answer.exitCode ?? 0,
@@ -122,6 +123,8 @@ test('the estimate is fetched once per pipeline', async () => {
 test('glab missing, not logged in, not a GitLab project, or another failure', async () => {
   const cases: [Answer, string][] = [
     ['missing', 'no-glab'],
+    // A slow network passes: the last state stays.
+    ['hanging', 'error'],
     [{ exitCode: 1, stderr: 'glab: 401 Unauthorized' }, 'no-auth'],
     [{ exitCode: 1, stderr: 'You are not logged in to any GitLab hosts' }, 'no-auth'],
     [{ exitCode: 1, stderr: 'none of the git remotes configured for this repository point to a known GitLab host' }, 'not-gitlab'],

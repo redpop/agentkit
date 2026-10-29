@@ -11,7 +11,8 @@ import { fetchStatus, fetchTrace, openUrl } from './glab'
 import { languageFor, learnLanguage, texts } from './i18n'
 import { draftFor, excerpt } from './joblog'
 import type { Status } from './model'
-import { firstFailed, isSettled, phaseOf } from './model'
+import { firstFailed, phaseOf } from './model'
+import type { Segment } from './view'
 import { cardFor, segmentFor, toastFor } from './view'
 
 const NAME = 'ak-gitlab'
@@ -23,8 +24,6 @@ const QUIET_MS = 3_000
 // The Bash commands after which the branch or its pipeline may have changed.
 const MOVES = /\bgit\s+(?:checkout|switch|push)\b|\bglab\s+mr\s+create\b/
 
-type Segment = Parameters<EngineInterface['mods']['segment']>[0]
-
 // Publishes while ak-mods switches the mod and it is on; whether it is off. Both fail open.
 type Publish = (isOn: () => Promise<boolean>, send: () => Promise<void>) => Promise<void>
 type Gate = { publish: Publish; isOff: (isOn: () => Promise<boolean>) => Promise<boolean> }
@@ -34,7 +33,7 @@ type Watch = {
   // What the last fetch that answered found; a failed fetch leaves it, so the band does not flicker.
   status: Status
   // The segment as last drawn, for the own band too.
-  shown: Segment
+  shown: Segment | undefined
   // Each pipeline's estimate, fetched once.
   estimates: Map<number, number | undefined>
   // The toasts given, by the state a pipeline reached; the pipelines seen, so one already settled
@@ -88,21 +87,18 @@ async function show($: EngineInterface, watch: Watch, gate: Gate): Promise<void>
 function arm($: EngineInterface, watch: Watch, gate: Gate): void {
   stop(watch)
   if (watch.status.kind !== 'mr') return
-  if (phaseOf(watch.status.mr.pipeline) === 'running') {
-    watch.poll = $.clock.after(FAST_MS, () => {
-      refresh($, watch, gate).catch(() => {})
-    })
+  const isRunning = phaseOf(watch.status.mr.pipeline) === 'running'
+  watch.poll = $.clock.after(isRunning ? FAST_MS : SLOW_MS, () => {
+    refresh($, watch, gate).catch(() => {})
+  })
+  if (isRunning) {
     watch.tick = $.clock.every(TICK_MS, () => {
       show($, watch, gate).catch(() => {})
-    })
-  } else {
-    watch.poll = $.clock.after(SLOW_MS, () => {
-      refresh($, watch, gate).catch(() => {})
     })
   }
 }
 
-/** A toast for each state a pipeline reaches while the mod watches it. */
+/** A toast for each state a pipeline reaches while the mod watches it; none for the state it had at first sight. */
 async function announce($: EngineInterface, watch: Watch): Promise<void> {
   const { status } = watch
   if (status.kind !== 'mr' || status.mr.pipeline === undefined) return
@@ -112,18 +108,17 @@ async function announce($: EngineInterface, watch: Watch): Promise<void> {
   watch.seen.add(id)
   if (toast === undefined || watch.toasted.has(toast.key)) return
   watch.toasted.add(toast.key)
-  if (isFirstSight && isSettled(phaseOf(status.mr.pipeline))) return
-  $.ui.toast(toast.text)
+  if (!isFirstSight) $.ui.toast(toast.text)
 }
 
 /** Fetches the status and draws it; at most one fetch at a time, none right after another. */
 async function refresh($: EngineInterface, watch: Watch, gate: Gate): Promise<void> {
+  if (watch.inflight !== undefined) return watch.inflight
+  if ((await $.clock.now()) - watch.lastEnded < QUIET_MS) return
   if (await gate.isOff(() => $.mods.isOn({ name: NAME }))) {
     stop(watch)
     return
   }
-  if (watch.inflight !== undefined) return watch.inflight
-  if ((await $.clock.now()) - watch.lastEnded < QUIET_MS) return
   watch.inflight = (async () => {
     const next = await fetchStatus($, watch.estimates)
     watch.lastEnded = await $.clock.now()
@@ -246,12 +241,8 @@ export const register: Register = on => {
     const t = texts(lang)
     const { status } = watch
     const failed = status.kind === 'mr' && status.mr.pipeline !== undefined ? firstFailed(status.mr.pipeline) : undefined
-    if (status.kind !== 'mr' || failed === undefined) {
-      $.ui.toast(t.noLog)
-      return {}
-    }
-    const trace = await fetchTrace($, failed.id)
-    if (trace === undefined) {
+    const trace = failed === undefined ? undefined : await fetchTrace($, failed.id)
+    if (status.kind !== 'mr' || failed === undefined || trace === undefined) {
       $.ui.toast(t.noLog)
       return {}
     }
@@ -272,24 +263,21 @@ export const register: Register = on => {
     if (e.props?.hasSurvey || shown === undefined) return below
 
     const { Box, Text } = $.ui.resolve(e)
-    // As in the shared band: each part in its own tone. The desktop app paints no theme key on
-    // text: there the colours are fixed, as ak-mods has them.
+    // As ak-mods draws a tone in the shared band: `ok` in the text colour, so only what needs
+    // attention stands out. The desktop app paints no theme key on text: there the colours are
+    // fixed, as ak-mods has them.
     const isDesktop = e.surface === 'desktop'
-    const toneProps = (tone: string | undefined) =>
-      tone === 'alert'
-        ? { color: isDesktop ? '#db4c46' : 'error' }
-        : tone === 'warn'
-          ? { color: isDesktop ? '#cd8f2d' : 'warning' }
-          : tone === 'ok'
-            ? { color: isDesktop ? '#3f9b5c' : 'success' }
-            : tone === 'dim'
-              ? { dimColor: true }
-              : {}
+    const TONES: Record<string, { color?: string; bold?: true; dimColor?: true }> = {
+      warn: { color: isDesktop ? '#cd8f2d' : 'warning' },
+      alert: { color: isDesktop ? '#db4c46' : 'error', bold: true },
+      info: { color: isDesktop ? '#4889cd' : 'suggestion' },
+      dim: { dimColor: true },
+    }
     const mine = (
       <Box flexDirection="row">
         <Text>
           {(shown.parts ?? [shown]).map((part, at) => (
-            <Text key={`part-${at}`} {...toneProps(part.tone)}>
+            <Text key={`part-${at}`} {...TONES[part.tone ?? '']}>
               {part.text}
             </Text>
           ))}

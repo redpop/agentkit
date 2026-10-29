@@ -5,7 +5,7 @@
 import type { EngineInterface } from 'claude-code'
 
 import type { Job, Mr, Pipeline, Status, Unavailable } from './model'
-import { meanMs } from './model'
+import { meanMs, phaseOf } from './model'
 
 const TIMEOUT_MS = 10_000
 
@@ -20,21 +20,32 @@ class Refused extends Error {
   }
 }
 
+// glab is not installed: the call could not start it. Any other rejection is a call still
+// running at the timeout, which a slow network causes and the next fetch may not.
+const NOT_STARTED = /ENOENT|not found|no such file/i
+
 // Function declarations, not arrows: past an import the hooks loader follows `$` only into those.
 
-/** The JSON glab answers for an API path; throws `Refused` with the reason when it does not. */
-async function api($: EngineInterface, path: string): Promise<unknown> {
+/** What glab writes for an API path; throws `Refused` with the reason when it does not answer. */
+async function run($: EngineInterface, path: string): Promise<string> {
   let result
   try {
     result = await $.process.run(['glab', 'api', path], { timeoutMs: TIMEOUT_MS })
-  } catch {
-    throw new Refused('no-glab')
+  } catch (error) {
+    throw new Refused(NOT_STARTED.test(String(error)) ? 'no-glab' : 'error')
   }
   if (result.exitCode !== 0) {
     throw new Refused(NO_AUTH.test(result.stderr) ? 'no-auth' : NOT_GITLAB.test(result.stderr) ? 'not-gitlab' : 'error')
   }
+
+  return result.stdout
+}
+
+/** The JSON glab answers for an API path; throws `Refused` when there is none. */
+async function api($: EngineInterface, path: string): Promise<unknown> {
+  const stdout = await run($, path)
   try {
-    return JSON.parse(result.stdout)
+    return JSON.parse(stdout)
   } catch {
     throw new Refused('error')
   }
@@ -42,7 +53,8 @@ async function api($: EngineInterface, path: string): Promise<unknown> {
 
 type Raw = Record<string, unknown>
 
-const list = (value: unknown): Raw[] => (Array.isArray(value) ? value.filter((one): one is Raw => typeof one === 'object' && one !== null) : [])
+const record = (value: unknown): Raw | undefined => (typeof value === 'object' && value !== null ? (value as Raw) : undefined)
+const list = (value: unknown): Raw[] => (Array.isArray(value) ? value.map(record).filter((one): one is Raw => one !== undefined) : [])
 const text = (value: unknown): string | undefined => (typeof value === 'string' ? value : undefined)
 
 const job = (raw: Raw): Job => ({
@@ -82,7 +94,7 @@ export async function fetchStatus($: EngineInterface, estimates: Map<number, num
   try {
     const [first] = list(await api($, 'projects/:id/merge_requests?source_branch=:branch&state=opened&order_by=updated_at&per_page=1'))
     if (first === undefined) return { kind: 'none' }
-    const detail = (await api($, `projects/:id/merge_requests/${Number(first.iid)}`)) as Raw
+    const detail = record(await api($, `projects/:id/merge_requests/${Number(first.iid)}`)) ?? {}
     const mr: Mr = {
       iid: Number(detail.iid),
       title: text(detail.title) ?? '',
@@ -90,22 +102,26 @@ export async function fetchStatus($: EngineInterface, estimates: Map<number, num
       target: text(detail.target_branch) ?? '',
       isDraft: detail.draft === true,
     }
-    const head = typeof detail.head_pipeline === 'object' && detail.head_pipeline !== null ? (detail.head_pipeline as Raw) : undefined
+    const head = record(detail.head_pipeline)
     if (head === undefined) return { kind: 'mr', mr }
 
     const id = Number(head.id)
     const startedAt = text(head.started_at)
     const finishedAt = text(head.finished_at)
-    const pipeline: Pipeline = {
+    const bare: Pipeline = {
       id,
       status: text(head.status) ?? '',
       webUrl: text(head.web_url) ?? '',
       createdAt: text(head.created_at) ?? '',
       ...(startedAt === undefined ? {} : { startedAt }),
       ...(finishedAt === undefined ? {} : { finishedAt }),
-      jobs: await jobsOf($, id),
+      jobs: [],
     }
-    if (!estimates.has(id)) estimates.set(id, await estimateFor($, id))
+    // The estimate shows only while the pipeline runs: fetched then, once, beside the jobs.
+    const isEstimated = !estimates.has(id) && phaseOf(bare) === 'running'
+    const [jobs, estimate] = await Promise.all([jobsOf($, id), isEstimated ? estimateFor($, id) : undefined])
+    if (isEstimated) estimates.set(id, estimate)
+    const pipeline: Pipeline = { ...bare, jobs }
     const estimateMs = estimates.get(id)
 
     return { kind: 'mr', mr: { ...mr, pipeline }, ...(estimateMs === undefined ? {} : { estimateMs }) }
@@ -116,13 +132,7 @@ export async function fetchStatus($: EngineInterface, estimates: Map<number, num
 
 /** A job's raw log; undefined when glab does not hand it over. */
 export async function fetchTrace($: EngineInterface, jobId: number): Promise<string | undefined> {
-  try {
-    const result = await $.process.run(['glab', 'api', `projects/:id/jobs/${jobId}/trace`], { timeoutMs: TIMEOUT_MS })
-
-    return result.exitCode === 0 ? result.stdout : undefined
-  } catch {
-    return undefined
-  }
+  return run($, `projects/:id/jobs/${jobId}/trace`).catch(() => undefined)
 }
 
 /** Opens a page in the default browser (macOS `open`). */

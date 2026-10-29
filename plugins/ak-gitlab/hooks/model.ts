@@ -56,14 +56,14 @@ export function progressOf(pipeline: Pipeline): { done: number; total: number } 
   return { done: done.length, total: pipeline.jobs.length }
 }
 
-/** The first job that failed the pipeline; an allowed failure did not. */
-export function firstFailed(pipeline: Pipeline): Job | undefined {
-  return pipeline.jobs.find(job => job.status === 'failed' && !job.allowFailure)
+/** Whether the job failed the pipeline; an allowed failure did not. */
+export function isBlocking(job: Job): boolean {
+  return job.status === 'failed' && !job.allowFailure
 }
 
-/** Whether the pipeline has stopped moving by itself, so the fast poll can stop. */
-export function isSettled(phase: Phase): boolean {
-  return phase !== 'none' && phase !== 'running'
+/** The first job that failed the pipeline. */
+export function firstFailed(pipeline: Pipeline): Job | undefined {
+  return pipeline.jobs.find(isBlocking)
 }
 
 /** The mean of the durations; undefined without any. */
