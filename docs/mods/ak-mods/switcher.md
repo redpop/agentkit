@@ -69,7 +69,7 @@ out, and the Mods pane keeps it. A segment without a compact form draws in full 
 
 The last row always keeps room for the button. Each segment counts as wide as it draws: on the
 terminal its text, on the desktop app its rich runs, a ring or an icon as three cells, a character
-as 0.85 of a cell (a cell there is as wide as a character of the code font, the band's text
+as 0.9 of a cell (a cell there is as wide as a character of the code font, the band's text
 narrower), and a button on its text adds nothing there.
 
 The Mods pane then names the dropped mods in a dim line, `N mods do not fit the band: …`, so you can

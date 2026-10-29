@@ -32,7 +32,7 @@ const PICTURE_COLUMNS = 3
 // A cell of the desktop app is an advance of its code font, the band's text a proportional face,
 // narrower on average: a character counts this much of a cell there. Too low, and the band's
 // right end, its `mods` button with it, is cut off; set from what the band showed.
-const PROPORTIONAL_TEXT = 0.85
+const PROPORTIONAL_TEXT = 0.9
 
 /** A segment's text as it draws: its rich runs where the band draws pictures, else its text. */
 const textWidth = (segment: Segment, isPictured: boolean): number => {
