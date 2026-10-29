@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.60.1] - 2026-10-29
+
+### 🐛 Fixed
+
+- `ak-pause` — the water and late hints follow the time without a dot (`0 min Call it a day?`): in
+  the desktop band the dot read as a stray bullet, and the hint's own colour already sets it apart.
+
 ## [1.60.0] - 2026-10-29
 
 ### ✨ Added
