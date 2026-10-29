@@ -212,7 +212,7 @@ export const register: Register = on => {
   press on the segment's text opens its row, save a run in a colour, which stays text so it keeps
   it: dim labels in one column beside their values; without
   rows the card shows `detail`, a line a part; the Mods pane on the desktop app lists the rows in
-  place of the detail, in a row opened by its chevron), an optional `compact` `{ text, parts?,
+  place of the detail, in a row opened by its triangle), an optional `compact` `{ text, parts?,
   rich? }` (the segment as the band draws it when it is short of room, before it takes a second row:
   what must stay readable at a glance, labels gone; its button then draws on the compact text on the
   desktop app, with no hotkey, and the terminal leaves the button out; without it the segment draws

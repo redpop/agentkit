@@ -591,7 +591,7 @@ test('on the desktop app a press on a segment opens the Mods pane at its mod; th
 
   // The mod's row is open there, its detail a line a part.
   const pane = await $.ui.mount(PANE)
-  expect(await pane.find({ key: 'more-ak-a' })).toMatchObject({ props: { label: '⌄' } })
+  expect(await pane.find({ key: 'more-ak-a' })).toMatchObject({ props: { label: '▾' } })
   expect(await pane.find({ type: 'Text', text: '5h 7%' })).toBeDefined()
   await pane.unmount()
 
@@ -623,14 +623,14 @@ test("a press opens that mod's row alone; pressed again, the row and the pane cl
   await desk.press({ key: 'text-ak-a-press-0' })
   await desk.press({ key: 'text-ak-b-press-0' })
   // B's press closed A's row: one open at a time.
-  expect(await pane.find({ key: 'more-ak-a' })).toMatchObject({ props: { label: '›' } })
-  expect(await pane.find({ key: 'more-ak-b' })).toMatchObject({ props: { label: '⌄' } })
+  expect(await pane.find({ key: 'more-ak-a' })).toMatchObject({ props: { label: '▸' } })
+  expect(await pane.find({ key: 'more-ak-b' })).toMatchObject({ props: { label: '▾' } })
   await pane.unmount()
 
   await desk.press({ key: 'text-ak-b-press-0' })
   expect(open.size).toBe(0)
   const closed = await $.ui.mount(PANE)
-  expect(await closed.find({ key: 'more-ak-b' })).toMatchObject({ props: { label: '›' } })
+  expect(await closed.find({ key: 'more-ak-b' })).toMatchObject({ props: { label: '▸' } })
   await closed.unmount()
   await desk.unmount()
 })

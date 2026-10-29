@@ -15,7 +15,7 @@ const warning = (
 ): string | undefined =>
   hidden.length === 0 ? undefined : t.dropped(hidden.length, hidden.map(name => titles.get(name) ?? name).join(', '))
 
-/** Draws the Mods pane: one row per declared mod, its head a chevron and the title, the standard star and the switch. Texts wrap. */
+/** Draws the Mods pane: one row per declared mod, its head the title and its triangle, the standard star and the switch. Texts wrap. */
 export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
   const draws = $.ui.resolve(e)
   const { Box, Button, Text } = draws
@@ -50,16 +50,16 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
       {list.map(row => {
         const one = current.get(row.name)
         // A surface that draws pictures lists the card's rows under the segment, each value once, while
-        // the row is open (a press on its chevron); closed, the segment alone. The terminal adds the detail after it.
+        // the row is open (a press on its triangle); closed, the segment alone. The terminal adds the detail after it.
         const isOpen = expanded[row.name] === true
         const rows = e.surface !== 'terminal' ? one?.card : undefined
 
         // A row reads top to bottom: its head, what the mod does, its live segment, then what opens
-        // under the head. The head opens as the desktop app's own lists do: a chevron before the
-        // title. On the right the standard star, then the switch: a mod's two settings side by side.
-        // The switch is the one framed button and never shrinks: in a narrow pane the title wraps
-        // instead. The desktop app draws a Button's label and never its children, so the chevron and
-        // the star are glyph labels, and the title is bold text beside the chevron, not in it.
+        // under the head. The head opens as the desktop app's own cards do: a small triangle after
+        // the title, dim. On the right the standard star, then the switch: a mod's two settings side
+        // by side. The switch is the one framed button and never shrinks: in a narrow pane the title
+        // wraps instead. The desktop app draws a Button's label and never its children, so the
+        // triangle and the star are glyph labels, and the title is bold text beside the triangle.
         // On a surface that draws pictures each mod sits on a faint surface of its own, rounded and
         // edged by a hairline, as grouped settings do: where a mod begins and ends shows without a
         // rule between them. A translucent grey reads on a light and a dark theme alike. The terminal
@@ -80,17 +80,17 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
           <Box key={`mod-${row.name}`} flexDirection="column" {...surface}>
             <Box flexDirection="row" alignItems="center" columnGap={2}>
               <Box flexDirection="row" alignItems="center" columnGap={1} flexGrow={1} flexShrink={1}>
+                <Box flexShrink={1}>
+                  <Text bold>{row.title}</Text>
+                </Box>
                 <Button
                   key={`more-${row.name}`}
-                  label={isOpen ? '⌄' : '›'}
+                  label={isOpen ? '▾' : '▸'}
                   plain
                   dimColor
                   // One row open at a time: opening this one closes any other, so the pane stays short.
                   onPress={() => update($, EXPANDED, map => (map[row.name] === true ? {} : { [row.name]: true }))}
                 />
-                <Box flexShrink={1}>
-                  <Text bold>{row.title}</Text>
-                </Box>
               </Box>
               <Box flexDirection="row" alignItems="center" columnGap={1} flexShrink={0}>
                 {/* Set once and rarely changed: plain, and dim until it is set. */}
