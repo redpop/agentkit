@@ -762,3 +762,15 @@ test('with Claude Code set to German, keep warm speaks German on a 24-hour clock
   await keepwarm($, 'soon')
   expect(toasts.at(-1)).toContain('nicht "soon"')
 })
+
+test('a subagent turn after the main turn ended does not stall keep warm', async ($, on) => {
+  const fork = { usage: usage(200000, 0), calls: 0 }
+  const { clock } = engine(on, fork)
+  await startChat($)
+  await keepwarm($)
+  // A background agent's turn: it starts and ends while no main turn runs.
+  await $.turn.start({ turnId: 'A1', text: 'bg', agentId: 'agent-1' } as never)
+  await $.turn.complete({ turnId: 'A1', reason: 'answer', answer: 'x', durationMs: 1, isAborted: false, agentId: 'agent-1' } as never)
+  await clock.advance(55 * MIN)
+  expect(fork.calls).toBe(1)
+})

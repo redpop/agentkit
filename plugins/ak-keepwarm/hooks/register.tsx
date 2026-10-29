@@ -575,6 +575,8 @@ export const register: Register = on => {
   }).catch(($, e, next) => next(e))
 
   on('turn.start', async ($, e, next) => {
+    // A subagent's turn is not the chat's: its end never clears `isWorking`, so its start must not set it.
+    if (e.agentId !== undefined) return next(e)
     await restore($)
     startTicking($, isOff, share)
     now = await $.clock.now()
