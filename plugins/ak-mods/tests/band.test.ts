@@ -214,8 +214,9 @@ test('compact steps drop the lowest priority', () => {
 test('a pictured band counts its text at 0.95 of a cell, a proportional face being narrower', () => {
   const two = [seg('a', 'x'.repeat(40)), seg('b', 'y'.repeat(40))]
 
-  // Terminal: 40 + 3 + 40 + 10 = 93 > 88. Pictured: 38 + 2 + 38 + 10 = 88.
-  expect(layout(two, 88).rows.length).toBe(2)
-  expect(layout(two, 88, true).rows.length).toBe(1)
-  expect(layout(two, 87, true).rows.length).toBe(2)
+  // Terminal: 40 + 3 + 40 + 10 = 93 > 90. Pictured: 38 + 2 + 38 + 10, and 2 cells kept free at
+  // the end so the `mods` button never meets the band's edge: 90.
+  expect(layout(two, 90).rows.length).toBe(2)
+  expect(layout(two, 90, true).rows.length).toBe(1)
+  expect(layout(two, 89, true).rows.length).toBe(2)
 })

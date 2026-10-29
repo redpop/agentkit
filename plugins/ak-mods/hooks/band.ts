@@ -77,7 +77,12 @@ export const toggleLabel = (hidden: number, word = 'mods'): string => (hidden > 
 export const TOGGLE_HOTKEY = 'm'
 
 /** That button with its least space before it (as wide as a separator), its hotkey and the `: ` after it. */
-const toggleWidth = (hidden: number): number => ROW_SEPARATOR + TOGGLE_HOTKEY.length + 2 + toggleLabel(hidden).length
+const toggleWidth = (hidden: number, isPictured = false): number =>
+  ROW_SEPARATOR + TOGGLE_HOTKEY.length + 2 + toggleLabel(hidden).length + (isPictured ? PICTURED_RESERVE : 0)
+
+// Cells kept free after the `mods` button where the band draws pictures: its count of a proportional
+// face is an estimate, and a row it puts a little short runs over its end, as segments keep their width.
+const PICTURED_RESERVE = 2
 
 const cut = (text: string, columns: number): string =>
   text.length <= columns ? text : `${text.slice(0, Math.max(0, columns - 1))}…`
@@ -124,17 +129,17 @@ export const compacted = (one: Segment): Segment => {
  */
 export const layout = (segments: readonly Segment[], columns: number, isPictured = false): Layout => {
   const full = ordered(segments)
-  const single = pack(full, columns, toggleWidth(0), isPictured)
+  const single = pack(full, columns, toggleWidth(0, isPictured), isPictured)
 
   if (single !== undefined && single.length <= 1) return { rows: single, hidden: [] }
 
   const sorted = full.map(compacted)
-  const all = pack(sorted, columns, toggleWidth(0), isPictured)
+  const all = pack(sorted, columns, toggleWidth(0, isPictured), isPictured)
 
   if (all !== undefined) return { rows: all, hidden: [] }
 
   for (let keep = sorted.length - 1; keep > 0; keep--) {
-    const rows = pack(sorted.slice(0, keep), columns, toggleWidth(sorted.length - keep), isPictured)
+    const rows = pack(sorted.slice(0, keep), columns, toggleWidth(sorted.length - keep, isPictured), isPictured)
 
     if (rows !== undefined) return { rows, hidden: sorted.slice(keep).map(one => one.name) }
   }
@@ -143,7 +148,7 @@ export const layout = (segments: readonly Segment[], columns: number, isPictured
   // longer join to a cut text, so it draws in one run, its rich runs left out with them. Rich runs
   // wider than the room are left out too, where the text whole fits.
   const [first, ...rest] = sorted
-  const room = Math.max(1, columns - toggleWidth(rest.length))
+  const room = Math.max(1, columns - toggleWidth(rest.length, isPictured))
   const text = first === undefined ? '' : cut(first.text, room)
 
   return {
