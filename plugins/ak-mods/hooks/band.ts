@@ -8,11 +8,8 @@ export type Tone = ModsTone
  */
 export type Segment = ModsSegment & { name: string; title: string; isCompact?: true }
 
-/**
- * Up to two rows of segments; `hidden` holds the mod names that did not fit. `isCompact` once the
- * band is past its first step: its segments with a compact form are in it.
- */
-export type Layout = { rows: readonly (readonly Segment[])[]; hidden: readonly string[]; isCompact: boolean }
+/** Up to two rows of segments; `hidden` holds the mod names that did not fit. */
+export type Layout = { rows: readonly (readonly Segment[])[]; hidden: readonly string[] }
 
 const ROW_SEPARATOR = 3
 
@@ -117,17 +114,17 @@ export const layout = (segments: readonly Segment[], columns: number, isPictured
   const full = ordered(segments)
   const single = pack(full, columns, toggleWidth(0), isPictured)
 
-  if (single !== undefined && single.length <= 1) return { rows: single, hidden: [], isCompact: false }
+  if (single !== undefined && single.length <= 1) return { rows: single, hidden: [] }
 
   const sorted = full.map(compacted)
   const all = pack(sorted, columns, toggleWidth(0), isPictured)
 
-  if (all !== undefined) return { rows: all, hidden: [], isCompact: true }
+  if (all !== undefined) return { rows: all, hidden: [] }
 
   for (let keep = sorted.length - 1; keep > 0; keep--) {
     const rows = pack(sorted.slice(0, keep), columns, toggleWidth(sorted.length - keep), isPictured)
 
-    if (rows !== undefined) return { rows, hidden: sorted.slice(keep).map(one => one.name), isCompact: true }
+    if (rows !== undefined) return { rows, hidden: sorted.slice(keep).map(one => one.name) }
   }
 
   // Not even the first fits beside the button: keep it alone, cut to the room left. Its parts no
@@ -151,7 +148,6 @@ export const layout = (segments: readonly Segment[], columns: number, isPictured
             ],
           ],
     hidden: rest.map(one => one.name),
-    isCompact: true,
   }
 }
 
