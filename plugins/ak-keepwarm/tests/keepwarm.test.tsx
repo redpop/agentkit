@@ -486,12 +486,23 @@ test('publishes the cold segment without a button', OWNED, async ($, on) => {
     text: `○ cold 12m  rewrite ${COST}`,
     rich: [
       { text: 'cache cold', tone: 'dim', ring: 0 },
-      { text: ` cold 12m  rewrite ${COST}`, tone: 'dim' },
+      { text: ` ${COST}`, tone: 'ok' },
+      { text: ' cache', tone: 'dim' },
     ],
     card: card('cold for 12m'),
     tone: 'dim',
     priority: 6,
   })
+})
+
+test('the cold segment shows a rewrite from $1 in yellow', OWNED, async ($, on) => {
+  // A chat of 600k tokens: its rewrite is past $1.
+  const { clock, toasts } = engine(on, { usage: usage(600000, 0), calls: 0 }, { usage: usage(600000, 0) })
+  await startChat($)
+  await clock.advance(72 * MIN)
+  const cost = segments(toasts).at(-1)?.rich?.[1]
+  expect(cost?.text).toBe(` ≈ ${usd(rewriteCost(600010, 'claude-sonnet-5-5', 60))}`)
+  expect(cost?.tone).toBe('warn')
 })
 
 test('publishes the kept-warm segment with the stop button, without its end', OWNED, async ($, on) => {

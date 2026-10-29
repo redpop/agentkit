@@ -39,6 +39,8 @@ above the prompt, once the chat has made a request:
 On the desktop app the circle is a ring that empties with the time left, beside the time and the
 word `cache`: `◕ 42m cache`. Kept warm, the ring is full in the info colour; cold, it is empty.
 Cooling, it says what is at stake: `cache drops in 4m · next message rewrites 200k tokens ≈ $0.80`.
+Cold, it reads as its neighbours do, a value then a dim label: the empty ring, then what the next
+message costs, `≈ $0.80 cache`, yellow from $1. How long it has been cold is the pane's.
 A press on the segment's text opens the Mods pane at this mod, which lists the cache's state, its
 lifetime, the context, the rewrite estimate and, once there are some, the pings, rewrites and
 retries.

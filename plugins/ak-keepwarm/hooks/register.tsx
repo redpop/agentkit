@@ -297,6 +297,9 @@ const drain = (left: number): string => {
   return share > 0.75 ? '●' : share > 0.5 ? '◕' : share > 0.25 ? '◑' : '◔'
 }
 
+// A rewrite from this much on is worth noticing: the cold segment shows its cost in yellow.
+const NOTABLE_USD = 1
+
 // The cache state as the shared band shows it: no segment before the first request. The circle
 // and the time left say it is warm; only cold says so in a word. The rewrite estimate rides along
 // only while it matters, as the cache cools or is cold, its label dim.
@@ -305,7 +308,8 @@ const segment = (): Segment => {
   if (state === 'unknown') return undefined
   const t = T()
   const left = msLeft() ?? 0
-  const cost = `≈ ${usd(rewriteCost(S.ctx, S.model, S.ttlMin))}`
+  const rewrite = rewriteCost(S.ctx, S.model, S.ttlMin)
+  const cost = `≈ ${usd(rewrite)}`
   const button = (label: string) => ({ label, hotkey: '1', command: 'keepwarm' })
   const detail = tally()
   // The hover card on the desktop app: the cache's state, what it holds and what it cost.
@@ -386,9 +390,14 @@ const segment = (): Segment => {
 
   return {
     text: `○ ${t.cold} ${minutes(-left)}  ${t.rewrite} ${cost}`,
+    // On the desktop app as its neighbours read, a value then a dim label: the empty ring says cold,
+    // so the value is what the next message costs, yellow once it is worth noticing. How long it has
+    // been cold is the card's.
     rich: [
       { text: t.ringCold, tone: 'dim', ring: 0 },
-      { text: ` ${t.cold} ${minutes(-left)}  ${t.rewrite} ${cost}`, tone: 'dim' },
+      // `ok` draws in the text colour, where no tone would take the segment's dim.
+      { text: ` ${cost}`, tone: rewrite >= NOTABLE_USD ? 'warn' : 'ok' },
+      { text: ` ${t.cacheWord}`, tone: 'dim' },
     ],
     ...more,
     tone: 'dim',
