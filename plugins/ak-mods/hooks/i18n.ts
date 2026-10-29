@@ -58,10 +58,6 @@ const EN = {
   footer: 'Switches reset in a new chat or after /clear. Standard mods start on.',
   on: '● On',
   off: '○ Off',
-  standard: '★ Standard',
-  notStandard: '☆ Standard',
-  more: 'Show details',
-  less: 'Hide details',
   toggle: 'mods',
   dropped: (count: number, titles: string) => `${count} ${count === 1 ? 'mod does' : 'mods do'} not fit the band: ${titles}`,
 }
@@ -73,10 +69,6 @@ const DE: typeof EN = {
   footer: 'Die Schalter gelten pro Chat: ein neuer Chat oder /clear setzt sie zurück. Standard-Mods starten eingeschaltet.',
   on: '● An',
   off: '○ Aus',
-  standard: '★ Standard',
-  notStandard: '☆ Standard',
-  more: 'Details anzeigen',
-  less: 'Details ausblenden',
   toggle: 'Mods',
   dropped: (count: number, titles: string) => `${count} ${count === 1 ? 'Mod passt' : 'Mods passen'} nicht ins Band: ${titles}`,
 }

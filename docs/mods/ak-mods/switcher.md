@@ -15,7 +15,7 @@ One row per mod that declared itself. Its head is the title with a chevron befor
 `⌄` open, and on the right the standard star, then the on/off switch; the summary follows. A
 switched-on mod that publishes a segment also shows it below, in its band colour and with the
 segment's button, and its detail after it, dimmed; the pane draws on every surface, so this is where
-a segment is always visible. A press on the title opens the row's details; one row is open at a
+a segment is always visible. A press on the chevron opens the row's details; one row is open at a
 time, so opening one closes any other and the pane stays short. In a narrow pane the title wraps and
 the star and the switch keep their size. On the desktop app a
 segment with card rows shows no detail there: opened, the row lists the card's rows under the
@@ -27,7 +27,7 @@ reset ends the pane, small and dim.
 | -------- | -------- |
 | ○ Off / ● On | Switches the mod for this chat; the label shows its state |
 | ☆ / ★ | Marks or unmarks the mod to start on in every new chat; ★ means marked |
-| › / ⌄ and the title | Shows or hides the mod's details, and on the desktop app its card rows |
+| › / ⌄ | Shows or hides the mod's details, and on the desktop app its card rows |
 
 ## Band
 
