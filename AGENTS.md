@@ -6,13 +6,13 @@ This file provides guidance to AI agents (Claude Code, Warp AI, etc.) when worki
 
 ## Project overview
 
-Claude Code plugin marketplace (`ak-marketplace`) with 14 independently installable plugins, 25 skills, 8 agents, a mod switcher with three mods,
+Claude Code plugin marketplace (`ak-marketplace`) with 15 independently installable plugins, 25 skills, 8 agents, a mod switcher with four mods,
 and domain knowledge bases. Built on the official Claude Code Plugin Architecture.
 
 ## Dev environment
 
 No build step required — the codebase is Markdown, JSON, and shell scripts, plus four TSX
-hooks modules (`ak-mods`, `ak-keepwarm`, `ak-session-id`, `ak-usage`) that Claude Code loads directly.
+hooks modules (`ak-mods`, `ak-keepwarm`, `ak-session-id`, `ak-usage`, `ak-gitlab`) that Claude Code loads directly.
 
 **Test a plugin locally:**
 
@@ -57,6 +57,8 @@ claude plugin validate plugins/ak-session-id
 claude plugin test plugins/ak-session-id
 claude plugin validate plugins/ak-usage
 claude plugin test plugins/ak-usage
+claude plugin validate plugins/ak-gitlab
+claude plugin test plugins/ak-gitlab
 ```
 
 The third command loads the test-only fixture mod with `ak-mods` absent and proves it fails
@@ -88,9 +90,11 @@ S=$R/plugins/ak-session-id
 echo "{\"compilerOptions\":{$O},\"include\":[\"$T/fx\",\"$S/hooks\",\"$S/tests\"]}" > "$T/session-id.json"
 U=$R/plugins/ak-usage
 echo "{\"compilerOptions\":{$O},\"include\":[\"$T/fx\",\"$U/hooks\",\"$U/tests\"]}" > "$T/usage.json"
+G=$R/plugins/ak-gitlab
+echo "{\"compilerOptions\":{$O},\"include\":[\"$T/fx\",\"$G/hooks\",\"$G/tests\"]}" > "$T/gitlab.json"
 npx -y -p typescript@5 tsc -p "$T/mods.json" && npx -y -p typescript@5 tsc -p "$T/fixture.json" &&
   npx -y -p typescript@5 tsc -p "$T/keepwarm.json" && npx -y -p typescript@5 tsc -p "$T/session-id.json" &&
-  npx -y -p typescript@5 tsc -p "$T/usage.json"
+  npx -y -p typescript@5 tsc -p "$T/usage.json" && npx -y -p typescript@5 tsc -p "$T/gitlab.json"
 )
 ```
 
@@ -131,6 +135,7 @@ plugins/{plugin-name}/
 | `ak-keepwarm` | - | - | hooks module (TSX), tests/, LICENSE (upstream MIT) |
 | `ak-session-id` | - | - | hooks module (TSX), tests/ |
 | `ak-usage` | - | - | hooks module (TSX), tests/ |
+| `ak-gitlab` | - | - | hooks module (TSX), tests/ |
 | `ak-notifications` | - | - | hooks |
 | `ak-react` | 2 | - | knowledge/ (1 file) |
 | `ak-security` | 3 | - | knowledge/ (43 files) |

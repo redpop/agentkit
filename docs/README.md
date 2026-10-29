@@ -4,7 +4,7 @@ Reference documentation for all AgentKit components — skills, agents, hooks, a
 
 ## Overview
 
-AgentKit provides 14 plugins with specialized skills, agents, hooks, and mods for Claude Code.
+AgentKit provides 15 plugins with specialized skills, agents, hooks, and mods for Claude Code.
 
 | Category | Count | Description |
 |----------|-------|-------------|
@@ -18,6 +18,7 @@ AgentKit provides 14 plugins with specialized skills, agents, hooks, and mods fo
 | Plugin | Focus | Skills | Agents | Hooks |
 |--------|-------|--------|--------|-------|
 | ak-git | Git workflow automation | 1 | 2 | — |
+| ak-gitlab | GitLab mod (merge request and pipeline) | — | — | hooks module |
 | ak-improve | Code optimization | — | 2 | — |
 | ak-js | JavaScript/Node tooling | 1 | 1 | — |
 | ak-keepwarm | Keep-warm mod (prompt cache pings) | — | — | hooks module |

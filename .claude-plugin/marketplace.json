@@ -132,6 +132,15 @@
       "category": "productivity",
       "keywords": ["mods", "context", "usage", "rate-limit"],
       "license": "MIT"
+    },
+    {
+      "name": "ak-gitlab",
+      "source": "./plugins/ak-gitlab",
+      "description": "Mod: shows the merge request of the current branch and its pipeline as one segment in the shared band, on GitLab via glab",
+      "version": "1.58.11",
+      "category": "productivity",
+      "keywords": ["mods", "gitlab", "merge-request", "pipeline"],
+      "license": "MIT"
     }
   ]
 }
