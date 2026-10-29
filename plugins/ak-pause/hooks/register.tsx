@@ -18,6 +18,11 @@ const KEY = 'block'
 const TICK_MS = 60_000
 // Typing writes the block at most this often; a prompt sent always does.
 const TYPING_MS = 60_000
+// A hint waits while the person has typed this recently.
+const TYPED_MS = 5_000
+// The prompts the person sent: at the terminal, through Remote Control, or in the desktop app (an
+// SDK host). A notification, a routine or another agent's message is not them.
+const PERSON = new Set(['composer', 'bridge', 'sdk'])
 
 // Publishes while ak-mods switches the mod and it is on; whether it is off. Both fail open.
 type Publish = (isOn: () => Promise<boolean>, send: () => Promise<void>) => Promise<void>
@@ -27,13 +32,20 @@ type Gate = { publish: Publish; isOff: (isOn: () => Promise<boolean>) => Promise
 type Pause = {
   // The segment as last drawn, for the own band too.
   shown: Segment | undefined
-  // When this session last wrote the block for typing.
+  // When this session last wrote the block, and when the person last typed.
   lastWrite: number
+  lastTyped: number
   tick: Timer | undefined
   longTurn: Timer | undefined
 }
 
-const pausing = (): Pause => ({ shown: undefined, lastWrite: Number.NEGATIVE_INFINITY, tick: undefined, longTurn: undefined })
+const pausing = (): Pause => ({
+  shown: undefined,
+  lastWrite: Number.NEGATIVE_INFINITY,
+  lastTyped: Number.NEGATIVE_INFINITY,
+  tick: undefined,
+  longTurn: undefined,
+})
 
 const stop = (pause: Pause) => {
   pause.tick?.cancel()
@@ -77,22 +89,30 @@ function ticking($: EngineInterface, pause: Pause, gate: Gate): void {
   })
 }
 
-/** An input: the block moves on, or a new one starts after a break. Typing writes once a minute. */
+/**
+ * An input: the block moves on, or a new one starts after a break. Typing writes once a minute and,
+ * in between, touches nothing but the clock: a block this session wrote a minute ago is no break.
+ */
 async function active($: EngineInterface, pause: Pause, gate: Gate, isTyping: boolean): Promise<void> {
-  if (await gate.isOff(() => $.mods.isOn({ name: NAME }))) return
   const now = await $.clock.now()
+  if (isTyping) pause.lastTyped = now
+  if (isTyping && now - pause.lastWrite < TYPING_MS) return
+  if (await gate.isOff(() => $.mods.isOn({ name: NAME }))) return
   const { ok, block } = await read($)
   if (!ok) return
-  if (isTyping && block !== undefined && !isIdle(block, now) && now - pause.lastWrite < TYPING_MS) return
   pause.lastWrite = now
   await write($, touch(block, now))
   await show($, pause, gate)
 }
 
-/** The block's one hint, once it has run `atMs`: claimed in the store first, so no session repeats it. */
-async function hint($: EngineInterface, gate: Gate, atMs: number, isLong: boolean): Promise<void> {
+/**
+ * The block's one hint, once it has run `atMs`: claimed in the store first, so no session repeats
+ * it. None while the person types: the next quiet moment gets it.
+ */
+async function hint($: EngineInterface, pause: Pause, gate: Gate, atMs: number, isLong: boolean): Promise<void> {
   if (await gate.isOff(() => $.mods.isOn({ name: NAME }))) return
   const now = await $.clock.now()
+  if (now - pause.lastTyped < TYPED_MS) return
   const { block } = await read($)
   if (block === undefined || !mayNotice(block, now, atMs)) return
   await write($, notice(block))
@@ -151,7 +171,7 @@ export const register: Register = on => {
 
   on('prompt.submit', async ($, e, next) => {
     const done = await next(e)
-    await active($, pause, gate, false)
+    if (PERSON.has(e.origin.kind)) await active($, pause, gate, false)
 
     return done
   }).catch(($, e, next) => next(e))
@@ -169,7 +189,7 @@ export const register: Register = on => {
     if (e.agentId || (await isOff(() => $.mods.isOn({ name: NAME })))) return done
     pause.longTurn?.cancel()
     pause.longTurn = $.clock.after(LONG_TURN_MS, () => {
-      hint($, gate, NOTIFY_AT_MS, true).catch(() => {})
+      hint($, pause, gate, NOTIFY_AT_MS, true).catch(() => {})
     })
 
     return done
@@ -181,7 +201,7 @@ export const register: Register = on => {
     if (e.agentId) return done
     pause.longTurn?.cancel()
     pause.longTurn = undefined
-    await hint($, gate, WORK_MS, false)
+    await hint($, pause, gate, WORK_MS, false)
 
     return done
   }).catch(($, e, next) => next(e))
@@ -190,7 +210,10 @@ export const register: Register = on => {
     const now = await $.clock.now()
     const { block } = await read($)
     if (block !== undefined) await write($, drink(block, now))
-    await show($, pause, gate)
+    // Off the hook: the band's button runs this inside ak-mods' own call, where a publish is lost.
+    $.clock.after(0, () => {
+      show($, pause, gate).catch(() => {})
+    })
 
     return {}
   })

@@ -10,8 +10,8 @@ AgentKit provides 16 plugins with specialized skills, agents, hooks, and mods fo
 |----------|-------|-------------|
 | [Skills](skills/) | 25 | Slash commands invoked by the user |
 | [Agents](agents/) | 8 | Specialized sub-agents for autonomous tasks |
-| [Hooks](hooks/) | 6 plugins | Automated actions on tool events |
-| [Mods](mods/) | 4 plugins | Interface changes that the Mods pane switches on or off per chat |
+| [Hooks](hooks/) | 8 plugins | Automated actions on tool events |
+| [Mods](mods/) | 5 plugins | Interface changes that the Mods pane switches on or off per chat |
 
 ## Plugins
 

@@ -59,8 +59,11 @@ Whichever comes first is the block's one hint. Switched off, the mod sends none.
 
 ## How it works
 
-- An input is a prompt sent, or typing in the prompt box (`prompt.edit`). A turn Claude runs on its
-  own is not one: whoever leaves during a long task has had a break.
+- An input is a prompt you send (at the terminal, through Remote Control or in the desktop app), or
+  typing in the prompt box (`prompt.edit`). A background task's notification, a routine or `/loop`,
+  or another agent's message is not one, and neither is a turn Claude runs on its own: whoever
+  leaves during a long task has had a break.
+- No hint goes out within 5 seconds of a keystroke; the next quiet moment gets it.
 - The block lives in the mod's own store, a JSON file under Claude Code's configuration directory
   that every session of the mod reads and writes. A prompt sent writes it at once, typing at most
   once a minute. A store that cannot be read shows nothing.

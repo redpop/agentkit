@@ -25,7 +25,9 @@ const engine = (on: On, stored: Record<string, unknown> = {}, { isFailing = fals
   const toasts: string[] = []
   const notes: string[] = []
   const writes: unknown[] = []
+  const reads: string[] = []
   on('store.get', (_, e) => {
+    reads.push(e.key)
     if (isFailing) throw new Error('no store')
 
     return { value: stored[e.key] }
@@ -59,7 +61,7 @@ const engine = (on: On, stored: Record<string, unknown> = {}, { isFailing = fals
     return <Text>engine</Text>
   })
 
-  return { clock, toasts, notes, writes, stored }
+  return { clock, toasts, notes, writes, reads, stored }
 }
 
 type Segment = Parameters<EngineInterface['mods']['segment']>[0]
@@ -69,6 +71,9 @@ const SEGMENT = 'segment '
 // ak-mods cannot be loaded here, so a plugin above the mod stands in for it, as in ak-gitlab's
 // tests: declaring switches the mod on, and each published segment comes out as a toast.
 const owner: Register = on => {
+  // Between `hold` and `release` a segment call resolves without being stored, as inside the call
+  // ak-mods makes when its band's button runs a command.
+  let isPressing = false
   on('engine.create', async ($, e, next) => {
     const built = await next(e)
     const set = async ({ name, on: isOn }: { name: string; on: boolean }) => {
@@ -91,6 +96,7 @@ const owner: Register = on => {
         setStandard: async () => {},
         list: async () => [],
         segment: async (segment: Segment) => {
+          if (isPressing) return
           await built.ui.toast('segment ' + JSON.stringify(typeof segment?.text === 'string' ? segment : null))
         },
       },
@@ -103,6 +109,11 @@ const owner: Register = on => {
     return next(e)
   })
   on('command.run', { command: 'stand-in' }, async ($, e) => {
+    if (e.args === 'hold' || e.args === 'release') {
+      isPressing = e.args === 'hold'
+
+      return {}
+    }
     await $.mods.set({ name: 'ak-pause', on: e.args === 'on' })
 
     return {}
@@ -117,7 +128,8 @@ const plain = (toasts: string[]) => toasts.filter(t => !t.startsWith(SEGMENT))
 const last = (toasts: string[]) => segments(toasts).at(-1)?.text
 
 const start = ($: Engine) => $.session.start({ cwd: '/', surface: null, isInteractive: false })
-const submit = ($: Engine) => $.prompt.submit({ text: 'weiter', wait: false, origin: { kind: 'composer' } })
+const submit = ($: Engine, kind: 'composer' | 'sdk' | 'task-notification' | 'scheduled-trigger' = 'composer') =>
+  $.prompt.submit({ text: 'weiter', wait: false, origin: { kind } })
 // The kit raises `prompt.edit` as the composer does, but its `Engine` type does not list the event.
 type Edit = { edit: (e: PromptEditInput) => Promise<unknown> }
 const type = ($: Engine) =>
@@ -162,11 +174,14 @@ test('the tick shows the break without input', OWNED, async ($, on) => {
 })
 
 test('typing writes at most once a minute', OWNED, async ($, on) => {
-  const { clock, writes } = engine(on)
+  const { clock, writes, reads } = engine(on)
   await start($)
   await type($)
   await clock.advance(10_000)
+  const before = reads.length
   await type($)
+  // Within the minute a keystroke touches no store.
+  expect(reads.length).toBe(before)
   await clock.advance(10_000)
   await type($)
   expect(writes.length).toBe(1)
@@ -182,7 +197,10 @@ test('drinking clears the water hint', OWNED, async ($, on) => {
   await clock.advance(6 * MIN)
   expect(last(toasts)).toBe('46 min am Stück · Wasser')
   expect(segments(toasts).at(-1)?.button).toEqual({ label: 'Getrunken', command: 'pause-drink' })
+  // Pressed in the band: the command runs inside ak-mods' call, where a publish is lost.
+  await run($, 'stand-in', 'hold')
   await run($, 'pause-drink')
+  await run($, 'stand-in', 'release')
   await clock.settle()
   expect(last(toasts)).toBe('46 min am Stück')
 })
@@ -270,4 +288,33 @@ test('without ak-mods the own band shows the segment', async ($, on) => {
   })
   expect(await ui.find({ type: 'Text', text: '23 min am Stück' })).toBeDefined()
   await ui.unmount()
+})
+
+test('prompts nobody typed are not activity', OWNED, async ($, on) => {
+  const { clock, toasts, writes } = engine(on)
+  await start($)
+  await submit($)
+  await clock.advance(9 * MIN)
+  await submit($, 'task-notification')
+  await clock.advance(MIN)
+  await submit($, 'scheduled-trigger')
+  expect(writes.length).toBe(1)
+  expect(last(toasts)).toBe('Pause')
+  // The desktop app's own prompts are the person's.
+  await submit($, 'sdk')
+  expect(writes.length).toBe(2)
+  expect(last(toasts)).toBe('0 min am Stück')
+})
+
+test('no hint while the person types', OWNED, async ($, on) => {
+  const { clock, toasts } = engine(on, { block: running(61) })
+  await start($)
+  await type($)
+  await turn($)
+  await clock.settle()
+  expect(plain(toasts)).toEqual([])
+  await clock.advance(6_000)
+  await turn($)
+  await clock.settle()
+  expect(plain(toasts)).toEqual(['1 h 01 am Stück. Guter Moment für eine Pause.'])
 })
