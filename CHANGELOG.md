@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.58.5] - 2026-10-29
+
+### 🐛 Fixed
+
+- `ak-mods` — a card's rows in the Mods pane draw in small type, and rows of long values, such as
+  the desktop id and the engine id, stand a line apart.
+- `ak-usage` — its details describe the desktop app's rings and the compact band, not only the
+  terminal's bars.
+
 ## [1.58.4] - 2026-10-29
 
 ### 🐛 Fixed
