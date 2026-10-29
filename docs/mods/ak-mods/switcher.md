@@ -46,7 +46,9 @@ no band and no button; `/ak-mods` still opens the pane.
 
 The band stays quiet at rest. Colour marks only what needs attention: `ok` draws in the text colour,
 `warn` in the theme's warning colour, `alert` in its error colour, `info` in its suggestion colour,
-and `dim` dimmed. The colours are theme keys, so they follow a light or a dark theme. A ring takes
+and `dim` dimmed. On the terminal the colours are theme keys, so they follow a light or a dark theme;
+the desktop app paints no theme key on text, so there the text takes fixed colours that read on
+either appearance. A ring takes
 the same tone in colours of its own, which follow the desktop app's light or dark appearance. Three
 cells of space part the segments on the terminal, two on the desktop app, with no rule between them.
 Digits draw at one width, so a figure that counts down does not shift. The `mods` button sits dimmed

@@ -544,9 +544,9 @@ test("a row draws its segment in the band's colour", { plugins: MODS }, async ($
   await callAs($, 'ak-a', 'set', { name: 'ak-a', on: true })
 
   for (const [tone, props] of [
-    ['info', { color: 'suggestion' }],
-    ['warn', { color: 'warning' }],
-    ['alert', { color: 'error', bold: true }],
+    ['info', { color: '#4889cd' }],
+    ['warn', { color: '#cd8f2d' }],
+    ['alert', { color: '#db4c46', bold: true }],
     ['dim', { dimColor: true }],
   ] as const) {
     await callAs($, 'ak-a', 'segment', { text: `state ${tone}`, tone })

@@ -539,8 +539,9 @@ test('a segment draws its parts, each in its tone or else the segment\'s, in dig
     const ui = await $.ui.mount({ ...BAND, surface })
     expect(await ui.find({ type: 'Text', text: 'ctx ▰▱ 81%' })).toMatchObject({ props: { tabular: true } })
     expect(await exactly(ui, 'ctx ')).toMatchObject({ props: { dimColor: true } })
-    expect(await exactly(ui, '▰▱')).toMatchObject({ props: { color: 'warning' } })
-    expect(await exactly(ui, ' 81%')).toMatchObject({ props: { color: 'error', bold: true } })
+    // The desktop app paints no theme key on text: there the colours are fixed, between the ring's light and dark.
+    expect(await exactly(ui, '▰▱')).toMatchObject({ props: { color: surface === 'desktop' ? '#cd8f2d' : 'warning' } })
+    expect(await exactly(ui, ' 81%')).toMatchObject({ props: { color: surface === 'desktop' ? '#db4c46' : 'error', bold: true } })
     await ui.unmount()
   }
 })
@@ -803,4 +804,13 @@ test('in a compact band a segment without a compact form keeps its button and ho
     expect(await ui.find({ key: 'seg-ak-b' })).toMatchObject({ text: 'go', props: { hotkey: '1' } })
     await ui.unmount()
   }
+})
+
+test('on the desktop app the info tone draws its text in a fixed colour', { plugins: [consumer('ak-a')] }, async ($, on) => {
+  engine(on)
+  await publish($, 'ak-a', 'A', { text: 'kept', rich: [{ text: 'r', ring: 100 }, { text: ' warm', tone: 'info' }] })
+
+  const ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  expect(await exactly(ui, ' warm')).toMatchObject({ props: { color: '#4889cd' } })
+  await ui.unmount()
 })

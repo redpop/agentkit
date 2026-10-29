@@ -129,24 +129,29 @@ const checked = (info: ModsInfo, stored: unknown): Segment | undefined => {
   }
 }
 
+// The desktop app paints no theme key on text: there a tone takes a fixed colour, between the
+// ring's light and dark ones, so it reads on either appearance.
+const DESKTOP_TONES = { warn: '#cd8f2d', alert: '#db4c46', info: '#4889cd' }
+
 /**
  * How a tone draws, the same in the band and the Mods pane. Colour marks what
  * needs attention: `ok` draws in the text colour, so a band at rest stays
- * quiet and a warning or an error stands out. The colours are theme keys:
- * they follow the person's theme, light or dark.
+ * quiet and a warning or an error stands out. On the terminal the colours are
+ * theme keys: they follow the person's theme, light or dark.
  */
-export const toneProps = (
-  tone: ModsTone | undefined,
-): { color?: 'warning' | 'error' | 'suggestion'; bold?: true; dimColor?: true } =>
-  tone === 'warn'
-    ? { color: 'warning' }
+export const toneProps = (tone: ModsTone | undefined, surface?: string): { color?: string; bold?: true; dimColor?: true } => {
+  const isDesktop = surface === 'desktop'
+
+  return tone === 'warn'
+    ? { color: isDesktop ? DESKTOP_TONES.warn : 'warning' }
     : tone === 'alert'
-      ? { color: 'error', bold: true }
+      ? { color: isDesktop ? DESKTOP_TONES.alert : 'error', bold: true }
       : tone === 'info'
-        ? { color: 'suggestion' }
+        ? { color: isDesktop ? DESKTOP_TONES.info : 'suggestion' }
         : tone === 'dim'
           ? { dimColor: true }
           : {}
+}
 
 // A ring's colours: the light theme's in the markup, the dark theme's through the colour-scheme
 // query of the picture itself, as the desktop gives the band no light or dark signal. A ring at
@@ -231,7 +236,7 @@ export const segmentView = (
     )
   }
   if (surface === 'terminal' || Svg === undefined || one.rich === undefined) {
-    return pressable(0, [segmentText(Text, one, key)])
+    return pressable(0, [segmentText(Text, one, key, surface)])
   }
 
   // The runs in stretches: each picture alone, the text between them together.
@@ -254,7 +259,7 @@ export const segmentView = (
           pressable(
             at,
             [first, ...rest].map((part, offset) => (
-              <Text key={`${key}-${at + offset}`} tabular {...toneProps(part?.tone ?? one.tone)}>
+              <Text key={`${key}-${at + offset}`} tabular {...toneProps(part?.tone ?? one.tone, surface)}>
                 {part?.text}
               </Text>
             )),
@@ -296,15 +301,15 @@ export const cardRowsOf = (one: Segment): readonly ModsCardRow[] | undefined =>
  * tone, or in its parts, each in its own tone or else the segment's. Its
  * digits are of one width, so a figure that counts down does not shift.
  */
-export const segmentText = (Text: ElementConstructor<TextProps>, one: Segment, key: string) =>
+export const segmentText = (Text: ElementConstructor<TextProps>, one: Segment, key: string, surface?: string) =>
   one.parts === undefined ? (
-    <Text key={key} tabular {...toneProps(one.tone)}>
+    <Text key={key} tabular {...toneProps(one.tone, surface)}>
       {one.text}
     </Text>
   ) : (
     <Text key={key} tabular>
       {one.parts.map((part, at) => (
-        <Text key={`${key}-${at}`} {...toneProps(part.tone ?? one.tone)}>
+        <Text key={`${key}-${at}`} {...toneProps(part.tone ?? one.tone, surface)}>
           {part.text}
         </Text>
       ))}
