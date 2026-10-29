@@ -17,7 +17,7 @@ Requires Claude Code 2.1.309 or later (hooks-module support) and `glab`, install
 
 - The segment follows the open merge request whose source is the current branch. On the desktop app
   a running pipeline shows a ring of its finished jobs, the time so far and an estimate.
-- **öffnen** (`/gitlab-open`) opens the merge request; after a failure, **Fehler holen**
+- **open** (`/gitlab-open`) opens the merge request; after a failure, **Get errors**
   (`/gitlab-errors`) puts an excerpt of the failed job's log in the prompt box as a draft.
 - A toast says when the pipeline is green, failed or waits at a manual job.
 

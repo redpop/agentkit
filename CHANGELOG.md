@@ -12,8 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ak-gitlab` — a new mod: one segment in the shared band follows the open merge request of the
   current branch and its head pipeline, read through `glab`. While the pipeline runs it shows a ring
   of the finished jobs, the time so far and an estimate from the last green pipelines
-  (`!12 4/7 3:12/~5m`); a failed one names its first failed job, a green one its duration. **öffnen**
-  (`/gitlab-open`) opens the merge request, and after a failure **Fehler holen** (`/gitlab-errors`)
+  (`!12 4/7 3:12/~5m`); a failed one names its first failed job, a green one its duration. **open**
+  (`/gitlab-open`) opens the merge request, and after a failure **Get errors** (`/gitlab-errors`)
   puts an excerpt of the job's log in the prompt box as a draft. A toast says when the pipeline
   turns green, fails or waits at a manual job. The mod asks GitLab every 15 seconds while a pipeline
   runs, every 2.5 minutes while a merge request is open, and on every prompt, turn end and push;

@@ -21,14 +21,14 @@ It shows one segment in the band that [`ak-mods`](../ak-mods/switcher.md) draws 
 | Segment | Meaning |
 | --------- | --------- |
 | none | No open merge request for this branch, or the repository is not on GitLab |
-| `!12 keine Pipeline` (dim) | The merge request has no pipeline yet |
+| `!12 no pipeline` (dim) | The merge request has no pipeline yet |
 | `!12 4/7 3:12/~5m` | Running: 4 of 7 jobs finished, 3:12 so far, about 5 minutes in all |
 | `!12 ✗ test:unit 2:48` | Failed in `test:unit` after 2:48, in the error colour |
 | `!12 ✓ 4:51` | Green after 4:51 |
 | `!12 ⏸ deploy` | Held at the manual job `deploy`, in the warning colour |
-| `!12 abgebrochen` (dim) | Canceled or skipped |
+| `!12 canceled` (dim) | Canceled or skipped |
 
-On the desktop app a running pipeline draws a ring filled to its finished jobs, `◔ 4/7 · 3:12 von
+On the desktop app a running pipeline draws a ring filled to its finished jobs, `◔ 4/7 · 3:12 of
 ~5 min`, and a green one reads `✓ Pipeline · 4:51`. The time runs on between fetches. The estimate
 is the mean run of the project's last green pipelines; without any, it is left out. A finished job
 is one that succeeded, failed, was canceled or skipped, and a manual job the pipeline may pass by;
@@ -37,8 +37,8 @@ a bridge to a downstream pipeline counts as one job.
 When the band is short of room, the segment turns compact: `!12 4/7`, `!12 ✗`, `!12 ✓`. Its
 priority is 6.
 
-The button is **öffnen**, which opens the merge request in the browser; after a failure it is
-**Fehler holen**. A press on the segment opens the Mods pane at this mod, whose card lists the
+The button is **open**, which opens the merge request in the browser; after a failure it is
+**Get errors**. A press on the segment opens the Mods pane at this mod, whose card lists the
 merge request, its target branch, draft, the pipeline, each stage with its mark (`build ✓ · test ◐ ·
 deploy ○`), the failed jobs, when it started and how long it ran.
 
@@ -46,14 +46,15 @@ Without `ak-mods` (or when it refuses the mod, or a publish fails), the mod draw
 instead, never both.
 
 The mod's texts follow Claude Code's `language` setting, else `LC_ALL`, `LC_MESSAGES` or `LANG`:
-German or English.
+German or English. In German the buttons read **öffnen** and **Fehler holen**, and the segment
+`!12 keine Pipeline`, `!12 abgebrochen` and `· 3:12 von ~5 min`.
 
 ## Commands
 
 | Command | Does |
 | --------- | --------- |
-| `/gitlab-open` | Opens the merge request in the browser (the **öffnen** button) |
-| `/gitlab-errors` | Puts an excerpt of the failed job's log in the prompt box (the **Fehler holen** button) |
+| `/gitlab-open` | Opens the merge request in the browser (the **open** button) |
+| `/gitlab-errors` | Puts an excerpt of the failed job's log in the prompt box (the **Get errors** button) |
 
 The excerpt holds the lines that look like errors, three lines around each, and the last 30 lines,
 without colours or GitLab's section markers, under a sentence that names the merge request, job and
