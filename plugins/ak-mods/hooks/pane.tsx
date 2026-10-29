@@ -55,8 +55,8 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
         const rows = e.surface !== 'terminal' ? one?.card : undefined
 
         // A row reads top to bottom: its head, what the mod does, its live segment, then what opens
-        // under the head. The head opens as the desktop app's own cards do: a small triangle after
-        // the title, dim. On the right the standard star, then the switch: a mod's two settings side
+        // under the head. The head opens as the desktop app's own cards do: a triangle after the
+        // title, dim. On the right the standard star, then the switch: a mod's two settings side
         // by side. The switch is the one framed button and never shrinks: in a narrow pane the title
         // wraps instead. The desktop app draws a Button's label and never its children, so the
         // triangle and the star are glyph labels, and the title is bold text beside the triangle.
@@ -85,7 +85,9 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
                 </Box>
                 <Button
                   key={`more-${row.name}`}
-                  label={isOpen ? '▾' : '▸'}
+                  // The full-size triangles: the small ones read too slight beside a bold title. The
+                  // text presentation selector keeps ▶ from drawing as an emoji.
+                  label={isOpen ? '▼' : '▶\uFE0E'}
                   plain
                   dimColor
                   // One row open at a time: opening this one closes any other, so the pane stays short.
@@ -135,7 +137,10 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
             )}
             {isOpen && (
               <Box marginTop={1}>
-                <Text dimColor>{row.details}</Text>
+                {/* A note under the card, not its body: small, so an open card stays short. */}
+                <Text size="footnote" dimColor>
+                  {row.details}
+                </Text>
               </Box>
             )}
           </Box>

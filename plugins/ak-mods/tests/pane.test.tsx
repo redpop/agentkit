@@ -120,7 +120,7 @@ test('a row shows title, summary and switches', { plugins: PLUGINS }, async ($, 
     expect((await ui.find({ key: 'on-ak-fixture' }))?.text).toBe('○ Off')
     // The desktop app draws a Button's label, never its children: the glyph is the label.
     expect(await ui.find({ key: 'std-ak-fixture' })).toMatchObject({ text: '☆', props: { label: '☆' } })
-    expect(await ui.find({ key: 'more-ak-fixture' })).toMatchObject({ text: '▸', props: { label: '▸' } })
+    expect(await ui.find({ key: 'more-ak-fixture' })).toMatchObject({ text: '▶\uFE0E', props: { label: '▶\uFE0E' } })
     await ui.unmount()
   }
 })
@@ -155,8 +155,9 @@ test('More reveals details', { plugins: PLUGINS }, async ($, on) => {
   const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
   expect(await ui.find({ type: 'Text', text: /^d$/ })).toBeUndefined()
   await ui.press({ key: 'more-ak-fixture' })
-  expect(await ui.find({ type: 'Text', text: /^d$/ })).toBeDefined()
-  expect(await ui.find({ key: 'more-ak-fixture' })).toMatchObject({ text: '▾', props: { label: '▾' } })
+  // Small and dim: the details are a note under the card, not its body.
+  expect(await ui.find({ type: 'Text', text: /^d$/ })).toMatchObject({ props: { size: 'footnote', dimColor: true } })
+  expect(await ui.find({ key: 'more-ak-fixture' })).toMatchObject({ text: '▼', props: { label: '▼' } })
   await ui.unmount()
 })
 
@@ -514,7 +515,7 @@ test('the head holds the disclosure, the standard star and the switch; no foot',
     // cards have it, then the star and the switch.
     const header = boxes.find(box => box.props.flexDirection === 'row' && box.text.startsWith('Alpha'))
     expect(header?.props.flexWrap).toBeUndefined()
-    expect(header?.text).toBe('Alpha▸☆○ Off')
+    expect(header?.text).toBe('Alpha▶\uFE0E☆○ Off')
     // Nothing is left for a foot row.
     expect(boxes.find(box => box.props.flexWrap === 'wrap')).toBeUndefined()
     await ui.unmount()
