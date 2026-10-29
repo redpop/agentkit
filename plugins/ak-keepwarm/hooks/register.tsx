@@ -312,7 +312,7 @@ const segment = (): Segment => {
   const cost = `≈ ${usd(rewrite)}`
   const button = (label: string) => ({ label, hotkey: '1', command: 'keepwarm' })
   const detail = tally()
-  // The hover card on the desktop app: the cache's state, what it holds and what it cost.
+  // The card in the Mods pane on the desktop app: the cache's state, what it holds and what it cost.
   const card = [
     {
       label: t.card.cache,

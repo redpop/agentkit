@@ -48,16 +48,21 @@ The band stays quiet at rest. Colour marks only what needs attention: `ok` draws
 `warn` in the theme's warning colour, `alert` in its error colour, `info` in its suggestion colour,
 and `dim` dimmed. The colours are theme keys, so they follow a light or a dark theme. A ring takes
 the same tone in colours of its own, which follow the desktop app's light or dark appearance. Three
-cells of space part the segments on the terminal, two on the desktop app, with no rule between
-them. Digits draw at one width, so a figure
-that counts down does not shift. The `mods` button sits dimmed at the right edge of the last row.
+cells of space part the segments on the terminal, two on the desktop app, with no rule between them.
+Digits draw at one width, so a figure that counts down does not shift. The `mods` button sits dimmed
+at the right edge of the last row.
 
 When the segments do not fit the width, the band degrades in steps:
 
 1. All segments fit: one row.
-2. They do not fit: two rows, never more.
-3. They still do not fit: the segments with the lowest priority drop out, and the `mods` button
+2. They do not fit: every segment that has a compact form switches to it, the whole band together,
+   and the band stays one row.
+3. Compact, they still do not fit: two rows, never more.
+4. They still do not fit: the segments with the lowest priority drop out, and the `mods` button
    counts them: `mods +2`.
+
+A compact segment's button is its text on the desktop app, with no hotkey; the terminal leaves it
+out, and the Mods pane keeps it. A segment without a compact form draws in full in every step.
 
 The last row always keeps room for the button. Each segment counts as wide as it draws: on the
 terminal its text, on the desktop app its rich runs, a ring or an icon as three cells, and a button

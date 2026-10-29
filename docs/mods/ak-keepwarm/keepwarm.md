@@ -45,6 +45,11 @@ A press on the segment's text opens the Mods pane at this mod, which lists the c
 lifetime, the context, the rewrite estimate and, once there are some, the pings, rewrites and
 retries.
 
+When the band is short of room, the segment turns compact: kept warm `◆ warm`, warm or cooling the
+ring and the time left (`◕ 42m`), cold the empty ring and the rewrite cost (`○ ≈ $0.80`). While the
+cache is warm or cooling, the compact text is the **keep warm** button: a press starts the loop, with
+no key. Cold, a press opens the Mods pane: starting the loop then would rewrite the cache at once.
+
 In every state the Mods pane adds what this chat's cache cost so far, once there is something to
 count: the pings and the rewrites of a cache that had been warm, each with its cost, `· 3 pings
 $0.02 · 1 rewrite $0.80`. It also says when a ping waits for a retry (`ping retry 1 of 3`) or for

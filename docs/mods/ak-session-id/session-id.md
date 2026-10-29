@@ -36,6 +36,10 @@ included: copying is its one action, so no button stands beside it there. The Mo
 desktop id and the engine id whole; outside the desktop app the engine id alone. After a copy the
 segment says `✓ copied` for two seconds, then shows the id again.
 
+When the band is short of room, the segment turns compact: the icon and the last four characters,
+`# …5f6a` (`#…5f6a` on the terminal), and `✓` after a copy. A press on it still copies, without the
+key.
+
 On the terminal and in the Mods pane the **copy** button (key `c`) runs `/session-id`. The segment
 has a low priority (2): when the band runs out of room, it is dropped before the others. The band
 draws on the terminal and the desktop app; the Mods pane shows the segment and its button in the

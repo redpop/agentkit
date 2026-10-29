@@ -156,7 +156,7 @@ export const reading = (usage: SessionUsage, now: number, lang: Lang = 'en'): Re
     ]),
   }
 
-  // The hover card has the room for every window, the week below 75 % too, each with its reset.
+  // The card in the Mods pane has the room for every window, the week below 75 % too, each with its reset.
   const context = contextPercent(usage)
   const card: Row[] = [
     ...(context === undefined

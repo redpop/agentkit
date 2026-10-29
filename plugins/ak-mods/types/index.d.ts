@@ -18,7 +18,7 @@ export type ModsIcon = 'id' | 'copy' | 'check'
  */
 export type ModsPart = { text: string; tone?: ModsTone; ring?: number; icon?: ModsIcon }
 
-/** One row of a segment's hover card: a label and its value, one line each. */
+/** One row of a segment's card in the Mods pane: a label and its value, one line each. */
 export type ModsCardRow = { label: string; value: string }
 
 /** What a mod shows in the shared band; ak-mods adds its name and title. */

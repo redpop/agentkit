@@ -23,11 +23,11 @@ Run `/ak-mods` to open the pane, and again to close it. Each mod has three butto
 
 Each switched-on mod shows one segment in a single band above the prompt. The band ends with a
 `mods` button (hotkey `m`) that opens the pane, or closes it while it is shown. When the segments do
-not fit, the band grows to two rows, then drops the lowest-priority segments, and the button counts
-them: `mods +2`. The pane then names the mods that do not fit. With no segment there is no band, and
-`/ak-mods` is the way in. The band draws on the terminal and
-the desktop app. Every row of the pane also shows its mod's current segment and button, on every
-surface.
+not fit, every segment with a compact form switches to it, then the band grows to two rows, then
+drops the lowest-priority segments, and the button counts them: `mods +2`. The pane then names the
+mods that do not fit. With no segment there is no band, and `/ak-mods` is the way in. The band draws
+on the terminal and the desktop app. Every row of the pane also shows its mod's current segment and
+button, on every surface.
 
 ## Rules
 

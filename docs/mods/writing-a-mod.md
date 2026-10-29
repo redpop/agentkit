@@ -208,11 +208,14 @@ export const register: Register = on => {
   a ring filled that far, one with an `icon` (`id`, `copy` or `check`) as that line icon from
   ak-mods' own set, its `text` what a reader that cannot see the picture gets; the terminal draws
   `text`, and the band counts its room by what each draws, a ring or an icon as three cells),
-  optional `card` rows `{ label, value }` (the card
-  the Mods pane shows on the desktop app, where a press on the segment's text opens its row: dim
-  labels in one column beside their values; without rows the card shows `detail`, a line a part; the
-  Mods pane on the desktop app lists the rows in place of the detail, in a row opened with Show
-  details), an optional `detail` (more of the same state, shown dim after the text in the Mods pane
+  optional `card` rows `{ label, value }` (the card the Mods pane shows on the desktop app, where a
+  press on the segment's text opens its row: dim labels in one column beside their values; without
+  rows the card shows `detail`, a line a part; the Mods pane on the desktop app lists the rows in
+  place of the detail, in a row opened with Show details), an optional `compact` `{ text, parts?,
+  rich? }` (the segment as the band draws it when it is short of room, before it takes a second row:
+  what must stay readable at a glance, labels gone; its button then draws on the compact text on the
+  desktop app, with no hotkey, and the terminal leaves the button out; without it the segment draws
+  in full), an optional `detail` (more of the same state, shown dim after the text in the Mods pane
   only, never in the band), an optional `tone` (`ok`, `warn`, `alert`, `info` or `dim`; `ak-mods`
   picks the colour, and `ok` stays the text colour; a part without a tone takes the segment's), an
   optional `priority` (default 5; higher stays longer) and at most one `button` (`label`, an
@@ -242,7 +245,8 @@ export const register: Register = on => {
   republish waits the same way, so it lands after `ak-mods` has cleared the segments. A switch-off
   right after has been seen to read as on in the delayed call, so the recipe counts the switch
   changes and drops a publish scheduled for an earlier one.
-- **When the band runs out of room** it degrades in steps: one row; then two rows, never more; then
+- **When the band runs out of room** it degrades in steps: one row; then one row with every
+  segment that has a compact form in it; then two rows, never more; then
   the segments with the lowest priority drop out (ties by title), and the `mods` button that ends
   the band counts them (`mods +2`). It opens the Mods pane, which names the dropped mods: `N mods
   do not fit the band: …`.

@@ -325,7 +325,7 @@ export const drawable = (rows: readonly ModsRow[], stored: Record<string, unknow
 
 /**
  * Draws the shared band above the prompt on the terminal and the desktop
- * app: the segments of the switched-on mods in up to two rows, a `mods`
+ * app: the segments of the switched-on mods in up to two rows, compact when short of room, a `mods`
  * button that opens and closes the Mods pane and counts those that did not
  * fit, then whatever lies beneath.
  */
