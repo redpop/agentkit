@@ -105,7 +105,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### 🐛 Fixed
 
 - `ak-mods` — on the desktop app a segment's coloured text keeps its colour in the band, such as
-  **warm gehalten** in blue. Where a press on the text only opens the Mods pane, a coloured run now
+  **kept warm** in blue. Where a press on the text only opens the Mods pane, a coloured run now
   stays text, as a button draws its text uncoloured there; the rest still opens the pane, and `m`
   always does. A press that runs an action, such as keep warm or copy, is unchanged.
 
@@ -113,7 +113,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🐛 Fixed
 
-- `ak-mods` — on the desktop app a Mods pane card's head showed **Details anzeigen** and
+- `ak-mods` — on the desktop app a Mods pane card's head showed **Show details** and
   **★ Standard** in place of the chevron, the title and the star, and pushed the switch out of the
   card. The chevron and the star now draw as themselves; the chevron opens the details.
 
