@@ -6,6 +6,9 @@ import type { Segment } from './band'
 import { languageFor, texts } from './i18n'
 import { togglePane } from './toggle'
 
+// A grey that reads behind a hover target on a light and a dark theme alike.
+const HOVER_TINT = 'rgba(127,127,127,0.18)'
+
 const TONES: readonly string[] = ['ok', 'warn', 'alert', 'info', 'dim'] satisfies ModsTone[]
 
 const compareTitles = (a: Segment, b: Segment): number => {
@@ -187,21 +190,36 @@ type Draws = {
   Svg?: ElementConstructor<SvgProps>
 }
 
+/** Whether a segment draws a ring or an icon where it draws pictures. */
+export const hasGlyph = (draws: Draws, surface: string, one: Segment): boolean =>
+  surface !== 'terminal' &&
+  draws.Svg !== undefined &&
+  one.rich?.some(part => part.ring !== undefined || part.icon !== undefined) === true
+
 /**
  * A segment as a surface that draws pictures shows it: its rich runs, a ring
  * as a picture in the line, the rest as text in its tone. The terminal draws
- * no pictures; there, and for a segment without rich runs, its text.
+ * no pictures; there, and for a segment without rich runs, its text. `around`
+ * wraps each ring and icon, as the band's hover targets.
  */
-export const segmentView = ({ Box, Text, Svg }: Draws, surface: string, one: Segment, key: string) =>
-  surface === 'terminal' || Svg === undefined || one.rich === undefined ? (
-    segmentText(Text, one, key)
-  ) : (
+export const segmentView = (
+  { Box, Text, Svg }: Draws,
+  surface: string,
+  one: Segment,
+  key: string,
+  around?: (glyph: ReturnType<ElementConstructor<SvgProps>>, at: number) => ReturnType<ElementConstructor<BoxProps>>,
+) => {
+  if (surface === 'terminal' || Svg === undefined || one.rich === undefined) return segmentText(Text, one, key)
+  const glyph = (at: number, element: ReturnType<ElementConstructor<SvgProps>>) =>
+    around === undefined ? element : around(element, at)
+
+  return (
     <Box key={key} flexDirection="row" alignItems="center">
       {one.rich.map((part, at) =>
         part.ring !== undefined ? (
-          <Svg key={`${key}-${at}`} source={ringSvg(part.ring, part.tone ?? one.tone)} alt={part.text} width={20} height={16} />
+          glyph(at, <Svg key={`${key}-${at}`} source={ringSvg(part.ring, part.tone ?? one.tone)} alt={part.text} width={20} height={16} />)
         ) : part.icon !== undefined ? (
-          <Svg key={`${key}-${at}`} source={iconSvg(part.icon, part.tone ?? one.tone)} alt={part.text} width={20} height={16} />
+          glyph(at, <Svg key={`${key}-${at}`} source={iconSvg(part.icon, part.tone ?? one.tone)} alt={part.text} width={20} height={16} />)
         ) : (
           <Text key={`${key}-${at}`} tabular {...toneProps(part.tone ?? one.tone)}>
             {part.text}
@@ -210,10 +228,11 @@ export const segmentView = ({ Box, Text, Svg }: Draws, surface: string, one: Seg
       )}
     </Box>
   )
+}
 
 /**
  * A segment's card, which the desktop app shows while the pointer is over the
- * segment: its mod's title, then its rows, the dim labels in one column and
+ * segment's ring or icon (or the whole segment, where it draws neither): its mod's title, then its rows, the dim labels in one column and
  * the values beside them; a segment without rows shows its detail, a line a
  * part. Placed above the segment, against its left edge, or its right edge for
  * a segment in the right half of the row, so it stays in the window.
@@ -352,9 +371,23 @@ export async function renderBand(
           {row.flatMap((one, at) => [
             ...(at > 0 ? [separator(`sep-${one.name}`)] : []),
             <Box key={`segment-${one.name}`} flexDirection="row" columnGap={1}>
-              {segmentView(draws, e.surface, one, `text-${one.name}`)}
-              {/* The keyed segment Box is the hover scope: the pointer anywhere on it shows the card. */}
-              {e.surface === 'desktop' && detailCard(draws, one, `card-${one.name}`, row.length > 1 && at >= row.length / 2)}
+              {e.surface === 'desktop' && hasGlyph(draws, e.surface, one) ? (
+                // Each ring or icon is a hover target, so a pointer passing over the band on its way
+                // to the chat rarely opens a card; a tint behind it shows there is one to see.
+                segmentView(draws, e.surface, one, `text-${one.name}`, (glyph, part) => (
+                  <Box key={`hover-${one.name}-${part}`} hover={{ backgroundColor: HOVER_TINT }}>
+                    {glyph}
+                    {detailCard(draws, one, `card-${one.name}-${part}`, row.length > 1 && at >= row.length / 2)}
+                  </Box>
+                ))
+              ) : (
+                [
+                  segmentView(draws, e.surface, one, `text-${one.name}`),
+                  // Without a ring or icon the keyed segment Box is the hover scope: the pointer
+                  // anywhere on it shows the card.
+                  e.surface === 'desktop' && detailCard(draws, one, `card-${one.name}`, row.length > 1 && at >= row.length / 2),
+                ]
+              )}
               {one.button !== undefined && (
                 <Button
                   key={`seg-${one.name}`}

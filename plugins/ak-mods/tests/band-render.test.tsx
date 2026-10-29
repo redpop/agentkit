@@ -537,6 +537,35 @@ test('on the desktop app a segment shows its detail as a card on hover, a line a
   await term.unmount()
 })
 
+test('on the desktop app a segment opens its card over each ring or icon alone, tinted on hover', { plugins: [consumer('ak-a')] }, async ($, on) => {
+  engine(on)
+  await publish($, 'ak-a', 'A', {
+    text: 'ctx 42%',
+    rich: [{ text: 'ctx 42%', ring: 42 }, { text: ' 42%' }, { text: ' ctx', tone: 'dim' }, { text: '5h 7%', ring: 7 }],
+    detail: 'ctx 42%',
+  })
+
+  const desk = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  // The keyed Box around the ring is the card's hover scope, and holds the ring and the card alone.
+  const target = await desk.find({ key: 'hover-ak-a-0' })
+  // A found element leaves out `hover`; the drawn tree keeps it beside the props.
+  type Drawn = { props?: { key?: unknown }; hover?: unknown; children?: unknown[] }
+  const keyed = (node: Drawn): Drawn | undefined =>
+    node.props?.key === 'hover-ak-a-0'
+      ? node
+      : (node.children ?? []).map(child => (typeof child === 'object' && child !== null ? keyed(child as Drawn) : undefined)).find(Boolean)
+  expect(keyed((await desk.drawn()) as Drawn)?.hover).toMatchObject({ backgroundColor: expect.stringContaining('rgba(') })
+  expect(target?.text).toBe('Actx 42%')
+  // Each ring carries the card: two rings, two.
+  const cards = (await desk.findAll({ type: 'Box' })).filter(box => box.props.display === 'none')
+  expect(cards.map(card => card.text)).toEqual(['Actx 42%', 'Actx 42%'])
+  expect(await desk.find({ key: 'hover-ak-a-3' })).toBeDefined()
+  // The texts beside the ring lie outside the target.
+  expect(await exactly(desk, ' ctx')).toBeDefined()
+  expect(target?.text).not.toContain(' ctx')
+  await desk.unmount()
+})
+
 test('card rows draw as dim labels in one column beside their values, in place of the detail', { plugins: [consumer('ak-a')] }, async ($, on) => {
   engine(on)
   await publish($, 'ak-a', 'A', {

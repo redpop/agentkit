@@ -31,8 +31,8 @@ prompt:
 |---------|---------|
 | `id …4e5f6a` | The last six characters of the id the button copies, to tell sessions apart at a glance |
 
-On the desktop app an id icon stands for the word: `# …4e5f6a`. With the pointer over the segment,
-a card shows the desktop id and the engine id whole; outside the desktop app the engine id alone.
+On the desktop app an id icon stands for the word: `# …4e5f6a`. With the pointer over the icon, a
+card shows the desktop id and the engine id whole; outside the desktop app the engine id alone.
 After a copy the segment says `✓ copied` for two seconds, then shows the id again.
 
 The **copy** button (key `c`) runs `/session-id`. The segment has a low priority (2): when the band
