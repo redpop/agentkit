@@ -1,13 +1,10 @@
-import type { BoxProps, ElementConstructor, EngineInterface, Next, RenderInput, SvgProps, TextProps } from 'claude-code'
+import type { BoxProps, ButtonProps, ElementConstructor, EngineInterface, Next, RenderInput, SvgProps, TextProps } from 'claude-code'
 
 import type { ModsCardRow, ModsIcon, ModsInfo, ModsPart, ModsRow, ModsSegment, ModsTone } from '../types'
 import { bandWidth, layout, TOGGLE_HOTKEY, toggleLabel } from './band'
 import type { Segment } from './band'
 import { languageFor, texts } from './i18n'
-import { togglePane } from './toggle'
-
-// A grey that reads behind a hover target on a light and a dark theme alike.
-const HOVER_TINT = 'rgba(127,127,127,0.18)'
+import { toggleMod, togglePane } from './toggle'
 
 const TONES: readonly string[] = ['ok', 'warn', 'alert', 'info', 'dim'] satisfies ModsTone[]
 
@@ -114,6 +111,8 @@ const checked = (info: ModsInfo, stored: unknown): Segment | undefined => {
             command: spaced(button.command),
             hotkey: hotkeyOf(button.hotkey),
             args: typeof button.args === 'string' ? button.args : undefined,
+            isPaneOnly: button.isPaneOnly === true ? true : undefined,
+            isOnText: button.isOnText === true ? true : undefined,
           }
         : undefined,
   }
@@ -188,58 +187,78 @@ type Draws = {
   Box: ElementConstructor<BoxProps>
   Text: ElementConstructor<TextProps>
   Svg?: ElementConstructor<SvgProps>
+  Button?: ElementConstructor<ButtonProps>
 }
-
-/** Whether a segment draws a ring or an icon where it draws pictures. */
-export const hasGlyph = (draws: Draws, surface: string, one: Segment): boolean =>
-  surface !== 'terminal' &&
-  draws.Svg !== undefined &&
-  one.rich?.some(part => part.ring !== undefined || part.icon !== undefined) === true
 
 /**
  * A segment as a surface that draws pictures shows it: its rich runs, a ring
  * as a picture in the line, the rest as text in its tone. The terminal draws
- * no pictures; there, and for a segment without rich runs, its text. `around`
- * wraps each ring and icon, as the band's hover targets.
+ * no pictures; there, and for a segment without rich runs, its text. Given
+ * `press`, the text is a plain button that runs it, each stretch of text
+ * between pictures one: a Button holds text alone, so the pictures stay
+ * beside it.
  */
 export const segmentView = (
-  { Box, Text, Svg }: Draws,
+  { Box, Text, Svg, Button }: Draws,
   surface: string,
   one: Segment,
   key: string,
-  around?: (glyph: ReturnType<ElementConstructor<SvgProps>>, at: number) => ReturnType<ElementConstructor<BoxProps>>,
+  press?: () => void,
+  hotkey?: string,
 ) => {
-  if (surface === 'terminal' || Svg === undefined || one.rich === undefined) return segmentText(Text, one, key)
-  const glyph = (at: number, element: ReturnType<ElementConstructor<SvgProps>>) =>
-    around === undefined ? element : around(element, at)
+  // The hotkey arms the first stretch alone: one key, one press.
+  let isArmed = false
+  const pressable = (at: number, children: ReturnType<ElementConstructor<TextProps>>[]) => {
+    if (press === undefined || Button === undefined) return children
+    const armed = isArmed ? undefined : hotkey
+    isArmed = true
+
+    return (
+      <Button key={`${key}-press-${at}`} plain onPress={press} {...(armed === undefined ? {} : { hotkey: armed })}>
+        {children}
+      </Button>
+    )
+  }
+  if (surface === 'terminal' || Svg === undefined || one.rich === undefined) {
+    return pressable(0, [segmentText(Text, one, key)])
+  }
+
+  // The runs in stretches: each picture alone, the text between them together.
+  const stretches: { at: number; parts: ModsPart[] }[] = []
+  one.rich.forEach((part, at) => {
+    const last = stretches[stretches.length - 1]
+    const isPicture = part.ring !== undefined || part.icon !== undefined
+    if (!isPicture && last !== undefined && !isGlyph(last.parts[0])) last.parts.push(part)
+    else stretches.push({ at, parts: [part] })
+  })
 
   return (
     <Box key={key} flexDirection="row" alignItems="center">
-      {one.rich.map((part, at) =>
-        part.ring !== undefined ? (
-          glyph(at, <Svg key={`${key}-${at}`} source={ringSvg(part.ring, part.tone ?? one.tone)} alt={part.text} width={20} height={16} />)
-        ) : part.icon !== undefined ? (
-          glyph(at, <Svg key={`${key}-${at}`} source={iconSvg(part.icon, part.tone ?? one.tone)} alt={part.text} width={20} height={16} />)
+      {stretches.map(({ at, parts: [first, ...rest] }) =>
+        first?.ring !== undefined ? (
+          <Svg key={`${key}-${at}`} source={ringSvg(first.ring, first.tone ?? one.tone)} alt={first.text} width={20} height={16} />
+        ) : first?.icon !== undefined ? (
+          <Svg key={`${key}-${at}`} source={iconSvg(first.icon, first.tone ?? one.tone)} alt={first.text} width={20} height={16} />
         ) : (
-          <Text key={`${key}-${at}`} tabular {...toneProps(part.tone ?? one.tone)}>
-            {part.text}
-          </Text>
+          pressable(
+            at,
+            [first, ...rest].map((part, offset) => (
+              <Text key={`${key}-${at + offset}`} tabular {...toneProps(part?.tone ?? one.tone)}>
+                {part?.text}
+              </Text>
+            )),
+          )
         ),
       )}
     </Box>
   )
 }
 
-/**
- * A segment's card, which the desktop app shows while the pointer is over the
- * segment's ring or icon (or the whole segment, where it draws neither): its mod's title, then its rows, the dim labels in one column and
- * the values beside them; a segment without rows shows its detail, a line a
- * part. Placed above the segment, against its left edge, or its right edge for
- * a segment in the right half of the row, so it stays in the window.
- */
+const isGlyph = (part: ModsPart | undefined): boolean => part?.ring !== undefined || part?.icon !== undefined
+
 /**
  * Card rows as a table: the dim labels in one column, as wide as the longest,
- * the values beside them. The hover card and the Mods pane draw them alike.
+ * the values beside them. The band's card and the Mods pane draw them alike.
  */
 export const cardRows = ({ Box, Text }: Draws, rows: readonly ModsCardRow[], key: string) => {
   // A desktop Box counts its width in text cells.
@@ -257,33 +276,9 @@ export const cardRows = ({ Box, Text }: Draws, rows: readonly ModsCardRow[], key
   ))
 }
 
-export const detailCard = (draws: Draws, one: Segment, key: string, isRight: boolean) => {
-  const { Box, Text } = draws
-  const rows = one.card ?? one.detail?.split(' · ').map(line => ({ label: '', value: line }))
-  if (rows === undefined) return null
-
-  // No key on the card itself: a keyed Box would scope its own hover, which a hidden Box never gets.
-  return (
-    <Box
-      position="absolute"
-      bottom={1}
-      {...(isRight ? { right: 0 } : { left: 0 })}
-      display="none"
-      hover={{ display: 'flex' }}
-      flexDirection="column"
-      rowGap={0}
-      paddingX={1}
-      borderStyle="round"
-      borderColor="subtle"
-      backgroundColor="Canvas"
-    >
-      <Box marginBottom={1}>
-        <Text bold>{one.title}</Text>
-      </Box>
-      {cardRows(draws, rows, key)}
-    </Box>
-  )
-}
+/** The rows a segment's card lists: its card rows, else its detail, a line a part; undefined for none. */
+export const cardRowsOf = (one: Segment): readonly ModsCardRow[] | undefined =>
+  one.card ?? one.detail?.split(' · ').map(line => ({ label: '', value: line }))
 
 /**
  * A segment's text as the band and the Mods pane draw it: in one run in its
@@ -336,7 +331,8 @@ export async function renderBand(
   ])
   if ((e.surface !== 'terminal' && e.surface !== 'desktop') || e.props.hasSurvey) return next(e)
 
-  const segments = drawable(list, stored)
+  // A pane-only button is the Mods pane's: the band neither draws it nor counts its room.
+  const segments = drawable(list, stored).map(one => (one.button?.isPaneOnly === true ? { ...one, button: undefined } : one))
   if (segments.length === 0) return next(e)
 
   const { rows, hidden } = layout(segments, e.props.bodyColumns)
@@ -371,24 +367,22 @@ export async function renderBand(
           {row.flatMap((one, at) => [
             ...(at > 0 ? [separator(`sep-${one.name}`)] : []),
             <Box key={`segment-${one.name}`} flexDirection="row" columnGap={1}>
-              {e.surface === 'desktop' && hasGlyph(draws, e.surface, one) ? (
-                // Each ring or icon is a hover target, so a pointer passing over the band on its way
-                // to the chat rarely opens a card; a tint behind it shows there is one to see.
-                segmentView(draws, e.surface, one, `text-${one.name}`, (glyph, part) => (
-                  <Box key={`hover-${one.name}-${part}`} hover={{ backgroundColor: HOVER_TINT }}>
-                    {glyph}
-                    {detailCard(draws, one, `card-${one.name}-${part}`, row.length > 1 && at >= row.length / 2)}
-                  </Box>
-                ))
-              ) : (
-                [
-                  segmentView(draws, e.surface, one, `text-${one.name}`),
-                  // Without a ring or icon the keyed segment Box is the hover scope: the pointer
-                  // anywhere on it shows the card.
-                  e.surface === 'desktop' && detailCard(draws, one, `card-${one.name}`, row.length > 1 && at >= row.length / 2),
-                ]
-              )}
-              {one.button !== undefined && (
+              {/* On the desktop app a segment with a card is a way to it: its text, a plain button
+                  marked under the pointer as buttons are, opens the Mods pane at its mod, where the
+                  card's rows show, and pressed again closes it. Nothing covers the chat or moves it:
+                  the band cuts off what it draws outside itself, and a card drawn inside it would
+                  push the chat up. A segment whose button is on its text runs that instead. */}
+              {e.surface === 'desktop' && one.button?.isOnText === true
+                ? // The text is the segment's own button: a press runs its command, its hotkey with it.
+                  segmentView(draws, e.surface, one, `text-${one.name}`, () => {
+                    $.command.run({ command: one.button?.command ?? '', args: one.button?.args ?? '' }).catch(() => {})
+                  }, hotkeys.get(one.name))
+                : e.surface === 'desktop' && cardRowsOf(one) !== undefined
+                  ? segmentView(draws, e.surface, one, `text-${one.name}`, () => {
+                      toggleMod($, bandWidth({ bodyColumns: e.props.bodyColumns }), one.name).catch(() => {})
+                    })
+                  : segmentView(draws, e.surface, one, `text-${one.name}`)}
+              {one.button !== undefined && !(e.surface === 'desktop' && one.button.isOnText === true) && (
                 <Button
                   key={`seg-${one.name}`}
                   label={one.button.label}
@@ -421,5 +415,6 @@ export async function renderBand(
     </Box>
   )
 
+  // No `overflow` here: the engine refuses it on a Box above its own drawing.
   return <Box flexDirection="column">{below ? [band, below] : [band]}</Box>
 }

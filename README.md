@@ -196,8 +196,8 @@ ping shortly before it expires. Based on Cache Keeper by Nate Herk (MIT).
 
 A mod (needs `ak-mods`, installed with it) that copies this session's id, so an agent in another
 session can be told which one is meant: session names are not unique, the id is. Its segment in the
-shared band above the prompt shows the id's end with a **copy** button. In the desktop app it copies
-the `local_…` id the session tools address.
+shared band above the prompt shows the id's end; a press on it copies the id, or a **copy** button
+on the terminal. In the desktop app it copies the `local_…` id the session tools address.
 
 #### Commands
 

@@ -522,6 +522,22 @@ test('the switch sits beside the title, the standard mark beside the details lin
   }
 })
 
+test('the details link opens one row at a time', { plugins: MODS }, async ($, on) => {
+  engine(on)
+  for (const [name, title] of [['ak-a', 'Alpha'], ['ak-b', 'Beta']] as const) {
+    await callAs($, name, 'declare', { name, title, summary: 's', details: `${title} details` })
+  }
+
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  await ui.press({ key: 'more-ak-a' })
+  await ui.press({ key: 'more-ak-b' })
+  expect(await ui.find({ type: 'Text', text: 'Alpha details' })).toBeUndefined()
+  expect(await ui.find({ type: 'Text', text: 'Beta details' })).toBeDefined()
+  await ui.press({ key: 'more-ak-b' })
+  expect(await ui.find({ type: 'Text', text: 'Beta details' })).toBeUndefined()
+  await ui.unmount()
+})
+
 test("a row draws its segment in the band's colour", { plugins: MODS }, async ($, on) => {
   engine(on)
   await callAs($, 'ak-a', 'declare', { name: 'ak-a', title: 'Alpha', summary: 's', details: 'd' })

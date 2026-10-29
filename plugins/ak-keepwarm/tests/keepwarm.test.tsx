@@ -508,7 +508,7 @@ test('publishes the kept-warm segment with the stop button, without its end', OW
     card: card(`kept warm until ${clockTime(START + 4 * 60 * MIN)}`),
     tone: 'info',
     priority: 6,
-    button: { label: 'stop', hotkey: '1', command: 'keepwarm' },
+    button: { label: 'stop', hotkey: '1', command: 'keepwarm', isPaneOnly: true },
   })
 })
 

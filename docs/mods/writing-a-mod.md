@@ -208,19 +208,22 @@ export const register: Register = on => {
   a ring filled that far, one with an `icon` (`id`, `copy` or `check`) as that line icon from
   ak-mods' own set, its `text` what a reader that cannot see the picture gets; the terminal draws
   `text`, and the band counts its room by `text`), optional `card` rows `{ label, value }` (the card
-  the desktop app shows while the pointer is over a ring or icon of the segment, or over the segment
-  where it draws neither: dim labels in one column beside their values; without rows the card shows
-  `detail`, a line a part; the Mods pane on the desktop app lists the rows in place of the detail,
-  in a row opened with Show details), an optional `detail` (more of the same state, shown dim after
-  the text in the Mods pane only, never in the band), an optional `tone` (`ok`, `warn`, `alert`,
-  `info` or `dim`; `ak-mods` picks the colour, and `ok` stays the text colour; a part without a tone
-  takes the segment's), an optional `priority` (default 5; higher stays longer) and at most one
-  `button` (`label`, an optional `hotkey`, the `command` it runs, its `args`). The button runs a
-  slash command the mod already answers, so no handler crosses from one plugin to another. A segment
-  is one line: a control character (a newline, ESC) in the text, a part, the detail or the label
-  draws as a space, and a `hotkey` that is not exactly one printable character is left out. When two
-  shown mods ask for one hotkey, the first by title keeps it; a mod dropped from the band takes
-  none, and `m` is the band's own `mods` button's, never a mod's.
+  the Mods pane shows on the desktop app, where a press on the segment's text opens its row: dim
+  labels in one column beside their values; without rows the card shows `detail`, a line a part; the
+  Mods pane on the desktop app lists the rows in place of the detail, in a row opened with Show
+  details), an optional `detail` (more of the same state, shown dim after the text in the Mods pane
+  only, never in the band), an optional `tone` (`ok`, `warn`, `alert`, `info` or `dim`; `ak-mods`
+  picks the colour, and `ok` stays the text colour; a part without a tone takes the segment's), an
+  optional `priority` (default 5; higher stays longer) and at most one `button` (`label`, an
+  optional `hotkey`, the `command` it runs, its `args`, and `isPaneOnly` for an action seldom taken,
+  which the Mods pane shows and the band leaves out, room included, and `isOnText` for a segment
+  whose one action is plain from what it shows, such as copying an id: on the desktop app the text
+  itself is the button, hotkey with it). The button runs a slash command the mod already answers, so
+  no handler crosses from one plugin to another. A segment is one line: a control character (a
+  newline, ESC) in the text, a part, the detail or the label draws as a space, and a `hotkey` that
+  is not exactly one printable character is left out. When two shown mods ask for one hotkey, the
+  first by title keeps it; a mod dropped from the band takes none, and `m` is the band's own `mods`
+  button's, never a mod's.
 - **One segment per mod.** Publishing again replaces it; `$.mods.segment(undefined)` clears it.
   `ak-mods` clears it itself when the mod is switched off and when the chat ends, whatever ends it.
   So the mod publishes at `session.start`, again whenever what the segment shows changes, after a

@@ -75,7 +75,7 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
               }
 
         return (
-          <Box flexDirection="column" {...surface}>
+          <Box key={`mod-${row.name}`} flexDirection="column" {...surface}>
             <Box flexDirection="row" alignItems="center" columnGap={2}>
               <Box flexGrow={1} flexShrink={1}>
                 <Text bold>{row.title}</Text>
@@ -126,7 +126,8 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
                 label={isOpen ? t.less : t.more}
                 plain
                 dimColor
-                onPress={() => update($, EXPANDED, map => ({ ...map, [row.name]: map[row.name] !== true }))}
+                // One row open at a time: opening this one closes any other, so the pane stays short.
+                onPress={() => update($, EXPANDED, map => (map[row.name] === true ? {} : { [row.name]: true }))}
               />
               <Box flexGrow={1} />
               <Button

@@ -46,8 +46,14 @@ export type ModsSegment = {
   tone?: ModsTone
   /** Higher stays visible longer when the band runs out of room; 5 when left out. */
   priority?: number
-  /** `hotkey` is one printable character; any other is left out, and `m` is the band's own. */
-  button?: { label: string; hotkey?: string; command: string; args?: string }
+  /**
+   * `hotkey` is one printable character; any other is left out, and `m` is the band's own.
+   * `isPaneOnly` keeps the button out of the band, for an action seldom taken: the Mods pane alone
+   * shows it, so the band shows the state and the pane the way to change it. `isOnText` makes the
+   * segment's text the button where the band can press text (the desktop app), for a segment whose
+   * one action is plain from what it shows, such as copying an id: no button of its own beside it.
+   */
+  button?: { label: string; hotkey?: string; command: string; args?: string; isPaneOnly?: boolean; isOnText?: boolean }
 }
 
 /** The `$.mods` noun that ak-mods adds to `$`. */

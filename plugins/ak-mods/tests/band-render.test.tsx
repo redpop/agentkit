@@ -306,6 +306,51 @@ const refusing: Register = on => {
 
 const REFUSING = { name: 'ak-refusing', tier: 'prepend', register: refusing } as const
 
+test('a pane-only button stays out of the band and its room; the Mods pane shows it', { plugins: [consumer('ak-a')] }, async ($, on) => {
+  engine(on)
+  await publish($, 'ak-a', 'A', { text: 'kept', button: { label: 'stop', hotkey: '1', command: 'x', isPaneOnly: true } })
+
+  const band = await $.ui.mount(BAND)
+  expect(await band.find({ key: 'seg-ak-a' })).toBeUndefined()
+  // Fourteen columns: the text and the mods button fit, as the stop's room is not counted.
+  await band.unmount()
+  const narrow = await $.ui.mount({ ...BAND, props: { ...BAND.props, bodyColumns: 4 + 10 } })
+  expect(await narrow.find({ key: 'mods-toggle' })).toMatchObject({ text: 'mods' })
+  await narrow.unmount()
+
+  const pane = await $.ui.mount(PANE)
+  expect(await pane.find({ key: 'seg-ak-a' })).toMatchObject({ text: 'stop' })
+  await pane.unmount()
+})
+
+test('on the desktop app a button on the text is the text: it runs the command, with the hotkey; the terminal keeps the button', { plugins: [consumer('ak-a')] }, async ($, on) => {
+  engine(on)
+  const ran: string[] = []
+  on('command.run', { command: 'fixture-copy' }, (_, e) => {
+    ran.push(e.command)
+
+    return {}
+  })
+  await publish($, 'ak-a', 'A', {
+    text: 'id …1cdac3',
+    rich: [{ text: 'id', icon: 'id' }, { text: ' …1cdac3' }],
+    detail: 'local_1cdac3',
+    button: { label: 'copy', hotkey: 'c', command: 'fixture-copy', isOnText: true },
+  })
+
+  const desk = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  expect(await desk.find({ key: 'seg-ak-a' })).toBeUndefined()
+  expect(await desk.find({ key: 'text-ak-a-press-1' })).toMatchObject({ text: ' …1cdac3', props: { hotkey: 'c', plain: true } })
+  await desk.press({ key: 'text-ak-a-press-1' })
+  // The command ran, not the pane's open.
+  expect(ran).toEqual(['fixture-copy'])
+  await desk.unmount()
+
+  const term = await $.ui.mount({ ...BAND, surface: 'terminal' })
+  expect(await term.find({ key: 'seg-ak-a' })).toMatchObject({ text: 'copy', props: { hotkey: 'c' } })
+  await term.unmount()
+})
+
 test('a button whose command the host refuses does not reject', { plugins: [consumer('ak-a')] }, async ($, on) => {
   engine(on)
   // Nothing answers the name: the call rejects, as the host's does for an unknown one.
@@ -522,67 +567,98 @@ test('on the desktop app a segment draws its rich runs, a ring as a picture; the
   await term.unmount()
 })
 
-test('on the desktop app a segment shows its detail as a card on hover, a line a part; the terminal shows none', { plugins: [consumer('ak-a')] }, async ($, on) => {
+const PANE = {
+  plugin: 'ak-mods',
+  component: 'Pane',
+  requestId: 'ak-mods',
+  surface: 'desktop',
+  props: { title: 'Mods', isFocused: false, bodyColumns: 80, placement: 'dock', scroll: { offset: 0, bodyRows: 20 }, view: {} },
+} as const
+
+test('on the desktop app a press on a segment opens the Mods pane at its mod; the terminal has no button', { plugins: [consumer('ak-a')] }, async ($, on) => {
   engine(on)
-  await publish($, 'ak-a', 'A', { text: 'ctx ▬▬▬', detail: 'ctx 42% · 5h 7% (resets 11:10pm)' })
+  const opened = opening(on)
+  await publish($, 'ak-a', 'A', { text: 'ctx ▬▬▬', detail: 'ctx 42% · 5h 7%' })
 
   const desk = await $.ui.mount({ ...BAND, surface: 'desktop' })
-  const card = (await desk.findAll({ type: 'Box' })).find(box => box.props.display === 'none')
-  expect(card?.props).toMatchObject({ position: 'absolute', bottom: 1, left: 0 })
-  expect(card?.text).toBe('Actx 42%5h 7% (resets 11:10pm)')
+  // The text is a plain button; nothing of the card draws in the band.
+  expect(await desk.find({ key: 'text-ak-a-press-0' })).toMatchObject({ props: { plain: true } })
+  await desk.press({ key: 'text-ak-a-press-0' })
+  expect(opened).toEqual([{ id: 'ak-mods', title: 'Mods' }])
+  expect(await desk.find({ type: 'Text', text: '5h 7%' })).toBeUndefined()
   await desk.unmount()
 
+  // The mod's row is open there, its detail a line a part.
+  const pane = await $.ui.mount(PANE)
+  expect(await pane.find({ key: 'more-ak-a' })).toMatchObject({ text: 'Hide details' })
+  expect(await pane.find({ type: 'Text', text: '5h 7%' })).toBeDefined()
+  await pane.unmount()
+
   const term = await $.ui.mount({ ...BAND, surface: 'terminal' })
-  expect((await term.findAll({ type: 'Box' })).some(box => box.props.display === 'none')).toBe(false)
+  expect(await term.find({ key: 'text-ak-a-press-0' })).toBeUndefined()
   await term.unmount()
 })
 
-test('on the desktop app a segment opens its card over each ring or icon alone, tinted on hover', { plugins: [consumer('ak-a')] }, async ($, on) => {
+test("a press opens that mod's row alone; pressed again, the row and the pane close", { plugins: [consumer('ak-a'), consumer('ak-b')] }, async ($, on) => {
   engine(on)
-  await publish($, 'ak-a', 'A', {
-    text: 'ctx 42%',
-    rich: [{ text: 'ctx 42%', ring: 42 }, { text: ' 42%' }, { text: ' ctx', tone: 'dim' }, { text: '5h 7%', ring: 7 }],
-    detail: 'ctx 42%',
+  // The engine's record of open panes.
+  const open = new Set<string>()
+  on('ui.open', (_, e) => {
+    open.add(e.id)
+
+    return { value: { isPlaced: true } }
   })
+  on('ui.close', (_, e) => {
+    open.delete(e.id)
+
+    return { value: undefined }
+  })
+  on('ui.panes', () => ({ value: [...open].map(id => ({ id, title: 'Mods', isShown: true, isFocused: false, isPlaced: true })) }))
+  await publish($, 'ak-a', 'A', { text: 'alpha', detail: 'one' })
+  await publish($, 'ak-b', 'B', { text: 'beta', detail: 'two' })
 
   const desk = await $.ui.mount({ ...BAND, surface: 'desktop' })
-  // The keyed Box around the ring is the card's hover scope, and holds the ring and the card alone.
-  const target = await desk.find({ key: 'hover-ak-a-0' })
-  // A found element leaves out `hover`; the drawn tree keeps it beside the props.
-  type Drawn = { props?: { key?: unknown }; hover?: unknown; children?: unknown[] }
-  const keyed = (node: Drawn): Drawn | undefined =>
-    node.props?.key === 'hover-ak-a-0'
-      ? node
-      : (node.children ?? []).map(child => (typeof child === 'object' && child !== null ? keyed(child as Drawn) : undefined)).find(Boolean)
-  expect(keyed((await desk.drawn()) as Drawn)?.hover).toMatchObject({ backgroundColor: expect.stringContaining('rgba(') })
-  expect(target?.text).toBe('Actx 42%')
-  // Each ring carries the card: two rings, two.
-  const cards = (await desk.findAll({ type: 'Box' })).filter(box => box.props.display === 'none')
-  expect(cards.map(card => card.text)).toEqual(['Actx 42%', 'Actx 42%'])
-  expect(await desk.find({ key: 'hover-ak-a-3' })).toBeDefined()
-  // The texts beside the ring lie outside the target.
-  expect(await exactly(desk, ' ctx')).toBeDefined()
-  expect(target?.text).not.toContain(' ctx')
+  const pane = await $.ui.mount(PANE)
+  await desk.press({ key: 'text-ak-a-press-0' })
+  await desk.press({ key: 'text-ak-b-press-0' })
+  // B's press closed A's row: one open at a time.
+  expect(await pane.find({ key: 'more-ak-a' })).toMatchObject({ text: 'Show details' })
+  expect(await pane.find({ key: 'more-ak-b' })).toMatchObject({ text: 'Hide details' })
+  await pane.unmount()
+
+  await desk.press({ key: 'text-ak-b-press-0' })
+  expect(open.size).toBe(0)
+  const closed = await $.ui.mount(PANE)
+  expect(await closed.find({ key: 'more-ak-b' })).toMatchObject({ text: 'Show details' })
+  await closed.unmount()
   await desk.unmount()
 })
 
-test('card rows draw as dim labels in one column beside their values, in place of the detail', { plugins: [consumer('ak-a')] }, async ($, on) => {
+test('on the desktop app the text between pictures is the button; the rings stay beside it', { plugins: [consumer('ak-a')] }, async ($, on) => {
   engine(on)
+  const opened = opening(on)
   await publish($, 'ak-a', 'A', {
-    text: 'ctx ▬▬▬',
+    text: 'ctx 42%',
+    rich: [{ text: 'ctx 42%', ring: 42 }, { text: ' 42%' }, { text: ' ctx', tone: 'dim' }, { text: '5h 7%', ring: 7 }, { text: ' 7%' }],
     detail: 'ctx 42%',
-    card: [
-      { label: 'Context', value: '42%' },
-      { label: '5-hour limit', value: '7% · resets 11:10pm' },
-    ],
   })
 
   const desk = await $.ui.mount({ ...BAND, surface: 'desktop' })
-  const card = (await desk.findAll({ type: 'Box' })).find(box => box.props.display === 'none')
-  expect(card?.text).toBe('AContext42%5-hour limit7% · resets 11:10pm')
-  expect(await exactly(desk, '5-hour limit')).toMatchObject({ props: { dimColor: true } })
-  const column = (await desk.findAll({ type: 'Box' })).filter(box => box.props.width === '5-hour limit'.length)
-  expect(column).toHaveLength(2)
+  // One button a stretch of text: ' 42% ctx' after the first ring, ' 7%' after the second.
+  expect((await desk.find({ key: 'text-ak-a-press-1' }))?.text).toBe(' 42% ctx')
+  expect((await desk.find({ key: 'text-ak-a-press-4' }))?.text).toBe(' 7%')
+  expect(await desk.findAll({ type: 'Svg' })).toHaveLength(2)
+  await desk.press({ key: 'text-ak-a-press-4' })
+  expect(opened).toHaveLength(1)
+  await desk.unmount()
+})
+
+test('a segment without a card is no button', { plugins: [consumer('ak-a')] }, async ($, on) => {
+  engine(on)
+  await publish($, 'ak-a', 'A', { text: 'plain', rich: [{ text: 'plain', ring: 10 }, { text: ' plain' }] })
+
+  const desk = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  expect(await desk.find({ key: 'text-ak-a-press-1' })).toBeUndefined()
   await desk.unmount()
 })
 

@@ -31,13 +31,15 @@ prompt:
 |---------|---------|
 | `id …4e5f6a` | The last six characters of the id the button copies, to tell sessions apart at a glance |
 
-On the desktop app an id icon stands for the word: `# …4e5f6a`. With the pointer over the icon, a
-card shows the desktop id and the engine id whole; outside the desktop app the engine id alone.
-After a copy the segment says `✓ copied` for two seconds, then shows the id again.
+On the desktop app an id icon stands for the word: `# …4e5f6a`. A press on the id copies it, key `c`
+included: copying is its one action, so no button stands beside it there. The Mods pane shows the
+desktop id and the engine id whole; outside the desktop app the engine id alone. After a copy the
+segment says `✓ copied` for two seconds, then shows the id again.
 
-The **copy** button (key `c`) runs `/session-id`. The segment has a low priority (2): when the band
-runs out of room, it is dropped before the others. The band draws on the terminal and the desktop
-app; the Mods pane shows the segment and its button in the mod's row on every surface.
+On the terminal and in the Mods pane the **copy** button (key `c`) runs `/session-id`. The segment
+has a low priority (2): when the band runs out of room, it is dropped before the others. The band
+draws on the terminal and the desktop app; the Mods pane shows the segment and its button in the
+mod's row on every surface.
 
 Without `ak-mods` (or when it refuses the mod, or a publish fails), the mod draws its own band
 instead, never both, with the same text and button.

@@ -39,18 +39,21 @@ above the prompt, once the chat has made a request:
 On the desktop app the circle is a ring that empties with the time left, beside the time and the
 word `cache`: `◕ 42m cache`. Kept warm, the ring is full in the info colour; cold, it is empty.
 Cooling, it says what is at stake: `cache drops in 4m · next message rewrites 200k tokens ≈ $0.80`.
-With the pointer over the ring, a card lists the cache's state, its lifetime, the context, the
-rewrite estimate and, once there are some, the pings, rewrites and retries.
+A press on the segment's text opens the Mods pane at this mod, which lists the cache's state, its
+lifetime, the context, the rewrite estimate and, once there are some, the pings, rewrites and
+retries.
 
 In every state the Mods pane adds what this chat's cache cost so far, once there is something to
 count: the pings and the rewrites of a cache that had been warm, each with its cost, `· 3 pings
 $0.02 · 1 rewrite $0.80`. It also says when a ping waits for a retry (`ping retry 1 of 3`) or for
 the next turn, and `always` while that is on.
 
-The **keep warm** / **stop** button toggles the loop (key `1`); it runs `/keepwarm`. The band
-draws on the terminal and the desktop app; the Mods pane shows the segment and its button in the
-mod's row on every surface.
-The context size is not shown: the [Usage](../ak-usage/usage.md) mod shows how full it is.
+The **keep warm** button starts the loop (key `1`); it runs `/keepwarm`. While the cache is kept
+warm the band shows the state alone: stopping is seldom and never urgent, so the **stop** button
+sits in the mod's row of the Mods pane, which the band's `mods` button (`m`) opens, and on the
+desktop app a press on the segment's text. `/keepwarm` stops it too. The band draws on the terminal
+and the desktop app; the Mods pane shows the segment and its button in the mod's row on every
+surface. The context size is not shown: the [Usage](../ak-usage/usage.md) mod shows how full it is.
 
 Without `ak-mods` (or when it refuses the mod, or a publish fails for good), the mod draws its own
 band instead, never both. That band shows the same states (`◐ cache cools in 4m`,

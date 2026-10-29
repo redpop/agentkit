@@ -50,7 +50,8 @@ const segment = async ($: EngineInterface): Promise<Segment> => {
     ...(host !== undefined && host !== '' ? [{ label: t.desktopId, value: host }] : []),
     { label: t.engineId, value: engine },
   ]
-  const button = { label: t.copy, hotkey: 'c', command: 'session-id' }
+  // On the desktop app the id itself copies: its one action is plain from what it shows.
+  const button = { label: t.copy, hotkey: 'c', command: 'session-id', isOnText: true }
   if ((await $.clock.now()) < copiedUntil) {
     return {
       text: `✓ ${t.copiedShort}`,

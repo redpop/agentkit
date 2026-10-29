@@ -341,7 +341,9 @@ const segment = (): Segment => {
       ...more,
       tone: 'info',
       priority: 6,
-      button: button(t.stop),
+      // Stopping is seldom and never urgent: the band shows that the cache is kept warm, and the
+      // Mods pane, which a press on that text opens, holds the stop.
+      button: { ...button(t.stop), isPaneOnly: true },
     }
   }
   const time = `${drain(left)} ${minutes(left)}`

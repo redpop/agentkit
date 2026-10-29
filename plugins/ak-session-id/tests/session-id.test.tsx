@@ -184,7 +184,7 @@ const standIn = ($: Engine, args: 'on' | 'off') =>
     presentation: { isFullscreen: false, columns: 80 },
   })
 
-const COPY = { label: 'copy', hotkey: 'c', command: 'session-id' }
+const COPY = { label: 'copy', hotkey: 'c', command: 'session-id', isOnText: true }
 
 test('publishes the end of the desktop id with the copy button', OWNED, async ($, on) => {
   const { toasts } = engine(on)

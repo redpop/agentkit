@@ -11,16 +11,17 @@ another tab is brought forward.
 
 ## Pane
 
-One row per mod that declared itself: the title, with the on/off switch on the right of it, then
-the summary. A switched-on mod that publishes a segment also shows it below, in its band colour and
-with the segment's button, and its detail after it, dimmed; the pane draws on every surface, so
-this is where a segment is always visible. A plain, dim **Show details** link closes the row, with
-the standard mark at its right. In a narrow pane the title wraps and the switch keeps its size; the
+One row per mod that declared itself: the title, with the on/off switch on the right of it, then the
+summary. A switched-on mod that publishes a segment also shows it below, in its band colour and with
+the segment's button, and its detail after it, dimmed; the pane draws on every surface, so this is
+where a segment is always visible. A plain, dim **Show details** link closes the row; one row is
+open at a time, so opening one closes any other and the pane stays short. The link sits with the
+standard mark at its right. In a narrow pane the title wraps and the switch keeps its size; the
 standard mark moves under the link once the two no longer fit side by side. On the desktop app a
 segment with card rows shows no detail there: opened, the row lists the card's rows under the
-segment, labels dim in one column, each value once, above the mod's details. There each mod sits
-on a faint rounded surface of its own; the terminal parts the mods by space. A note on how the
-switches reset ends the pane, small and dim.
+segment, labels dim in one column, each value once, above the mod's details. There each mod sits on
+a faint rounded surface of its own; the terminal parts the mods by space. A note on how the switches
+reset ends the pane, small and dim.
 
 | Button | Effect |
 |--------|--------|
@@ -34,14 +35,14 @@ switches reset ends the pane, small and dim.
 short segment: a text, a tone, and at most one button. The text may come in parts, each in its own
 tone, so a label sits dim beside its value. On the desktop app a segment may draw in a richer form:
 runs as the parts are, any of them a ring filled to a share, such as `◔ 42% 5h`. The terminal draws
-the text. With the pointer over a ring or icon of a segment, the desktop app tints it and shows a
-card above it: the mod's title, then its rows, labels dim in one column beside their values, or else
-its detail. A segment that draws neither shows the card over its whole width. A pointer passing over
-the band on its way to the chat so rarely opens one; the desktop app offers no delay. A button runs
-the mod's slash command, so pressing it does what the command does. The band ends with a `mods`
-button, hotkey `m`, that does what `/ak-mods` does: it opens the Mods pane, or closes it while it is
-shown. No mod's button takes the hotkey `m` in the band. With no switched-on mod showing a segment,
-there is no band and no button; `/ak-mods` still opens the pane.
+the text. On the desktop app the text of a segment with a card is a plain button, marked under the
+pointer as buttons are: a press opens the Mods pane with that mod's row open alone and scrolled into
+view, where the card's rows show, or else its detail. A second press closes the row and the pane.
+The band cuts off what a mod draws outside it, so no card floats above it. A button runs the mod's
+slash command, so pressing it does what the command does. The band ends with a `mods` button, hotkey
+`m`, that does what `/ak-mods` does: it opens the Mods pane, or closes it while it is shown. No
+mod's button takes the hotkey `m` in the band. With no switched-on mod showing a segment, there is
+no band and no button; `/ak-mods` still opens the pane.
 
 The band stays quiet at rest. Colour marks only what needs attention: `ok` draws in the text colour,
 `warn` in the theme's warning colour, `alert` in its error colour, `info` in its suggestion colour,

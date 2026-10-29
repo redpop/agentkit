@@ -22,8 +22,9 @@ Requires Claude Code 2.1.309 or later (hooks-module support).
   again after 1, 2 and 4 minutes while it can still land.
 - The Mods pane counts the pings and the rewrites of a lost cache, each with its cost.
 - Its segment in the band above the prompt shows the cache state, and what a rewrite would cost
-  while the cache cools or is cold, with a **keep warm** / **stop** button (key `1`). Without
-  `ak-mods` the mod draws its own band, which also shows the context size.
+  while the cache cools or is cold, with a **keep warm** button (key `1`); while it is kept warm,
+  **stop** sits in the Mods pane. Without `ak-mods` the mod draws its own band, which also shows the
+  context size.
 
 See [the mod docs](../../docs/mods/ak-keepwarm/keepwarm.md).
 
