@@ -682,6 +682,8 @@ export const register: Register = on => {
     if (e.props?.hasSurvey) return below
 
     const { Box, Text, Button } = $.ui.resolve(e)
+    // The desktop app paints no theme key on text: there the colours are fixed, as ak-mods has them.
+    const isDesktop = e.surface === 'desktop'
     const left = msLeft() ?? 0
     const press = async () => {
       now = await $.clock.now()
@@ -693,11 +695,13 @@ export const register: Register = on => {
     }
     const status =
       state === 'kept' ? (
-        <Text color="suggestion">{`◆ ${T().keptWarm}`}</Text>
+        <Text color={isDesktop ? '#4889cd' : 'suggestion'}>{`◆ ${T().keptWarm}`}</Text>
       ) : state === 'warm' ? (
         <Text>{T().ownWarm(minutes(left))}</Text>
       ) : state === 'cooling' ? (
-        <Text color="warning" bold>{T().ownCools(minutes(left))}</Text>
+        <Text color={isDesktop ? '#cd8f2d' : 'warning'} bold>
+          {T().ownCools(minutes(left))}
+        </Text>
       ) : (
         <Text dimColor>{T().ownCold(minutes(-left))}</Text>
       )

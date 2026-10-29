@@ -145,8 +145,16 @@ export const register: Register = on => {
     const { Box, Text } = $.ui.resolve(e)
     // As in the shared band: each part in its own tone, colour only from 75 %, the text colour below.
     // The bars need the parts: their filled and empty cells differ in tone alone.
+    // The desktop app paints no theme key on text: there the colours are fixed, as ak-mods has them.
+    const isDesktop = e.surface === 'desktop'
     const toneProps = (tone: string | undefined) =>
-      tone === 'alert' ? { color: 'error' } : tone === 'warn' ? { color: 'warning' } : tone === 'dim' ? { dimColor: true } : {}
+      tone === 'alert'
+        ? { color: isDesktop ? '#db4c46' : 'error' }
+        : tone === 'warn'
+          ? { color: isDesktop ? '#cd8f2d' : 'warning' }
+          : tone === 'dim'
+            ? { dimColor: true }
+            : {}
     const mine = (
       <Box flexDirection="row">
         <Text>

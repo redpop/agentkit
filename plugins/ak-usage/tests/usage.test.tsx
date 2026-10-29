@@ -263,3 +263,17 @@ test('switched off it publishes nothing; switched on again it publishes', OWNED,
   await clock.settle()
   expect(segments(toasts).at(-1)?.detail).toBe('ctx 67% · 5h 42%')
 })
+
+test('the own band paints a warning on the desktop app in a fixed colour, the theme key on the terminal', async ($, on) => {
+  const { set } = engine(on)
+  await start($)
+  set(figures(134400, 81))
+  await turn($)
+
+  for (const [surface, color] of [['terminal', 'warning'], ['desktop', '#cd8f2d']] as const) {
+    const ui = await $.ui.mount({ ...BAND, surface })
+    const part = (await ui.findAll({ type: 'Text' })).find(one => one.text === ' 81%')
+    expect(part).toMatchObject({ props: { color } })
+    await ui.unmount()
+  }
+})

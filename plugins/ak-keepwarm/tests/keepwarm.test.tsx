@@ -789,3 +789,20 @@ test('after a resume the resumed chat shows its keep warm at once, not at the ne
   await clock.settle()
   expect(segments(toasts).at(-1)?.text).toBe('◆ kept warm')
 })
+
+test('the own band paints its tone on the desktop app in a fixed colour, the theme key on the terminal', async ($, on) => {
+  engine(on, { usage: usage(200000, 0), calls: 0 })
+  on('ui.render', { component: 'AbovePrompt' }, ($, e) => {
+    const { Text } = $.ui.resolve(e)
+
+    return <Text>engine</Text>
+  })
+  await startChat($)
+  await keepwarm($)
+
+  for (const [surface, color] of [['terminal', 'suggestion'], ['desktop', '#4889cd']] as const) {
+    const ui = await $.ui.mount({ ...BAND, surface })
+    expect(await ui.find({ type: 'Text', text: /kept warm/ })).toMatchObject({ props: { color } })
+    await ui.unmount()
+  }
+})
