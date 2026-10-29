@@ -15,7 +15,7 @@ const warning = (
 ): string | undefined =>
   hidden.length === 0 ? undefined : t.dropped(hidden.length, hidden.map(name => titles.get(name) ?? name).join(', '))
 
-/** Draws the Mods pane: one row per declared mod, with its three buttons. Texts wrap. */
+/** Draws the Mods pane: one row per declared mod, its head a disclosure with the standard star and the switch. Texts wrap. */
 export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
   const draws = $.ui.resolve(e)
   const { Box, Button, Text } = draws
@@ -50,15 +50,16 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
       {list.map(row => {
         const one = current.get(row.name)
         // A surface that draws pictures lists the card's rows under the segment, each value once, while
-        // the row is open (the details link); closed, the segment alone. The terminal adds the detail after it.
+        // the row is open (a press on its title); closed, the segment alone. The terminal adds the detail after it.
         const isOpen = expanded[row.name] === true
         const rows = e.surface !== 'terminal' ? one?.card : undefined
 
-        // A row reads top to bottom: the title with its switch on the right, what the mod does, its live
-        // segment, what opens under the details link, then the details link and the standard mark. The
-        // switch is the one framed button and never shrinks: in a narrow pane the title wraps instead.
-        // The standard mark is set once and rarely changed, so it sits with the details link at the foot,
-        // both plain, so the live state leads.
+        // A row reads top to bottom: its head, what the mod does, its live segment, then what opens
+        // under the head. The head is a disclosure as the desktop app's own lists are: a chevron
+        // before the title, the two pressed as one. On the right the standard star, then the switch:
+        // a mod's two settings side by side. The switch is the one framed button and never shrinks: in
+        // a narrow pane the title wraps instead. A Button draws text alone, so the chevron and the
+        // star are glyphs; their labels name them for a reader that cannot see them.
         // On a surface that draws pictures each mod sits on a faint surface of its own, rounded and
         // edged by a hairline, as grouped settings do: where a mod begins and ends shows without a
         // rule between them. A translucent grey reads on a light and a dark theme alike. The terminal
@@ -79,9 +80,27 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
           <Box key={`mod-${row.name}`} flexDirection="column" {...surface}>
             <Box flexDirection="row" alignItems="center" columnGap={2}>
               <Box flexGrow={1} flexShrink={1}>
-                <Text bold>{row.title}</Text>
+                <Button
+                  key={`more-${row.name}`}
+                  label={isOpen ? t.less : t.more}
+                  plain
+                  // One row open at a time: opening this one closes any other, so the pane stays short.
+                  onPress={() => update($, EXPANDED, map => (map[row.name] === true ? {} : { [row.name]: true }))}
+                >
+                  <Text dimColor>{isOpen ? '⌄' : '›'}</Text> <Text bold>{row.title}</Text>
+                </Button>
               </Box>
-              <Box flexShrink={0}>
+              <Box flexDirection="row" alignItems="center" columnGap={1} flexShrink={0}>
+                {/* Set once and rarely changed: plain, and dim until it is set. */}
+                <Button
+                  key={`std-${row.name}`}
+                  label={row.isStandard ? t.standard : t.notStandard}
+                  plain
+                  dimColor={!row.isStandard}
+                  onPress={() => $.mods.setStandard({ name: row.name, standard: !row.isStandard })}
+                >
+                  {row.isStandard ? '★' : '☆'}
+                </Button>
                 <Button
                   key={`on-${row.name}`}
                   label={row.isOn ? t.on : t.off}
@@ -119,26 +138,6 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
                 <Text dimColor>{row.details}</Text>
               </Box>
             )}
-            {/* Wraps in a narrow pane: the standard mark then starts the next line. */}
-            <Box marginTop={1} flexDirection="row" flexWrap="wrap" alignItems="center" columnGap={2}>
-              {/* A disclosure, not an action: plain and dim, framed by nothing, below the mod's own buttons. */}
-              <Button
-                key={`more-${row.name}`}
-                label={isOpen ? t.less : t.more}
-                plain
-                dimColor
-                // One row open at a time: opening this one closes any other, so the pane stays short.
-                onPress={() => update($, EXPANDED, map => (map[row.name] === true ? {} : { [row.name]: true }))}
-              />
-              <Box flexGrow={1} />
-              <Button
-                key={`std-${row.name}`}
-                label={row.isStandard ? t.standard : t.notStandard}
-                plain
-                dimColor={!row.isStandard}
-                onPress={() => $.mods.setStandard({ name: row.name, standard: !row.isStandard })}
-              />
-            </Box>
           </Box>
         )
       })}

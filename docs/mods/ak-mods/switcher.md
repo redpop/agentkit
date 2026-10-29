@@ -11,13 +11,13 @@ another tab is brought forward.
 
 ## Pane
 
-One row per mod that declared itself: the title, with the on/off switch on the right of it, then the
-summary. A switched-on mod that publishes a segment also shows it below, in its band colour and with
-the segment's button, and its detail after it, dimmed; the pane draws on every surface, so this is
-where a segment is always visible. A plain, dim **Show details** link closes the row; one row is
-open at a time, so opening one closes any other and the pane stays short. The link sits with the
-standard mark at its right. In a narrow pane the title wraps and the switch keeps its size; the
-standard mark moves under the link once the two no longer fit side by side. On the desktop app a
+One row per mod that declared itself. Its head is the title with a chevron before it, `›` closed and
+`⌄` open, and on the right the standard star, then the on/off switch; the summary follows. A
+switched-on mod that publishes a segment also shows it below, in its band colour and with the
+segment's button, and its detail after it, dimmed; the pane draws on every surface, so this is where
+a segment is always visible. A press on the title opens the row's details; one row is open at a
+time, so opening one closes any other and the pane stays short. In a narrow pane the title wraps and
+the star and the switch keep their size. On the desktop app a
 segment with card rows shows no detail there: opened, the row lists the card's rows under the
 segment, labels dim in one column, each value once, above the mod's details. There each mod sits on
 a faint rounded surface of its own; the terminal parts the mods by space. A note on how the switches
@@ -26,8 +26,8 @@ reset ends the pane, small and dim.
 | Button | Effect |
 | -------- | -------- |
 | ○ Off / ● On | Switches the mod for this chat; the label shows its state |
-| ☆ Standard / ★ Standard | Marks or unmarks the mod to start on in every new chat; ★ means marked |
-| Show details / Hide details | Shows or hides the mod's details, and on the desktop app its card rows |
+| ☆ / ★ | Marks or unmarks the mod to start on in every new chat; ★ means marked |
+| › / ⌄ and the title | Shows or hides the mod's details, and on the desktop app its card rows |
 
 ## Band
 

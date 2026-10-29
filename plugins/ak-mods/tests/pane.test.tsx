@@ -105,7 +105,8 @@ test('with Claude Code set to German, the pane speaks German', { plugins: PLUGIN
 
   const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
   expect((await ui.find({ key: 'on-ak-fixture' }))?.text).toBe('○ Aus')
-  expect((await ui.find({ key: 'more-ak-fixture' }))?.text).toBe('Details anzeigen')
+  expect((await ui.find({ key: 'more-ak-fixture' }))?.props.label).toBe('Details anzeigen')
+  expect((await ui.find({ key: 'std-ak-fixture' }))?.props.label).toBe('☆ Standard')
   expect(await ui.find({ type: 'Text', text: texts('de').footer })).toBeDefined()
   await ui.unmount()
 })
@@ -119,8 +120,10 @@ test('a row shows title, summary and switches', { plugins: PLUGINS }, async ($, 
     expect((await ui.find({ type: 'Text', text: 'Fixture' }))?.text).toBe('Fixture')
     expect((await ui.find({ type: 'Text', text: 's' }))?.text).toBe('s')
     expect((await ui.find({ key: 'on-ak-fixture' }))?.text).toBe('○ Off')
-    expect((await ui.find({ key: 'std-ak-fixture' }))?.text).toBe('☆ Standard')
-    expect((await ui.find({ key: 'more-ak-fixture' }))?.text).toBe('Show details')
+    // The star alone draws; its label names it for a reader that cannot see it.
+    expect(await ui.find({ key: 'std-ak-fixture' })).toMatchObject({ text: '☆', props: { label: '☆ Standard' } })
+    // The title is the disclosure: a chevron before it, the label naming what it does.
+    expect(await ui.find({ key: 'more-ak-fixture' })).toMatchObject({ text: '› Fixture', props: { label: 'Show details' } })
     await ui.unmount()
   }
 })
@@ -142,7 +145,7 @@ test('pressing Standard persists, without switching the mod on', { plugins: PLUG
 
   const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
   await ui.press({ key: 'std-ak-fixture' })
-  expect((await ui.find({ key: 'std-ak-fixture' }))?.text).toBe('★ Standard')
+  expect(await ui.find({ key: 'std-ak-fixture' })).toMatchObject({ text: '★', props: { label: '★ Standard' } })
   expect(await call($, 'store', 'standard')).toContain('ak-fixture')
   expect(await call($, 'isOn', { name: 'ak-fixture' })).toBe(false)
   await ui.unmount()
@@ -156,7 +159,7 @@ test('More reveals details', { plugins: PLUGINS }, async ($, on) => {
   expect(await ui.find({ type: 'Text', text: /^d$/ })).toBeUndefined()
   await ui.press({ key: 'more-ak-fixture' })
   expect(await ui.find({ type: 'Text', text: /^d$/ })).toBeDefined()
-  expect((await ui.find({ key: 'more-ak-fixture' }))?.text).toBe('Hide details')
+  expect(await ui.find({ key: 'more-ak-fixture' })).toMatchObject({ text: '⌄ Fixture', props: { label: 'Hide details' } })
   await ui.unmount()
 })
 
@@ -503,21 +506,19 @@ test("a row shows its segment's detail, dim, after the text", { plugins: MODS },
   await ui.unmount()
 })
 
-test('the switch sits beside the title, the standard mark beside the details link', { plugins: MODS }, async ($, on) => {
+test('the head holds the disclosure, the standard star and the switch; no foot', { plugins: MODS }, async ($, on) => {
   engine(on)
   await callAs($, 'ak-a', 'declare', { name: 'ak-a', title: 'Alpha', summary: 's', details: 'd' })
 
   for (const surface of SURFACES) {
     const ui = await $.ui.mount({ ...PANE, surface })
     const boxes = await ui.findAll({ type: 'Box' })
-    // The card's first row: the Box holding the title and the switch, nothing more.
-    const header = boxes.find(box => box.props.flexDirection === 'row' && box.text.startsWith('Alpha'))
-    // The header holds the title and the switch alone; the switch never shrinks.
+    // The card's first row: the disclosure on the title, then the star and the switch.
+    const header = boxes.find(box => box.props.flexDirection === 'row' && box.text.startsWith('›'))
     expect(header?.props.flexWrap).toBeUndefined()
-    expect(await ui.find({ key: 'on-ak-a' })).toBeDefined()
-    expect(header?.text).toBe('Alpha○ Off')
-    const foot = boxes.find(box => box.props.flexWrap === 'wrap')
-    expect(foot?.text).toBe('Show details☆ Standard')
+    expect(header?.text).toBe('› Alpha☆○ Off')
+    // Nothing is left for a foot row.
+    expect(boxes.find(box => box.props.flexWrap === 'wrap')).toBeUndefined()
     await ui.unmount()
   }
 })

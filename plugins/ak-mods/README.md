@@ -14,12 +14,12 @@ Requires Claude Code 2.1.309 or later (hooks-module support).
 
 ## Use
 
-Run `/ak-mods` to open the pane, and again to close it. Each mod has three buttons:
+Run `/ak-mods` to open the pane, and again to close it. Each mod's head has three controls:
 
 - **○ Off** / **● On** switches the mod for this chat; the label shows its state.
-- **☆ Standard** / **★ Standard** marks or unmarks the mod to start on in every new chat; the
-  filled star means it is marked.
-- **More / Less** shows or hides the mod's details.
+- **☆** / **★** marks or unmarks the mod to start on in every new chat; the filled star means it
+  is marked.
+- **›** / **⌄** before the title shows or hides the mod's details; a press on the title does too.
 
 Each switched-on mod shows one segment in a single band above the prompt. The band ends with a
 `mods` button (hotkey `m`) that opens the pane, or closes it while it is shown. When the segments do
