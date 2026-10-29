@@ -181,14 +181,17 @@ type Share = (isOn: () => Promise<boolean>, send: () => Promise<boolean>) => Pro
 
 // Starts the 30-second check once per load of the module: a ping when due, then the segment.
 // `session.start` starts it, and so does the first hook a reloaded module runs, should the session
-// not start again.
-const startTicking = ($: EngineInterface, isOff: Switch, share: Share) => {
+// not start again. Only the mod's own band counts down on the tick: a segment that changed redraws
+// the shared band by its write, so a tick redraws every drawing only while the mod draws its own.
+const startTicking = ($: EngineInterface, isOff: Switch, share: Share, drawsOwn: () => boolean) => {
   if (ticking) return
   ticking = $.clock.every(TICK_EVERY, () => {
     isOff(() => $.mods.isOn({ name: NAME }))
       .then(off => tick($, off))
       .then(() => share(() => $.mods.isOn({ name: NAME }), () => publish($)))
-      .then(() => $.ui.invalidate('ui.render'))
+      .then(() => {
+        if (drawsOwn()) $.ui.invalidate('ui.render')
+      })
       .catch(() => {})
   })
 }
@@ -561,7 +564,7 @@ export const register: Register = on => {
     await restore($)
     S.model = S.model || (await $.session.model())
     await prune($).catch(() => {})
-    startTicking($, isOff, share)
+    startTicking($, isOff, share, () => !isSwitched)
     await share(() => $.mods.isOn({ name: NAME }), () => publish($))
     $.ui.invalidate('ui.render')
 
@@ -597,7 +600,7 @@ export const register: Register = on => {
     // A subagent's turn is not the chat's: its end never clears `isWorking`, so its start must not set it.
     if (e.agentId !== undefined) return next(e)
     await restore($)
-    startTicking($, isOff, share)
+    startTicking($, isOff, share, () => !isSwitched)
     now = await $.clock.now()
     S.isWorking = true
 
@@ -641,7 +644,7 @@ export const register: Register = on => {
   on('command.run', { command: 'keepwarm' }, async ($, e) => {
     if (await isOff(() => $.mods.isOn({ name: NAME }))) await $.mods.set({ name: NAME, on: true })
     await restore($)
-    startTicking($, isOff, share)
+    startTicking($, isOff, share, () => !isSwitched)
     now = await $.clock.now()
     const arg = String(e.args || '').trim().toLowerCase()
     const span = durationOf(arg)
