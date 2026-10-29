@@ -118,3 +118,41 @@ test('layout counts button label and hotkey in the width', () => {
 
   expect(fits.rows.length).toBe(1)
 })
+
+test('layout counts a pictured band by the rich runs, a picture as three cells', () => {
+  // `text` 30 each: 30 + 3 + 30 + 10 = 73 > 60, two rows on the terminal
+  const rich = [{ text: 'ring alt text that is long', ring: 50 }, { text: ' 50% ctx' }]
+  const one = [seg('a', 'x'.repeat(30), { rich }), seg('b', 'y'.repeat(30), { rich })]
+
+  expect(layout(one, 60).rows.length).toBe(2)
+  // rich 3 + 8 = 11 each: 11 + 3 + 11 + 10 = 35
+  expect(layout(one, 60, true).rows.length).toBe(1)
+  // Without rich runs a pictured band counts the text
+  expect(layout([seg('a', 'x'.repeat(30)), seg('b', 'y'.repeat(30))], 60, true).rows.length).toBe(2)
+})
+
+test('layout leaves a button on the text out of a pictured band only', () => {
+  const button = { label: 'copy', hotkey: 'c', command: 'copy', isOnText: true }
+  // 20 + (4 + 1 + 3) = 28 each: 28 + 3 + 28 + 10 = 69 > 60; on the text, 20 + 3 + 20 + 10 = 53
+  const two = [seg('a', 'x'.repeat(20), { button }), seg('b', 'y'.repeat(20), { button })]
+
+  expect(layout(two, 60).rows.length).toBe(2)
+  expect(layout(two, 60, true).rows.length).toBe(1)
+})
+
+test('layout leaves rich runs wider than the room out of a pictured band', () => {
+  const rich = [{ text: 'z'.repeat(40) }]
+  // text 10 fits 30 - 10 = 20; the rich runs, 40, do not
+  const kept = layout([seg('a', 'x'.repeat(10), { rich })], 30, true).rows[0]?.[0]
+
+  expect(kept?.text).toBe('x'.repeat(10))
+  expect(kept?.rich).toBeUndefined()
+})
+
+test('layout parts the segments of a pictured band by two cells', () => {
+  // 20 + 3 + 20 + 10 = 53 > 52 on the terminal; 20 + 2 + 20 + 10 = 52 pictured
+  const two = [seg('a', 'x'.repeat(20)), seg('b', 'y'.repeat(20))]
+
+  expect(layout(two, 52).rows.length).toBe(2)
+  expect(layout(two, 52, true).rows.length).toBe(1)
+})

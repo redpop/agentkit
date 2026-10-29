@@ -335,7 +335,11 @@ export async function renderBand(
   const segments = drawable(list, stored).map(one => (one.button?.isPaneOnly === true ? { ...one, button: undefined } : one))
   if (segments.length === 0) return next(e)
 
-  const { rows, hidden } = layout(segments, e.props.bodyColumns)
+  // The desktop app draws a segment's rich runs, pictures among them, and a button on its text as
+  // the text: the band counts them so, not by the terminal's `text`.
+  const draws = $.ui.resolve(e)
+  const isPictured = e.surface === 'desktop' && 'Svg' in draws
+  const { rows, hidden } = layout(segments, e.props.bodyColumns, isPictured)
 
   // Two shown mods on one hotkey: the first by title keeps it, the later goes
   // without. A mod behind the `mods` button takes none, and none takes the
@@ -348,15 +352,15 @@ export async function renderBand(
 
   const below = await next(e)
   const t = texts(await languageFor($))
-  const draws = $.ui.resolve(e)
   const { Box, Button, Text } = draws
   // A cell of space between two segments, three with its two gaps: no rule
-  // draws there, the space alone parts them.
-  const separator = (key: string) => <Box key={key} minWidth={1} />
+  // draws there, the space alone parts them. Where the band draws pictures,
+  // the two gaps alone: a cell there is wider than a space of the text.
+  const separator = (key: string) => <Box key={key} minWidth={isPictured ? 0 : 1} />
   // Every space is a gap of the Box, one cell wide: a surface that draws its
   // buttons with chrome spaces them alike. Buttons draw plain (`1: label`,
   // `m: mods +N`): the widths `layout` counts, with the separator and its two
-  // gaps as three, a segment's text and button one apart. The `mods` button
+  // gaps as three (two where the band draws pictures), a segment's text and button one apart. The `mods` button
   // sits at the right edge of the last row, at least three from the last
   // segment.
 

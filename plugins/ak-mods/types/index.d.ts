@@ -33,7 +33,8 @@ export type ModsSegment = {
   /**
    * The segment as a surface that draws pictures shows it (the desktop app), in place of `text` and
    * `parts`: runs as in `parts`, any with a `ring`. The terminal draws `text`. Joined, the runs'
-   * texts are what the segment says there; the band still counts its room by `text`.
+   * texts are what the segment says there, and the band counts its room by them there, a ring or an
+   * icon as three cells.
    */
   rich?: ModsPart[]
   /** More of the same state, shown dim after the text in the Mods pane only, never in the band. One line, as `text`. */

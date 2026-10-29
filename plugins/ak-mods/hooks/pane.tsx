@@ -35,8 +35,9 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
   // band), the pane's own only before that is known: approximate after a
   // resize, until either records it again.
   const segments = drawable(list, stored)
+  const isPictured = e.surface === 'desktop' && 'Svg' in draws
   const hidden =
-    segments.length > 0 && (e.surface === 'terminal' || e.surface === 'desktop') ? layout(segments, width).hidden : []
+    segments.length > 0 && (e.surface === 'terminal' || e.surface === 'desktop') ? layout(segments, width, isPictured).hidden : []
   const t = texts(await languageFor($))
   const dropped = warning(hidden, new Map(list.map(row => [row.name, row.title])), t)
   // Each row's current segment too, in its band colour: the pane draws on every

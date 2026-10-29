@@ -24,7 +24,7 @@ a faint rounded surface of its own; the terminal parts the mods by space. A note
 reset ends the pane, small and dim.
 
 | Button | Effect |
-|--------|--------|
+| -------- | -------- |
 | ○ Off / ● On | Switches the mod for this chat; the label shows its state |
 | ☆ Standard / ★ Standard | Marks or unmarks the mod to start on in every new chat; ★ means marked |
 | Show details / Hide details | Shows or hides the mod's details, and on the desktop app its card rows |
@@ -48,7 +48,8 @@ The band stays quiet at rest. Colour marks only what needs attention: `ok` draws
 `warn` in the theme's warning colour, `alert` in its error colour, `info` in its suggestion colour,
 and `dim` dimmed. The colours are theme keys, so they follow a light or a dark theme. A ring takes
 the same tone in colours of its own, which follow the desktop app's light or dark appearance. Three
-cells of space part the segments, with no rule between them. Digits draw at one width, so a figure
+cells of space part the segments on the terminal, two on the desktop app, with no rule between
+them. Digits draw at one width, so a figure
 that counts down does not shift. The `mods` button sits dimmed at the right edge of the last row.
 
 When the segments do not fit the width, the band degrades in steps:
@@ -58,7 +59,9 @@ When the segments do not fit the width, the band degrades in steps:
 3. They still do not fit: the segments with the lowest priority drop out, and the `mods` button
    counts them: `mods +2`.
 
-The last row always keeps room for the button.
+The last row always keeps room for the button. Each segment counts as wide as it draws: on the
+terminal its text, on the desktop app its rich runs, a ring or an icon as three cells, and a button
+on its text adds nothing there.
 
 The Mods pane then names the dropped mods in a dim line, `N mods do not fit the band: …`, so you can
 switch some off. The pane counts with the band's width as it was last recorded: pressing the `mods`
