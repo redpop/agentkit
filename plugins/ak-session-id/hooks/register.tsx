@@ -8,6 +8,8 @@ import { languageFor, learnLanguage, texts } from './i18n'
 const NAME = 'ak-session-id'
 // How much of the id the band shows: enough to tell sessions apart at a glance.
 const TAIL = 6
+// The characters the compact band keeps: enough to tell two sessions apart at a glance.
+const COMPACT_TAIL = 4
 // How long the segment says the id was copied.
 const COPIED_MS = 2000
 
@@ -59,6 +61,7 @@ const segment = async ($: EngineInterface): Promise<Segment> => {
         { text: t.copiedShort, icon: 'check' },
         { text: ` ${t.copiedShort}` },
       ],
+      compact: { text: '✓', rich: [{ text: t.copiedShort, icon: 'check' }, { text: ' ✓' }] },
       card,
       priority: 2,
       button,
@@ -71,6 +74,14 @@ const segment = async ($: EngineInterface): Promise<Segment> => {
       { text: 'id', icon: 'id' },
       { text: ` …${shown.slice(-TAIL)}` },
     ],
+    // Short of room: the icon and fewer characters, still text, so the id stays a press away.
+    compact: {
+      text: `#…${shown.slice(-COMPACT_TAIL)}`,
+      rich: [
+        { text: 'id', icon: 'id' },
+        { text: ` …${shown.slice(-COMPACT_TAIL)}` },
+      ],
+    },
     card,
     tone: 'dim',
     priority: 2,

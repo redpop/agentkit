@@ -193,6 +193,7 @@ test('publishes the end of the desktop id with the copy button', OWNED, async ($
   expect(segments(toasts).at(-1)).toEqual({
     text: `id …${HOST.slice(-6)}`,
     rich: [{ text: 'id', icon: 'id' }, { text: ` …${HOST.slice(-6)}` }],
+    compact: { text: `#…${HOST.slice(-4)}`, rich: [{ text: 'id', icon: 'id' }, { text: ` …${HOST.slice(-4)}` }] },
     card: [
       { label: 'Desktop id', value: HOST },
       { label: 'Engine id', value: ENGINE },
@@ -209,7 +210,11 @@ test('a copy shows a check mark for two seconds, then the id again', OWNED, asyn
 
   await sessionId($)
   await clock.advance(10)
-  expect(segments(toasts).at(-1)).toMatchObject({ text: '✓ copied', rich: [{ text: 'copied', icon: 'check' }, { text: ' copied' }] })
+  expect(segments(toasts).at(-1)).toMatchObject({
+    text: '✓ copied',
+    rich: [{ text: 'copied', icon: 'check' }, { text: ' copied' }],
+    compact: { text: '✓', rich: [{ text: 'copied', icon: 'check' }, { text: ' ✓' }] },
+  })
   await clock.advance(2100)
   expect(segments(toasts).at(-1)?.text).toBe(`id …${HOST.slice(-6)}`)
 })
