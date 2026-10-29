@@ -4,7 +4,7 @@ Reference documentation for all AgentKit components — skills, agents, hooks, a
 
 ## Overview
 
-AgentKit provides 15 plugins with specialized skills, agents, hooks, and mods for Claude Code.
+AgentKit provides 16 plugins with specialized skills, agents, hooks, and mods for Claude Code.
 
 | Category | Count | Description |
 |----------|-------|-------------|
@@ -26,6 +26,7 @@ AgentKit provides 15 plugins with specialized skills, agents, hooks, and mods fo
 | ak-meta | Discovery & release management | 4 | 2 | — |
 | ak-mods | Mod switcher (Mods pane, shared band) | — | — | hooks module |
 | ak-notifications | macOS notifications | — | — | yes |
+| ak-pause | Break mod (time without a break, water) | — | — | hooks module |
 | ak-react | React/Next.js development | 2 | — | — |
 | ak-review | Code quality assurance | 9 | — | yes |
 | ak-security | Security guidelines | 3 | — | — |

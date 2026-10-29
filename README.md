@@ -1,6 +1,6 @@
 # AgentKit
 
-Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) — 15 plugins with 25 skills, 8 agents, a mod switcher with keep-warm, session-id, usage and GitLab mods, and domain knowledge bases for Git workflows, security, React, and more.
+Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) — 16 plugins with 25 skills, 8 agents, a mod switcher with keep-warm, session-id, usage, GitLab and break mods, and domain knowledge bases for Git workflows, security, React, and more.
 
 ## Plugins
 
@@ -15,6 +15,7 @@ Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/
 | [**ak-meta**](#ak-meta--project-management-tools) | 4 | 2 | Discovery, changelog generation, session handoff for the next AI session, quality assessment, diagrams |
 | [**ak-mods**](#ak-mods--mod-switcher) | — | — | Mods pane: turn AgentKit mods on or off per chat, with standard mods; one band shared by all mods |
 | [**ak-notifications**](#ak-notifications--macos-notifications) | — | — | macOS sound and banner notifications |
+| [**ak-pause**](#ak-pause--breaks-at-a-glance) | — | — | Mod: one band segment with the time worked without a break, across sessions (`52 min am Stück`), a water hint with a button, and one nudge per block at a quiet moment |
 | [**ak-react**](#ak-react--react--nextjs-development) | 2 | — | React and Next.js best practices, performance optimization, code scanning |
 | [**ak-review**](#ak-review--quality-assurance) | 9 | — | CodeRabbit review, code explanation, finalize workflow, workflow management, dependency update skill generation, external review delegation, unattended external-tool execution with guided setup, validation hooks |
 | [**ak-security**](#ak-security--security-guidelines) | 3 | — | OWASP security guidelines, LLM security, Semgrep static analysis |
@@ -50,6 +51,7 @@ Install all plugins:
 /plugin install ak-knowledge@ak-marketplace
 /plugin install ak-mods@ak-marketplace
 /plugin install ak-notifications@ak-marketplace
+/plugin install ak-pause@ak-marketplace
 /plugin install ak-react@ak-marketplace
 /plugin install ak-security@ak-marketplace
 /plugin install ak-session-id@ak-marketplace
@@ -228,6 +230,16 @@ failed with the first failed job, or green with its duration. A toast says when 
 |---------|---------|---------|
 | [`/gitlab-open`](docs/mods/ak-gitlab/gitlab.md#commands) | Open the merge request in the browser | `/gitlab-open` |
 | [`/gitlab-errors`](docs/mods/ak-gitlab/gitlab.md#commands) | Put an excerpt of the failed job's log in the prompt box | `/gitlab-errors` |
+
+### ak-pause — Breaks at a Glance
+
+A mod (needs `ak-mods`, installed with it) that shows one segment in the shared band above the
+prompt: how long you have worked without a break, as a ring that fills to an hour (`52 min am
+Stück`), counted across every session. Ten minutes without input count as a break. After 45
+minutes a water hint joins, with a button to clear it; from 22:00 a dim `Feierabend?`. Once a block
+it nudges at a quiet moment: a toast after a turn from 60 minutes, or a notification while Claude
+has been working for 3 minutes from 50. Nothing of it reaches Claude's context. See
+[Break](docs/mods/ak-pause/pause.md).
 
 ### ak-notifications — macOS Notifications
 

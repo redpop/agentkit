@@ -6,13 +6,13 @@ This file provides guidance to AI agents (Claude Code, Warp AI, etc.) when worki
 
 ## Project overview
 
-Claude Code plugin marketplace (`ak-marketplace`) with 15 independently installable plugins, 25 skills, 8 agents, a mod switcher with four mods,
+Claude Code plugin marketplace (`ak-marketplace`) with 16 independently installable plugins, 25 skills, 8 agents, a mod switcher with five mods,
 and domain knowledge bases. Built on the official Claude Code Plugin Architecture.
 
 ## Dev environment
 
-No build step required — the codebase is Markdown, JSON, and shell scripts, plus five TSX
-hooks modules (`ak-mods`, `ak-keepwarm`, `ak-session-id`, `ak-usage`, `ak-gitlab`) that Claude Code loads directly.
+No build step required — the codebase is Markdown, JSON, and shell scripts, plus six TSX
+hooks modules (`ak-mods`, `ak-keepwarm`, `ak-session-id`, `ak-usage`, `ak-gitlab`, `ak-pause`) that Claude Code loads directly.
 
 **Test a plugin locally:**
 
@@ -59,6 +59,8 @@ claude plugin validate plugins/ak-usage
 claude plugin test plugins/ak-usage
 claude plugin validate plugins/ak-gitlab
 claude plugin test plugins/ak-gitlab
+claude plugin validate plugins/ak-pause
+claude plugin test plugins/ak-pause
 ```
 
 The third command loads the test-only fixture mod with `ak-mods` absent and proves it fails
@@ -92,9 +94,12 @@ U=$R/plugins/ak-usage
 echo "{\"compilerOptions\":{$O},\"include\":[\"$T/fx\",\"$U/hooks\",\"$U/tests\"]}" > "$T/usage.json"
 G=$R/plugins/ak-gitlab
 echo "{\"compilerOptions\":{$O},\"include\":[\"$T/fx\",\"$G/hooks\",\"$G/tests\"]}" > "$T/gitlab.json"
+P=$R/plugins/ak-pause
+echo "{\"compilerOptions\":{$O},\"include\":[\"$T/fx\",\"$P/hooks\",\"$P/tests\"]}" > "$T/pause.json"
 npx -y -p typescript@5 tsc -p "$T/mods.json" && npx -y -p typescript@5 tsc -p "$T/fixture.json" &&
   npx -y -p typescript@5 tsc -p "$T/keepwarm.json" && npx -y -p typescript@5 tsc -p "$T/session-id.json" &&
-  npx -y -p typescript@5 tsc -p "$T/usage.json" && npx -y -p typescript@5 tsc -p "$T/gitlab.json"
+  npx -y -p typescript@5 tsc -p "$T/usage.json" && npx -y -p typescript@5 tsc -p "$T/gitlab.json" &&
+  npx -y -p typescript@5 tsc -p "$T/pause.json"
 )
 ```
 
@@ -136,6 +141,7 @@ plugins/{plugin-name}/
 | `ak-session-id` | - | - | hooks module (TSX), tests/ |
 | `ak-usage` | - | - | hooks module (TSX), tests/ |
 | `ak-gitlab` | - | - | hooks module (TSX), tests/ |
+| `ak-pause` | - | - | hooks module (TSX), tests/ |
 | `ak-notifications` | - | - | hooks |
 | `ak-react` | 2 | - | knowledge/ (1 file) |
 | `ak-security` | 3 | - | knowledge/ (43 files) |
