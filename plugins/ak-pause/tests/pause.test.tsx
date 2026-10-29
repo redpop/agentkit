@@ -195,7 +195,7 @@ test('drinking clears the water hint', OWNED, async ($, on) => {
   await start($)
   await submit($)
   await clock.advance(6 * MIN)
-  expect(last(toasts)).toBe('46 min am Stück · Wasser')
+  expect(last(toasts)).toBe('46 min am Stück Wasser')
   expect(segments(toasts).at(-1)?.button).toEqual({ label: 'Getrunken', command: 'pause-drink' })
   // Pressed in the band: the command runs inside ak-mods' call, where a publish is lost.
   await run($, 'stand-in', 'hold')

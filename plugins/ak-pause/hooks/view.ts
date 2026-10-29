@@ -57,8 +57,8 @@ export function segmentOf(block: Block | undefined, now: number, lang: Lang): Se
   const isThirsty = isWaterDue(block, now)
 
   const extras: Part[] = [
-    ...(isThirsty ? [{ text: ` · ${t.water}`, tone: 'info' as const }] : []),
-    ...(isLate(now) ? [{ text: ` · ${t.late}`, tone: 'dim' as const }] : []),
+    ...(isThirsty ? [{ text: ` ${t.water}`, tone: 'info' as const }] : []),
+    ...(isLate(now) ? [{ text: ` ${t.late}`, tone: 'dim' as const }] : []),
   ]
   // The ring's own text is what a reader that cannot see it gets; the run beside it can be pressed.
   const pictured = (lead: string): Part[] => [{ text: lead, tone, ring }, { text: ` ${short}`, tone }, ...extras]

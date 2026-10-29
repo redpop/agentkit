@@ -30,9 +30,9 @@ runs out of room it goes before usage (7) and GitLab (6).
 
 Two hints join the segment when due:
 
-- **Water**, 45 minutes after the last: `· Wasser`, with a **Getrunken** button that clears it. A
+- **Water**, 45 minutes after the last: `Wasser`, with a **Getrunken** button that clears it. A
   break clears it as well.
-- **Late**, from 22:00 local time: `· Feierabend?`, dim.
+- **Late**, from 22:00 local time: `Feierabend?`, dim.
 
 A press on the segment's text opens the Mods pane at this mod, whose card lists when the block
 started, the last break and its length, the breaks today, the longest block today and the last

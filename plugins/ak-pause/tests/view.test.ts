@@ -79,10 +79,10 @@ test('a break draws dim and empty', () => {
 test('water due adds a run and the button', () => {
   const { block, now } = at(46)
   const segment = segmentOf({ ...block, waterSince: T }, now, 'de')
-  expect(segment?.text).toBe('46 min am Stück · Wasser')
-  expect(segment?.parts?.at(-1)).toEqual({ text: ' · Wasser', tone: 'info' })
-  expect(segment?.rich?.at(-1)).toEqual({ text: ' · Wasser', tone: 'info' })
-  expect(segment?.compact?.text).toBe('46 min · Wasser')
+  expect(segment?.text).toBe('46 min am Stück Wasser')
+  expect(segment?.parts?.at(-1)).toEqual({ text: ' Wasser', tone: 'info' })
+  expect(segment?.rich?.at(-1)).toEqual({ text: ' Wasser', tone: 'info' })
+  expect(segment?.compact?.text).toBe('46 min Wasser')
   expect(segment?.button).toEqual({ label: 'Getrunken', command: DRINK })
   expect(DRINK).toBe('pause-drink')
 })
@@ -90,8 +90,8 @@ test('water due adds a run and the button', () => {
 test('late adds a dim run', () => {
   const late = new Date(2026, 9, 29, 22, 15).getTime()
   const segment = segmentOf({ ...touch(undefined, late - 20 * MIN), lastActive: late - MIN }, late, 'de')
-  expect(segment?.text).toBe('20 min am Stück · Feierabend?')
-  expect(segment?.parts?.at(-1)).toEqual({ text: ' · Feierabend?', tone: 'dim' })
+  expect(segment?.text).toBe('20 min am Stück Feierabend?')
+  expect(segment?.parts?.at(-1)).toEqual({ text: ' Feierabend?', tone: 'dim' })
 })
 
 test('the parts read as the text', () => {
