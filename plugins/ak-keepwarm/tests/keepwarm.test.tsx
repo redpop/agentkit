@@ -774,3 +774,18 @@ test('a subagent turn after the main turn ended does not stall keep warm', async
   await clock.advance(55 * MIN)
   expect(fork.calls).toBe(1)
 })
+
+test('after a resume the resumed chat shows its keep warm at once, not at the next tick', OWNED, async ($, on) => {
+  const { clock, toasts } = engine(on, { usage: usage(200000, 0), calls: 0 })
+  await startChat($)
+  await keepwarm($)
+  await clock.settle()
+  await $.session.end({ reason: 'resume', sessionId: 'S1', resume: { id: 'S2' } })
+  chat.id = 'S2'
+  await clock.settle()
+  await $.session.end({ reason: 'resume', sessionId: 'S2', resume: { id: 'S1' } })
+  chat.id = 'S1'
+  // The end's republish runs once the id is current: no tick or turn in between.
+  await clock.settle()
+  expect(segments(toasts).at(-1)?.text).toBe('◆ kept warm')
+})

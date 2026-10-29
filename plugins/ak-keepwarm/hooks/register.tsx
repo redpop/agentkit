@@ -118,9 +118,14 @@ const save = ($: EngineInterface) => {
   $.store.set(`chat:${chatId}`, { ...record, keepWarmUntil: S.isKeepWarm ? S.keepWarmUntil : 0 }).catch(() => {})
 }
 
+// The load in flight for a chat: a second caller for the same id waits for it, rather than going
+// on with a state that is reset and not yet loaded.
+let loading: { id: string; done: Promise<void> } | undefined
+
 // Brings S to the current chat: after a reload of the mod, a restart, a resume or a /clear, the
 // chat's saved state comes back, keep warm with it while its window runs. A chat with none starts
-// from an unknown cache. `always` is read along. A failed read starts from what S holds.
+// from an unknown cache. `always` is read along. A failed read starts from what S holds, and the
+// next call tries the chat again.
 const restore = async ($: EngineInterface) => {
   let id: string
   try {
@@ -129,7 +134,18 @@ const restore = async ($: EngineInterface) => {
     return
   }
   lang = await languageFor($)
+  if (loading?.id === id) return loading.done
   if (id === chatId) return
+  const done = load($, id)
+  loading = { id, done }
+  try {
+    await done
+  } finally {
+    if (loading?.done === done) loading = undefined
+  }
+}
+
+const load = async ($: EngineInterface, id: string) => {
   chatId = id
   reset()
   now = await $.clock.now()
@@ -143,6 +159,7 @@ const restore = async ($: EngineInterface) => {
       }
     }
   } catch {
+    chatId = undefined
     return
   }
   S.isKeepWarm = S.keepWarmUntil > now
@@ -565,8 +582,10 @@ export const register: Register = on => {
     reset()
     // S is the ended chat's until the next chat's id is current; the next restore loads that one.
     chatId = e.sessionId
+    // Once the next chat's id is current: its saved state first, so its keep warm shows at once.
     $.clock.after(0, () => {
-      share(() => $.mods.isOn({ name: NAME }), () => publish($))
+      restore($)
+        .then(() => share(() => $.mods.isOn({ name: NAME }), () => publish($)))
         .then(() => $.ui.invalidate('ui.render'))
         .catch(() => {})
     })
