@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.58.9] - 2026-10-29
+
+### 🐛 Fixed
+
+- `ak-mods` — on the desktop app the band turns compact a little sooner, at 0.9 of a cell a
+  character, so a segment's text no longer wraps inside a row that only just fit.
+
 ## [1.58.8] - 2026-10-29
 
 ### 🐛 Fixed
