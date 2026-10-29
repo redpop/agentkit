@@ -1,7 +1,7 @@
 {
   "name": "ak-usage",
   "description": "Mod: shows how full this session's context is and how much of the 5-hour limit is used, as one compact segment in the shared band",
-  "version": "1.57.2",
+  "version": "1.58.0",
   "author": {
     "name": "redpop",
     "url": "https://github.com/redpop"

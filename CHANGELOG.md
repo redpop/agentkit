@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.58.0] - 2026-10-29
+
+### 🔄 Changed
+
+- `ak-mods` — a Mods pane card's title now opens its details, behind a chevron (`›` closed, `⌄`
+  open) as the desktop app's own lists do; the **Show details** link is gone. The standard star sits
+  in the card's head beside the on/off switch, so the foot row is gone too and each card is a line
+  shorter.
+
 ## [1.57.2] - 2026-10-29
 
 ### 🐛 Fixed
