@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.58.6] - 2026-10-29
+
+### 🐛 Fixed
+
+- `ak-keepwarm` — a subagent's turn, such as a background agent's after the main turn, no longer
+  stops the pings while the band still says kept warm.
+- `ak-mods` — after `/clear` or `/resume` a mod no longer reads the reset of the switches as being
+  switched off in the chat that ended: keep warm kept that chat's window, and no false toast shows.
+- `ak-mods` — on the desktop app a dim label beside a value you can press, such as `ctx` or `Cache`,
+  stays dim at every value.
+- `ak-keepwarm` — after `/resume` the resumed chat's keep warm shows at once, not at the next tick;
+  two loads of the chat state can no longer overwrite each other, and a failed load is tried again.
+- `ak-session-id` — when the new id turns current only after a chat ended, the next turn shows it.
+- `ak-keepwarm`, `ak-usage` — without ak-mods their own band paints warnings and kept warm in colour
+  on the desktop app too.
+
+### ⚡ Performance
+
+- `ak-keepwarm` — the 30-second tick redraws only while the mod draws its own band.
+
 ## [1.58.5] - 2026-10-29
 
 ### 🐛 Fixed
