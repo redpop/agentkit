@@ -55,12 +55,13 @@ const EN = {
   title: 'Usage',
   summary: "Shows how full this session's context is and how much of the 5-hour limit is used.",
   details:
-    'Its segment in the shared band above the prompt shows a bar of five cells a figure: the ' +
-    'context of this session, and the 5-hour window of the account, every session counted. ' +
-    'The 7-day window joins from 75 %. A figure from 75 % adds its percentage and turns the ' +
-    'warning colour, from 90 % the error colour; a window then adds when it resets, and a ' +
-    'toast says so once. Here every percentage and reset follows the bars. The windows are ' +
-    'as the last response of this session reported them, and leave the band once they reset.',
+    'Its segment in the shared band above the prompt shows the context of this session and the ' +
+    '5-hour window of the account, every session counted; the 7-day window joins from 75 %. On ' +
+    'the desktop app each figure is a ring with its percentage, on the terminal a bar of five ' +
+    'cells. Short of room, the band shows the percentages alone. From 75 % a figure turns the ' +
+    'warning colour, from 90 % the error colour; a window then adds when it resets, and a toast ' +
+    'says so once. The windows are as the last response of this session reported them, and ' +
+    'leave the band once they reset.',
   context: 'Context',
   ofTokens: (used: string, window: string) => `${used} of ${window} tokens`,
   windows: { five_hour: '5-hour limit', seven_day: '7-day limit' } as Record<string, string>,
@@ -75,13 +76,13 @@ const DE: typeof EN = {
   title: 'Nutzung',
   summary: 'Zeigt, wie voll der Kontext dieser Session ist und wie viel vom 5-Stunden-Limit verbraucht ist.',
   details:
-    'Sein Segment im gemeinsamen Band über der Eingabe zeigt je Wert einen Balken aus fünf Zellen: ' +
-    'den Kontext dieser Session und das 5-Stunden-Fenster des Kontos, alle Sessions zusammen. ' +
-    'Das 7-Tage-Fenster kommt ab 75 % dazu. Ab 75 % zeigt ein Wert seine Prozentzahl in der ' +
-    'Warnfarbe, ab 90 % in der Fehlerfarbe; ein Fenster nennt dann seinen Reset, und ein Toast ' +
-    'meldet es einmal. Hier folgen jede Prozentzahl und jeder Reset den Balken. Die Fenster ' +
-    'stehen so, wie die letzte Antwort dieser Session sie gemeldet hat, und verlassen das Band ' +
-    'nach ihrem Reset.',
+    'Sein Segment im gemeinsamen Band über der Eingabe zeigt den Kontext dieser Session und das ' +
+    '5-Stunden-Fenster des Kontos, alle Sessions zusammen; das 7-Tage-Fenster kommt ab 75 % dazu. ' +
+    'In der Desktop-App ist jeder Wert ein Ring mit seiner Prozentzahl, im Terminal ein Balken aus ' +
+    'fünf Zellen. Bei wenig Platz zeigt das Band nur die Prozentzahlen. Ab 75 % steht ein Wert in ' +
+    'der Warnfarbe, ab 90 % in der Fehlerfarbe; ein Fenster nennt dann seinen Reset, und ein Toast ' +
+    'meldet es einmal. Die Fenster stehen so, wie die letzte Antwort dieser Session sie gemeldet ' +
+    'hat, und verlassen das Band nach ihrem Reset.',
   context: 'Kontext',
   ofTokens: (used: string, window: string) => `${used} von ${window} Tokens`,
   windows: { five_hour: '5-Stunden-Limit', seven_day: '7-Tage-Limit' },
