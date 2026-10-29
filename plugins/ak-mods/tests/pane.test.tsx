@@ -652,3 +652,36 @@ test('the pane counts the dropped mods as the compact band does', { plugins: MOD
     await ui.unmount()
   }
 })
+
+test('card rows draw small; long values, as an id is, get a line of air between them', { plugins: MODS }, async ($, on) => {
+  engine(on)
+  await callAs($, 'ak-a', 'declare', { name: 'ak-a', title: 'Alpha', summary: 's', details: 'd' })
+  await callAs($, 'ak-a', 'set', { name: 'ak-a', on: true })
+  await callAs($, 'ak-a', 'segment', {
+    text: 'id',
+    card: [
+      { label: 'Desktop id', value: `local_${'a'.repeat(30)}` },
+      { label: 'Engine id', value: 'b'.repeat(36) },
+    ],
+  })
+
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  await ui.press({ key: 'more-ak-a' })
+  expect(await ui.find({ type: 'Text', text: 'b'.repeat(36) })).toMatchObject({ props: { size: 'footnote' } })
+  expect(await ui.find({ type: 'Text', text: 'Engine id' })).toMatchObject({ props: { size: 'footnote', dimColor: true } })
+  expect((await ui.find({ key: 'rows-ak-a-0' }))?.props.marginTop).toBeUndefined()
+  expect((await ui.find({ key: 'rows-ak-a-1' }))?.props.marginTop).toBe(1)
+  await ui.unmount()
+})
+
+test('short card values stay close', { plugins: MODS }, async ($, on) => {
+  engine(on)
+  await callAs($, 'ak-a', 'declare', { name: 'ak-a', title: 'Alpha', summary: 's', details: 'd' })
+  await callAs($, 'ak-a', 'set', { name: 'ak-a', on: true })
+  await callAs($, 'ak-a', 'segment', { text: 'x', card: [{ label: 'Context', value: '42%' }, { label: '5h', value: '7%' }] })
+
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  await ui.press({ key: 'more-ak-a' })
+  expect((await ui.find({ key: 'rows-ak-a-1' }))?.props.marginTop).toBeUndefined()
+  await ui.unmount()
+})

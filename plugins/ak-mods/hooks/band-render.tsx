@@ -286,22 +286,31 @@ export const segmentView = (
 
 const isGlyph = (part: ModsPart | undefined): boolean => part?.ring !== undefined || part?.icon !== undefined
 
+// A value this long wraps in a docked pane, as an id does: then a line of air parts the rows, so
+// where one value ends and the next begins shows.
+const LONG_VALUE = 24
+
 /**
- * Card rows as a table: the dim labels in one column, as wide as the longest,
- * the values beside them. The band's card and the Mods pane draw them alike.
+ * Card rows as a table in small type, as notes under the segment: the dim labels in one column, as
+ * wide as the longest, the values beside them. Rows of long values stand a line apart.
  */
 export const cardRows = ({ Box, Text }: Draws, rows: readonly ModsCardRow[], key: string) => {
   // A desktop Box counts its width in text cells.
   const column = Math.max(0, ...rows.map(row => row.label.length))
+  const isLoose = rows.some(row => row.value.length > LONG_VALUE)
 
   return rows.map((row, at) => (
-    <Box key={`${key}-${at}`} flexDirection="row" columnGap={2}>
+    <Box key={`${key}-${at}`} flexDirection="row" columnGap={2} {...(isLoose && at > 0 ? { marginTop: 1 } : {})}>
       {column > 0 && (
         <Box width={column} flexShrink={0}>
-          <Text dimColor>{row.label}</Text>
+          <Text size="footnote" dimColor>
+            {row.label}
+          </Text>
         </Box>
       )}
-      <Text tabular>{row.value}</Text>
+      <Text size="footnote" tabular>
+        {row.value}
+      </Text>
     </Box>
   ))
 }

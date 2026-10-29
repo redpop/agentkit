@@ -19,9 +19,10 @@ every surface, so this is where a segment is always visible. A press on the tria
 details, in small dim type; one row is open at a time, so opening one closes any other and the pane
 stays short. In a narrow pane the title wraps and the star and the switch keep their size. On the
 desktop app a segment with card rows shows no detail there: opened, the row lists the card's rows
-under the segment, labels dim in one column, each value once, above the mod's details. There each
-mod sits on a faint rounded surface of its own; the terminal parts the mods by space. A note on how
-the switches reset ends the pane, small and dim.
+under the segment, in small type, labels dim in one column, each value once, rows of long values
+such as an id a line apart, above the mod's details. There each mod sits on a faint rounded surface
+of its own; the terminal parts the mods by space. A note on how the switches reset ends the pane,
+small and dim.
 
 | Button | Effect |
 | -------- | -------- |
