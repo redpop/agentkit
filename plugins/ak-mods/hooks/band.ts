@@ -29,13 +29,25 @@ const ordered = (segments: readonly Segment[]): Segment[] =>
 // The cells a ring or an icon takes where the band draws pictures: 20 px, its air included.
 const PICTURE_COLUMNS = 3
 
+// A cell of the desktop app is an advance of its code font, the band's text a proportional face,
+// narrower on average: a character counts this much of a cell there. Too low, and the band's
+// right end, its `mods` button with it, is cut off; set from what the band showed.
+const PROPORTIONAL_TEXT = 0.85
+
 /** A segment's text as it draws: its rich runs where the band draws pictures, else its text. */
 const textWidth = (segment: Segment, isPictured: boolean): number => {
-  const rich = isPictured ? segment.rich : undefined
+  if (!isPictured) return segment.text.length
+  const text = (characters: number) => Math.ceil(characters * PROPORTIONAL_TEXT)
+  if (segment.rich === undefined) return text(segment.text.length)
 
-  return rich === undefined
-    ? segment.text.length
-    : rich.reduce((sum, part) => sum + (part.ring !== undefined || part.icon !== undefined ? PICTURE_COLUMNS : part.text.length), 0)
+  let pictures = 0
+  let characters = 0
+  for (const part of segment.rich) {
+    if (part.ring !== undefined || part.icon !== undefined) pictures += 1
+    else characters += part.text.length
+  }
+
+  return pictures * PICTURE_COLUMNS + text(characters)
 }
 
 /**

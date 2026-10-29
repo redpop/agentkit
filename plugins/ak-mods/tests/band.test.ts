@@ -210,3 +210,12 @@ test('compact steps drop the lowest priority', () => {
   expect(result.hidden).toEqual(['b'])
   expect(result.rows[0]?.[0]?.text).toBe('ccccc')
 })
+
+test('a pictured band counts its text at 0.85 of a cell, a proportional face being narrower', () => {
+  const two = [seg('a', 'x'.repeat(40)), seg('b', 'y'.repeat(40))]
+
+  // Terminal: 40 + 3 + 40 + 10 = 93 > 80. Pictured: 34 + 2 + 34 + 10 = 80.
+  expect(layout(two, 80).rows.length).toBe(2)
+  expect(layout(two, 80, true).rows.length).toBe(1)
+  expect(layout(two, 79, true).rows.length).toBe(2)
+})

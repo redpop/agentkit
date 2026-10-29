@@ -729,9 +729,9 @@ test('compact parts that do not join to its text are dropped, the compact text k
   await ui.unmount()
 })
 
-// Too wide in full for the 80-column band, so it draws compact: a ring and the minutes.
+// Too wide in full for the 80-column band on either surface, so it draws compact: a ring and the minutes.
 const KEEP = {
-  text: 'x'.repeat(60),
+  text: 'x'.repeat(75),
   compact: { text: 'warm', rich: [{ text: 'r', ring: 50 }, { text: ' 37m' }] },
   button: { label: 'keep warm', hotkey: '1', command: 'fixture-keep' },
 }
@@ -784,7 +784,7 @@ test('a compact segment with a pane-only button opens the Mods pane', { plugins:
   await publish($, 'ak-a', 'A', {
     ...KEEP,
     // Wide enough to draw compact without the pane-only button's room.
-    text: 'x'.repeat(75),
+    text: 'x'.repeat(85),
     card: [{ label: 'Cache', value: 'kept' }],
     button: { label: 'stop', hotkey: '1', command: 'fixture-stop', isPaneOnly: true },
   })
