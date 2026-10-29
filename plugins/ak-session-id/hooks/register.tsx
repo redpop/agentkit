@@ -61,7 +61,14 @@ const segment = async ($: EngineInterface): Promise<Segment> => {
         { text: t.copiedShort, icon: 'check' },
         { text: ` ${t.copiedShort}` },
       ],
-      compact: { text: '✓', rich: [{ text: t.copiedShort, icon: 'check' }, { text: ' ✓' }] },
+      // Compact, only the icon changes: the same width, so the band keeps its layout.
+      compact: {
+        text: `✓…${shown.slice(-COMPACT_TAIL)}`,
+        rich: [
+          { text: t.copiedShort, icon: 'check' },
+          { text: ` …${shown.slice(-COMPACT_TAIL)}` },
+        ],
+      },
       card,
       priority: 2,
       button,

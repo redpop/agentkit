@@ -213,7 +213,8 @@ test('a copy shows a check mark for two seconds, then the id again', OWNED, asyn
   expect(segments(toasts).at(-1)).toMatchObject({
     text: '✓ copied',
     rich: [{ text: 'copied', icon: 'check' }, { text: ' copied' }],
-    compact: { text: '✓', rich: [{ text: 'copied', icon: 'check' }, { text: ' ✓' }] },
+    // Compact, only the icon changes: the same width, so the band keeps its layout.
+    compact: { text: `✓…${HOST.slice(-4)}`, rich: [{ text: 'copied', icon: 'check' }, { text: ` …${HOST.slice(-4)}` }] },
   })
   await clock.advance(2100)
   expect(segments(toasts).at(-1)?.text).toBe(`id …${HOST.slice(-6)}`)
