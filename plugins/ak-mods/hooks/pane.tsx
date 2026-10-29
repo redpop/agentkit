@@ -53,9 +53,11 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
         const isOpen = expanded[row.name] === true
         const rows = e.surface !== 'terminal' ? one?.card : undefined
 
-        // A row reads top to bottom: the title with its two switches on the right, what the mod does,
-        // its live segment, then what opens under the details link. The switch is the one framed button; the
-        // standard mark and the details link stay plain, so the live state leads.
+        // A row reads top to bottom: the title with its switch on the right, what the mod does, its live
+        // segment, what opens under the details link, then the details link and the standard mark. The
+        // switch is the one framed button and never shrinks: in a narrow pane the title wraps instead.
+        // The standard mark is set once and rarely changed, so it sits with the details link at the foot,
+        // both plain, so the live state leads.
         // On a surface that draws pictures each mod sits on a faint surface of its own, rounded and
         // edged by a hairline, as grouped settings do: where a mod begins and ends shows without a
         // rule between them. A translucent grey reads on a light and a dark theme alike. The terminal
@@ -75,21 +77,16 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
         return (
           <Box flexDirection="column" {...surface}>
             <Box flexDirection="row" alignItems="center" columnGap={2}>
-              <Box flexGrow={1}>
+              <Box flexGrow={1} flexShrink={1}>
                 <Text bold>{row.title}</Text>
               </Box>
-              <Button
-                key={`std-${row.name}`}
-                label={row.isStandard ? t.standard : t.notStandard}
-                plain
-                dimColor={!row.isStandard}
-                onPress={() => $.mods.setStandard({ name: row.name, standard: !row.isStandard })}
-              />
-              <Button
-                key={`on-${row.name}`}
-                label={row.isOn ? t.on : t.off}
-                onPress={() => $.mods.set({ name: row.name, on: !row.isOn })}
-              />
+              <Box flexShrink={0}>
+                <Button
+                  key={`on-${row.name}`}
+                  label={row.isOn ? t.on : t.off}
+                  onPress={() => $.mods.set({ name: row.name, on: !row.isOn })}
+                />
+              </Box>
             </Box>
             <Text dimColor>{row.summary}</Text>
             {one !== undefined && (
@@ -121,7 +118,8 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
                 <Text dimColor>{row.details}</Text>
               </Box>
             )}
-            <Box marginTop={1}>
+            {/* Wraps in a narrow pane: the standard mark then starts the next line. */}
+            <Box marginTop={1} flexDirection="row" flexWrap="wrap" alignItems="center" columnGap={2}>
               {/* A disclosure, not an action: plain and dim, framed by nothing, below the mod's own buttons. */}
               <Button
                 key={`more-${row.name}`}
@@ -129,6 +127,14 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
                 plain
                 dimColor
                 onPress={() => update($, EXPANDED, map => ({ ...map, [row.name]: map[row.name] !== true }))}
+              />
+              <Box flexGrow={1} />
+              <Button
+                key={`std-${row.name}`}
+                label={row.isStandard ? t.standard : t.notStandard}
+                plain
+                dimColor={!row.isStandard}
+                onPress={() => $.mods.setStandard({ name: row.name, standard: !row.isStandard })}
               />
             </Box>
           </Box>

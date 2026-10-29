@@ -503,6 +503,25 @@ test("a row shows its segment's detail, dim, after the text", { plugins: MODS },
   await ui.unmount()
 })
 
+test('the switch sits beside the title, the standard mark beside the details link', { plugins: MODS }, async ($, on) => {
+  engine(on)
+  await callAs($, 'ak-a', 'declare', { name: 'ak-a', title: 'Alpha', summary: 's', details: 'd' })
+
+  for (const surface of SURFACES) {
+    const ui = await $.ui.mount({ ...PANE, surface })
+    const boxes = await ui.findAll({ type: 'Box' })
+    // The card's first row: the Box holding the title and the switch, nothing more.
+    const header = boxes.find(box => box.props.flexDirection === 'row' && box.text.startsWith('Alpha'))
+    // The header holds the title and the switch alone; the switch never shrinks.
+    expect(header?.props.flexWrap).toBeUndefined()
+    expect(await ui.find({ key: 'on-ak-a' })).toBeDefined()
+    expect(header?.text).toBe('Alpha○ Off')
+    const foot = boxes.find(box => box.props.flexWrap === 'wrap')
+    expect(foot?.text).toBe('Show details☆ Standard')
+    await ui.unmount()
+  }
+})
+
 test("a row draws its segment in the band's colour", { plugins: MODS }, async ($, on) => {
   engine(on)
   await callAs($, 'ak-a', 'declare', { name: 'ak-a', title: 'Alpha', summary: 's', details: 'd' })
