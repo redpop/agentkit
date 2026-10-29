@@ -45,7 +45,7 @@ const toneOf = (ms: number): Tone => {
 }
 
 /** The block as the band shows it; undefined before the first input. */
-export function segmentOf(block: Block | undefined, now: number, lang: Lang): Segment {
+export function segmentOf(block: Block | undefined, now: number, lang: Lang): Segment | undefined {
   if (block === undefined) return undefined
   const t = texts(lang)
   const isBreak = isIdle(block, now)
