@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.64.0] - 2026-10-30
+
+### ✨ Added
+
+- `ak-pause` — block and break length are yours to set, for every session at once: in the mod's
+  open card in the Mods pane, or with `/pause-set work <30|45|50|60|75|90>` and
+  `/pause-set break <5|10|15|20>`. The defaults stay 60 and 10 minutes. The colours and hints move
+  with the block: info and the long-turn notification from ten minutes before its end, warning and
+  the toast from its end, error from one and a half times it. The water hint stays at 45 minutes.
+- `ak-mods` — a mod can offer settings: a segment's `settings` lists them with fixed options, the
+  open card in the Mods pane draws each as a picker, and a pick runs the mod's own command. The
+  mobile app, which draws no picker yet, shows the values as text.
+
 ## [1.63.0] - 2026-10-30
 
 ### ✨ Added
