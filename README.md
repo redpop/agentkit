@@ -13,7 +13,7 @@ Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/
 | [**ak-keepwarm**](#ak-keepwarm--keep-the-prompt-cache-warm) | — | — | Mod: `/keepwarm` pings the prompt cache before it expires; its band segment shows how long it stays warm |
 | [**ak-knowledge**](#ak-knowledge--solution-documentation) | 4 | 1 | Solution docs, knowledge maintenance, AGENTS.md tools |
 | [**ak-meta**](#ak-meta--project-management-tools) | 4 | 2 | Discovery, changelog generation, session handoff for the next AI session, quality assessment, diagrams |
-| [**ak-mods**](#ak-mods--mod-switcher) | — | — | Mods pane: turn AgentKit mods on or off per chat, with standard mods; one band shared by all mods |
+| [**ak-mods**](#ak-mods--mod-switcher) | — | — | Mods pane: turn AgentKit mods on or off per chat, with standard mods and one global order; one band shared by all mods |
 | [**ak-notifications**](#ak-notifications--macos-notifications) | — | — | macOS sound and banner notifications |
 | [**ak-pause**](#ak-pause--breaks-at-a-glance) | — | — | Mod: one band segment with the time worked without a break, across sessions (`52 min am Stück`), a water hint with a button, and one nudge per block at a quiet moment |
 | [**ak-react**](#ak-react--react--nextjs-development) | 2 | — | React and Next.js best practices, performance optimization, code scanning |
@@ -179,7 +179,7 @@ Requires Claude Code 2.1.309 or later (hooks-module support).
 
 | Command | Purpose | Example |
 |---------|---------|---------|
-| [`/ak-mods`](docs/mods/ak-mods/switcher.md) | Open or close the Mods pane: ○ Off / ● On, ☆ / ★ Standard, and a triangle for details per mod; the band's `mods` button does the same | `/ak-mods` |
+| [`/ak-mods`](docs/mods/ak-mods/switcher.md) | Open or close the Mods pane: ○ Off / ● On, ☆ / ★ Standard, a triangle for details and ↑ / ↓ to reorder per mod; the band's `mods` button does the same | `/ak-mods` |
 
 See [Mods](docs/mods/) for how switches behave and
 [Writing an AgentKit mod](docs/mods/writing-a-mod.md) for the contract a mod follows.

@@ -15,18 +15,22 @@ const warning = (
 ): string | undefined =>
   hidden.length === 0 ? undefined : t.dropped(hidden.length, hidden.map(name => titles.get(name) ?? name).join(', '))
 
-/** Draws the Mods pane: one row per declared mod, its head the title and its triangle, the standard star and the switch. Texts wrap. */
+/**
+ * Draws the Mods pane: one row per declared mod in the band's order, its head the title and its
+ * triangle, the standard star and the switch; an open row can move up or down. Texts wrap.
+ */
 export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
   const draws = $.ui.resolve(e)
   const { Box, Button, Text } = draws
   // The reads subscribe the pane: a switch, a declare or a publish redraws it
   // (the list reads the switches and the declared mods).
-  const [list, { value: expanded = {} }, { value: stored = {} }, { value: width = e.props.bodyColumns }] =
+  const [list, { value: expanded = {} }, { value: stored = {} }, { value: width = e.props.bodyColumns }, isMoved] =
     await Promise.all([
       $.mods.list(),
       $.state.get({ plugin: 'ak-mods', key: 'expanded' }),
       $.state.get({ plugin: 'ak-mods', key: 'segments' }),
       $.state.get({ plugin: 'ak-mods', key: 'width' }),
+      $.mods.isOrderMoved(),
     ])
 
   // The cut the band makes, counted again here, on the surfaces that draw the
@@ -47,7 +51,7 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
   return (
     <Box flexDirection="column">
       {list.length === 0 && <Text dimColor>No AgentKit mods installed.</Text>}
-      {list.map(row => {
+      {list.map((row, at) => {
         const one = current.get(row.name)
         // A surface that draws pictures lists the card's rows under the segment, each value once, while
         // the row is open (a press on its triangle); closed, the segment alone. The terminal adds the detail after it.
@@ -143,10 +147,27 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
                 </Text>
               </Box>
             )}
+            {/* Moved seldom: only an open card shows the way, and only the ways it can go. Arrows,
+                not triangles: the open card's own ▼ closes it. */}
+            {isOpen && list.length > 1 && (
+              <Box flexDirection="row" columnGap={1} marginTop={1}>
+                {at > 0 && (
+                  <Button key={`up-${row.name}`} label={t.up} onPress={() => $.mods.move({ name: row.name, by: -1 })} />
+                )}
+                {at < list.length - 1 && (
+                  <Button key={`down-${row.name}`} label={t.down} onPress={() => $.mods.move({ name: row.name, by: 1 })} />
+                )}
+              </Box>
+            )}
           </Box>
         )
       })}
       {dropped !== undefined && <Text dimColor>{dropped}</Text>}
+      {isMoved && (
+        <Box marginTop={1}>
+          <Button key="reset-order" label={t.reset} plain dimColor onPress={() => $.mods.resetOrder()} />
+        </Box>
+      )}
       {/* A footnote to the whole pane, not to the last mod: set apart by space alone, small and dim. */}
       <Box marginTop={1}>
         <Text size="footnote" dimColor>

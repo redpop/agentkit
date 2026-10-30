@@ -685,3 +685,48 @@ test('short card values stay close', { plugins: MODS }, async ($, on) => {
   expect((await ui.find({ key: 'rows-ak-a-1' }))?.props.marginTop).toBeUndefined()
   await ui.unmount()
 })
+
+/** The titles of the declared mods as the pane draws them, top to bottom. */
+const order = async (ui: { findAll: (q: { type: string }) => Promise<{ text: string }[]> }, titles: readonly string[]) =>
+  (await ui.findAll({ type: 'Text' })).map(one => one.text).filter(text => titles.includes(text))
+
+test('an open card moves up and down, the first not up and the last not down', { plugins: MODS }, async ($, on) => {
+  engine(on)
+  for (const name of ['ak-a', 'ak-b', 'ak-c']) {
+    await callAs($, name, 'declare', { name, title: name.toUpperCase(), summary: 's', details: 'd' })
+  }
+
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  // Closed, no card shows the way.
+  expect(await ui.find({ key: 'up-ak-b' })).toBeUndefined()
+  await ui.press({ key: 'more-ak-a' })
+  expect(await ui.find({ key: 'up-ak-a' })).toBeUndefined()
+  expect(await ui.find({ key: 'down-ak-a' })).toBeDefined()
+  await ui.press({ key: 'more-ak-c' })
+  expect(await ui.find({ key: 'up-ak-c' })).toBeDefined()
+  expect(await ui.find({ key: 'down-ak-c' })).toBeUndefined()
+
+  await ui.press({ key: 'up-ak-c' })
+  expect(await order(ui, ['AK-A', 'AK-B', 'AK-C'])).toEqual(['AK-A', 'AK-C', 'AK-B'])
+  expect(await callAs($, 'ak-a', 'store', 'order')).toContain('ak-c')
+  await ui.unmount()
+})
+
+test('reset order shows only for a moved order and puts the default back', { plugins: MODS }, async ($, on) => {
+  engine(on)
+  for (const name of ['ak-a', 'ak-b']) {
+    await callAs($, name, 'declare', { name, title: name.toUpperCase(), summary: 's', details: 'd' })
+  }
+
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  expect(await ui.find({ key: 'reset-order' })).toBeUndefined()
+  await ui.press({ key: 'more-ak-b' })
+  await ui.press({ key: 'up-ak-b' })
+  expect(await order(ui, ['AK-A', 'AK-B'])).toEqual(['AK-B', 'AK-A'])
+
+  await ui.press({ key: 'reset-order' })
+  expect(await order(ui, ['AK-A', 'AK-B'])).toEqual(['AK-A', 'AK-B'])
+  expect(await ui.find({ key: 'reset-order' })).toBeUndefined()
+  expect(await callAs($, 'ak-a', 'store', 'order')).toBe(null)
+  await ui.unmount()
+})

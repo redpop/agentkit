@@ -219,15 +219,16 @@ export const register: Register = on => {
   segment draws in full), an optional `detail` (more of the same state, shown dim after the text in
   the Mods pane only, never in the band), an optional `tone` (`ok`, `warn`, `alert`, `info` or
   `dim`; `ak-mods` picks the colour, and `ok` stays the text colour; a part without a tone takes the
-  segment's), an optional `priority` (default 5; higher stays longer) and at most one `button`
-  (`label`, an optional `hotkey`, the `command` it runs, its `args`, and `isPaneOnly` for an action
+  segment's), an optional `priority` (default 5; higher stays longer when the band drops
+  segments, but it never sets a segment's place) and at most one `button` (`label`, an optional
+  `hotkey`, the `command` it runs, its `args`, and `isPaneOnly` for an action
   seldom taken, which the Mods pane shows and the band leaves out, room included, and `isOnText` for
   a segment whose one action is plain from what it shows, such as copying an id: on the desktop app
   the text itself is the button, hotkey with it). The button runs a slash command the mod already
   answers, so no handler crosses from one plugin to another. A segment is one line: a control
   character (a newline, ESC) in the text, a part, the detail or the label draws as a space, and a
   `hotkey` that is not exactly one printable character is left out. When two shown mods ask for one
-  hotkey, the first by title keeps it; a mod dropped from the band takes none, a mod drawn compact
+  hotkey, the first shown keeps it; a mod dropped from the band takes none, a mod drawn compact
   takes none (another may then take it), and `m` is the band's own `mods` button's, never a mod's.
 - **One segment per mod.** Publishing again replaces it; `$.mods.segment(undefined)` clears it.
   `ak-mods` clears it itself when the mod is switched off and when the chat ends, whatever ends it.
@@ -248,10 +249,16 @@ export const register: Register = on => {
   changes and drops a publish scheduled for an earlier one.
 - **When the band runs out of room** it degrades in steps: one row; then one row with every
   segment that has a compact form in it; then two rows, never more; then
-  the segments with the lowest priority drop out (ties by title), and the `mods` button that ends
-  the band counts them (`mods +2`). It opens the Mods pane, which names the dropped mods: `N mods
-  do not fit the band: …`.
+  the segments with the lowest priority drop out (of equal ones the last shown first), the others
+  keeping their places, and the `mods` button that ends the band counts them (`mods +2`). It
+  opens the Mods pane, which names the dropped mods: `N mods do not fit the band: …`.
   There is no toast.
+- **The user sets the order, not the mod.** The band and the Mods pane show the mods in one order
+  for every chat: AgentKit's default (`DEFAULT_ORDER` in `plugins/ak-mods/hooks/switches.ts`) until
+  the user moves a mod in the pane. A mod the order does not name comes last, by title. A new
+  AgentKit mod gets a default place by adding its name to `DEFAULT_ORDER`; once the user has moved
+  any mod, the stored order holds every name then in the default, and a name added later follows
+  them at the end.
 - **The band draws on the terminal and the desktop app**, the two apps that draw `AbovePrompt`.
   Every row of the Mods pane also shows its mod's current segment and button, on every surface.
 - **The mod's own band is the fail-open path.** While `isSwitched` is false (no `ak-mods`, or it

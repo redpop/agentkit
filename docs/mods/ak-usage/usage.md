@@ -31,8 +31,8 @@ adds when it resets, in local time, with the weekday when that is another day. T
 reset draw dim, each bar's filled cells and percentage in its own figure's colour: the text colour
 below 75 %, the warning colour from 75 %, the error colour from 90 %. The Mods pane adds every
 percentage and reset after the bars, `· ctx 67% · 5h 42% (resets 11:10pm)`. The segment has priority
-7: it comes first in the band, before keep warm (6) and the session id (2), and when the band runs
-out of room it is dropped last. It has no button.
+7: when the band runs out of room it is dropped last. In AgentKit's default order it comes first in
+the band; the Mods pane moves it. It has no button.
 
 On the desktop app each figure draws as a ring filled to its percentage, with the percentage and the
 label beside it: `◔ 67% ctx   ◔ 42% 5h`. A window from 75 % adds its reset there too. The ring and

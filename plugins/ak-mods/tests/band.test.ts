@@ -28,7 +28,7 @@ test('layout grows to two rows without splitting a segment', () => {
   expect(names(result.rows)).toEqual([['a', 'b'], ['c', 'd']])
 })
 
-test('layout drops the lowest priority first, ties by title', () => {
+test('layout drops the lowest priority first, of equal ones the last shown, and keeps the order shown', () => {
   const text = 'x'.repeat(30)
   const result = layout(
     [
@@ -42,8 +42,24 @@ test('layout drops the lowest priority first, ties by title', () => {
     80,
   )
 
-  expect(names(result.rows)).toEqual([['f', 'a'], ['b', 'c']])
-  expect(result.hidden).toEqual(['d', 'e'])
+  expect(names(result.rows)).toEqual([['d', 'c'], ['b', 'f']])
+  expect(result.hidden).toEqual(['e', 'a'])
+})
+
+test('layout draws in the order shown, not by priority', () => {
+  // AgentKit's default order with its mods' priorities: Usage 7, Keepwarm 6, Pause 4, GitLab 6, Session-ID 2.
+  const result = layout(
+    [
+      seg('usage', 'u', { priority: 7 }),
+      seg('keepwarm', 'k', { priority: 6 }),
+      seg('pause', 'p', { priority: 4 }),
+      seg('gitlab', 'g', { priority: 6 }),
+      seg('session-id', 's', { priority: 2 }),
+    ],
+    80,
+  )
+
+  expect(names(result.rows)).toEqual([['usage', 'keepwarm', 'pause', 'gitlab', 'session-id']])
 })
 
 test('layout stops at the first segment that does not fit', () => {

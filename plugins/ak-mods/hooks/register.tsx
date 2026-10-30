@@ -5,7 +5,7 @@ import { bandWidth } from './band'
 import { renderBand } from './band-render'
 import { renderPane } from './pane'
 import { togglePane } from './toggle'
-import { initialOn, isAgentKit, namesOf, pruneKeys, rows, savedOf, upsert } from './switches'
+import { fullOrder, initialOn, isAgentKit, moved, namesOf, pruneKeys, rows, savedOf, upsert } from './switches'
 import { languageFor, learnLanguage, texts } from './i18n'
 
 // `$` (here `built`) is spelled `built.state.get(REF)` at every call site: the
@@ -14,6 +14,7 @@ const DECLARED = { plugin: 'ak-mods', key: 'declared' } as const
 const ON = { plugin: 'ak-mods', key: 'on' } as const
 const STANDARD = { plugin: 'ak-mods', key: 'standard' } as const
 const SEGMENTS = { plugin: 'ak-mods', key: 'segments' } as const
+const ORDER = { plugin: 'ak-mods', key: 'order' } as const
 
 // How many other sessions' switches the store keeps; older ones are dropped at start.
 const KEPT_SESSIONS = 100
@@ -238,13 +239,41 @@ export const register: Register = on => {
         await built.store.set('standard', value)
         await built.state.set(STANDARD, value)
       },
-      list: async () => {
+      // The order persists in the store as the standard marks do, one for
+      // every chat, and is read afresh at each move: a move another chat made
+      // meanwhile stays. The state mirrors it, so a drawing redraws.
+      move: async ({ name, by }) => {
         const { value: list = [] } = await built.state.get(DECLARED)
-        const map = await switches()
+        const order = fullOrder(namesOf(await built.store.get('order')))
+        const shown = rows(list, {}, [], order).map(row => row.name)
+        const value = moved(order, shown, name, by)
+        // Nothing moves at either end: no order is stored, so none reads as moved.
+        if (value === undefined) return
+        await built.store.set('order', value)
+        await built.state.set(ORDER, value)
+      },
+      resetOrder: async () => {
+        await built.store.delete('order')
+        await built.state.set(ORDER, [])
+      },
+      isOrderMoved: async () => {
         // Read for the subscription; the store decides.
-        await built.state.get(STANDARD)
+        await built.state.get(ORDER)
 
-        return rows(list, map, namesOf(await built.store.get('standard')))
+        return Array.isArray(await built.store.get('order'))
+      },
+      list: async () => {
+        // The standard and order states are read for the subscription; the store decides.
+        const [{ value: list = [] }, map, , , standard, order] = await Promise.all([
+          built.state.get(DECLARED),
+          switches(),
+          built.state.get(STANDARD),
+          built.state.get(ORDER),
+          built.store.get('standard'),
+          built.store.get('order'),
+        ])
+
+        return rows(list, map, namesOf(standard), fullOrder(namesOf(order)))
       },
       // The `mods.segment` hook above makes the write: only it knows the
       // caller. Reached without it (the hook failed), nothing is stored.

@@ -26,7 +26,13 @@ const probe: Register = on => {
             ? await $.mods.set(arg)
             : op === 'setStandard'
               ? await $.mods.setStandard(arg)
-              : op === 'switches'
+              : op === 'move'
+                ? await $.mods.move(arg)
+                : op === 'resetOrder'
+                  ? await $.mods.resetOrder()
+                  : op === 'isOrderMoved'
+                    ? await $.mods.isOrderMoved()
+                    : op === 'switches'
                 ? (await $.state.get({ plugin: 'ak-mods', key: 'on' })).value
                 : op === 'store'
                   ? await $.store.get(arg)
@@ -103,14 +109,63 @@ test('a plugin declaring another name is refused', { plugins: [consumer('ak-a'),
   expect(await call($, 'ak-a', 'list')).toEqual([])
 })
 
-test('list is sorted by title', { plugins: [consumer('ak-b'), consumer('ak-a')] }, async ($, on) => {
+const titles = (list: readonly { title: string }[]): string[] => list.map(row => row.title)
+
+test('list sorts mods outside the order by title', { plugins: [consumer('ak-b'), consumer('ak-a')] }, async ($, on) => {
   engine(on)
 
   await call($, 'ak-b', 'declare', { name: 'ak-b', title: 'beta', summary: 's', details: 'd' })
   await call($, 'ak-a', 'declare', { name: 'ak-a', title: 'Alpha', summary: 's', details: 'd' })
 
-  const list = await call($, 'ak-a', 'list')
-  expect(list.map((row: { title: string }) => row.title)).toEqual(['Alpha', 'beta'])
+  expect(titles(await call($, 'ak-a', 'list'))).toEqual(['Alpha', 'beta'])
+})
+
+test(
+  'list follows the default order until a mod moves',
+  { plugins: [consumer('ak-session-id'), consumer('ak-gitlab'), consumer('ak-pause')] },
+  async ($, on) => {
+    engine(on)
+
+    for (const name of ['ak-session-id', 'ak-gitlab', 'ak-pause']) {
+      await call($, name, 'declare', { name, title: name.slice(3), summary: 's', details: 'd' })
+    }
+
+    expect(titles(await call($, 'ak-pause', 'list'))).toEqual(['pause', 'gitlab', 'session-id'])
+    expect(await call($, 'ak-pause', 'isOrderMoved')).toBe(false)
+  },
+)
+
+test('move persists one order for every chat, and resetOrder drops it', { plugins: [consumer('ak-a'), consumer('ak-b')] }, async ($, on) => {
+  engine(on)
+
+  await call($, 'ak-a', 'declare', { name: 'ak-a', title: 'A', summary: 's', details: 'd' })
+  await call($, 'ak-b', 'declare', { name: 'ak-b', title: 'B', summary: 's', details: 'd' })
+  // At an end nothing moves, and no order is stored.
+  await call($, 'ak-a', 'move', { name: 'ak-a', by: -1 })
+  expect(await call($, 'ak-a', 'isOrderMoved')).toBe(false)
+  await call($, 'ak-a', 'move', { name: 'ak-b', by: -1 })
+
+  expect(titles(await call($, 'ak-a', 'list'))).toEqual(['B', 'A'])
+  expect(await call($, 'ak-a', 'isOrderMoved')).toBe(true)
+  // The default's names stay in it, so their mods keep their places.
+  expect(await call($, 'ak-a', 'store', 'order')).toEqual(['ak-usage', 'ak-keepwarm', 'ak-pause', 'ak-gitlab', 'ak-session-id', 'ak-b', 'ak-a'])
+
+  await call($, 'ak-a', 'resetOrder')
+  expect(titles(await call($, 'ak-a', 'list'))).toEqual(['A', 'B'])
+  expect(await call($, 'ak-a', 'isOrderMoved')).toBe(false)
+})
+
+test('move starts from the order another chat stored meanwhile', { plugins: [consumer('ak-a'), consumer('ak-b'), consumer('ak-c')] }, async ($, on) => {
+  engine(on)
+
+  for (const name of ['ak-a', 'ak-b', 'ak-c']) {
+    await call($, name, 'declare', { name, title: name, summary: 's', details: 'd' })
+  }
+  // Another chat put ak-c first: the store is shared, this chat's state is not.
+  await call($, 'ak-a', 'putStore', { key: 'order', value: ['ak-c', 'ak-a', 'ak-b'] })
+  await call($, 'ak-a', 'move', { name: 'ak-b', by: -1 })
+
+  expect(titles(await call($, 'ak-a', 'list'))).toEqual(['ak-c', 'ak-b', 'ak-a'])
 })
 
 test('standard marks come from the store and setStandard changes them', { plugins: [consumer('ak-fixture')] }, async ($, on) => {

@@ -11,24 +11,38 @@ another tab is brought forward.
 
 ## Pane
 
-One row per mod that declared itself. Its head is the title with a triangle after it, `▶` closed and
+One row per mod that declared itself, in the order the band shows them (see
+[Order](#order)). Its head is the title with a triangle after it, `▶` closed and
 `▼` open, as the desktop app's own cards have it, and on the right the standard star, then the
 on/off switch; the summary follows. A switched-on mod that publishes a segment also shows it below,
 in its band colour and with the segment's button, and its detail after it, dimmed; the pane draws on
 every surface, so this is where a segment is always visible. A press on the triangle opens the row's
-details, in small dim type; one row is open at a time, so opening one closes any other and the pane
-stays short. In a narrow pane the title wraps and the star and the switch keep their size. On the
+details, in small dim type, and under them **↑ Up** and **↓ Down**, which move the mod one place
+(the first has no ↑, the last no ↓); one row is open at a time, so opening one closes any other
+and the pane stays short. In a narrow pane the title wraps and the star and the switch keep their size. On the
 desktop app a segment with card rows shows no detail there: opened, the row lists the card's rows
 under the segment, in small type, labels dim in one column, each value once, rows of long values
 such as an id a line apart, above the mod's details. There each mod sits on a faint rounded surface
-of its own; the terminal parts the mods by space. A note on how the switches reset ends the pane,
-small and dim.
+of its own; the terminal parts the mods by space. Once a mod has been moved, **Reset order**
+follows the mods and puts the default back. A note on how the switches reset and that the order
+applies to every chat ends the pane, small and dim.
 
 | Button | Effect |
 | -------- | -------- |
 | ○ Off / ● On | Switches the mod for this chat; the label shows its state |
 | ☆ / ★ | Marks or unmarks the mod to start on in every new chat; ★ means marked |
 | ▶ / ▼ | Shows or hides the mod's details, and on the desktop app its card rows |
+| ↑ Up / ↓ Down | In an open row: moves the mod one place in the order of every chat |
+| Reset order | Shown once a mod was moved: puts AgentKit's default order back |
+
+## Order
+
+The band and the pane show the mods in one order, the same in every chat. Until a mod is moved it
+is AgentKit's default: Usage, Keepwarm, Pause, GitLab, Session-ID. A move is stored at once, shared
+by every chat like the standard marks: a new chat starts with it, and a chat open meanwhile shows it
+the next time its band or pane redraws. Whoever moves last wins. A mod the order does not name, one
+from outside the default, comes last, sorted by title. A mod that is uninstalled keeps its place in
+the stored order and takes it again once it is back.
 
 ## Band
 
@@ -61,8 +75,9 @@ When the segments do not fit the width, the band degrades in steps:
 2. They do not fit: every segment that has a compact form switches to it, the whole band together,
    and the band stays one row.
 3. Compact, they still do not fit: two rows, never more.
-4. They still do not fit: the segments with the lowest priority drop out, and the `mods` button
-   counts them: `mods +2`.
+4. They still do not fit: the segments with the lowest priority drop out, of equal ones the last
+   shown first, and the `mods` button counts them: `mods +2`. The others keep their places: the
+   priority decides what drops, never where a segment draws.
 
 A compact segment's button is its text on the desktop app, with no hotkey; the terminal leaves it
 out, and the Mods pane keeps it. A segment without a compact form draws in full in every step.

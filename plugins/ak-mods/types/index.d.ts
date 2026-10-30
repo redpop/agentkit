@@ -76,7 +76,20 @@ export type Mods = {
   set: (args: { name: string; on: boolean }) => Promise<void>
   /** Marks or unmarks the mod as standard: on at the start of every new session. */
   setStandard: (args: { name: string; standard: boolean }) => Promise<void>
-  /** Every declared mod, sorted by title, case-insensitive. */
+  /**
+   * Moves the mod one place up (`by` -1) or down (1) in the order the band and the Mods pane show,
+   * one order for every session; at either end nothing moves.
+   */
+  move: (args: { name: string; by: -1 | 1 }) => Promise<void>
+  /** Puts the order back to AgentKit's default. */
+  resetOrder: () => Promise<void>
+  /** Whether a moved order is stored, so that `resetOrder` would change it. */
+  isOrderMoved: () => Promise<boolean>
+  /**
+   * Every declared mod in the order the band and the Mods pane show: AgentKit's default until a
+   * mod is moved, then the moved one; a mod the order does not name follows, sorted by title,
+   * case-insensitive.
+   */
   list: () => Promise<readonly ModsRow[]>
   /**
    * Publishes the calling mod's one segment in place of its last; undefined clears it. A caller that
@@ -94,6 +107,8 @@ declare module 'claude-code' {
       declared: ModsInfo[]
       on: Record<string, boolean>
       standard: string[]
+      /** Mirrors the stored order, so a drawing redraws on a move; the store decides. */
+      order: string[]
       expanded: Record<string, boolean>
       segments: Record<string, ModsSegment>
       /**

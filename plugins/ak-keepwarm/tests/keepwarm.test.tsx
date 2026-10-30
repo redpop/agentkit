@@ -359,6 +359,9 @@ const owner: Register = on => {
         isOn: async ({ name }: { name: string }) => (await built.state.get({ plugin: 'ak-mods', key: 'on' })).value?.[name] === true,
         set,
         setStandard: async () => {},
+        move: async () => {},
+        resetOrder: async () => {},
+        isOrderMoved: async () => false,
         list: async () => [],
         // `$.mods.segment(undefined)` may arrive as `{}`: no text is a clear.
         segment: async (segment: Segment) => {
@@ -713,6 +716,9 @@ const broken: Register = on => {
       isOn: async () => true,
       set: async () => {},
       setStandard: async () => {},
+      move: async () => {},
+      resetOrder: async () => {},
+      isOrderMoved: async () => false,
       list: async () => [],
       segment: async () => {
         throw new Error('no band')

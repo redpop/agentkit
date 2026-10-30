@@ -17,14 +17,13 @@ const ROW_SEPARATOR = 3
 // segments there, still wider than the gaps inside one.
 const PICTURED_SEPARATOR = 2
 
-const compare = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0)
-
-/** Display order: priority descending (default 5), ties by title, case-insensitive. */
-const ordered = (segments: readonly Segment[]): Segment[] =>
-  [...segments].sort(
-    (a, b) =>
-      (b.priority ?? 5) - (a.priority ?? 5) || compare(a.title.toLowerCase(), b.title.toLowerCase()),
-  )
+/**
+ * The order segments drop in when the band runs out of room: lowest priority first (default 5),
+ * of equal ones the last shown first. Where they draw is the order they come in, not this.
+ */
+const dropOrder = (segments: readonly Segment[]): Segment[] =>
+  // The sort is stable: reversed first, of equal priorities the last shown leads.
+  [...segments].reverse().sort((a, b) => (a.priority ?? 5) - (b.priority ?? 5))
 
 // The cells a ring or an icon takes where the band draws pictures: 20 px, its air included.
 const PICTURE_COLUMNS = 3
@@ -121,33 +120,36 @@ export const compacted = (one: Segment): Segment => {
 }
 
 /**
- * Lays segments out in one row; short of room, switches every segment with a
- * compact form to it, then takes two rows, then drops the lowest priority ones.
- * The last row always keeps room for the `mods` button, which counts the dropped.
+ * Lays segments out in the order they come in, in one row; short of room,
+ * switches every segment with a compact form to it, then takes two rows, then
+ * drops segments in `dropOrder`. The last row always keeps room for the `mods`
+ * button, which counts the dropped. `hidden` lists them in the order they came.
  * `isPictured` for a band that draws pictures (the desktop app): segments count
  * as they draw there, see `widthOf`.
  */
 export const layout = (segments: readonly Segment[], columns: number, isPictured = false): Layout => {
-  const full = ordered(segments)
-  const single = pack(full, columns, toggleWidth(0, isPictured), isPictured)
+  const single = pack(segments, columns, toggleWidth(0, isPictured), isPictured)
 
   if (single !== undefined && single.length <= 1) return { rows: single, hidden: [] }
 
-  const sorted = full.map(compacted)
-  const all = pack(sorted, columns, toggleWidth(0, isPictured), isPictured)
+  const all = segments.map(compacted)
+  const both = pack(all, columns, toggleWidth(0, isPictured), isPictured)
 
-  if (all !== undefined) return { rows: all, hidden: [] }
+  if (both !== undefined) return { rows: both, hidden: [] }
 
-  for (let keep = sorted.length - 1; keep > 0; keep--) {
-    const rows = pack(sorted.slice(0, keep), columns, toggleWidth(sorted.length - keep, isPictured), isPictured)
+  const drops = dropOrder(all)
+  for (let count = 1; count < all.length; count++) {
+    const gone = new Set(drops.slice(0, count))
+    const rows = pack(all.filter(one => !gone.has(one)), columns, toggleWidth(count, isPictured), isPictured)
 
-    if (rows !== undefined) return { rows, hidden: sorted.slice(keep).map(one => one.name) }
+    if (rows !== undefined) return { rows, hidden: all.filter(one => gone.has(one)).map(one => one.name) }
   }
 
-  // Not even the first fits beside the button: keep it alone, cut to the room left. Its parts no
+  // Not even the last to drop fits beside the button: keep it alone, cut to the room left. Its parts no
   // longer join to a cut text, so it draws in one run, its rich runs left out with them. Rich runs
   // wider than the room are left out too, where the text whole fits.
-  const [first, ...rest] = sorted
+  const first = drops.at(-1)
+  const rest = all.filter(one => one !== first)
   const room = Math.max(1, columns - toggleWidth(rest.length, isPictured))
   const text = first === undefined ? '' : cut(first.text, room)
 

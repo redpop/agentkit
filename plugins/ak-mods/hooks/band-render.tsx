@@ -8,12 +8,6 @@ import { toggleMod, togglePane } from './toggle'
 
 const TONES: readonly string[] = ['ok', 'warn', 'alert', 'info', 'dim'] satisfies ModsTone[]
 
-const compareTitles = (a: Segment, b: Segment): number => {
-  const [x, y] = [a.title.toLowerCase(), b.title.toLowerCase()]
-
-  return x < y ? -1 : x > y ? 1 : 0
-}
-
 // A control character (a newline, ESC) would break the band's two rows, or
 // reach the terminal raw.
 const CONTROL = /[\u0000-\u001f\u007f]/g
@@ -392,11 +386,11 @@ export async function renderBand(
   const isPictured = e.surface === 'desktop' && 'Svg' in draws
   const { rows, hidden } = layout(segments, e.props.bodyColumns, isPictured)
 
-  // Two shown mods on one hotkey: the first by title keeps it, the later goes
+  // Two shown mods on one hotkey: the first shown keeps it, the later goes
   // without. A mod behind the `mods` button takes none, a compact one takes
   // none, and none takes the button's own.
   const hotkeys = new Map<string, string>()
-  for (const one of rows.flat().filter(one => one.isCompact !== true).sort(compareTitles)) {
+  for (const one of rows.flat().filter(one => one.isCompact !== true)) {
     const hotkey = one.button?.hotkey
     if (hotkey !== undefined && hotkey !== TOGGLE_HOTKEY && ![...hotkeys.values()].includes(hotkey)) hotkeys.set(one.name, hotkey)
   }

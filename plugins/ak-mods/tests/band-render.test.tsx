@@ -456,8 +456,8 @@ test(
 
 test('hotkey clash: a mod hidden behind the mods button does not take the hotkey', { plugins: [consumer('ak-a'), consumer('ak-b')] }, async ($, on) => {
   engine(on)
-  // First by title, but the lowest priority: it is the one dropped.
-  await publish($, 'ak-a', 'alpha', { text: 'aaaaaaaaaa', priority: 1, button: { label: 'aa', hotkey: '1', command: 'x' } })
+  // Shown first, but the lowest priority and too wide for a row: it is the one dropped.
+  await publish($, 'ak-a', 'alpha', { text: 'a'.repeat(15), priority: 1, button: { label: 'aa', hotkey: '1', command: 'x' } })
   await publish($, 'ak-b', 'Beta', { text: 'b', priority: 9, button: { label: 'bb', hotkey: '1', command: 'x' } })
 
   const ui = await $.ui.mount({ ...BAND, props: { ...BAND.props, bodyColumns: 20 } })

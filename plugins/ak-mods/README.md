@@ -19,7 +19,8 @@ Run `/ak-mods` to open the pane, and again to close it. Each mod's head has thre
 - **○ Off** / **● On** switches the mod for this chat; the label shows its state.
 - **☆** / **★** marks or unmarks the mod to start on in every new chat; the filled star means it
   is marked.
-- **▶** / **▼** after the title shows or hides the mod's details.
+- **▶** / **▼** after the title shows or hides the mod's details. An open row adds **↑ Up** and
+  **↓ Down**, which move the mod one place; **Reset order** below the mods puts the default back.
 
 Each switched-on mod shows one segment in a single band above the prompt. The band ends with a
 `mods` button (hotkey `m`) that opens the pane, or closes it while it is shown. When the segments do
@@ -34,6 +35,8 @@ button, on every surface.
 - Switches reset in a new chat and after `/clear`. They are kept when a chat is resumed,
   at launch or with `/resume`.
 - Standard marks are global: they apply to every chat.
+- The order is global too: the band and the pane show it in every chat. The default is Usage,
+  Keepwarm, Pause, GitLab, Session-ID; other mods follow by title.
 - Only AgentKit mods are listed: installed from `ak-marketplace` or loaded with `--plugin-dir`.
   The `ak-` name prefix decides only when the source is unknown.
 - An off mod draws nothing, and its segment leaves the band. Its own slash command turns it on.

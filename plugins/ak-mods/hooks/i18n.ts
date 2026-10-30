@@ -55,10 +55,13 @@ const EN = {
   command: 'Open or close the Mods pane: turn AgentKit mods on or off for this chat',
   opened: 'Opened the Mods pane.',
   closed: 'Closed the Mods pane.',
-  footer: 'Switches reset in a new chat or after /clear. Standard mods start on.',
+  footer: 'Switches reset in a new chat or after /clear. Standard mods start on. The order applies to every chat.',
   on: '● On',
   off: '○ Off',
   toggle: 'mods',
+  up: '↑ Up',
+  down: '↓ Down',
+  reset: 'Reset order',
   dropped: (count: number, titles: string) => `${count} ${count === 1 ? 'mod does' : 'mods do'} not fit the band: ${titles}`,
 }
 
@@ -66,10 +69,13 @@ const DE: typeof EN = {
   command: 'Mods-Fenster öffnen oder schließen: AgentKit-Mods für diesen Chat ein- oder ausschalten',
   opened: 'Mods-Fenster geöffnet.',
   closed: 'Mods-Fenster geschlossen.',
-  footer: 'Die Schalter gelten pro Chat: ein neuer Chat oder /clear setzt sie zurück. Standard-Mods starten eingeschaltet.',
+  footer: 'Die Schalter gelten pro Chat: ein neuer Chat oder /clear setzt sie zurück. Standard-Mods starten eingeschaltet. Die Reihenfolge gilt für alle Chats.',
   on: '● An',
   off: '○ Aus',
   toggle: 'Mods',
+  up: '↑ Nach oben',
+  down: '↓ Nach unten',
+  reset: 'Reihenfolge zurücksetzen',
   dropped: (count: number, titles: string) => `${count} ${count === 1 ? 'Mod passt' : 'Mods passen'} nicht ins Band: ${titles}`,
 }
 

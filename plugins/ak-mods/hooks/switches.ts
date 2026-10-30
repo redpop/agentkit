@@ -6,15 +6,52 @@ export const upsert = (list: readonly ModsInfo[], info: ModsInfo): ModsInfo[] =>
     ? list.map(one => (one.name === info.name ? info : one))
     : [...list, info]
 
-/** The switcher's rows: every declared mod with its switches, sorted by title, case-insensitive. */
+/** The order AgentKit's own mods are listed in until the user moves one. */
+export const DEFAULT_ORDER: readonly string[] = ['ak-usage', 'ak-keepwarm', 'ak-pause', 'ak-gitlab', 'ak-session-id']
+
+/**
+ * The full order from a stored one: its names, then the default's names it lacks, each once. A
+ * name whose mod is not installed keeps its place, so the mod returns there.
+ */
+export const fullOrder = (stored: readonly string[]): string[] => [...new Set([...stored, ...DEFAULT_ORDER])]
+
+/**
+ * The switcher's rows: every declared mod with its switches, in `order` (see `fullOrder`); a mod
+ * it does not name follows, sorted by title, case-insensitive.
+ */
 export const rows = (
   declared: readonly ModsInfo[],
   on: Readonly<Record<string, boolean>>,
   standard: readonly string[],
-): ModsRow[] =>
-  declared
+  order: readonly string[],
+): ModsRow[] => {
+  const rank = (name: string): number => {
+    const at = order.indexOf(name)
+
+    return at === -1 ? order.length : at
+  }
+
+  return declared
     .map(info => ({ ...info, isOn: on[info.name] === true, isStandard: standard.includes(info.name) }))
-    .sort((a, b) => compare(a.title.toLowerCase(), b.title.toLowerCase()))
+    .sort((a, b) => rank(a.name) - rank(b.name) || compare(a.title.toLowerCase(), b.title.toLowerCase()))
+}
+
+/**
+ * The full order with `name` swapped with its neighbour as `shown` (the names in display order),
+ * one place up (`by` -1) or down (1); undefined at either end, where nothing moves. A shown mod
+ * the order does not name is added first, in its shown place at the end. The two swap their
+ * places in the order itself: an uninstalled mod between them stays where it is.
+ */
+export const moved = (order: readonly string[], shown: readonly string[], name: string, by: -1 | 1): string[] | undefined => {
+  const neighbour = shown[shown.indexOf(name) + by]
+  if (!shown.includes(name) || neighbour === undefined) return undefined
+  const full = [...order, ...shown.filter(one => !order.includes(one))]
+  const [at, other] = [full.indexOf(name), full.indexOf(neighbour)]
+  full[at] = neighbour
+  full[other] = name
+
+  return full
+}
 
 /**
  * Whether a plugin may declare itself: one installed from ak-marketplace, or an

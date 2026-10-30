@@ -10,7 +10,7 @@ Requires Claude Code 2.1.309 or later (hooks-module support).
 
 | Mod | Plugin | Purpose |
 |-----|--------|---------|
-| [Mod switcher](ak-mods/switcher.md) | ak-mods | The Mods pane: ○ Off / ● On, ☆ / ★ Standard, and a triangle for details per mod; the shared band |
+| [Mod switcher](ak-mods/switcher.md) | ak-mods | The Mods pane: ○ Off / ● On, ☆ / ★ Standard, a triangle for details and ↑ / ↓ to reorder per mod; the shared band |
 | [GitLab](ak-gitlab/gitlab.md) | ak-gitlab | Shows the current branch's merge request and how far its pipeline is |
 | [Keep warm](ak-keepwarm/keepwarm.md) | ak-keepwarm | Keeps the prompt cache warm with a small ping before it expires |
 | [Break](ak-pause/pause.md) | ak-pause | Shows how long you have worked without a break, with water and late hints |

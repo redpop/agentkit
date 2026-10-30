@@ -132,6 +132,9 @@ const owner: Register = on => {
           (await built.state.get({ plugin: 'ak-mods', key: 'on' })).value?.[name] === true,
         set,
         setStandard: async () => {},
+        move: async () => {},
+        resetOrder: async () => {},
+        isOrderMoved: async () => false,
         list: async () => [],
         segment: async (segment: Segment) => {
           await built.ui.toast('segment ' + JSON.stringify(typeof segment?.text === 'string' ? segment : null))
