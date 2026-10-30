@@ -1,7 +1,7 @@
 {
   "name": "ak-writing",
   "description": "Prose quality for German and English text: remove AI-slop patterns from docs, commits, emails, blog posts, and slides without losing facts; write clear German technical docs loosely based on ASD-STE100",
-  "version": "1.62.0",
+  "version": "1.63.0",
   "author": {
     "name": "redpop",
     "url": "https://github.com/redpop"

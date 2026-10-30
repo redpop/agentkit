@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.63.0] - 2026-10-30
+
+### ✨ Added
+
+- `ak-writing` — **new skill `clear-docs-de`** for German technical docs that read short and
+  unambiguous, loosely based on ASD-STE100: instructions of at most 20 words, descriptions of at most
+  25, active voice, verbs instead of nominal style, numbered procedures and a term table that fixes
+  one meaning per term. `--rewrite` changes only the form and keeps every code span, path, date,
+  version, number and decision; `--write` drafts a new doc from the sources you name. Open points
+  stay open and unclear terms come back as questions. A check script reports sentence length and
+  every fact a rewrite lost; for a Confluence page a second script keeps macros, images and their
+  `macro-id` byte for byte, and nothing is uploaded without your yes. Both scripts need python3 3.9
+  or later; without it the skill checks by hand.
+
 ## [1.62.0] - 2026-10-30
 
 ### ✨ Added
