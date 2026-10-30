@@ -21,6 +21,12 @@ export type ModsPart = { text: string; tone?: ModsTone; ring?: number; icon?: Mo
 /** One row of a segment's card in the Mods pane: a label and its value, one line each. */
 export type ModsCardRow = { label: string; value: string }
 
+/**
+ * One setting of a mod, picked from fixed options in the open card of the Mods pane. `value` is the
+ * option selected now and must be one of `options`; `key` and each option's value are one word.
+ */
+export type ModsSetting = { key: string; label: string; value: string; options: { value: string; label?: string }[] }
+
 /** What a mod shows in the shared band; ak-mods adds its name and title. */
 export type ModsSegment = {
   /** One line: a control character draws as a space, as in the button's label. */
@@ -53,6 +59,12 @@ export type ModsSegment = {
    * opens at its row (only a plain run is pressed there: a run in a colour or dim stays text, as a Button draws its text in one look): a dim label beside its value, the labels in one column. Without them the card shows `detail`, a line a part.
    */
   card?: ModsCardRow[]
+  /**
+   * The mod's settings, each a picker in its open card in the Mods pane (where a surface cannot draw
+   * one, the value as text). A pick runs `command` with `<key> <value>` as its args: the mod's own
+   * slash command stores the setting and publishes again. Shown only while the mod has a segment.
+   */
+  settings?: { command: string; rows: ModsSetting[] }
   tone?: ModsTone
   /** Higher stays visible longer when the band runs out of room; 5 when left out. */
   priority?: number

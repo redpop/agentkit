@@ -5,6 +5,10 @@ import { layout } from './band'
 import { cardRows, drawable, segmentView } from './band-render'
 import { languageFor, texts } from './i18n'
 
+// The surfaces that draw a `Select`: the mobile app draws none yet, and an element a surface does
+// not know renders as nothing, so the table `resolve` answers is no guide.
+const PICKER_SURFACES = new Set(['terminal', 'desktop', 'vscode'])
+
 const EXPANDED = atom({ plugin: 'ak-mods', key: 'expanded' } as const, {})
 
 /** The warning for the mods the band dropped, titles in display order; undefined when all fit. */
@@ -137,6 +141,35 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
             {isOpen && rows !== undefined && (
               <Box flexDirection="column" marginTop={1}>
                 {cardRows(draws, rows, `rows-${row.name}`)}
+              </Box>
+            )}
+            {/* Set seldom: only an open card shows the settings. A pick runs the mod's own command,
+                which stores it and publishes again; no handler crosses from one plugin to another. A
+                surface without a picker shows the value. */}
+            {isOpen && one?.settings !== undefined && (
+              <Box flexDirection="column" marginTop={1}>
+                {one.settings.rows.map(setting => {
+                  const command = one.settings?.command ?? ''
+                  const picked = setting.options.find(option => option.value === setting.value)
+
+                  return PICKER_SURFACES.has(e.surface) && 'Select' in draws ? (
+                    <draws.Select
+                      key={`set-${row.name}-${setting.key}`}
+                      label={setting.label}
+                      options={setting.options}
+                      value={setting.value}
+                      onSelect={value => {
+                        // A command the host refuses changes nothing in the pane.
+                        $.command.run({ command, args: `${setting.key} ${value}` }).catch(() => {})
+                      }}
+                    />
+                  ) : (
+                    <Text key={`set-${row.name}-${setting.key}`}>
+                      <Text dimColor>{`${setting.label} `}</Text>
+                      {picked?.label ?? setting.value}
+                    </Text>
+                  )
+                })}
               </Box>
             )}
             {isOpen && (

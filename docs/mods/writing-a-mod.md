@@ -217,13 +217,17 @@ export const register: Register = on => {
   second row: what must stay readable at a glance, labels gone; its button then draws on the compact
   text on the desktop app, with no hotkey, and the terminal leaves the button out; without it the
   segment draws in full), an optional `detail` (more of the same state, shown dim after the text in
-  the Mods pane only, never in the band), an optional `tone` (`ok`, `warn`, `alert`, `info` or
-  `dim`; `ak-mods` picks the colour, and `ok` stays the text colour; a part without a tone takes the
-  segment's), an optional `priority` (default 5; higher stays longer when the band drops
-  segments, but it never sets a segment's place) and at most one `button` (`label`, an optional
-  `hotkey`, the `command` it runs, its `args`, and `isPaneOnly` for an action
-  seldom taken, which the Mods pane shows and the band leaves out, room included, and `isOnText` for
-  a segment whose one action is plain from what it shows, such as copying an id: on the desktop app
+  the Mods pane only, never in the band), optional `settings` `{ command, rows }` (each row `{ key,
+  label, value, options: { value, label? }[] }`, one word for the key and each value, `value` one of
+  the options: a picker in the mod's open card in the Mods pane, the value as text on the mobile
+  app; a pick runs `command` with `<key> <value>`, so the mod's own slash command stores the setting
+  and publishes again; settings not all well formed are left out), an optional `tone` (`ok`, `warn`,
+  `alert`, `info` or `dim`; `ak-mods` picks the colour, and `ok` stays the text colour; a part
+  without a tone takes the segment's), an optional `priority` (default 5; higher stays longer when
+  the band drops segments, but it never sets a segment's place) and at most one `button` (`label`,
+  an optional `hotkey`, the `command` it runs, its `args`, and `isPaneOnly` for an action seldom
+  taken, which the Mods pane shows and the band leaves out, room included, and `isOnText` for a
+  segment whose one action is plain from what it shows, such as copying an id: on the desktop app
   the text itself is the button, hotkey with it). The button runs a slash command the mod already
   answers, so no handler crosses from one plugin to another. A segment is one line: a control
   character (a newline, ESC) in the text, a part, the detail or the label draws as a space, and a
@@ -241,12 +245,12 @@ export const register: Register = on => {
   `/clear`, `/resume` and `/branch` raises.
 - **A publish from inside a call `ak-mods` made does not reach `ak-mods`; schedule it off the hook
   with `$.clock.after(0, ...)`.** A `state.set` hook on the switches runs inside `ak-mods`'s own
-  `set`, and a command that a segment's button runs (in the band or the Mods pane) runs inside
-  `ak-mods`'s own `$.command.run`: in both, a segment call resolves without being stored. The
-  delay has to be the mod's own: scheduled by `ak-mods` it stays inside its call. The `session.end`
-  republish waits the same way, so it lands after `ak-mods` has cleared the segments. A switch-off
-  right after has been seen to read as on in the delayed call, so the recipe counts the switch
-  changes and drops a publish scheduled for an earlier one.
+  `set`, and a command that a segment's button or a settings pick runs (in the band or the Mods
+  pane) runs inside `ak-mods`'s own `$.command.run`: in both, a segment call resolves without being
+  stored. The delay has to be the mod's own: scheduled by `ak-mods` it stays inside its call. The
+  `session.end` republish waits the same way, so it lands after `ak-mods` has cleared the segments.
+  A switch-off right after has been seen to read as on in the delayed call, so the recipe counts the
+  switch changes and drops a publish scheduled for an earlier one.
 - **When the band runs out of room** it degrades in steps: one row; then one row with every
   segment that has a compact form in it; then two rows, never more; then
   the segments with the lowest priority drop out (of equal ones the last shown first), the others

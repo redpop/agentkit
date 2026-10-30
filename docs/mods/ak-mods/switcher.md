@@ -11,21 +11,23 @@ another tab is brought forward.
 
 ## Pane
 
-One row per mod that declared itself, in the order the band shows them (see
-[Order](#order)). Its head is the title with a triangle after it, `▶` closed and
-`▼` open, as the desktop app's own cards have it, and on the right the standard star, then the
-on/off switch; the summary follows. A switched-on mod that publishes a segment also shows it below,
-in its band colour and with the segment's button, and its detail after it, dimmed; the pane draws on
-every surface, so this is where a segment is always visible. A press on the triangle opens the row's
-details, in small dim type, and under them **↑ Up** and **↓ Down**, which move the mod one place
-(the first has no ↑, the last no ↓); one row is open at a time, so opening one closes any other
-and the pane stays short. In a narrow pane the title wraps and the star and the switch keep their size. On the
-desktop app a segment with card rows shows no detail there: opened, the row lists the card's rows
-under the segment, in small type, labels dim in one column, each value once, rows of long values
-such as an id a line apart, above the mod's details. There each mod sits on a faint rounded surface
-of its own; the terminal parts the mods by space. Once a mod has been moved, **Reset order**
-follows the mods and puts the default back. A note on how the switches reset and that the order
-applies to every chat ends the pane, small and dim.
+One row per mod that declared itself, in the order the band shows them (see [Order](#order)). Its
+head is the title with a triangle after it, `▶` closed and `▼` open, as the desktop app's own cards
+have it, and on the right the standard star, then the on/off switch; the summary follows. A
+switched-on mod that publishes a segment also shows it below, in its band colour and with the
+segment's button, and its detail after it, dimmed; the pane draws on every surface, so this is where
+a segment is always visible. A press on the triangle opens the row's details, in small dim type, and
+under them **↑ Up** and **↓ Down**, which move the mod one place (the first has no ↑, the last no
+↓); one row is open at a time, so opening one closes any other and the pane stays short. In a narrow
+pane the title wraps and the star and the switch keep their size. On the desktop app a segment with
+card rows shows no detail there: opened, the row lists the card's rows under the segment, in small
+type, labels dim in one column, each value once, rows of long values such as an id a line apart,
+above the mod's details. A mod that publishes settings shows them in its open row as pickers, one
+per setting, each with its label; a pick runs the mod's own command, which stores the value. The
+mobile app, which draws no picker yet, shows the values as text. There each mod sits on a faint
+rounded surface of its own; the terminal parts the mods by space. Once a mod has been moved, **Reset
+order** follows the mods and puts the default back. A note on how the switches reset and that the
+order applies to every chat ends the pane, small and dim.
 
 | Button | Effect |
 | -------- | -------- |
@@ -33,6 +35,7 @@ applies to every chat ends the pane, small and dim.
 | ☆ / ★ | Marks or unmarks the mod to start on in every new chat; ★ means marked |
 | ▶ / ▼ | Shows or hides the mod's details, and on the desktop app its card rows |
 | ↑ Up / ↓ Down | In an open row: moves the mod one place in the order of every chat |
+| Setting picker | In an open row of a mod with settings: picks a value; the mod's own command stores it |
 | Reset order | Shown once a mod was moved: puts AgentKit's default order back |
 
 ## Order

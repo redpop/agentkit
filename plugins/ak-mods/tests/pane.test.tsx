@@ -730,3 +730,67 @@ test('reset order shows only for a moved order and puts the default back', { plu
   expect(await callAs($, 'ak-a', 'store', 'order')).toBe(null)
   await ui.unmount()
 })
+
+const SETTINGS = {
+  command: 'zap',
+  rows: [{ key: 'work', label: 'Block', value: '60', options: [{ value: '45' }, { value: '60', label: '60 min (default)' }] }],
+}
+
+test('an open row shows each setting as a picker, and a pick runs the mod\'s command', { plugins: MODS }, async ($, on) => {
+  engine(on)
+  const ran: string[] = []
+  on('command.run', { command: 'zap' }, (_, e) => {
+    ran.push(`${e.command} ${e.args}`)
+
+    return { text: '' }
+  })
+  await callAs($, 'ak-a', 'declare', { name: 'ak-a', title: 'Alpha', summary: 's', details: 'd' })
+  await callAs($, 'ak-a', 'set', { name: 'ak-a', on: true })
+  await callAs($, 'ak-a', 'segment', { text: 'x', settings: SETTINGS })
+
+  for (const surface of SURFACES) {
+    const ui = await $.ui.mount({ ...PANE, surface })
+    // Closed, the row shows no setting.
+    expect(await ui.find({ key: 'set-ak-a-work' })).toBeUndefined()
+    await ui.press({ key: 'more-ak-a' })
+    expect(await ui.find({ key: 'set-ak-a-work' })).toMatchObject({ type: 'Select', props: { label: 'Block', value: '60' } })
+    await ui.select({ key: 'set-ak-a-work', value: '45' })
+    await ui.press({ key: 'more-ak-a' })
+    await ui.unmount()
+  }
+  expect(ran).toEqual(['zap work 45', 'zap work 45'])
+})
+
+test('a surface without a picker shows the setting as text', { plugins: MODS }, async ($, on) => {
+  engine(on)
+  await callAs($, 'ak-a', 'declare', { name: 'ak-a', title: 'Alpha', summary: 's', details: 'd' })
+  await callAs($, 'ak-a', 'set', { name: 'ak-a', on: true })
+  await callAs($, 'ak-a', 'segment', { text: 'x', settings: SETTINGS })
+
+  const ui = await $.ui.mount({ ...PANE, surface: 'mobile' })
+  await ui.press({ key: 'more-ak-a' })
+  expect(await ui.find({ type: 'Select' })).toBeUndefined()
+  expect(await ui.find({ type: 'Text', text: 'Block 60 min (default)' })).toBeDefined()
+  await ui.unmount()
+})
+
+test('settings that are not well formed are left out', { plugins: MODS }, async ($, on) => {
+  engine(on)
+  await callAs($, 'ak-a', 'declare', { name: 'ak-a', title: 'Alpha', summary: 's', details: 'd' })
+  await callAs($, 'ak-a', 'set', { name: 'ak-a', on: true })
+  const row = SETTINGS.rows[0]
+  for (const settings of [
+    { ...SETTINGS, command: '' },
+    { ...SETTINGS, rows: [{ ...row, key: 'two words' }] },
+    { ...SETTINGS, rows: [{ ...row, options: [] }] },
+    { ...SETTINGS, rows: [{ ...row, options: [{ value: '45' }, { value: '45' }] }] },
+    { ...SETTINGS, rows: [{ ...row, options: [{ value: '4 5' }] }] },
+    { ...SETTINGS, rows: [{ ...row, value: '30' }] },
+  ]) {
+    await callAs($, 'ak-a', 'segment', { text: 'x', settings })
+    const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+    await ui.press({ key: 'more-ak-a' })
+    expect(await ui.find({ key: 'set-ak-a-work' })).toBeUndefined()
+    await ui.unmount()
+  }
+})

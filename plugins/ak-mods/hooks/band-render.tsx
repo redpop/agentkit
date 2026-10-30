@@ -1,6 +1,6 @@
 import type { BoxProps, ButtonProps, ElementConstructor, EngineInterface, Next, RenderInput, SvgProps, TextProps } from 'claude-code'
 
-import type { ModsCardRow, ModsIcon, ModsInfo, ModsPart, ModsRow, ModsSegment, ModsTone } from '../types'
+import type { ModsCardRow, ModsIcon, ModsInfo, ModsPart, ModsRow, ModsSegment, ModsSetting, ModsTone } from '../types'
 import { bandWidth, layout, TOGGLE_HOTKEY, toggleLabel } from './band'
 import type { Segment } from './band'
 import { languageFor, texts } from './i18n'
@@ -79,6 +79,39 @@ const cardOf = (card: unknown): ModsCardRow[] | undefined => {
   return rows.some(row => row === undefined) ? undefined : (rows as ModsCardRow[])
 }
 
+// A setting's key goes to the mod's command as the first word of its args.
+const SETTING_KEY = /^[\w-]+$/
+
+/** One stored setting, or undefined: a key that is one word, texts, options of unique values, one of them the value. */
+const settingOf = (setting: unknown): ModsSetting | undefined => {
+  const one = (setting ?? {}) as Partial<Record<keyof ModsSetting, unknown>>
+  if (typeof one.key !== 'string' || !SETTING_KEY.test(one.key)) return undefined
+  if (typeof one.label !== 'string' || typeof one.value !== 'string' || !Array.isArray(one.options)) return undefined
+  const options = (one.options as Partial<Record<'value' | 'label', unknown>>[]).map(option =>
+    typeof option?.value === 'string' && SETTING_KEY.test(option.value)
+      ? { value: option.value, label: typeof option.label === 'string' ? spaced(option.label) : undefined }
+      : undefined,
+  )
+  const values = options.map(option => option?.value)
+  if (options.length === 0 || options.some(option => option === undefined) || new Set(values).size !== values.length) {
+    return undefined
+  }
+  if (!values.includes(one.value)) return undefined
+
+  return { key: one.key, label: spaced(one.label), value: one.value, options: options as ModsSetting['options'] }
+}
+
+/** The stored settings, or undefined: a command, and every row a setting `settingOf` keeps. */
+const settingsOf = (settings: unknown): ModsSegment['settings'] => {
+  const one = (settings ?? {}) as Partial<Record<'command' | 'rows', unknown>>
+  if (typeof one.command !== 'string' || one.command === '' || !Array.isArray(one.rows) || one.rows.length === 0) {
+    return undefined
+  }
+  const rows = one.rows.map(settingOf)
+
+  return rows.some(row => row === undefined) ? undefined : { command: spaced(one.command), rows: rows as ModsSetting[] }
+}
+
 /**
  * A stored segment as the band can draw it, or undefined. Segments are stored
  * unchecked: an unknown tone draws uncoloured, a priority that is no number
@@ -88,7 +121,8 @@ const cardOf = (card: unknown): ModsCardRow[] | undefined => {
  * is no text is left out, parts that do not join to the text are left out,
  * rich runs that are no list of texts are left out, a ring is held to 0 to
  * 100, an icon ak-mods does not draw is left out, card rows that are no list of label and value texts are left out, a
- * compact form without text is left out, its parts and rich runs checked as the segment's, and a segment without text
+ * compact form without text is left out, its parts and rich runs checked as the segment's, settings that are
+ * not all well formed (see `settingsOf`) are left out, and a segment without text
  * is not drawn.
  */
 const checked = (info: ModsInfo, stored: unknown): Segment | undefined => {
@@ -107,6 +141,7 @@ const checked = (info: ModsInfo, stored: unknown): Segment | undefined => {
     compact: compactOf(one.compact),
     detail: typeof one.detail === 'string' && one.detail !== '' ? spaced(one.detail) : undefined,
     card: cardOf(one.card),
+    settings: settingsOf(one.settings),
     tone: toneOf(one.tone),
     priority: typeof one.priority === 'number' && Number.isFinite(one.priority) ? one.priority : undefined,
     button:
