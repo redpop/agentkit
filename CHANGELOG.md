@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.64.3] - 2026-10-30
+
+### 🐛 Fixed
+
+- `ak-pause` — a break length set in one session reaches the card's note in every other open
+  session within a minute; before, their note named the old length until they restarted.
+
 ## [1.64.2] - 2026-10-30
 
 ### 🐛 Fixed
