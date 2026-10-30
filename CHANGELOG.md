@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.62.0] - 2026-10-30
+
+### ✨ Added
+
+- `ak-mods` — the mods follow one order that you set, the same in every chat: an open card in the
+  Mods pane moves its mod up or down (↑ / ↓), and **Reset order** puts the default back. The default
+  is Usage, Keep warm, Pause, GitLab, Session ID. A move applies at once in its own chat, in every
+  new chat, and in a chat open meanwhile at its next redraw.
+
+### 🔄 Changed
+
+- `ak-mods` — the band draws its segments in that order, no longer by priority: Pause now sits
+  before GitLab. A segment's `priority` only decides which drops first when the band runs out of
+  room; of equal ones the last shown goes first. Two mods on one hotkey: the first shown keeps it.
+
 ## [1.61.0] - 2026-10-30
 
 ### ✨ Added
