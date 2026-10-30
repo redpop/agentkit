@@ -86,6 +86,8 @@ const owner: Register = on => {
   // Between `hold` and `release` a segment call resolves without being stored, as inside the call
   // ak-mods makes when its band's button runs a command.
   let isPressing = false
+  // The details of every declare, newest last; `stand-in declares` prints them.
+  const declares: string[] = []
   on('engine.create', async ($, e, next) => {
     const built = await next(e)
     const set = async ({ name, on: isOn }: { name: string; on: boolean }) => {
@@ -97,7 +99,8 @@ const owner: Register = on => {
     return {
       ...built,
       mods: {
-        declare: async ({ name }: { name: string }) => {
+        declare: async ({ name, details }: { name: string; details: string }) => {
+          declares.push(details)
           await set({ name, on: true })
 
           return true
@@ -124,6 +127,7 @@ const owner: Register = on => {
     return next(e)
   })
   on('command.run', { command: 'stand-in' }, async ($, e) => {
+    if (e.args === 'declares') return { text: JSON.stringify(declares) }
     if (e.args === 'hold' || e.args === 'release') {
       isPressing = e.args === 'hold'
 
@@ -423,4 +427,19 @@ test('the break length set decides when quiet is a break', OWNED, async ($, on) 
   expect(last(toasts)).toBe('12 min am Stück')
   await clock.advance(3 * MIN)
   expect(last(toasts)).toBe('Pause')
+})
+
+test('a break length another session set reaches the details at the next redraw', OWNED, async ($, on) => {
+  const { clock, stored } = engine(on, { block: running(20) })
+  const declared = async (): Promise<string[]> => JSON.parse((await run($, 'stand-in', 'declares')).text ?? '[]')
+  await start($)
+  expect((await declared()).at(-1)).toMatch(/^Zählt über alle Sessions\. 10 Minuten/)
+  // Another session sets 15 minutes: the store is shared, this session declared 10.
+  stored.limits = { workMinutes: 60, breakMinutes: 15 }
+  await clock.advance(MIN)
+  expect((await declared()).at(-1)).toMatch(/^Zählt über alle Sessions\. 15 Minuten/)
+  const count = (await declared()).length
+  await clock.advance(MIN)
+  // Unchanged since: no declare again.
+  expect((await declared()).length).toBe(count)
 })

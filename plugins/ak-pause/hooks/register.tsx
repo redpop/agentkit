@@ -43,7 +43,7 @@ const PERSON = new Set(['composer', 'bridge', 'sdk'])
 
 // Publishes while ak-mods switches the mod and it is on; whether it is off. Both fail open.
 type Publish = (isOn: () => Promise<boolean>, send: () => Promise<void>) => Promise<void>
-type Gate = { publish: Publish; isOff: (isOn: () => Promise<boolean>) => Promise<boolean> }
+type Gate = { publish: Publish; isOff: (isOn: () => Promise<boolean>) => Promise<boolean>; isSwitched: () => boolean }
 
 /** What the mod holds, for one load of the module. */
 type Pause = {
@@ -56,6 +56,8 @@ type Pause = {
   longTurn: Timer | undefined
   // Whether the system's idle time is asked for: false once it could not tell, until the next session.
   canSense: boolean
+  // The break length the details this session declared name, in minutes.
+  declaredBreak: number | undefined
 }
 
 const pausing = (): Pause => ({
@@ -65,6 +67,7 @@ const pausing = (): Pause => ({
   tick: undefined,
   longTurn: undefined,
   canSense: true,
+  declaredBreak: undefined,
 })
 
 const stop = (pause: Pause) => {
@@ -100,6 +103,12 @@ async function show($: EngineInterface, pause: Pause, gate: Gate): Promise<void>
   const now = await $.clock.now()
   const lang = await languageFor($)
   const [{ block }, set] = await Promise.all([read($), limits($)])
+  // Another session may have set another break length: the details name it, so declare them again.
+  const { breakMinutes } = storedLimits(set)
+  if (gate.isSwitched() && pause.declaredBreak !== undefined && pause.declaredBreak !== breakMinutes) {
+    pause.declaredBreak = breakMinutes
+    await declare($).catch(() => false)
+  }
   const segment = segmentOf(block, now, lang, set)
   pause.shown =
     segment === undefined ? undefined : { ...segment, card: cardOf(block, now, lang, set), settings: settingsOf(set, lang) }
@@ -218,12 +227,13 @@ export const register: Register = on => {
       isSwitched = false
     }
   }
-  const gate: Gate = { publish, isOff }
+  const gate: Gate = { publish, isOff, isSwitched: () => isSwitched }
 
   on('session.start', async ($, e, next) => {
     await learnLanguage($)
     try {
       isSwitched = await declare($)
+      pause.declaredBreak = storedLimits(await limits($)).breakMinutes
     } catch {
       isSwitched = false
     }
@@ -300,13 +310,10 @@ export const register: Register = on => {
     const held = storedLimits(await limits($))
     const next = what === 'work' ? { ...held, workMinutes: minutes } : { ...held, breakMinutes: minutes }
     await $.store.set(LIMITS, next)
-    // Off the hook: the pane's picker runs this inside ak-mods' own call, where a publish is lost. The
-    // details are declared again, as they name the break length.
+    // Off the hook: the pane's picker runs this inside ak-mods' own call, where a publish is lost.
+    // Drawing again declares the details again too, as they name the break length.
     $.clock.after(0, () => {
-      ;(isSwitched ? declare($) : Promise.resolve(false))
-        .catch(() => false)
-        .then(() => show($, pause, gate))
-        .catch(() => {})
+      show($, pause, gate).catch(() => {})
     })
 
     return { text: t.set(`${what === 'work' ? t.workSetting : t.breakSetting} ${minutes} min`) }

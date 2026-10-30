@@ -40,8 +40,9 @@ while you type.
 | Break after | 5, 10, 15, 20 min | 10 min | `/pause-set break 15` |
 
 The open card of the mod in the Mods pane shows both as pickers, the default marked; the mobile app
-shows the values as text. A pick runs `/pause-set`. The lengths live in the mod's store and apply
-to every session at once.
+shows the values as text. A pick runs `/pause-set`. The lengths live in the mod's store and apply to
+every session at once: the session that sets them redraws at once, every other open one within a
+minute, the card's note with it.
 
 The rest follows the block length: the info colour and the long-turn notification from ten minutes
 before its end, the warning colour and the toast from its end, the error colour from one and a half
