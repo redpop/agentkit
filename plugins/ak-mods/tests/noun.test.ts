@@ -155,6 +155,20 @@ test('move persists one order for every chat, and resetOrder drops it', { plugin
   expect(await call($, 'ak-a', 'isOrderMoved')).toBe(false)
 })
 
+test('a move back to the default order drops the stored one', { plugins: [consumer('ak-a'), consumer('ak-b')] }, async ($, on) => {
+  engine(on)
+
+  await call($, 'ak-a', 'declare', { name: 'ak-a', title: 'A', summary: 's', details: 'd' })
+  await call($, 'ak-b', 'declare', { name: 'ak-b', title: 'B', summary: 's', details: 'd' })
+  await call($, 'ak-a', 'move', { name: 'ak-b', by: -1 })
+  expect(await call($, 'ak-a', 'isOrderMoved')).toBe(true)
+
+  await call($, 'ak-a', 'move', { name: 'ak-b', by: 1 })
+  expect(titles(await call($, 'ak-a', 'list'))).toEqual(['A', 'B'])
+  expect(await call($, 'ak-a', 'isOrderMoved')).toBe(false)
+  expect(await call($, 'ak-a', 'store', 'order')).toBe(null)
+})
+
 test('move starts from the order another chat stored meanwhile', { plugins: [consumer('ak-a'), consumer('ak-b'), consumer('ak-c')] }, async ($, on) => {
   engine(on)
 

@@ -779,6 +779,23 @@ test('the setting labels stand in one column, as wide as the longest', { plugins
   await ui.unmount()
 })
 
+test('an open row puts its settings after the note, beside the move buttons', { plugins: MODS }, async ($, on) => {
+  engine(on)
+  for (const name of ['ak-a', 'ak-b']) {
+    await callAs($, name, 'declare', { name, title: name, summary: 's', details: 'note' })
+    await callAs($, name, 'set', { name, on: true })
+  }
+  await callAs($, 'ak-a', 'segment', { text: 'x', settings: SETTINGS })
+
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  await ui.press({ key: 'more-ak-a' })
+  const texts = (await ui.findAll({ type: 'Text' })).map(one => one.text)
+  const buttons = (await ui.findAll({ type: 'Button' })).map(one => one.props.key)
+  expect(texts.indexOf('note')).toBeLessThan(texts.indexOf('Block'))
+  expect(buttons).toContain('down-ak-a')
+  await ui.unmount()
+})
+
 test('a surface without a picker shows the setting as text', { plugins: MODS }, async ($, on) => {
   engine(on)
   await callAs($, 'ak-a', 'declare', { name: 'ak-a', title: 'Alpha', summary: 's', details: 'd' })

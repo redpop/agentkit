@@ -249,6 +249,13 @@ export const register: Register = on => {
         const value = moved(order, shown, name, by)
         // Nothing moves at either end: no order is stored, so none reads as moved.
         if (value === undefined) return
+        // Moved back to the default's order: nothing to keep, so it no longer reads as moved.
+        const names = (of: readonly string[]) => rows(list, {}, [], of).map(row => row.name).join()
+        if (names(value) === names(fullOrder([]))) {
+          await built.store.delete('order')
+          await built.state.set(ORDER, [])
+          return
+        }
         await built.store.set('order', value)
         await built.state.set(ORDER, value)
       },

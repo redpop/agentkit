@@ -143,9 +143,18 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
                 {cardRows(draws, rows, `rows-${row.name}`)}
               </Box>
             )}
-            {/* Set seldom: only an open card shows the settings. A pick runs the mod's own command,
-                which stores it and publishes again; no handler crosses from one plugin to another. A
-                surface without a picker shows the value. */}
+            {isOpen && (
+              <Box marginTop={1}>
+                {/* A note under the card, not its body: small, so an open card stays short. */}
+                <Text size="footnote" dimColor>
+                  {row.details}
+                </Text>
+              </Box>
+            )}
+            {/* Set seldom: only an open card shows the settings, after the note that explains the mod
+                and beside the other controls. A pick runs the mod's own command, which stores it and
+                publishes again; no handler crosses from one plugin to another. A surface without a
+                picker shows the value. */}
             {isOpen && one?.settings !== undefined && (
               <Box flexDirection="column" marginTop={1}>
                 {one.settings.rows.map(setting => {
@@ -176,14 +185,6 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
                     </Box>
                   )
                 })}
-              </Box>
-            )}
-            {isOpen && (
-              <Box marginTop={1}>
-                {/* A note under the card, not its body: small, so an open card stays short. */}
-                <Text size="footnote" dimColor>
-                  {row.details}
-                </Text>
               </Box>
             )}
             {/* Moved seldom: only an open card shows the way, and only the ways it can go. Arrows,

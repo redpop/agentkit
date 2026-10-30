@@ -19,8 +19,9 @@ Run `/ak-mods` to open the pane, and again to close it. Each mod's head has thre
 - **○ Off** / **● On** switches the mod for this chat; the label shows its state.
 - **☆** / **★** marks or unmarks the mod to start on in every new chat; the filled star means it
   is marked.
-- **▶** / **▼** after the title shows or hides the mod's details. An open row adds **↑ Up** and
-  **↓ Down**, which move the mod one place; **Reset order** below the mods puts the default back.
+- **▶** / **▼** after the title shows or hides the mod's details. An open row adds **↑ Up** and **↓
+  Down**, which move the mod one place; **Reset order** below the mods, shown while the order
+  differs from the default, puts it back.
 
 Each switched-on mod shows one segment in a single band above the prompt. The band ends with a
 `mods` button (hotkey `m`) that opens the pane, or closes it while it is shown. When the segments do
