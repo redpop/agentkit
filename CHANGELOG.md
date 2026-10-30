@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.61.0] - 2026-10-30
+
+### ✨ Added
+
+- `ak-pause` — on macOS any mouse, keyboard or trackpad input counts as work, in any app: the mod
+  reads the system's idle time once a minute through `ioreg`, which needs no permission. Before,
+  a quarter of an hour in the editor or browser alone read as a break. On Linux and Windows only
+  the input in Claude counts, as before; the mod docs name the reasons.
+
 ## [1.60.2] - 2026-10-30
 
 ### 🐛 Fixed
