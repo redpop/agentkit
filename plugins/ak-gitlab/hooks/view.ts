@@ -92,7 +92,7 @@ export function segmentFor(status: Status, nowMs: number, lang: Lang): Segment |
         lead,
         { ...count, ring: total === 0 ? 0 : Math.round((done / total) * 100) },
         { text: ` ${jobs}`, tone: 'info' },
-        { text: ` · ${time}${minutes === undefined ? '' : ` ${t.of(minutes)}`}`, tone: 'dim' },
+        { text: ` ${time}${minutes === undefined ? '' : ` ${t.of(minutes)}`}`, tone: 'dim' },
       ],
       [lead, count],
       'info',
@@ -106,7 +106,7 @@ export function segmentFor(status: Status, nowMs: number, lang: Lang): Segment |
 
   return drawn(
     [id, { text: ` ${look.mark}`, tone: look.tone }, ...(time === undefined ? [] : [{ text: ` ${time}`, tone: 'dim' as const }])],
-    [id, { text: ` ${look.rich ?? look.mark}`, tone: look.tone }, ...(time === undefined ? [] : [{ text: ` · ${time}`, tone: 'dim' as const }])],
+    [id, { text: ` ${look.rich ?? look.mark}`, tone: look.tone }, ...(time === undefined ? [] : [{ text: ` ${time}`, tone: 'dim' as const }])],
     [id, { text: ` ${look.short}`, tone: look.tone }],
     look.tone,
     phase === 'failed' ? { label: t.errors, command: 'gitlab-errors' } : open,

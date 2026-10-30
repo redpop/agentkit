@@ -28,8 +28,8 @@ It shows one segment in the band that [`ak-mods`](../ak-mods/switcher.md) draws 
 | `!12 ⏸ deploy` | Held at the manual job `deploy`, in the warning colour |
 | `!12 canceled` (dim) | Canceled or skipped |
 
-On the desktop app a running pipeline draws a ring filled to its finished jobs, `◔ 4/7 · 3:12 of
-~5 min`, and a green one reads `✓ Pipeline · 4:51`. The time runs on between fetches. The estimate
+On the desktop app a running pipeline draws a ring filled to its finished jobs, `◔ 4/7 3:12 of
+~5 min`, and a green one reads `✓ Pipeline 4:51`. The time runs on between fetches. The estimate
 is the mean run of the project's last green pipelines; without any, it is left out. A finished job
 is one that succeeded, failed, was canceled or skipped, and a manual job the pipeline may pass by;
 a bridge to a downstream pipeline counts as one job.
@@ -47,7 +47,7 @@ instead, never both.
 
 The mod's texts follow Claude Code's `language` setting, else `LC_ALL`, `LC_MESSAGES` or `LANG`:
 German or English. In German the buttons read **öffnen** and **Fehler holen**, and the segment
-`!12 keine Pipeline`, `!12 abgebrochen` and `· 3:12 von ~5 min`.
+`!12 keine Pipeline`, `!12 abgebrochen` and `3:12 von ~5 min`.
 
 ## Commands
 

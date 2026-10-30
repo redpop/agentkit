@@ -83,7 +83,7 @@ test('a running pipeline shows a ring of its jobs, the time and the estimate', (
       { text: '!12 ', tone: 'dim' },
       { text: '4/7', tone: 'info', ring: 57 },
       { text: ' 4/7', tone: 'info' },
-      { text: ' · 3:12 von ~5 min', tone: 'dim' },
+      { text: ' 3:12 von ~5 min', tone: 'dim' },
     ],
     compact: { text: '!12 4/7' },
     tone: 'info',
@@ -94,7 +94,7 @@ test('a running pipeline shows a ring of its jobs, the time and the estimate', (
 test('a running pipeline without history leaves the estimate out', () => {
   const now = segmentFor(of(mr(pipeline('running', RUNNING))), NOW, 'de')
   expect(now?.text).toBe('!12 4/7 3:12')
-  expect(now?.rich?.[3]).toEqual({ text: ' · 3:12', tone: 'dim' })
+  expect(now?.rich?.[3]).toEqual({ text: ' 3:12', tone: 'dim' })
 })
 
 test('a failed pipeline names its first failed job and offers its errors', () => {
@@ -103,7 +103,7 @@ test('a failed pipeline names its first failed job and offers its errors', () =>
     rich: [
       { text: '!12', tone: 'dim' },
       { text: ' ✗ test:unit', tone: 'alert' },
-      { text: ' · 2:48', tone: 'dim' },
+      { text: ' 2:48', tone: 'dim' },
     ],
     compact: { text: '!12 ✗' },
     tone: 'alert',
@@ -117,7 +117,7 @@ test('a green pipeline shows its duration', () => {
     rich: [
       { text: '!12', tone: 'dim' },
       { text: ' ✓ Pipeline', tone: 'ok' },
-      { text: ' · 4:51', tone: 'dim' },
+      { text: ' 4:51', tone: 'dim' },
     ],
     compact: { text: '!12 ✓' },
     tone: 'ok',
