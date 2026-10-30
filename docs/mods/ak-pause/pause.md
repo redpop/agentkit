@@ -8,17 +8,19 @@ Requires Claude Code 2.1.309 or later (hooks-module support). Switched per chat 
 ## In short
 
 - **The time** (`4 min am Stück`) is how long you have worked without a break. The ring beside it
-  fills to an hour.
+  fills to the end of the block: an hour unless you set another length.
 - **What counts as work** on macOS is any input at the machine: the mouse, the keyboard or the
   trackpad, in any app. On Linux and Windows it is only what you do in Claude: sending a prompt, or
   typing in the prompt box without sending it. There, fifteen minutes in your editor or browser
   alone look like a break. See [Platforms](#platforms).
-- **Ten minutes** without input end the block: the segment shows `Pause`, and the next
-  input starts again at 0. This is how the mod notices that you were away, not how long a break
-  should be; it does not tell you that.
-- **At 60 minutes** the colour turns to warning, and after Claude's next answer one toast suggests a
-  break. From 50 minutes, a turn that runs for 3 minutes brings a notification instead. One hint
-  per block, never while you type.
+- **Ten minutes** without input end the block, or the break length you set: the segment shows
+  `Pause`, and the next input starts again at 0. This is how the mod notices that you were away, not
+  how long a break should be; it does not tell you that.
+- **At 60 minutes**, the block's end, the colour turns to warning, and after Claude's next answer
+  one toast suggests a break. From 50 minutes, ten before the end, a turn that runs for 3 minutes
+  brings a notification instead. One hint per block, never while you type.
+- **Block and break length** are yours to set, for every session at once: in the Mods pane's open
+  card, or with `/pause-set`. See [Settings](#settings).
 - **Water** joins 45 minutes after the block began or after you last drank. **Getrunken** clears it;
   a break does too.
 - **The card** in the Mods pane, a press on the segment away, shows since when you work, the last
@@ -30,10 +32,25 @@ Working with Claude Code makes long stretches at the screen easy: there is alway
 The segment keeps the stretch in view, and the mod speaks up when you are waiting anyway, never
 while you type.
 
+## Settings
+
+| Setting | Options | Default | Command |
+| --------- | --------- | --------- | --------- |
+| Block | 30, 45, 50, 60, 75, 90 min | 60 min | `/pause-set work 45` |
+| Break after | 5, 10, 15, 20 min | 10 min | `/pause-set break 15` |
+
+The open card of the mod in the Mods pane shows both as pickers, the default marked; the mobile app
+shows the values as text. A pick runs `/pause-set`. The lengths live in the mod's store and apply
+to every session at once.
+
+The rest follows the block length: the info colour and the long-turn notification from ten minutes
+before its end, the warning colour and the toast from its end, the error colour from one and a half
+times it. With a 45-minute block that is 35, 45 and 68 minutes. The water hint stays at 45 minutes.
+
 ## Band
 
 The mod shows one segment in the band that [`ak-mods`](../ak-mods/switcher.md) draws above the
-prompt, once there has been an input:
+prompt, once there has been an input. With the default lengths:
 
 | Minutes in the block | Tone | Segment |
 | --------- | --------- | --------- |
@@ -43,9 +60,9 @@ prompt, once there has been an input:
 | 60 to 89 | warning | `1 h 12 am Stück` |
 | 90 and more | error | `1 h 35 am Stück` |
 
-On the desktop app the time is a ring that fills to an hour, beside the duration: `◔ 23 min`. When
-the band is short of room, the segment drops `am Stück`. The segment has priority 4: when the band
-runs out of room it goes before usage (7) and GitLab (6).
+On the desktop app the time is a ring that fills to the block's end, beside the duration: `◔ 23
+min`. When the band is short of room, the segment drops `am Stück`. The segment has priority 4: when
+the band runs out of room it goes before usage (7) and GitLab (6).
 
 Two hints join the segment when due:
 
@@ -69,10 +86,11 @@ German or English. In English the segment reads `23 min straight`, the hints `Wa
 Once a block, and across sessions once in all, the mod nudges at a moment that does not break the
 flow:
 
-- **After a turn**, from 60 minutes: a toast, `1 h 01 am Stück. Guter Moment für eine Pause.`
-- **During a long turn**, from 50 minutes: when a turn of the main loop has run for 3 minutes, a
-  native notification, `Claude arbeitet noch. 54 min am Stück: guter Moment für eine Pause.` A
-  subagent's turn does not count.
+- **After a turn**, from the block's end (60 minutes by default): a toast, `1 h 01 am Stück. Guter
+  Moment für eine Pause.`
+- **During a long turn**, from ten minutes before it (50 by default): when a turn of the main loop
+  has run for 3 minutes, a native notification, `Claude arbeitet noch. 54 min am Stück: guter Moment
+  für eine Pause.` A subagent's turn does not count.
 
 Whichever comes first is the block's one hint. Switched off, the mod sends none.
 
@@ -90,7 +108,7 @@ PowerShell. There the mod counts the input in Claude alone, as before. Support f
 
 The idle time is the machine's that runs Claude Code. Over SSH that is the remote host, not the
 one you sit at. Reading a long page or a call without touching the mouse counts as a break after
-ten minutes.
+ten minutes, or the break length you set.
 
 ## How it works
 
@@ -106,8 +124,8 @@ ten minutes.
   start. A last input a minute or more newer than the block's moves it on, as an input in Claude
   does. Where `ioreg`
   does not answer, the mod stops asking until the next session.
-- Ten minutes after the last input the block is over. The next input starts a new one and counts
-  the break; an input on another day starts that day's tally empty.
+- Ten minutes after the last input, or the break length set, the block is over. The next input
+  starts a new one and counts the break; an input on another day starts that day's tally empty.
 - The segment is drawn again every minute while the mod is on, after each input, after `/clear`,
   `/resume` and `/branch`, and when the mod is switched on.
 - Nothing of it reaches Claude's context: no text in the conversation, no tool.

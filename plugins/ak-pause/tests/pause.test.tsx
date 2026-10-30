@@ -378,3 +378,49 @@ test('without ioreg the input in Claude counts alone, asked once', OWNED, async 
   expect(last(toasts)).toBe('Pause')
   expect(system.asks).toBe(1)
 })
+
+test('pause-set stores a length for every session and publishes it with the segment', OWNED, async ($, on) => {
+  const { clock, toasts, stored } = engine(on, { block: running(40) })
+  await start($)
+  await submit($)
+  expect((await run($, 'pause-set', 'work 45')).text).toBe('Gesetzt: Block 45 min.')
+  await clock.settle()
+  expect(stored.limits).toEqual({ workMinutes: 45, breakMinutes: 10 })
+  const shown = segments(toasts).at(-1)
+  expect(shown?.settings?.rows.map(row => row.value)).toEqual(['45', '10'])
+  // 40 minutes into a 45-minute block: the info tone from 35.
+  expect(shown?.tone).toBe('info')
+
+  await run($, 'pause-set', 'break 15')
+  expect(stored.limits).toEqual({ workMinutes: 45, breakMinutes: 15 })
+})
+
+test('pause-set refuses a length it does not offer', OWNED, async ($, on) => {
+  const { stored } = engine(on)
+  await start($)
+  expect((await run($, 'pause-set', 'work 44')).text).toMatch(/^Aufruf: \/pause-set/)
+  expect((await run($, 'pause-set', 'lunch 30')).text).toMatch(/^Aufruf: /)
+  expect((await run($, 'pause-set', 'work 45 break 15')).text).toMatch(/^Aufruf: /)
+  expect(stored.limits).toBeUndefined()
+})
+
+test('a picker in the pane publishes the new length though it runs inside ak-mods', OWNED, async ($, on) => {
+  const { clock, toasts } = engine(on, { block: running(20) })
+  await start($)
+  await submit($)
+  await run($, 'stand-in', 'hold')
+  await run($, 'pause-set', 'work 30')
+  await run($, 'stand-in', 'release')
+  await clock.settle()
+  expect(segments(toasts).at(-1)?.settings?.rows[0]?.value).toBe('30')
+})
+
+test('the break length set decides when quiet is a break', OWNED, async ($, on) => {
+  const { clock, toasts } = engine(on, { limits: { workMinutes: 60, breakMinutes: 15 } })
+  await start($)
+  await submit($)
+  await clock.advance(12 * MIN)
+  expect(last(toasts)).toBe('12 min am Stück')
+  await clock.advance(3 * MIN)
+  expect(last(toasts)).toBe('Pause')
+})

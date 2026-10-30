@@ -2,7 +2,7 @@ import { expect, test } from 'claude-code/testing'
 
 import { touch } from '../hooks/block'
 import type { Block } from '../hooks/block'
-import { DRINK, cardOf, clockText, durationText, notifyText, segmentOf, toastText } from '../hooks/view'
+import { DRINK, SET, cardOf, clockText, durationText, notifyText, segmentOf, settingsOf, toastText } from '../hooks/view'
 
 // A local morning; the block started then and the last input was a minute ago.
 const T = new Date(2026, 9, 29, 9, 0).getTime()
@@ -129,4 +129,38 @@ test('the hints name the block', () => {
   expect(toastText(3_600_000, 'de')).toBe('1 h 00 am Stück. Guter Moment für eine Pause.')
   expect(notifyText(3_240_000, 'de')).toBe('Claude arbeitet noch. 54 min am Stück: guter Moment für eine Pause.')
   expect(toastText(3_660_000, 'en')).toBe('1 h 01 straight. A good moment for a break.')
+})
+
+test('the tones and the ring follow the block length set', () => {
+  const limits = { workMs: 45 * MIN, breakMs: 10 * MIN }
+  const tone = (minutes: number) => {
+    const { block, now } = at(minutes)
+
+    return segmentOf(block, now, 'de', limits)?.tone
+  }
+  expect(tone(34)).toBe('ok')
+  expect(tone(35)).toBe('info')
+  expect(tone(45)).toBe('warn')
+  expect(tone(67)).toBe('warn')
+  expect(tone(68)).toBe('alert')
+  const { block, now } = at(30)
+  expect(segmentOf(block, now, 'de', limits)?.rich?.[0]?.ring).toBe(67)
+})
+
+test('the settings offer the lengths, the defaults marked, the current ones selected', () => {
+  const settings = settingsOf({ workMs: 45 * MIN, breakMs: 10 * MIN }, 'de')
+  expect(settings.command).toBe(SET)
+  expect(settings.rows.map(row => [row.key, row.label, row.value])).toEqual([
+    ['work', 'Block', '45'],
+    ['break', 'Pause ab', '10'],
+  ])
+  expect(settings.rows[0]?.options.map(option => option.label)).toEqual([
+    '30 min',
+    '45 min',
+    '50 min',
+    '60 min (Standard)',
+    '75 min',
+    '90 min',
+  ])
+  expect(settings.rows[1]?.options.find(option => option.value === '10')?.label).toBe('10 min (Standard)')
 })

@@ -234,10 +234,11 @@ failed with the first failed job, or green with its duration. A toast says when 
 ### ak-pause — Breaks at a Glance
 
 A mod (needs `ak-mods`, installed with it) that shows one segment in the shared band above the
-prompt: how long you have worked without a break, as a ring that fills to an hour (`52 min am
+prompt: how long you have worked without a break, as a ring that fills to the block's end (`52 min am
 Stück`), counted across every session. On macOS any mouse or keyboard input counts, in any app; on
 Linux and Windows only what you do in Claude: a prompt sent or typing in the prompt box. Ten minutes
-without input count as a break. After 45 minutes a water hint joins,
+without input count as a break; block and break length are set for every session in the Mods pane
+or with `/pause-set`. After 45 minutes a water hint joins,
 with a button to clear it; from 22:00 a dim `Feierabend?`. Once a block it nudges at a quiet
 moment: a toast after a turn from 60 minutes, or a notification while Claude has been working for
 3 minutes from 50. Nothing of it reaches Claude's context. See

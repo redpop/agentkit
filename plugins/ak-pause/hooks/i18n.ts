@@ -54,9 +54,9 @@ export function languageFor($: EngineInterface): Promise<Lang> {
 const EN = {
   title: 'Break',
   summary: 'Shows how long you have worked without a break.',
-  details:
-    'Counts across sessions. 10 minutes without input count as a break. Reminds you to drink and ' +
-    'speaks up once an hour at a quiet moment.',
+  details: (breakMinutes: number) =>
+    `Counts across sessions. ${breakMinutes} minutes without input count as a break. Reminds you to drink and ` +
+    'speaks up once a block at a quiet moment. Block and break lengths apply to every session.',
   straight: (duration: string) => `${duration} straight`,
   idle: 'Break',
   water: 'Water',
@@ -69,6 +69,11 @@ const EN = {
   breaks: 'Breaks today',
   longest: 'Longest block today',
   lastWater: 'Last water',
+  workSetting: 'Block',
+  breakSetting: 'Break after',
+  standard: (minutes: number) => `${minutes} min (default)`,
+  set: (what: string) => `Set: ${what}.`,
+  setUsage: 'Usage: /pause-set work <30|45|50|60|75|90> or /pause-set break <5|10|15|20>',
   // `11:10pm`
   time: (h: number, m: number) => `${h % 12 || 12}:${String(m).padStart(2, '0')}${h >= 12 ? 'pm' : 'am'}`,
 }
@@ -76,9 +81,9 @@ const EN = {
 const DE: typeof EN = {
   title: 'Pause',
   summary: 'Zeigt, wie lange du ohne Pause arbeitest.',
-  details:
-    'Zählt über alle Sessions. 10 Minuten ohne Eingabe gelten als Pause. Erinnert an Wasser und ' +
-    'meldet sich einmal pro Stunde in einem ruhigen Moment.',
+  details: (breakMinutes: number) =>
+    `Zählt über alle Sessions. ${breakMinutes} Minuten ohne Eingabe gelten als Pause. Erinnert an Wasser und ` +
+    'meldet sich einmal pro Block in einem ruhigen Moment. Block- und Pausenlänge gelten für alle Sessions.',
   straight: (duration: string) => `${duration} am Stück`,
   idle: 'Pause',
   water: 'Wasser',
@@ -91,6 +96,11 @@ const DE: typeof EN = {
   breaks: 'Pausen heute',
   longest: 'Längster Block heute',
   lastWater: 'Wasser zuletzt',
+  workSetting: 'Block',
+  breakSetting: 'Pause ab',
+  standard: (minutes: number) => `${minutes} min (Standard)`,
+  set: (what: string) => `Gesetzt: ${what}.`,
+  setUsage: 'Aufruf: /pause-set work <30|45|50|60|75|90> oder /pause-set break <5|10|15|20>',
   // `23:10`
   time: (h: number, m: number) => `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`,
 }

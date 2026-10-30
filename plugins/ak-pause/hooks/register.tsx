@@ -3,19 +3,35 @@
 // the conversation, or know no timer); no code is taken over.
 //
 // The count is the person's, not the session's: every session of the mod reads and writes one block
-// in the store. Ten minutes without input end it. Nothing of it reaches Claude's context.
+// in the store. Ten minutes without input end it, or the break length the person set. Nothing of it
+// reaches Claude's context.
 
 import type { EngineInterface, Register, Timer } from 'claude-code'
 
-import type { Block } from './block'
-import { LONG_TURN_MS, NOTIFY_AT_MS, WORK_MS, drink, mayNotice, notice, parse, sensed, touch, workedMs } from './block'
+import type { Block, Limits } from './block'
+import {
+  BREAK_MINUTES,
+  LONG_TURN_MS,
+  WORK_MINUTES,
+  drink,
+  limitsOf,
+  mayNotice,
+  notice,
+  notifyAtMs,
+  parse,
+  sensed,
+  storedLimits,
+  touch,
+  workedMs,
+} from './block'
 import { languageFor, learnLanguage, texts } from './i18n'
 import { systemIdleMs } from './idle'
 import type { Segment } from './view'
-import { DRINK, cardOf, notifyText, segmentOf, toastText } from './view'
+import { DRINK, SET, cardOf, notifyText, segmentOf, settingsOf, toastText } from './view'
 
 const NAME = 'ak-pause'
 const KEY = 'block'
+const LIMITS = 'limits'
 const TICK_MS = 60_000
 // Typing writes the block at most this often; a prompt sent always does.
 const TYPING_MS = 60_000
@@ -69,6 +85,11 @@ async function read($: EngineInterface): Promise<{ ok: boolean; block: Block | u
   }
 }
 
+/** The block and break lengths the person set, shared by every session; the defaults when unreadable. */
+async function limits($: EngineInterface): Promise<Limits> {
+  return limitsOf(await $.store.get(LIMITS).catch(() => undefined))
+}
+
 /** Writes the shared block; a write that fails is dropped, and the next input tries again. */
 async function write($: EngineInterface, block: Block): Promise<void> {
   await $.store.set(KEY, block).catch(() => {})
@@ -78,9 +99,10 @@ async function write($: EngineInterface, block: Block): Promise<void> {
 async function show($: EngineInterface, pause: Pause, gate: Gate): Promise<void> {
   const now = await $.clock.now()
   const lang = await languageFor($)
-  const { block } = await read($)
-  const segment = segmentOf(block, now, lang)
-  pause.shown = segment === undefined ? undefined : { ...segment, card: cardOf(block, now, lang) }
+  const [{ block }, set] = await Promise.all([read($), limits($)])
+  const segment = segmentOf(block, now, lang, set)
+  pause.shown =
+    segment === undefined ? undefined : { ...segment, card: cardOf(block, now, lang, set), settings: settingsOf(set, lang) }
   await gate.publish(() => $.mods.isOn({ name: NAME }), () => $.mods.segment(pause.shown))
   $.ui.invalidate('ui.render')
 }
@@ -97,8 +119,8 @@ async function sense($: EngineInterface, pause: Pause): Promise<void> {
     return
   }
   const now = await $.clock.now()
-  const { ok, block } = await read($)
-  const next = ok ? sensed(block, now - idleMs, now) : undefined
+  const [{ ok, block }, set] = await Promise.all([read($), limits($)])
+  const next = ok ? sensed(block, now - idleMs, now, set.breakMs) : undefined
   if (next === undefined) return
   pause.lastWrite = now
   await write($, next)
@@ -133,27 +155,37 @@ async function active($: EngineInterface, pause: Pause, gate: Gate, isTyping: bo
   if (isTyping) pause.lastTyped = now
   if (isTyping && now - pause.lastWrite < TYPING_MS) return
   if (await gate.isOff(() => $.mods.isOn({ name: NAME }))) return
-  const { ok, block } = await read($)
+  const [{ ok, block }, set] = await Promise.all([read($), limits($)])
   if (!ok) return
   pause.lastWrite = now
-  await write($, touch(block, now))
+  await write($, touch(block, now, set.breakMs))
   await show($, pause, gate)
 }
 
 /**
- * The block's one hint, once it has run `atMs`: claimed in the store first, so no session repeats
- * it. None while the person types: the next quiet moment gets it.
+ * The block's one hint: during a long turn from ten minutes before the block's end, after a turn
+ * from its end. Claimed in the store first, so no session repeats it. None while the person types:
+ * the next quiet moment gets it.
  */
-async function hint($: EngineInterface, pause: Pause, gate: Gate, atMs: number, isLong: boolean): Promise<void> {
+async function hint($: EngineInterface, pause: Pause, gate: Gate, isLong: boolean): Promise<void> {
   if (await gate.isOff(() => $.mods.isOn({ name: NAME }))) return
   const now = await $.clock.now()
   if (now - pause.lastTyped < TYPED_MS) return
-  const { block } = await read($)
-  if (block === undefined || !mayNotice(block, now, atMs)) return
+  const [{ block }, set] = await Promise.all([read($), limits($)])
+  const atMs = isLong ? notifyAtMs(set) : set.workMs
+  if (block === undefined || !mayNotice(block, now, atMs, set.breakMs)) return
   await write($, notice(block))
   const lang = await languageFor($)
-  if (isLong) await $.ui.notify(notifyText(workedMs(block, now), lang)).catch(() => {})
-  else $.ui.toast(toastText(workedMs(block, now), lang))
+  const worked = workedMs(block, now, set.breakMs)
+  if (isLong) await $.ui.notify(notifyText(worked, lang)).catch(() => {})
+  else $.ui.toast(toastText(worked, lang))
+}
+
+/** Announces the mod to ak-mods, its details naming the break length set now. */
+async function declare($: EngineInterface): Promise<boolean> {
+  const [t, set] = await Promise.all([languageFor($).then(texts), limits($)])
+
+  return $.mods.declare({ name: NAME, title: t.title, summary: t.summary, details: t.details(storedLimits(set).breakMinutes) })
 }
 
 export const register: Register = on => {
@@ -189,13 +221,14 @@ export const register: Register = on => {
   const gate: Gate = { publish, isOff }
 
   on('session.start', async ($, e, next) => {
-    const t = texts(await learnLanguage($))
+    await learnLanguage($)
     try {
-      isSwitched = await $.mods.declare({ name: NAME, title: t.title, summary: t.summary, details: t.details })
+      isSwitched = await declare($)
     } catch {
       isSwitched = false
     }
     await $.command.register({ name: DRINK, description: 'Mark that you drank water' })
+    await $.command.register({ name: SET, description: 'Set the block or break length: work <minutes> or break <minutes>' })
     // A session asks the system afresh: `ioreg` may answer now where it did not before.
     pause.canSense = true
     if (!(await isOff(() => $.mods.isOn({ name: NAME })))) {
@@ -226,7 +259,7 @@ export const register: Register = on => {
     if (e.agentId || (await isOff(() => $.mods.isOn({ name: NAME })))) return done
     pause.longTurn?.cancel()
     pause.longTurn = $.clock.after(LONG_TURN_MS, () => {
-      hint($, pause, gate, NOTIFY_AT_MS, true).catch(() => {})
+      hint($, pause, gate, true).catch(() => {})
     })
 
     return done
@@ -238,7 +271,7 @@ export const register: Register = on => {
     if (e.agentId) return done
     pause.longTurn?.cancel()
     pause.longTurn = undefined
-    await hint($, pause, gate, WORK_MS, false)
+    await hint($, pause, gate, false)
 
     return done
   }).catch(($, e, next) => next(e))
@@ -253,6 +286,30 @@ export const register: Register = on => {
     })
 
     return {}
+  })
+
+  // The Mods pane's pickers run this, as a person may: one length, stored for every session.
+  on('command.run', { command: SET }, async ($, e) => {
+    const t = texts(await languageFor($))
+    const words = e.args.trim().split(/\s+/)
+    const [what, value] = words
+    const minutes = Number(value)
+    const options: readonly number[] | undefined =
+      what === 'work' ? WORK_MINUTES : what === 'break' ? BREAK_MINUTES : undefined
+    if (words.length !== 2 || options === undefined || !options.includes(minutes)) return { text: t.setUsage }
+    const held = storedLimits(await limits($))
+    const next = what === 'work' ? { ...held, workMinutes: minutes } : { ...held, breakMinutes: minutes }
+    await $.store.set(LIMITS, next)
+    // Off the hook: the pane's picker runs this inside ak-mods' own call, where a publish is lost. The
+    // details are declared again, as they name the break length.
+    $.clock.after(0, () => {
+      ;(isSwitched ? declare($) : Promise.resolve(false))
+        .catch(() => false)
+        .then(() => show($, pause, gate))
+        .catch(() => {})
+    })
+
+    return { text: t.set(`${what === 'work' ? t.workSetting : t.breakSetting} ${minutes} min`) }
   })
 
   // /clear, /resume and /branch end the chat, and ak-mods clears every segment with it. Publish

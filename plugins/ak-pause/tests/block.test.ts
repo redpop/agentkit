@@ -1,6 +1,6 @@
 import { expect, test } from 'claude-code/testing'
 
-import { dateOf, drink, isIdle, isLate, isWaterDue, mayNotice, notice, parse, sensed, touch, workedMs } from '../hooks/block'
+import { DEFAULT_LIMITS, dateOf, drink, isIdle, isLate, isWaterDue, limitsOf, mayNotice, notice, notifyAtMs, parse, sensed, storedLimits, touch, workedMs } from '../hooks/block'
 import type { Block } from '../hooks/block'
 
 // A local morning, so that a few hours on stay on the same date.
@@ -97,4 +97,24 @@ test("the system's input moves the block on once a minute newer", () => {
 test('no block starts from an input a break back', () => {
   expect(sensed(undefined, T, T + 10 * MIN)).toBeUndefined()
   expect(sensed(undefined, T, T + 9 * MIN)).toEqual(started)
+})
+
+test('limits come from the store in minutes, each one of its options, else the default', () => {
+  expect(limitsOf(undefined)).toEqual(DEFAULT_LIMITS)
+  expect(limitsOf({ workMinutes: 45, breakMinutes: 15 })).toEqual({ workMs: 45 * MIN, breakMs: 15 * MIN })
+  expect(limitsOf({ workMinutes: 44, breakMinutes: '15' })).toEqual(DEFAULT_LIMITS)
+  expect(storedLimits({ workMs: 45 * MIN, breakMs: 15 * MIN })).toEqual({ workMinutes: 45, breakMinutes: 15 })
+})
+
+test('the long-turn hint comes ten minutes before the block ends', () => {
+  expect(notifyAtMs(DEFAULT_LIMITS)).toBe(50 * MIN)
+  expect(notifyAtMs({ workMs: 45 * MIN, breakMs: 10 * MIN })).toBe(35 * MIN)
+})
+
+test('a longer break length keeps a quiet stretch inside the block', () => {
+  const quiet = { ...started, lastActive: T }
+  expect(isIdle(quiet, T + 12 * MIN)).toBe(true)
+  expect(isIdle(quiet, T + 12 * MIN, 15 * MIN)).toBe(false)
+  expect(touch(quiet, T + 12 * MIN, 15 * MIN).blockStart).toBe(T)
+  expect(workedMs(quiet, T + 12 * MIN, 15 * MIN)).toBe(12 * MIN)
 })
