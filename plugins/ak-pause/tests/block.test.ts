@@ -1,6 +1,6 @@
 import { expect, test } from 'claude-code/testing'
 
-import { dateOf, drink, isIdle, isLate, isWaterDue, mayNotice, notice, parse, touch, workedMs } from '../hooks/block'
+import { dateOf, drink, isIdle, isLate, isWaterDue, mayNotice, notice, parse, sensed, touch, workedMs } from '../hooks/block'
 import type { Block } from '../hooks/block'
 
 // A local morning, so that a few hours on stay on the same date.
@@ -85,4 +85,16 @@ test('parse rejects what is not a block', () => {
   expect(parse(started)).toEqual(started)
   const noticed = notice(started)
   expect(parse(JSON.parse(JSON.stringify(noticed)))).toEqual(noticed)
+})
+
+test("the system's input moves the block on once a minute newer", () => {
+  expect(sensed(started, T + 59_999, T + 59_999)).toBeUndefined()
+  expect(sensed(started, T + MIN, T + MIN)?.lastActive).toBe(T + MIN)
+  // Back from a break: a new block, the break counted.
+  expect(sensed(started, T + 15 * MIN, T + 15 * MIN)).toEqual(touch(started, T + 15 * MIN))
+})
+
+test('no block starts from an input a break back', () => {
+  expect(sensed(undefined, T, T + 10 * MIN)).toBeUndefined()
+  expect(sensed(undefined, T, T + 9 * MIN)).toEqual(started)
 })

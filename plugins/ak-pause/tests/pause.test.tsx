@@ -17,7 +17,8 @@ const running = (minutes: number, now = T): Block => ({
 })
 
 // The engine beneath the plugin: the clock, the store the sessions share (its writes counted, a
-// read that fails on demand), the toasts and the notifications.
+// read that fails on demand), the toasts, the notifications and the system's last input. Without
+// `system.lastInput`, `ioreg` is missing, as on Linux and Windows.
 const engine = (on: On, stored: Record<string, unknown> = {}, { isFailing = false } = {}) => {
   const clock = mock.clock(on, { now: T })
   // The texts are German: the strings the spec fixes.
@@ -26,6 +27,17 @@ const engine = (on: On, stored: Record<string, unknown> = {}, { isFailing = fals
   const notes: string[] = []
   const writes: unknown[] = []
   const reads: string[] = []
+  const system: { lastInput?: number; asks: number } = { asks: 0 }
+  on('process.run', (_, e) => {
+    if (e.argv[0] !== 'ioreg') throw new Error('unexpected call')
+    system.asks += 1
+    if (system.lastInput === undefined) throw new Error('spawn ioreg ENOENT')
+    const idleNs = (clock.now() - system.lastInput) * 1_000_000
+
+    return {
+      value: { exitCode: 0, stdout: `"HIDIdleTime" = ${idleNs}\n`, stderr: '', isStdoutTruncated: false, isStderrTruncated: false },
+    }
+  })
   on('store.get', (_, e) => {
     reads.push(e.key)
     if (isFailing) throw new Error('no store')
@@ -61,7 +73,7 @@ const engine = (on: On, stored: Record<string, unknown> = {}, { isFailing = fals
     return <Text>engine</Text>
   })
 
-  return { clock, toasts, notes, writes, reads, stored }
+  return { clock, toasts, notes, writes, reads, stored, system }
 }
 
 type Segment = Parameters<EngineInterface['mods']['segment']>[0]
@@ -317,4 +329,49 @@ test('no hint while the person types', OWNED, async ($, on) => {
   await turn($)
   await clock.settle()
   expect(plain(toasts)).toEqual(['1 h 01 am Stück. Guter Moment für eine Pause.'])
+})
+
+test('work in another app continues the block', OWNED, async ($, on) => {
+  const { clock, toasts, system } = engine(on)
+  system.lastInput = T
+  await start($)
+  await submit($)
+  await clock.advance(5 * MIN)
+  // The editor, not Claude: only the system sees it.
+  system.lastInput = clock.now()
+  await clock.advance(9 * MIN)
+  expect(last(toasts)).toBe('14 min am Stück')
+  await clock.advance(MIN)
+  expect(last(toasts)).toBe('Pause')
+})
+
+test('a break away from the machine ends the block', OWNED, async ($, on) => {
+  const { clock, toasts, stored, system } = engine(on)
+  system.lastInput = T
+  await start($)
+  await submit($)
+  await clock.advance(15 * MIN)
+  expect(last(toasts)).toBe('Pause')
+  system.lastInput = clock.now()
+  await clock.advance(MIN)
+  expect(last(toasts)).toBe('1 min am Stück')
+  expect((stored.block as Block).day).toMatchObject({ breaks: 1, lastBreak: { at: T, ms: 15 * MIN } })
+})
+
+test('no block starts from an input a break back', OWNED, async ($, on) => {
+  const { clock, toasts, writes, system } = engine(on)
+  system.lastInput = T - 30 * MIN
+  await start($)
+  await clock.advance(MIN)
+  expect(writes).toEqual([])
+  expect(segments(toasts).filter(one => one !== undefined)).toEqual([])
+})
+
+test('without ioreg the input in Claude counts alone, asked once', OWNED, async ($, on) => {
+  const { clock, toasts, system } = engine(on)
+  await start($)
+  await submit($)
+  await clock.advance(10 * MIN)
+  expect(last(toasts)).toBe('Pause')
+  expect(system.asks).toBe(1)
 })

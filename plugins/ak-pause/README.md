@@ -18,8 +18,9 @@ Requires Claude Code 2.1.309 or later (hooks-module support).
 - Ten minutes without input count as a break: the next input starts a new block. There is no
   button to press for it. The ten minutes are how the mod notices you were away, not how long a
   break should be.
-- Input is what you do in Claude: a prompt sent, or typing in the prompt box. Work in other apps is
-  not seen, so a long stretch in your editor alone looks like a break.
+- On macOS, input is any mouse, keyboard or trackpad input, in any app. On Linux and Windows it is
+  only what you do in Claude: a prompt sent, or typing in the prompt box. There, a long stretch in
+  your editor alone looks like a break.
 - The segment draws plain for the first 50 minutes, then in the info, warning (60) and error (90)
   colours.
 - After 45 minutes a water hint joins, with a **Drank** button that clears it; from 22:00 a dim

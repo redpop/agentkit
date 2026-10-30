@@ -8,8 +8,9 @@
 import type { EngineInterface, Register, Timer } from 'claude-code'
 
 import type { Block } from './block'
-import { LONG_TURN_MS, NOTIFY_AT_MS, WORK_MS, drink, isIdle, mayNotice, notice, parse, touch, workedMs } from './block'
+import { LONG_TURN_MS, NOTIFY_AT_MS, WORK_MS, drink, mayNotice, notice, parse, sensed, touch, workedMs } from './block'
 import { languageFor, learnLanguage, texts } from './i18n'
+import { systemIdleMs } from './idle'
 import type { Segment } from './view'
 import { DRINK, cardOf, notifyText, segmentOf, toastText } from './view'
 
@@ -37,6 +38,8 @@ type Pause = {
   lastTyped: number
   tick: Timer | undefined
   longTurn: Timer | undefined
+  // Whether the system's idle time is asked for: false once it could not tell, until the next session.
+  canSense: boolean
 }
 
 const pausing = (): Pause => ({
@@ -45,6 +48,7 @@ const pausing = (): Pause => ({
   lastTyped: Number.NEGATIVE_INFINITY,
   tick: undefined,
   longTurn: undefined,
+  canSense: true,
 })
 
 const stop = (pause: Pause) => {
@@ -81,11 +85,42 @@ async function show($: EngineInterface, pause: Pause, gate: Gate): Promise<void>
   $.ui.invalidate('ui.render')
 }
 
-/** Redraws every minute while the mod is on, so a block's time moves and a break shows. */
-function ticking($: EngineInterface, pause: Pause, gate: Gate): void {
+/**
+ * The system's last input, on macOS: work in another app continues the block as input in Claude
+ * does. Where the system cannot tell, the mod stops asking and counts the input in Claude alone.
+ */
+async function sense($: EngineInterface, pause: Pause): Promise<void> {
+  if (!pause.canSense) return
+  const idleMs = await systemIdleMs($)
+  if (idleMs === undefined) {
+    pause.canSense = false
+    return
+  }
+  const now = await $.clock.now()
+  const { ok, block } = await read($)
+  const next = ok ? sensed(block, now - idleMs, now) : undefined
+  if (next === undefined) return
+  pause.lastWrite = now
+  await write($, next)
+}
+
+/** Asks the system for its last input, then draws the block again. */
+async function refresh($: EngineInterface, pause: Pause, gate: Gate): Promise<void> {
+  await sense($, pause)
+  await show($, pause, gate)
+}
+
+/**
+ * The mod is on: asks the system off the hook, so no start waits on `ioreg`, then redraws every
+ * minute, so a block's time moves and a break shows.
+ */
+function resume($: EngineInterface, pause: Pause, gate: Gate): void {
+  $.clock.after(0, () => {
+    refresh($, pause, gate).catch(() => {})
+  })
   pause.tick?.cancel()
   pause.tick = $.clock.every(TICK_MS, () => {
-    show($, pause, gate).catch(() => {})
+    refresh($, pause, gate).catch(() => {})
   })
 }
 
@@ -161,9 +196,11 @@ export const register: Register = on => {
       isSwitched = false
     }
     await $.command.register({ name: DRINK, description: 'Mark that you drank water' })
+    // A session asks the system afresh: `ioreg` may answer now where it did not before.
+    pause.canSense = true
     if (!(await isOff(() => $.mods.isOn({ name: NAME })))) {
       await show($, pause, gate)
-      ticking($, pause, gate)
+      resume($, pause, gate)
     }
 
     return next(e)
@@ -273,8 +310,7 @@ export const register: Register = on => {
       if (isOn) {
         $.clock.after(0, () => {
           if (change !== switches) return
-          show($, pause, gate).catch(() => {})
-          ticking($, pause, gate)
+          resume($, pause, gate)
         })
       } else {
         stop(pause)

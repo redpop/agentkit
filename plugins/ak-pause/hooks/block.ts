@@ -11,6 +11,8 @@ export const WATER_MS = 2_700_000
 export const NOTIFY_AT_MS = 3_000_000
 /** A turn running this long leaves the person waiting. */
 export const LONG_TURN_MS = 180_000
+/** The system's last input moves the block on once it is this much newer. */
+export const SENSE_STEP_MS = 60_000
 
 /** The local day's tally; `lastBreak` is the latest break's end of work and its length. */
 export type Day = { date: string; breaks: number; longest: number; lastBreak?: { at: number; ms: number } }
@@ -81,6 +83,17 @@ export function touch(block: Block | undefined, now: number): Block {
       : { date, breaks: 0, longest: 0 }
 
   return { lastActive: now, blockStart: now, waterSince: now, day }
+}
+
+/**
+ * The block after the system's last input at `at`, or undefined when there is nothing to write: an
+ * input less than a minute newer than the block's own, or, with no block yet, one a break back.
+ * That one would start a block nobody worked in, and its first input would count a break.
+ */
+export function sensed(block: Block | undefined, at: number, now: number): Block | undefined {
+  if (block === undefined) return now - at >= BREAK_MS ? undefined : touch(undefined, at)
+
+  return at - block.lastActive < SENSE_STEP_MS ? undefined : touch(block, at)
 }
 
 /** The block once the person drank at `now`. */

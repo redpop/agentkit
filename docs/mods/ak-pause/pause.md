@@ -9,10 +9,11 @@ Requires Claude Code 2.1.309 or later (hooks-module support). Switched per chat 
 
 - **The time** (`4 min am Stück`) is how long you have worked without a break. The ring beside it
   fills to an hour.
-- **What counts as work** is what you do in Claude: sending a prompt, or typing in the prompt box
-  without sending it. The mod sees nothing outside Claude. Fifteen minutes in your editor or browser
-  alone look like a break to it.
-- **Ten minutes** without input in Claude end the block: the segment shows `Pause`, and the next
+- **What counts as work** on macOS is any input at the machine: the mouse, the keyboard or the
+  trackpad, in any app. On Linux and Windows it is only what you do in Claude: sending a prompt, or
+  typing in the prompt box without sending it. There, fifteen minutes in your editor or browser
+  alone look like a break. See [Platforms](#platforms).
+- **Ten minutes** without input end the block: the segment shows `Pause`, and the next
   input starts again at 0. This is how the mod notices that you were away, not how long a break
   should be; it does not tell you that.
 - **At 60 minutes** the colour turns to warning, and after Claude's next answer one toast suggests a
@@ -75,16 +76,36 @@ flow:
 
 Whichever comes first is the block's one hint. Switched off, the mod sends none.
 
+## Platforms
+
+| System | What counts as input |
+| --------- | --------- |
+| macOS | Any mouse, keyboard or trackpad input, in any app, plus what you do in Claude |
+| Linux, Windows | Only what you do in Claude |
+
+On macOS the mod reads the system's idle time once a minute with `ioreg` (`HIDIdleTime`), which
+needs no permission. Linux and Windows have no command that answers it on every machine: under
+X11 it takes an extra tool, Wayland has no common interface, and Windows only answers through
+PowerShell. There the mod counts the input in Claude alone, as before. Support for them may follow.
+
+The idle time is the machine's that runs Claude Code. Over SSH that is the remote host, not the
+one you sit at. Reading a long page or a call without touching the mouse counts as a break after
+ten minutes.
+
 ## How it works
 
 - An input is a prompt you send (at the terminal, through Remote Control or in the desktop app), or
   typing in the prompt box (`prompt.edit`). A background task's notification, a routine or `/loop`,
   or another agent's message is not one, and neither is a turn Claude runs on its own: whoever
-  leaves during a long task has had a break.
+  leaves during a long task has had a break. On macOS, input in any other app is one as well.
 - No hint goes out within 5 seconds of a keystroke; the next quiet moment gets it.
 - The block lives in the mod's own store, a JSON file under Claude Code's configuration directory
   that every session of the mod reads and writes. A prompt sent writes it at once, typing at most
   once a minute. A store that cannot be read shows nothing.
+- On macOS the system's idle time is read once a minute while the mod is on, and at the session's
+  start. A last input a minute or more newer than the block's moves it on, as an input in Claude
+  does. Where `ioreg`
+  does not answer, the mod stops asking until the next session.
 - Ten minutes after the last input the block is over. The next input starts a new one and counts
   the break; an input on another day starts that day's tally empty.
 - The segment is drawn again every minute while the mod is on, after each input, after `/clear`,
