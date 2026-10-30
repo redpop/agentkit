@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.64.1] - 2026-10-30
+
+### 🐛 Fixed
+
+- `ak-mods` — the setting pickers in a mod's open card line up: their labels stand in one column,
+  as wide as the longest, as the card's rows do. Before, `Pause ab` pushed its picker further right
+  than `Block`.
+
 ## [1.64.0] - 2026-10-30
 
 ### ✨ Added
