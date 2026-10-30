@@ -151,23 +151,29 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
                 {one.settings.rows.map(setting => {
                   const command = one.settings?.command ?? ''
                   const picked = setting.options.find(option => option.value === setting.value)
+                  // The labels in one column, as wide as the longest, so the pickers line up as the
+                  // card's values do. A desktop Box counts its width in text cells.
+                  const column = Math.max(...(one.settings?.rows ?? []).map(other => other.label.length))
 
-                  return PICKER_SURFACES.has(e.surface) && 'Select' in draws ? (
-                    <draws.Select
-                      key={`set-${row.name}-${setting.key}`}
-                      label={setting.label}
-                      options={setting.options}
-                      value={setting.value}
-                      onSelect={value => {
-                        // A command the host refuses changes nothing in the pane.
-                        $.command.run({ command, args: `${setting.key} ${value}` }).catch(() => {})
-                      }}
-                    />
-                  ) : (
-                    <Text key={`set-${row.name}-${setting.key}`}>
-                      <Text dimColor>{`${setting.label} `}</Text>
-                      {picked?.label ?? setting.value}
-                    </Text>
+                  return (
+                    <Box key={`set-${row.name}-${setting.key}`} flexDirection="row" alignItems="center" columnGap={1}>
+                      <Box width={column} flexShrink={0}>
+                        <Text dimColor>{setting.label}</Text>
+                      </Box>
+                      {PICKER_SURFACES.has(e.surface) && 'Select' in draws ? (
+                        <draws.Select
+                          key={`pick-${row.name}-${setting.key}`}
+                          options={setting.options}
+                          value={setting.value}
+                          onSelect={value => {
+                            // A command the host refuses changes nothing in the pane.
+                            $.command.run({ command, args: `${setting.key} ${value}` }).catch(() => {})
+                          }}
+                        />
+                      ) : (
+                        <Text key={`value-${row.name}-${setting.key}`}>{picked?.label ?? setting.value}</Text>
+                      )}
+                    </Box>
                   )
                 })}
               </Box>

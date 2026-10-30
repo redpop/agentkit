@@ -23,11 +23,11 @@ pane the title wraps and the star and the switch keep their size. On the desktop
 card rows shows no detail there: opened, the row lists the card's rows under the segment, in small
 type, labels dim in one column, each value once, rows of long values such as an id a line apart,
 above the mod's details. A mod that publishes settings shows them in its open row as pickers, one
-per setting, each with its label; a pick runs the mod's own command, which stores the value. The
-mobile app, which draws no picker yet, shows the values as text. There each mod sits on a faint
-rounded surface of its own; the terminal parts the mods by space. Once a mod has been moved, **Reset
-order** follows the mods and puts the default back. A note on how the switches reset and that the
-order applies to every chat ends the pane, small and dim.
+per setting, its label dim before it, the labels in one column; a pick runs the mod's own command,
+which stores the value. The mobile app, which draws no picker yet, shows the values as text. There
+each mod sits on a faint rounded surface of its own; the terminal parts the mods by space. Once a
+mod has been moved, **Reset order** follows the mods and puts the default back. A note on how the
+switches reset and that the order applies to every chat ends the pane, small and dim.
 
 | Button | Effect |
 | -------- | -------- |

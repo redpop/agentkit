@@ -751,14 +751,32 @@ test('an open row shows each setting as a picker, and a pick runs the mod\'s com
   for (const surface of SURFACES) {
     const ui = await $.ui.mount({ ...PANE, surface })
     // Closed, the row shows no setting.
-    expect(await ui.find({ key: 'set-ak-a-work' })).toBeUndefined()
+    expect(await ui.find({ key: 'pick-ak-a-work' })).toBeUndefined()
     await ui.press({ key: 'more-ak-a' })
-    expect(await ui.find({ key: 'set-ak-a-work' })).toMatchObject({ type: 'Select', props: { label: 'Block', value: '60' } })
-    await ui.select({ key: 'set-ak-a-work', value: '45' })
+    expect(await ui.find({ key: 'pick-ak-a-work' })).toMatchObject({ type: 'Select', props: { value: '60' } })
+    expect(await ui.find({ type: 'Text', text: 'Block' })).toBeDefined()
+    await ui.select({ key: 'pick-ak-a-work', value: '45' })
     await ui.press({ key: 'more-ak-a' })
     await ui.unmount()
   }
   expect(ran).toEqual(['zap work 45', 'zap work 45'])
+})
+
+test('the setting labels stand in one column, as wide as the longest', { plugins: MODS }, async ($, on) => {
+  engine(on)
+  await callAs($, 'ak-a', 'declare', { name: 'ak-a', title: 'Alpha', summary: 's', details: 'd' })
+  await callAs($, 'ak-a', 'set', { name: 'ak-a', on: true })
+  const row = SETTINGS.rows[0]
+  await callAs($, 'ak-a', 'segment', { text: 'x', settings: { ...SETTINGS, rows: [row, { ...row, key: 'break', label: 'Pause ab' }] } })
+
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  await ui.press({ key: 'more-ak-a' })
+  const widths = (await ui.findAll({ type: 'Box' }))
+    .filter(box => box.text === 'Block' || box.text === 'Pause ab')
+    .map(box => box.props.width)
+    .filter(width => width !== undefined)
+  expect(widths).toEqual([8, 8])
+  await ui.unmount()
 })
 
 test('a surface without a picker shows the setting as text', { plugins: MODS }, async ($, on) => {
@@ -770,7 +788,7 @@ test('a surface without a picker shows the setting as text', { plugins: MODS }, 
   const ui = await $.ui.mount({ ...PANE, surface: 'mobile' })
   await ui.press({ key: 'more-ak-a' })
   expect(await ui.find({ type: 'Select' })).toBeUndefined()
-  expect(await ui.find({ type: 'Text', text: 'Block 60 min (default)' })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: '60 min (default)' })).toBeDefined()
   await ui.unmount()
 })
 
@@ -790,7 +808,7 @@ test('settings that are not well formed are left out', { plugins: MODS }, async 
     await callAs($, 'ak-a', 'segment', { text: 'x', settings })
     const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
     await ui.press({ key: 'more-ak-a' })
-    expect(await ui.find({ key: 'set-ak-a-work' })).toBeUndefined()
+    expect(await ui.find({ key: 'pick-ak-a-work' })).toBeUndefined()
     await ui.unmount()
   }
 })
