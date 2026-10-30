@@ -1,6 +1,6 @@
 # AgentKit
 
-Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) — 16 plugins with 25 skills, 8 agents, a mod switcher with keep-warm, session-id, usage, GitLab and break mods, and domain knowledge bases for Git workflows, security, React, and more.
+Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) — 16 plugins with 26 skills, 8 agents, a mod switcher with keep-warm, session-id, usage, GitLab and break mods, and domain knowledge bases for Git workflows, security, React, and more.
 
 ## Plugins
 
@@ -21,7 +21,7 @@ Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/
 | [**ak-security**](#ak-security--security-guidelines) | 3 | — | OWASP security guidelines, LLM security, Semgrep static analysis |
 | [**ak-session-id**](#ak-session-id--copy-the-session-id) | — | — | Mod: `/session-id` copies this session's id for another session's agent; its band segment shows the id's end with a copy button |
 | [**ak-usage**](#ak-usage--context-and-rate-limit-at-a-glance) | — | — | Mod: one compact band segment with the context fill and the 5-hour limit as bars (`ctx ▬▬▬▬▬  5h ▬▬▬▬▬`, the empty cells dim) |
-| [**ak-writing**](#ak-writing--prose-quality) | 1 | — | Remove AI-slop patterns from German and English prose: docs, commits, emails, blog posts, slides |
+| [**ak-writing**](#ak-writing--prose-quality) | 2 | — | Remove AI-slop patterns from German and English prose: docs, commits, emails, blog posts, slides; clear German technical docs loosely based on ASD-STE100 |
 
 ## Installation
 
@@ -320,13 +320,15 @@ static analysis scanning.
 
 Finds and removes the patterns that make readers recognize text as AI-generated, in German and
 English, without losing facts or changing the strength of a claim. Adapted from
-[unslop_ai](https://github.com/jlwin/unslop_ai) (MIT).
+[unslop_ai](https://github.com/jlwin/unslop_ai) (MIT). A second skill writes German technical docs
+short and unambiguous, loosely based on ASD-STE100.
 
 #### Skills
 
 | Skill | Purpose | Example |
 |-------|---------|---------|
 | [`/ak-writing:unslop`](docs/skills/ak-writing/unslop.md) | Check, rewrite, or edit prose against AI-slop patterns with register profiles for docs, email, blog, social, academic, and slides | `/ak-writing:unslop --check README.md` |
+| [`/ak-writing:clear-docs-de`](docs/skills/ak-writing/clear-docs-de.md) | Write or rewrite German technical docs by fixed rules: short sentences, active voice, term table, no invented facts; Confluence pages keep their macros | `/ak-writing:clear-docs-de --rewrite docs/setup.md` |
 
 #### Knowledge
 
@@ -334,6 +336,8 @@ English, without losing facts or changing the strength of a claim. Adapted from
 |------|---------|
 | word-lists.md | German and English vocabulary in three tiers, stock phrases, stretched verbs, leak artifacts, microformats |
 | pattern-catalog.md | Before/after examples for 31 pattern families, German special cases included |
+| clear-docs-rules-de.md | German writing rules with before/after examples for `clear-docs-de`, and what its check script checks |
+| clear-docs-confluence.md | Rewriting a Confluence page with its macros, images and `macro-id`s kept |
 
 ## Recommended Tools
 

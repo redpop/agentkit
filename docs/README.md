@@ -8,7 +8,7 @@ AgentKit provides 16 plugins with specialized skills, agents, hooks, and mods fo
 
 | Category | Count | Description |
 |----------|-------|-------------|
-| [Skills](skills/) | 25 | Slash commands invoked by the user |
+| [Skills](skills/) | 26 | Slash commands invoked by the user |
 | [Agents](agents/) | 8 | Specialized sub-agents for autonomous tasks |
 | [Hooks](hooks/) | 8 plugins | Automated actions on tool events |
 | [Mods](mods/) | 5 plugins | Interface changes that the Mods pane switches on or off per chat |
@@ -32,4 +32,4 @@ AgentKit provides 16 plugins with specialized skills, agents, hooks, and mods fo
 | ak-security | Security guidelines | 3 | — | — |
 | ak-session-id | Session-id mod (copy the id) | — | — | hooks module |
 | ak-usage | Usage mod (context and 5-hour limit) | — | — | hooks module |
-| ak-writing | Prose quality, AI-slop removal | 1 | — | — |
+| ak-writing | Prose quality, AI-slop removal, clear German technical docs | 2 | — | — |
