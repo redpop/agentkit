@@ -149,7 +149,7 @@ const owner: Register = on => {
     return next(e)
   })
   on('command.run', { command: 'stand-in' }, async ($, e) => {
-    await $.mods.set({ name: 'ak-gitlab', on: e.args === 'on' })
+    await $.mods.set({ name: 'ak-ci', on: e.args === 'on' })
 
     return {}
   })
@@ -366,7 +366,7 @@ test('open runs the browser on the merge request', OWNED, async ($, on) => {
   set(RUNNING)
   await start($)
   await clock.settle()
-  await run($, 'gitlab-open')
+  await run($, 'ci-open')
   expect(runs).toContain('open https://gitlab.example.com/group/project/-/merge_requests/12')
 })
 
@@ -375,7 +375,7 @@ test('get errors appends the excerpt to the draft', OWNED, async ($, on) => {
   set({ ...FAILED, [TRACE]: { stdout: 'line 1\nERROR: boom\nline 3\n' } })
   await start($)
   await clock.settle()
-  await run($, 'gitlab-errors')
+  await run($, 'ci-errors')
   expect(fills).toHaveLength(1)
   expect(fills[0]?.mode).toBe('append')
   expect(fills[0]?.text).toStartWith('\n\nDie Pipeline von !12 ist im Job test:unit (Stage test) fehlgeschlagen.')
@@ -387,7 +387,7 @@ test('get errors under a dialog toasts and inserts nothing', OWNED, async ($, on
   set({ ...FAILED, [TRACE]: { stdout: 'ERROR: boom\n' } })
   await start($)
   await clock.settle()
-  await run($, 'gitlab-errors')
+  await run($, 'ci-errors')
   expect(plain(toasts)).toContain('Eingabefeld nicht verfügbar, Auszug nicht eingefügt')
 })
 
@@ -411,7 +411,7 @@ test('without ak-mods the own band shows the segment', async ($, on) => {
   await start($)
   await clock.settle()
   const ui = await $.ui.mount({
-    plugin: 'ak-gitlab',
+    plugin: 'ak-ci',
     component: 'AbovePrompt',
     surface: 'terminal',
     props: { hasSurvey: false, isWorking: false, maxRows: 3, bodyColumns: 80, scroll: { offset: 0, bodyRows: 3 }, view: {} },

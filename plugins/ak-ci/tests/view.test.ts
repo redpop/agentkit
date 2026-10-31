@@ -48,7 +48,7 @@ const RUNNING = [
 ]
 const FAILED = [job('build', 'build', 'success'), job('test:unit', 'test', 'failed'), job('deploy', 'deploy', 'skipped')]
 const GREEN = [job('build', 'build', 'success'), job('test:unit', 'test', 'success')]
-const OPEN = { label: 'öffnen', command: 'gitlab-open' }
+const OPEN = { label: 'öffnen', command: 'ci-open' }
 
 test('elapsed time reads minutes and seconds', () => {
   expect(elapsed(192_000)).toBe('3:12')
@@ -107,7 +107,7 @@ test('a failed pipeline names its first failed job and offers its errors', () =>
     ],
     compact: { text: '!12 ✗' },
     tone: 'alert',
-    button: { label: 'Fehler holen', command: 'gitlab-errors' },
+    button: { label: 'Fehler holen', command: 'ci-errors' },
   })
 })
 

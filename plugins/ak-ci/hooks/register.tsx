@@ -15,7 +15,7 @@ import { phaseOf } from './model'
 import type { Segment } from './view'
 import { cardFor, segmentFor, toastFor } from './view'
 
-const NAME = 'ak-gitlab'
+const NAME = 'ak-ci'
 const FAST_MS = 15_000
 const SLOW_MS = 150_000
 const TICK_MS = 5_000
@@ -197,8 +197,8 @@ export const register: Register = on => {
     } catch {
       isSwitched = false
     }
-    await $.command.register({ name: 'gitlab-open', description: 'Open the merge request of the current branch' })
-    await $.command.register({ name: 'gitlab-errors', description: "Put the failed job's log excerpt in the prompt box" })
+    await $.command.register({ name: 'ci-open', description: 'Open the merge request of the current branch' })
+    await $.command.register({ name: 'ci-errors', description: "Put the failed job's log excerpt in the prompt box" })
     soon($, watch, gate)
 
     return next(e)
@@ -241,7 +241,7 @@ export const register: Register = on => {
     return next(e)
   }).catch(($, e, next) => next(e))
 
-  on('command.run', { command: 'gitlab-open' }, async $ => {
+  on('command.run', { command: 'ci-open' }, async $ => {
     const { status } = watch
     if (status.kind === 'mr') await openUrl($, status.mr.webUrl)
     else $.ui.toast(texts(await languageFor($)).noMr)
@@ -250,7 +250,7 @@ export const register: Register = on => {
   })
 
   // The failed job's log as a draft after what is typed: a sentence can be added before it goes.
-  on('command.run', { command: 'gitlab-errors' }, async $ => {
+  on('command.run', { command: 'ci-errors' }, async $ => {
     const lang = await languageFor($)
     const t = texts(lang)
     const { status } = watch

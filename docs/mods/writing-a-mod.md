@@ -313,7 +313,7 @@ export const register: Register = on => {
   (`$ is passed to "…", which is not a function declared at the top of this file`). A mod with state
   of its own keeps it in one object that `register` creates and passes along, and its helpers
   (`refresh($, watch, gate)`, `show($, watch, gate)`) are function declarations at the top;
-  `plugins/ak-gitlab/hooks/register.tsx` does this. Inside such a helper, a callback that spells
+  `plugins/ak-ci/hooks/register.tsx` does this. Inside such a helper, a callback that spells
   `$.clock.after(…)` or passes `$` on to another top-level declaration is fine.
 - **A tool call's fields sit on the event itself.** A `tool.call` hook on `Bash` reads the command
   as `e.command`, not `e.input.command`; the types in the engine's `claude-code.d.ts` name each
@@ -377,7 +377,7 @@ What the test kit gives a test, and what it does not:
   `http` or `fs`, and it raises an event with its input object (`$.prompt.submit({ text, wait,
   origin })`), not with a plugin's arguments. A helper module that takes `$` (a module that runs a
   CLI, say) is tested with a `$` of its own that carries the one noun it uses, as
-  `plugins/ak-gitlab/tests/glab.test.ts` does with `{ process: { run } }`.
+  `plugins/ak-ci/tests/glab.test.ts` does with `{ process: { run } }`.
 - **Inside the mod, the host's calls go through hooks the test registers.** A mod's
   `$.process.run(argv, init)` reaches the test's `on('process.run', (_, e) => ({ value: … }))`,
   with `e.argv` and `e.init`; a call such as `prompt.read` answers `{ value }` the same way, an

@@ -1,4 +1,4 @@
-# GitLab (`ak-gitlab`)
+# CI (`ak-ci`)
 
 Shows the merge request of the current branch and how far its pipeline is, as one segment.
 
@@ -53,8 +53,8 @@ German or English. In German the buttons read **öffnen** and **Fehler holen**, 
 
 | Command | Does |
 | --------- | --------- |
-| `/gitlab-open` | Opens the merge request in the browser (the **open** button) |
-| `/gitlab-errors` | Puts an excerpt of the failed job's log in the prompt box (the **Get errors** button) |
+| `/ci-open` | Opens the merge request in the browser (the **open** button) |
+| `/ci-errors` | Puts an excerpt of the failed job's log in the prompt box (the **Get errors** button) |
 
 The excerpt holds the lines that look like errors, three lines around each, and the last 30 lines,
 without colours or GitLab's section markers, under a sentence that names the merge request, job and

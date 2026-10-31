@@ -7,7 +7,7 @@ Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/
 | Plugin | Skills | Agents | Description |
 |--------|--------|--------|-------------|
 | [**ak-git**](#ak-git--smart-git-operations) | 1 | 2 | Smart commits, change analysis, conflict resolution, releases |
-| [**ak-gitlab**](#ak-gitlab--merge-request-and-pipeline-at-a-glance) | — | — | Mod: one band segment with the current branch's merge request and its pipeline (`!12 4/7 3:12/~5m`), a button to open it and one to put a failed job's log in the prompt box |
+| [**ak-ci**](#ak-ci--ci-for-the-merge-request-at-a-glance) | — | — | Mod: one band segment with the current branch's merge request and its pipeline (`!12 4/7 3:12/~5m`), a button to open it and one to put a failed job's log in the prompt box |
 | [**ak-improve**](#ak-improve--code-improvement) | — | 2 | Code refactoring and performance optimization agents |
 | [**ak-js**](#ak-js--javascript-config-doctor) | 1 | 1 | JS config validation, 11 cross-file rules, monorepo-aware |
 | [**ak-keepwarm**](#ak-keepwarm--keep-the-prompt-cache-warm) | — | — | Mod: `/keepwarm` pings the prompt cache before it expires; its band segment shows how long it stays warm |
@@ -44,7 +44,7 @@ Install all plugins:
 ```text
 /plugin install ak-review@ak-marketplace
 /plugin install ak-git@ak-marketplace
-/plugin install ak-gitlab@ak-marketplace
+/plugin install ak-ci@ak-marketplace
 /plugin install ak-meta@ak-marketplace
 /plugin install ak-improve@ak-marketplace
 /plugin install ak-js@ak-marketplace
@@ -233,18 +233,18 @@ every session counted, a bar of five cells each (`ctx ▬▬▬▬▬  5h ▬▬
 so once. See
 [Usage](docs/mods/ak-usage/usage.md).
 
-### ak-gitlab — Merge Request and Pipeline at a Glance
+### ak-ci — CI for the Merge Request at a Glance
 
 A mod (needs `ak-mods`, installed with it, and a logged-in `glab`) that shows one segment in the
 shared band above the prompt: the open merge request of the current branch and its head pipeline,
 running with a ring of its finished jobs, the time so far and an estimate (`!12 4/7 3:12/~5m`),
 failed with the first failed job, or green with its duration. A toast says when it settles. See
-[GitLab](docs/mods/ak-gitlab/gitlab.md).
+[CI](docs/mods/ak-ci/ci.md).
 
 | Command | Purpose | Example |
 |---------|---------|---------|
-| [`/gitlab-open`](docs/mods/ak-gitlab/gitlab.md#commands) | Open the merge request in the browser | `/gitlab-open` |
-| [`/gitlab-errors`](docs/mods/ak-gitlab/gitlab.md#commands) | Put an excerpt of the failed job's log in the prompt box | `/gitlab-errors` |
+| [`/ci-open`](docs/mods/ak-ci/ci.md#commands) | Open the merge request in the browser | `/ci-open` |
+| [`/ci-errors`](docs/mods/ak-ci/ci.md#commands) | Put an excerpt of the failed job's log in the prompt box | `/ci-errors` |
 
 ### ak-pause — Breaks at a Glance
 

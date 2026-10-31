@@ -40,7 +40,7 @@ button, on every surface.
   at launch or with `/resume`.
 - Standard marks are global: they apply to every chat.
 - The order is global too: the band and the pane show it in every chat. The default is Usage,
-  Keepwarm, Pause, GitLab, Session-ID; other mods follow by title.
+  Keepwarm, Pause, CI, Session-ID; other mods follow by title.
 - Only AgentKit mods are listed: installed from `ak-marketplace` or loaded with `--plugin-dir`.
   The `ak-` name prefix decides only when the source is unknown.
 - An off mod draws nothing, and its segment leaves the band. Its own slash command turns it on.

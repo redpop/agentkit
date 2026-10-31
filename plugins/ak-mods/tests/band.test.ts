@@ -47,19 +47,19 @@ test('layout drops the lowest priority first, of equal ones the last shown, and 
 })
 
 test('layout draws in the order shown, not by priority', () => {
-  // AgentKit's default order with its mods' priorities: Usage 7, Keepwarm 6, Pause 4, GitLab 6, Session-ID 2.
+  // AgentKit's default order with its mods' priorities: Usage 7, Keepwarm 6, Pause 4, CI 6, Session-ID 2.
   const result = layout(
     [
       seg('usage', 'u', { priority: 7 }),
       seg('keepwarm', 'k', { priority: 6 }),
       seg('pause', 'p', { priority: 4 }),
-      seg('gitlab', 'g', { priority: 6 }),
+      seg('ci', 'c', { priority: 6 }),
       seg('session-id', 's', { priority: 2 }),
     ],
     80,
   )
 
-  expect(names(result.rows)).toEqual([['usage', 'keepwarm', 'pause', 'gitlab', 'session-id']])
+  expect(names(result.rows)).toEqual([['usage', 'keepwarm', 'pause', 'ci', 'session-id']])
 })
 
 test('layout stops at the first segment that does not fit', () => {

@@ -69,7 +69,7 @@ export function segmentFor(status: Status, nowMs: number, lang: Lang): Segment |
   if (status.kind !== 'mr') return undefined
   const t = texts(lang)
   const id: Part = { text: `!${status.mr.iid}`, tone: 'dim' }
-  const open = { label: t.open, command: 'gitlab-open' }
+  const open = { label: t.open, command: 'ci-open' }
   const pipeline = status.mr.pipeline
   const phase = phaseOf(pipeline)
   if (pipeline === undefined || phase === 'none') {
@@ -109,7 +109,7 @@ export function segmentFor(status: Status, nowMs: number, lang: Lang): Segment |
     [id, { text: ` ${look.rich ?? look.mark}`, tone: look.tone }, ...(time === undefined ? [] : [{ text: ` ${time}`, tone: 'dim' as const }])],
     [id, { text: ` ${look.short}`, tone: look.tone }],
     look.tone,
-    phase === 'failed' ? { label: t.errors, command: 'gitlab-errors' } : open,
+    phase === 'failed' ? { label: t.errors, command: 'ci-errors' } : open,
   )
 }
 

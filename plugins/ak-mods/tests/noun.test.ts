@@ -122,15 +122,15 @@ test('list sorts mods outside the order by title', { plugins: [consumer('ak-b'),
 
 test(
   'list follows the default order until a mod moves',
-  { plugins: [consumer('ak-session-id'), consumer('ak-gitlab'), consumer('ak-pause')] },
+  { plugins: [consumer('ak-session-id'), consumer('ak-ci'), consumer('ak-pause')] },
   async ($, on) => {
     engine(on)
 
-    for (const name of ['ak-session-id', 'ak-gitlab', 'ak-pause']) {
+    for (const name of ['ak-session-id', 'ak-ci', 'ak-pause']) {
       await call($, name, 'declare', { name, title: name.slice(3), summary: 's', details: 'd' })
     }
 
-    expect(titles(await call($, 'ak-pause', 'list'))).toEqual(['pause', 'gitlab', 'session-id'])
+    expect(titles(await call($, 'ak-pause', 'list'))).toEqual(['pause', 'ci', 'session-id'])
     expect(await call($, 'ak-pause', 'isOrderMoved')).toBe(false)
   },
 )
@@ -148,7 +148,7 @@ test('move persists one order for every chat, and resetOrder drops it', { plugin
   expect(titles(await call($, 'ak-a', 'list'))).toEqual(['B', 'A'])
   expect(await call($, 'ak-a', 'isOrderMoved')).toBe(true)
   // The default's names stay in it, so their mods keep their places.
-  expect(await call($, 'ak-a', 'store', 'order')).toEqual(['ak-usage', 'ak-keepwarm', 'ak-pause', 'ak-gitlab', 'ak-session-id', 'ak-showcase', 'ak-b', 'ak-a'])
+  expect(await call($, 'ak-a', 'store', 'order')).toEqual(['ak-usage', 'ak-keepwarm', 'ak-pause', 'ak-ci', 'ak-session-id', 'ak-showcase', 'ak-b', 'ak-a'])
 
   await call($, 'ak-a', 'resetOrder')
   expect(titles(await call($, 'ak-a', 'list'))).toEqual(['A', 'B'])

@@ -18,7 +18,7 @@ AgentKit provides 17 plugins with specialized skills, agents, hooks, and mods fo
 | Plugin | Focus | Skills | Agents | Hooks |
 |--------|-------|--------|--------|-------|
 | ak-git | Git workflow automation | 1 | 2 | — |
-| ak-gitlab | GitLab mod (merge request and pipeline) | — | — | hooks module |
+| ak-ci | CI mod (merge request and pipeline on GitLab) | — | — | hooks module |
 | ak-improve | Code optimization | — | 2 | — |
 | ak-js | JavaScript/Node tooling | 1 | 1 | — |
 | ak-keepwarm | Keep-warm mod (prompt cache pings) | — | — | hooks module |

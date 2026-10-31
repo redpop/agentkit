@@ -58,14 +58,14 @@ test('rows sort mods the order does not name after it, by title, case-insensitiv
 
 test('fullOrder is the default until one is stored, and appends the default names a stored one lacks', () => {
   expect(fullOrder([])).toEqual([...DEFAULT_ORDER])
-  expect(DEFAULT_ORDER).toEqual(['ak-usage', 'ak-keepwarm', 'ak-pause', 'ak-gitlab', 'ak-session-id', 'ak-showcase'])
+  expect(DEFAULT_ORDER).toEqual(['ak-usage', 'ak-keepwarm', 'ak-pause', 'ak-ci', 'ak-session-id', 'ak-showcase'])
   expect(fullOrder(['ak-session-id', 'ak-x', 'ak-usage', 'ak-x'])).toEqual([
     'ak-session-id',
     'ak-x',
     'ak-usage',
     'ak-keepwarm',
     'ak-pause',
-    'ak-gitlab',
+    'ak-ci',
     'ak-showcase',
   ])
 })

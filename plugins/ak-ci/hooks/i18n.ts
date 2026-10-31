@@ -52,7 +52,7 @@ export function languageFor($: EngineInterface): Promise<Lang> {
 }
 
 const EN = {
-  title: 'GitLab',
+  title: 'CI',
   summary: "Shows how far the pipeline of your current branch's merge request is.",
   details:
     'Above the prompt you see where the pipeline stands: none yet, running (with a progress ring, ' +
@@ -92,7 +92,7 @@ const EN = {
 }
 
 const DE: typeof EN = {
-  title: 'GitLab',
+  title: 'CI',
   summary: 'Zeigt, wie weit die Pipeline zum Merge Request deines aktuellen Branches ist.',
   details:
     'Über der Eingabe siehst du den Stand der Pipeline: noch keine, läuft (mit Fortschrittsring, ' +
@@ -132,5 +132,5 @@ const DE: typeof EN = {
     `Die Pipeline von !${iid} ist im Job ${job} (Stage ${stage}) fehlgeschlagen. Auszug aus dem Log:`,
 }
 
-/** The texts of ak-gitlab in a language. */
+/** The texts of ak-ci in a language. */
 export const texts = (lang: Lang): typeof EN => (lang === 'de' ? DE : EN)
