@@ -588,6 +588,25 @@ const PANE = {
   props: { title: 'Mods', isFocused: false, bodyColumns: 80, placement: 'dock', scroll: { offset: 0, bodyRows: 20 }, view: {} },
 } as const
 
+test('a press on a segment in the band closes the open card menu', { plugins: [consumer('ak-a')] }, async ($, on) => {
+  engine(on)
+  opening(on)
+  await publish($, 'ak-a', 'A', { text: 'x', card: [{ label: 'Id', value: '1' }], actions: [{ label: 'Copy link', command: 'zap' }] })
+
+  const pane = await $.ui.mount(PANE)
+  await pane.press({ key: 'more-ak-a' })
+  await pane.press({ key: 'menu-ak-a' })
+  expect(await pane.find({ key: 'act-ak-a-0' })).toBeDefined()
+
+  const desk = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  await desk.press({ key: 'text-ak-a-press-0' })
+  // The card is open there, the menu not: it ends with the press, whichever way the card opens.
+  expect(await pane.find({ key: 'menu-ak-a' })).toBeDefined()
+  expect(await pane.find({ key: 'act-ak-a-0' })).toBeUndefined()
+  await desk.unmount()
+  await pane.unmount()
+})
+
 test('on the desktop app a press on a segment opens the Mods pane at its mod; the terminal has no button', { plugins: [consumer('ak-a')] }, async ($, on) => {
   engine(on)
   const opened = opening(on)
