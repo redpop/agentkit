@@ -1,11 +1,11 @@
-// How the merge request and its pipeline read: the segment in the band, the card in the Mods pane
-// and the toast when the pipeline settles.
+// How the change and its checks read: the segment in the band, the card in the Mods pane and the
+// toast when the checks settle.
 
 import type { EngineInterface } from 'claude-code'
 
 import type { Lang } from './i18n'
 import { texts } from './i18n'
-import type { Job, Mr, Pipeline, Status } from './model'
+import type { Change, Checks, Job, Status } from './model'
 import { firstFailed, isBlocking, phaseOf, progressOf } from './model'
 import type { Phase } from './model'
 
@@ -24,17 +24,15 @@ export function elapsed(ms: number): string {
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`
 }
 
-// When the pipeline began to run; a pending one counts from its creation.
-const since = (pipeline: Pipeline) => Date.parse(pipeline.startedAt ?? pipeline.createdAt)
+// When the checks began to run; pending ones count from their creation.
+const since = (checks: Checks) => Date.parse(checks.startedAt ?? checks.createdAt)
 
-// How long a settled pipeline ran; undefined while GitLab names no end (a held one).
-const ran = (pipeline: Pipeline) =>
-  pipeline.finishedAt === undefined ? undefined : Date.parse(pipeline.finishedAt) - since(pipeline)
+// How long settled checks ran; undefined while the provider names no end (held ones).
+const ran = (checks: Checks) => (checks.finishedAt === undefined ? undefined : Date.parse(checks.finishedAt) - since(checks))
 
-// The job a held pipeline waits for: the first manual job it may not pass by.
-const held = (pipeline: Pipeline) =>
-  pipeline.jobs.find(job => job.status === 'manual' && !job.allowFailure) ??
-  pipeline.jobs.find(job => job.status === 'manual')
+// The job held checks wait for: the first manual job they may not pass by.
+const held = (checks: Checks) =>
+  checks.jobs.find(job => job.status === 'manual' && !job.allowFailure) ?? checks.jobs.find(job => job.status === 'manual')
 
 // A segment whose text is its parts joined, as the contract asks; `rich` for the desktop app,
 // `compact` for a band short of room.
@@ -48,17 +46,17 @@ const drawn = (parts: Part[], rich: Part[], compact: Part[], tone: Tone, button:
   button,
 })
 
-// How a settled pipeline reads: its mark in its tone, short when room is short, and whether its
-// duration says something (a held or canceled one's does not).
-function settledLook(phase: Exclude<Phase, 'none' | 'running'>, pipeline: Pipeline, lang: Lang) {
+// How settled checks read: their mark in their tone, short when room is short, and whether their
+// duration says something (held or canceled ones' does not).
+function settledLook(phase: Exclude<Phase, 'none' | 'running'>, checks: Checks, lang: Lang) {
   const t = texts(lang)
   switch (phase) {
     case 'failed':
-      return { tone: 'alert' as const, mark: `✗ ${firstFailed(pipeline)?.name ?? ''}`.trimEnd(), short: '✗', rich: undefined, isTimed: true }
+      return { tone: 'alert' as const, mark: `✗ ${firstFailed(checks)?.name ?? ''}`.trimEnd(), short: '✗', rich: undefined, isTimed: true }
     case 'success':
       return { tone: 'ok' as const, mark: '✓', short: '✓', rich: '✓ Pipeline', isTimed: true }
     case 'manual':
-      return { tone: 'warn' as const, mark: `⏸ ${held(pipeline)?.name ?? ''}`.trimEnd(), short: '⏸', rich: undefined, isTimed: false }
+      return { tone: 'warn' as const, mark: `⏸ ${held(checks)?.name ?? ''}`.trimEnd(), short: '⏸', rich: undefined, isTimed: false }
     case 'canceled':
       return { tone: 'dim' as const, mark: t.canceled, short: t.canceled, rich: undefined, isTimed: false }
   }
@@ -66,22 +64,22 @@ function settledLook(phase: Exclude<Phase, 'none' | 'running'>, pipeline: Pipeli
 
 /** The segment for what a fetch found; undefined where there is nothing to show. */
 export function segmentFor(status: Status, nowMs: number, lang: Lang): Segment | undefined {
-  if (status.kind !== 'mr') return undefined
+  if (status.kind !== 'change') return undefined
   const t = texts(lang)
-  const id: Part = { text: `!${status.mr.iid}`, tone: 'dim' }
+  const id: Part = { text: status.change.ref, tone: 'dim' }
   const open = { label: t.open, command: 'ci-open' }
-  const pipeline = status.mr.pipeline
-  const phase = phaseOf(pipeline)
-  if (pipeline === undefined || phase === 'none') {
+  const checks = status.change.checks
+  const phase = phaseOf(checks)
+  if (checks === undefined || phase === 'none') {
     const parts: Part[] = [id, { text: ` ${t.noPipeline}`, tone: 'dim' }]
 
     return drawn(parts, parts, [id], 'dim', open)
   }
 
   if (phase === 'running') {
-    const { done, total } = progressOf(pipeline)
+    const { done, total } = progressOf(checks)
     const jobs = `${done}/${total}`
-    const time = elapsed(nowMs - since(pipeline))
+    const time = elapsed(nowMs - since(checks))
     const minutes = status.estimateMs === undefined ? undefined : String(Math.max(1, Math.round(status.estimateMs / 60_000)))
     const lead: Part = { text: `${id.text} `, tone: 'dim' }
     const count: Part = { text: jobs, tone: 'info' }
@@ -100,8 +98,8 @@ export function segmentFor(status: Status, nowMs: number, lang: Lang): Segment |
     )
   }
 
-  const look = settledLook(phase, pipeline, lang)
-  const duration = ran(pipeline)
+  const look = settledLook(phase, checks, lang)
+  const duration = ran(checks)
   const time = look.isTimed && duration !== undefined ? elapsed(duration) : undefined
 
   return drawn(
@@ -113,8 +111,8 @@ export function segmentFor(status: Status, nowMs: number, lang: Lang): Segment |
   )
 }
 
-// A stage's mark: failed, all through, still moving, or not reached.
-const stageMark = (jobs: readonly Job[]) => {
+// A group's mark: failed, all through, still moving, or not reached.
+const groupMark = (jobs: readonly Job[]) => {
   if (jobs.some(isBlocking)) return '✗'
   if (jobs.every(job => job.status === 'success' || (job.status === 'failed' && job.allowFailure))) return '✓'
   if (jobs.some(job => ['running', 'pending', 'preparing', 'waiting_for_resource'].includes(job.status))) return '◐'
@@ -122,31 +120,31 @@ const stageMark = (jobs: readonly Job[]) => {
   return '○'
 }
 
-/** The card's rows in the Mods pane: the merge request, then its pipeline. */
-export function cardFor(mr: Mr, nowMs: number, lang: Lang): CardRow[] {
+/** The card's rows in the Mods pane: the change, then its checks. */
+export function cardFor(change: Change, nowMs: number, lang: Lang): CardRow[] {
   const t = texts(lang)
   const rows: CardRow[] = [
-    { label: t.card.mr, value: `!${mr.iid} ${mr.title}` },
-    { label: t.card.target, value: mr.target },
-    { label: t.card.draft, value: mr.isDraft ? t.yes : t.no },
+    { label: t.card.mr, value: change.title === undefined ? change.ref : `${change.ref} ${change.title}` },
+    ...(change.target === undefined ? [] : [{ label: t.card.target, value: change.target }]),
+    { label: t.card.draft, value: change.isDraft ? t.yes : t.no },
   ]
-  const pipeline = mr.pipeline
-  if (pipeline === undefined) return rows
+  const checks = change.checks
+  if (checks === undefined) return rows
 
-  const stages = new Map<string, Job[]>()
-  for (const job of pipeline.jobs) {
-    const stage = stages.get(job.stage) ?? []
-    stage.push(job)
-    stages.set(job.stage, stage)
+  const groups = new Map<string, Job[]>()
+  for (const job of checks.jobs) {
+    const group = groups.get(job.group) ?? []
+    group.push(job)
+    groups.set(job.group, group)
   }
-  const failed = pipeline.jobs.filter(isBlocking).map(job => job.name)
-  const start = new Date(since(pipeline))
-  const duration = phaseOf(pipeline) === 'running' ? nowMs - since(pipeline) : ran(pipeline)
+  const failed = checks.jobs.filter(isBlocking).map(job => job.name)
+  const start = new Date(since(checks))
+  const duration = phaseOf(checks) === 'running' ? nowMs - since(checks) : ran(checks)
 
   return [
     ...rows,
-    { label: t.card.pipeline, value: `#${pipeline.id} ${pipeline.status}` },
-    { label: t.card.stages, value: [...stages].map(([name, jobs]) => `${name} ${stageMark(jobs)}`).join(' · ') },
+    { label: t.card.pipeline, value: `#${checks.key} ${checks.status}` },
+    { label: t.card.stages, value: [...groups].map(([name, jobs]) => `${name} ${groupMark(jobs)}`).join(' · ') },
     ...(failed.length === 0 ? [] : [{ label: t.card.failed, value: failed.join(', ') }]),
     { label: t.card.started, value: t.time(start.getHours(), start.getMinutes()) },
     ...(duration === undefined ? [] : [{ label: t.card.duration, value: elapsed(duration) }]),
@@ -154,24 +152,24 @@ export function cardFor(mr: Mr, nowMs: number, lang: Lang): CardRow[] {
 }
 
 /**
- * The toast for a pipeline that settled, keyed by the state it reached: a retry that finishes the
- * same pipeline again gets a key of its own. Undefined for every state that gets none.
+ * The toast for checks that settled, keyed by the state they reached: a retry that finishes the
+ * same checks again gets a key of its own. Undefined for every state that gets none.
  */
-export function toastFor(mr: Mr, lang: Lang): { key: string; text: string } | undefined {
+export function toastFor(change: Change, lang: Lang): { key: string; text: string } | undefined {
   const t = texts(lang)
-  const pipeline = mr.pipeline
-  if (pipeline === undefined) return undefined
-  const finished = `${pipeline.id}:${pipeline.finishedAt}`
-  switch (phaseOf(pipeline)) {
+  const checks = change.checks
+  if (checks === undefined) return undefined
+  const finished = `${checks.key}:${checks.finishedAt}`
+  switch (phaseOf(checks)) {
     case 'success':
-      return { key: finished, text: t.green(mr.iid, elapsed(ran(pipeline) ?? 0)) }
+      return { key: finished, text: t.green(change.ref, elapsed(ran(checks) ?? 0)) }
     case 'failed':
-      return { key: finished, text: t.failed(mr.iid, firstFailed(pipeline)?.name ?? '') }
+      return { key: finished, text: t.failed(change.ref, firstFailed(checks)?.name ?? '') }
     case 'manual':
       {
-      const name = held(pipeline)?.name ?? ''
+      const name = held(checks)?.name ?? ''
 
-      return { key: `${pipeline.id}:manual:${name}`, text: t.waits(mr.iid, name) }
+      return { key: `${checks.key}:manual:${name}`, text: t.waits(change.ref, name) }
     }
     default:
       return undefined

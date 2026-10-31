@@ -376,8 +376,8 @@ What the test kit gives a test, and what it does not:
 - **The test's own `$` carries the engine's events, not the host's nouns.** It has no `process`,
   `http` or `fs`, and it raises an event with its input object (`$.prompt.submit({ text, wait,
   origin })`), not with a plugin's arguments. A helper module that takes `$` (a module that runs a
-  CLI, say) is tested with a `$` of its own that carries the one noun it uses, as
-  `plugins/ak-ci/tests/glab.test.ts` does with `{ process: { run } }`.
+  CLI, say) is tested with a `$` of its own that carries the nouns it uses, as
+  `plugins/ak-ci/tests/gitlab-provider.test.ts` does with `{ process: { run }, session: { cwd } }`.
 - **Inside the mod, the host's calls go through hooks the test registers.** A mod's
   `$.process.run(argv, init)` reaches the test's `on('process.run', (_, e) => ({ value: … }))`,
   with `e.argv` and `e.init`; a call such as `prompt.read` answers `{ value }` the same way, an

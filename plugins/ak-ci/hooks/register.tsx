@@ -7,11 +7,11 @@
 
 import type { EngineInterface, Register, Timer } from 'claude-code'
 
-import { fetchFailure, fetchStatus, openUrl } from './glab'
 import { languageFor, learnLanguage, texts } from './i18n'
 import { draftFor, excerpt } from './joblog'
-import type { Status } from './model'
+import type { ProviderName, Status } from './model'
 import { phaseOf } from './model'
+import { fetchFailure, fetchStatus, openUrl } from './provider'
 import type { Segment } from './view'
 import { cardFor, segmentFor, toastFor } from './view'
 
@@ -23,6 +23,8 @@ const TICK_MS = 5_000
 const AFTER_PUSH_MS = 10_000
 // Fetches closer than this to the last one are dropped: a prompt, its turn and a push come together.
 const QUIET_MS = 3_000
+// The host the mod reads.
+const PROVIDER: ProviderName = 'gitlab'
 // The Bash commands after which the branch or its pipeline may have changed.
 const MOVES = /\bgit\s+(?:checkout|switch|push)\b|\bglab\s+mr\s+create\b/
 
@@ -36,12 +38,12 @@ type Watch = {
   status: Status
   // The segment as last drawn, for the own band too.
   shown: Segment | undefined
-  // Each pipeline's estimate, fetched once.
-  estimates: Map<number, number | undefined>
-  // The toasts given, by the state a pipeline reached; the pipelines seen, so one already settled
-  // at first sight gets none.
+  // Each pipeline's estimate by its key, fetched once.
+  estimates: Map<string, number | undefined>
+  // The toasts given, by the state a pipeline reached; the pipelines seen, by key, so one already
+  // settled at first sight gets none.
   toasted: Set<string>
-  seen: Set<number>
+  seen: Set<string>
   isAuthToasted: boolean
   // When the session started: a pipeline created later gets its toast even when first seen settled.
   since: number
@@ -80,7 +82,7 @@ async function show($: EngineInterface, watch: Watch, gate: Gate): Promise<void>
   const lang = await languageFor($)
   const { status } = watch
   const segment = segmentFor(status, now, lang)
-  watch.shown = segment === undefined || status.kind !== 'mr' ? segment : { ...segment, card: cardFor(status.mr, now, lang) }
+  watch.shown = segment === undefined || status.kind !== 'change' ? segment : { ...segment, card: cardFor(status.change, now, lang) }
   await gate.publish(() => $.mods.isOn({ name: NAME }), () => $.mods.segment(watch.shown))
   $.ui.invalidate('ui.render')
 }
@@ -91,8 +93,8 @@ async function show($: EngineInterface, watch: Watch, gate: Gate): Promise<void>
  */
 function arm($: EngineInterface, watch: Watch, gate: Gate): void {
   stop(watch)
-  if (watch.status.kind !== 'mr') return
-  const isRunning = phaseOf(watch.status.mr.pipeline) === 'running'
+  if (watch.status.kind !== 'change') return
+  const isRunning = phaseOf(watch.status.change.checks) === 'running'
   watch.poll = $.clock.after(isRunning ? FAST_MS : SLOW_MS, () => {
     refresh($, watch, gate).catch(() => {})
   })
@@ -109,11 +111,11 @@ function arm($: EngineInterface, watch: Watch, gate: Gate): void {
  */
 async function announce($: EngineInterface, watch: Watch): Promise<void> {
   const { status } = watch
-  if (status.kind !== 'mr' || status.mr.pipeline === undefined) return
-  const { id, createdAt } = status.mr.pipeline
-  const toast = toastFor(status.mr, await languageFor($))
-  const isOld = !watch.seen.has(id) && Date.parse(createdAt) < watch.since
-  watch.seen.add(id)
+  if (status.kind !== 'change' || status.change.checks === undefined) return
+  const { key, createdAt } = status.change.checks
+  const toast = toastFor(status.change, await languageFor($))
+  const isOld = !watch.seen.has(key) && Date.parse(createdAt) < watch.since
+  watch.seen.add(key)
   if (toast === undefined || watch.toasted.has(toast.key)) return
   watch.toasted.add(toast.key)
   if (!isOld) $.ui.toast(toast.text)
@@ -129,7 +131,7 @@ async function refresh($: EngineInterface, watch: Watch, gate: Gate): Promise<vo
       stop(watch)
       return
     }
-    const next = await fetchStatus($, watch.estimates)
+    const next = await fetchStatus($, PROVIDER, watch.estimates)
     watch.lastEnded = await $.clock.now()
     if (next.kind === 'unavailable' && next.reason === 'error') {
       arm($, watch, gate)
@@ -137,7 +139,7 @@ async function refresh($: EngineInterface, watch: Watch, gate: Gate): Promise<vo
     }
     if (next.kind === 'unavailable' && next.reason === 'no-auth' && !watch.isAuthToasted) {
       watch.isAuthToasted = true
-      $.ui.toast(texts(await languageFor($)).noAuth)
+      $.ui.toast(texts(await languageFor($)).noAuth(next.provider ?? PROVIDER))
     }
     watch.status = next
     await announce($, watch)
@@ -243,7 +245,7 @@ export const register: Register = on => {
 
   on('command.run', { command: 'ci-open' }, async $ => {
     const { status } = watch
-    if (status.kind === 'mr') await openUrl($, status.mr.webUrl)
+    if (status.kind === 'change') await openUrl($, status.change.webUrl)
     else $.ui.toast(texts(await languageFor($)).noMr)
 
     return {}
@@ -254,12 +256,13 @@ export const register: Register = on => {
     const lang = await languageFor($)
     const t = texts(lang)
     const { status } = watch
-    const failure = status.kind === 'mr' && status.mr.pipeline !== undefined ? await fetchFailure($, status.mr.pipeline) : undefined
-    if (status.kind !== 'mr' || failure === undefined) {
+    const failure = status.kind === 'change' && status.change.checks !== undefined ? await fetchFailure($, PROVIDER, status.change.checks) : undefined
+    // A failed job without a log of its own gets the same toast as an unreadable log.
+    if (status.kind !== 'change' || failure === undefined || 'noLog' in failure) {
       $.ui.toast(t.noLog)
       return {}
     }
-    const body = draftFor(status.mr, failure.job, excerpt(failure.trace), lang, failure.isCut)
+    const body = draftFor(status.change, failure.job, excerpt(failure.trace), lang, failure.isCut)
     const box = await $.prompt.read()
     const filled = await $.prompt.fill({ text: box.text === '' ? body : `\n\n${body}`, mode: 'append' })
     if (!filled.isFilled) $.ui.toast(t.noBox)

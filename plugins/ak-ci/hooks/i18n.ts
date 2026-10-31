@@ -1,5 +1,7 @@
 import type { EngineInterface } from 'claude-code'
 
+import type { ProviderName } from './model'
+
 /** The languages the texts come in. */
 export type Lang = 'en' | 'de'
 
@@ -51,6 +53,9 @@ export function languageFor($: EngineInterface): Promise<Lang> {
   return language ?? learnLanguage($)
 }
 
+// The CLI each host is read through, as the texts name it.
+const CLI: Record<ProviderName, string> = { gitlab: 'glab', github: 'gh' }
+
 const EN = {
   title: 'CI',
   summary: "Shows how far the pipeline of your current branch's merge request is.",
@@ -79,16 +84,16 @@ const EN = {
   no: 'no',
   // `11:10pm`
   time: (h: number, m: number) => `${h % 12 || 12}:${String(m).padStart(2, '0')}${h >= 12 ? 'pm' : 'am'}`,
-  green: (iid: number, duration: string) => `Pipeline !${iid} green (${duration})`,
-  failed: (iid: number, job: string) => `Pipeline !${iid} failed: ${job}`,
-  waits: (iid: number, job: string) => `Pipeline !${iid} waits for ${job}`,
-  noAuth: 'glab not logged in',
+  green: (ref: string, duration: string) => `Pipeline ${ref} green (${duration})`,
+  failed: (ref: string, job: string) => `Pipeline ${ref} failed: ${job}`,
+  waits: (ref: string, job: string) => `Pipeline ${ref} waits for ${job}`,
+  noAuth: (provider: ProviderName) => `${CLI[provider]} not logged in`,
   noMr: 'No open merge request for this branch',
   noBox: 'Prompt box not available, excerpt not inserted',
   noLog: 'Job log not readable',
   cut: 'The log is longer than 4 MiB; its end is missing from the excerpt.',
-  draft: (iid: number, job: string, stage: string) =>
-    `The pipeline of !${iid} failed in job ${job} (stage ${stage}). Excerpt from the log:`,
+  draft: (ref: string, job: string, stage: string) =>
+    `The pipeline of ${ref} failed in job ${job} (stage ${stage}). Excerpt from the log:`,
 }
 
 const DE: typeof EN = {
@@ -120,16 +125,16 @@ const DE: typeof EN = {
   no: 'nein',
   // `23:10`
   time: (h: number, m: number) => `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`,
-  green: (iid: number, duration: string) => `Pipeline !${iid} grün (${duration})`,
-  failed: (iid: number, job: string) => `Pipeline !${iid} fehlgeschlagen: ${job}`,
-  waits: (iid: number, job: string) => `Pipeline !${iid} wartet auf ${job}`,
-  noAuth: 'glab nicht angemeldet',
+  green: (ref: string, duration: string) => `Pipeline ${ref} grün (${duration})`,
+  failed: (ref: string, job: string) => `Pipeline ${ref} fehlgeschlagen: ${job}`,
+  waits: (ref: string, job: string) => `Pipeline ${ref} wartet auf ${job}`,
+  noAuth: (provider: ProviderName) => `${CLI[provider]} nicht angemeldet`,
   noMr: 'Kein offener Merge Request für diesen Branch',
   noBox: 'Eingabefeld nicht verfügbar, Auszug nicht eingefügt',
   noLog: 'Job-Log nicht lesbar',
   cut: 'Das Log ist länger als 4 MiB; sein Ende fehlt im Auszug.',
-  draft: (iid: number, job: string, stage: string) =>
-    `Die Pipeline von !${iid} ist im Job ${job} (Stage ${stage}) fehlgeschlagen. Auszug aus dem Log:`,
+  draft: (ref: string, job: string, stage: string) =>
+    `Die Pipeline von ${ref} ist im Job ${job} (Stage ${stage}) fehlgeschlagen. Auszug aus dem Log:`,
 }
 
 /** The texts of ak-ci in a language. */

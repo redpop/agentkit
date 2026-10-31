@@ -11,6 +11,7 @@ const JOBS = 'glab api projects/:id/pipelines/4711/jobs?per_page=100'
 const BRIDGES = 'glab api projects/:id/pipelines/4711/bridges?per_page=100'
 const GREEN = 'glab api projects/:id/pipelines?status=success&per_page=5'
 const TRACE = 'glab api projects/:id/jobs/2/trace'
+const REPO = 'glab api projects/:id'
 
 type Answer = { exitCode?: number; stdout?: unknown; stderr?: string }
 
@@ -20,6 +21,7 @@ const jobs = (statuses: string[]) =>
 // GitLab with merge request !12 and its head pipeline 4711 in a status, finished at `finished`.
 const gitlab = (status: string | undefined, statuses: string[] = [], finished?: string): Record<string, Answer> => ({
   [MRS]: { stdout: [{ iid: 12 }] },
+  [REPO]: { stdout: { path_with_namespace: 'group/project' } },
   [MR]: {
     stdout: {
       iid: 12,

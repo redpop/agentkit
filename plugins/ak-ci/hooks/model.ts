@@ -1,22 +1,27 @@
-// The merge request of the current branch and its head pipeline, as the mod reasons about them:
-// plain values, mapped from GitLab's answers in `glab.ts` and nowhere else.
+// The change of the current branch and its checks, as the mod reasons about them: plain values,
+// mapped from each provider's answers in `providers/` and nowhere else. The provider's words (merge
+// request, pipeline, stage) stay in the texts.
 
 /**
- * One job of a pipeline; a bridge to a downstream pipeline counts as one too, and names that
- * pipeline in `downstream`.
+ * One job of the checks, in a group (GitLab's stage); a bridge to a downstream pipeline counts as
+ * one too, and names that pipeline in `downstream`. `hasLog` says whether the job has a log of its own.
  */
 export type Job = {
   id: number
   name: string
-  stage: string
+  group: string
   status: string
   allowFailure: boolean
+  hasLog: boolean
   downstream?: { project: number; pipeline: number }
 }
 
-/** A merge request's head pipeline with its jobs, in the order GitLab lists them. */
-export type Pipeline = {
-  id: number
+/**
+ * The checks of one commit with their jobs, in the order the provider lists them: on GitLab the
+ * merge request's head pipeline. `key` names them for estimates and toasts.
+ */
+export type Checks = {
+  key: string
   status: string
   webUrl: string
   createdAt: string
@@ -25,33 +30,48 @@ export type Pipeline = {
   jobs: readonly Job[]
 }
 
-/** The open merge request whose source is the current branch. */
-export type Mr = { iid: number; title: string; webUrl: string; target: string; isDraft: boolean; pipeline?: Pipeline }
+/** The change whose checks the mod shows: a merge or pull request, or a branch tip without one. */
+export type Change = {
+  // How the band names it: `!12` (GitLab), `#12` (GitHub), the branch for a tip (`main`).
+  ref: string
+  // Absent for a branch tip.
+  number?: number
+  title?: string
+  webUrl: string
+  // The repository's display name: `group/project`, `owner/repo`.
+  repo: string
+  target?: string
+  isDraft: boolean
+  checks?: Checks
+}
 
-/** Why there is nothing to show: no glab, glab not logged in, no GitLab project here, or another failure. */
-export type Unavailable = 'no-glab' | 'no-auth' | 'not-gitlab' | 'error'
+/** The hosts the mod reads. */
+export type ProviderName = 'gitlab' | 'github'
 
-/** What one fetch found. `estimateMs` is the mean duration of the project's last green pipelines. */
+/** Why there is nothing to show: no CLI, the CLI not logged in, no known host here, or another failure. */
+export type Unavailable = 'no-cli' | 'no-auth' | 'no-host' | 'error'
+
+/** What one fetch found. `estimateMs` is the mean duration of the project's last green runs. */
 export type Status =
-  | { kind: 'mr'; mr: Mr; estimateMs?: number }
+  | { kind: 'change'; provider: ProviderName; change: Change; estimateMs?: number }
   | { kind: 'none' }
-  | { kind: 'unavailable'; reason: Unavailable }
+  | { kind: 'unavailable'; provider?: ProviderName; reason: Unavailable }
 
-/** Where a pipeline stands, as the segment draws it. */
+/** Where the checks stand, as the segment draws it. */
 export type Phase = 'none' | 'running' | 'manual' | 'failed' | 'success' | 'canceled'
 
 // A job that has ended, whatever the outcome.
 const ENDED = new Set(['success', 'failed', 'canceled', 'skipped'])
 
-/** The phase of a pipeline: every status before an end is running, skipped counts as canceled. */
-export function phaseOf(pipeline: Pipeline | undefined): Phase {
-  if (pipeline === undefined) return 'none'
-  switch (pipeline.status) {
+/** The phase of the checks: every status before an end is running, skipped counts as canceled. */
+export function phaseOf(checks: Checks | undefined): Phase {
+  if (checks === undefined) return 'none'
+  switch (checks.status) {
     case 'manual':
     case 'failed':
     case 'success':
     case 'canceled':
-      return pipeline.status
+      return checks.status
     case 'skipped':
       return 'canceled'
     default:
@@ -59,21 +79,21 @@ export function phaseOf(pipeline: Pipeline | undefined): Phase {
   }
 }
 
-/** Finished jobs against all: an ended job, and a manual one the pipeline may pass by. */
-export function progressOf(pipeline: Pipeline): { done: number; total: number } {
-  const done = pipeline.jobs.filter(job => ENDED.has(job.status) || (job.status === 'manual' && job.allowFailure))
+/** Finished jobs against all: an ended job, and a manual one the checks may pass by. */
+export function progressOf(checks: Checks): { done: number; total: number } {
+  const done = checks.jobs.filter(job => ENDED.has(job.status) || (job.status === 'manual' && job.allowFailure))
 
-  return { done: done.length, total: pipeline.jobs.length }
+  return { done: done.length, total: checks.jobs.length }
 }
 
-/** Whether the job failed the pipeline; an allowed failure did not. */
+/** Whether the job failed the checks; an allowed failure did not. */
 export function isBlocking(job: Job): boolean {
   return job.status === 'failed' && !job.allowFailure
 }
 
-/** The first job that failed the pipeline. */
-export function firstFailed(pipeline: Pipeline): Job | undefined {
-  return pipeline.jobs.find(isBlocking)
+/** The first job that failed the checks. */
+export function firstFailed(checks: Checks): Job | undefined {
+  return checks.jobs.find(isBlocking)
 }
 
 /** The mean of the durations; undefined without any. */

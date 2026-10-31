@@ -1,19 +1,20 @@
 import { expect, test } from 'claude-code/testing'
 
 import { firstFailed, meanMs, phaseOf, progressOf } from '../hooks/model'
-import type { Job, Pipeline } from '../hooks/model'
+import type { Checks, Job } from '../hooks/model'
 
 const job = (status: string, extra: Partial<Job> = {}): Job => ({
   id: 1,
   name: `job-${status}`,
-  stage: 'test',
+  group: 'test',
   status,
   allowFailure: false,
+  hasLog: true,
   ...extra,
 })
 
-const pipeline = (status: string, jobs: Job[] = []): Pipeline => ({
-  id: 4711,
+const pipeline = (status: string, jobs: Job[] = []): Checks => ({
+  key: '4711',
   status,
   webUrl: 'https://gitlab.example.com/group/project/-/pipelines/4711',
   createdAt: '2026-10-29T10:00:00Z',

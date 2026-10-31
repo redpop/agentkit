@@ -1,11 +1,12 @@
-// GitLab through glab: the one module that reaches outside. glab resolves the project and the
-// branch from the repository (`:id`, `:branch`) and brings its own login, so the mod holds no token.
-// GitLab's snake_case answers become the plain values of `model.ts` here and nowhere else.
+// GitLab through glab. glab resolves the project and the branch from the repository (`:id`,
+// `:branch`) and brings its own login, so the mod holds no token. GitLab's snake_case answers
+// become the plain values of `model.ts` here and nowhere else.
 
 import type { EngineInterface } from 'claude-code'
 
-import type { Job, Mr, Pipeline, Status, Unavailable } from './model'
-import { isBlocking, meanMs, phaseOf } from './model'
+import type { Change, Checks, Job, Status, Unavailable } from '../model'
+import { isBlocking, meanMs, phaseOf } from '../model'
+import type { Failure, Provider } from '../provider'
 
 const TIMEOUT_MS = 10_000
 
@@ -35,10 +36,10 @@ async function run($: EngineInterface, path: string): Promise<{ stdout: string; 
   try {
     result = await $.process.run(['glab', 'api', path], { timeoutMs: TIMEOUT_MS })
   } catch (error) {
-    throw new Refused(NOT_STARTED.test(String(error)) ? 'no-glab' : 'error')
+    throw new Refused(NOT_STARTED.test(String(error)) ? 'no-cli' : 'error')
   }
   if (result.exitCode !== 0) {
-    throw new Refused(NOT_GITLAB.test(result.stderr) ? 'not-gitlab' : NO_AUTH.test(result.stderr) ? 'no-auth' : 'error')
+    throw new Refused(NOT_GITLAB.test(result.stderr) ? 'no-host' : NO_AUTH.test(result.stderr) ? 'no-auth' : 'error')
   }
 
   return { stdout: result.stdout, isCut: result.isStdoutTruncated }
@@ -66,9 +67,11 @@ const job = (raw: Raw): Job => {
   return {
     id: Number(raw.id),
     name: text(raw.name) ?? '',
-    stage: text(raw.stage) ?? '',
+    group: text(raw.stage) ?? '',
     status: text(raw.status) ?? '',
     allowFailure: raw.allow_failure === true,
+    // A bridge has no log of its own: its downstream pipeline's jobs have.
+    hasLog: downstream === undefined,
     ...(downstream === undefined ? {} : { downstream: { project: Number(downstream.project_id), pipeline: Number(downstream.id) } }),
   }
 }
@@ -94,30 +97,57 @@ async function estimateFor($: EngineInterface, head: number): Promise<number | u
   return meanMs(durations)
 }
 
+// The project's display name (`group/project`) for each working directory, fetched once.
+const repos = new Map<string, string>()
+
+/**
+ * The project's display name, fetched once per working directory. One that fails is left empty,
+ * not the status, and asked again next time.
+ */
+async function repoOf($: EngineInterface): Promise<string> {
+  const cwd = await $.session.cwd().catch(() => '')
+  const known = repos.get(cwd)
+  if (known !== undefined) return known
+  try {
+    const name = text(record(await api($, 'projects/:id'))?.path_with_namespace)
+    if (name === undefined) return ''
+    repos.set(cwd, name)
+
+    return name
+  } catch {
+    return ''
+  }
+}
+
 /**
  * The open merge request whose source is the current branch, with its head pipeline and the
  * estimate. `estimates` keeps each pipeline's estimate across calls, so it is fetched once.
  */
-export async function fetchStatus($: EngineInterface, estimates: Map<number, number | undefined>): Promise<Status> {
+export async function fetchStatus($: EngineInterface, estimates: Map<string, number | undefined>): Promise<Status> {
   try {
     const [first] = list(await api($, 'projects/:id/merge_requests?source_branch=:branch&state=opened&order_by=updated_at&per_page=1'))
     if (first === undefined) return { kind: 'none' }
-    const detail = record(await api($, `projects/:id/merge_requests/${Number(first.iid)}`)) ?? {}
-    const mr: Mr = {
-      iid: Number(detail.iid),
+    const [found, repo] = await Promise.all([api($, `projects/:id/merge_requests/${Number(first.iid)}`), repoOf($)])
+    const detail = record(found) ?? {}
+    const iid = Number(detail.iid)
+    const change: Change = {
+      ref: `!${iid}`,
+      number: iid,
       title: text(detail.title) ?? '',
       webUrl: text(detail.web_url) ?? '',
+      repo,
       target: text(detail.target_branch) ?? '',
       isDraft: detail.draft === true,
     }
     const head = record(detail.head_pipeline)
-    if (head === undefined) return { kind: 'mr', mr }
+    if (head === undefined) return { kind: 'change', provider: 'gitlab', change }
 
     const id = Number(head.id)
+    const key = String(id)
     const startedAt = text(head.started_at)
     const finishedAt = text(head.finished_at)
-    const bare: Pipeline = {
-      id,
+    const bare: Checks = {
+      key,
       status: text(head.status) ?? '',
       webUrl: text(head.web_url) ?? '',
       createdAt: text(head.created_at) ?? '',
@@ -127,37 +157,34 @@ export async function fetchStatus($: EngineInterface, estimates: Map<number, num
     }
     // The estimate shows only while the pipeline runs: fetched then, once, beside the jobs. One
     // that fails leaves the estimate out and is asked again next time.
-    const isEstimated = !estimates.has(id) && phaseOf(bare) === 'running'
+    const isEstimated = !estimates.has(key) && phaseOf(bare) === 'running'
     const [jobs, estimate] = await Promise.all([
       jobsOf($, id),
       isEstimated ? estimateFor($, id).then(ms => ({ ms }), () => undefined) : undefined,
     ])
-    if (estimate !== undefined) estimates.set(id, estimate.ms)
-    const pipeline: Pipeline = { ...bare, jobs }
-    const estimateMs = estimates.get(id)
+    if (estimate !== undefined) estimates.set(key, estimate.ms)
+    const checks: Checks = { ...bare, jobs }
+    const estimateMs = estimates.get(key)
 
-    return { kind: 'mr', mr: { ...mr, pipeline }, ...(estimateMs === undefined ? {} : { estimateMs }) }
+    return { kind: 'change', provider: 'gitlab', change: { ...change, checks }, ...(estimateMs === undefined ? {} : { estimateMs }) }
   } catch (error) {
-    return { kind: 'unavailable', reason: error instanceof Refused ? error.reason : 'error' }
+    return { kind: 'unavailable', provider: 'gitlab', reason: error instanceof Refused ? error.reason : 'error' }
   }
 }
-
-/** A failed job and its raw log, and whether the log was cut at the read limit. */
-export type Failure = { job: Job; trace: string; isCut: boolean }
 
 /**
  * The job that failed the pipeline, with its log: a job of its own first; else a failed bridge's
  * downstream pipeline, one level down, and its first failed job. Undefined when glab hands none over.
  */
-export async function fetchFailure($: EngineInterface, pipeline: Pipeline): Promise<Failure | undefined> {
+export async function fetchFailure($: EngineInterface, checks: Checks): Promise<Failure | undefined> {
   try {
-    const own = pipeline.jobs.find(one => isBlocking(one) && one.downstream === undefined)
+    const own = checks.jobs.find(one => isBlocking(one) && one.downstream === undefined)
     if (own !== undefined) {
       const { stdout, isCut } = await run($, `projects/:id/jobs/${own.id}/trace`)
 
       return { job: own, trace: stdout, isCut }
     }
-    const downstream = pipeline.jobs.find(one => isBlocking(one) && one.downstream !== undefined)?.downstream
+    const downstream = checks.jobs.find(one => isBlocking(one) && one.downstream !== undefined)?.downstream
     if (downstream === undefined) return undefined
     const failed = list(await api($, `projects/${downstream.project}/pipelines/${downstream.pipeline}/jobs?per_page=100`))
       .map(job)
@@ -171,7 +198,5 @@ export async function fetchFailure($: EngineInterface, pipeline: Pipeline): Prom
   }
 }
 
-/** Opens a page in the default browser (macOS `open`). */
-export async function openUrl($: EngineInterface, url: string): Promise<void> {
-  await $.process.run(['open', url], { timeoutMs: TIMEOUT_MS })
-}
+/** GitLab, through glab. */
+export const gitlab: Provider = { name: 'gitlab', fetchStatus, fetchFailure }

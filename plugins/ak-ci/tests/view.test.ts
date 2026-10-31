@@ -1,23 +1,24 @@
 import { expect, test } from 'claude-code/testing'
 
-import type { Job, Mr, Pipeline, Status } from '../hooks/model'
+import type { Change, Checks, Job, Status } from '../hooks/model'
 import { cardFor, elapsed, segmentFor, toastFor } from '../hooks/view'
 
 // The pipeline started 10:00:00; the clock reads 192 s later.
 const START = Date.parse('2026-10-29T10:00:00Z')
 const NOW = START + 192_000
 
-const job = (name: string, stage: string, status: string, extra: Partial<Job> = {}): Job => ({
+const job = (name: string, group: string, status: string, extra: Partial<Job> = {}): Job => ({
   id: name.length,
   name,
-  stage,
+  group,
   status,
   allowFailure: false,
+  hasLog: true,
   ...extra,
 })
 
-const pipeline = (status: string, jobs: Job[], finishedAfterMs?: number): Pipeline => ({
-  id: 4711,
+const pipeline = (status: string, jobs: Job[], finishedAfterMs?: number): Checks => ({
+  key: '4711',
   status,
   webUrl: 'https://gitlab.example.com/group/project/-/pipelines/4711',
   createdAt: '2026-10-29T09:59:50Z',
@@ -26,16 +27,23 @@ const pipeline = (status: string, jobs: Job[], finishedAfterMs?: number): Pipeli
   jobs,
 })
 
-const mr = (head?: Pipeline): Mr => ({
-  iid: 12,
+const mr = (head?: Checks): Change => ({
+  ref: '!12',
+  number: 12,
   title: 'Add the login form',
   webUrl: 'https://gitlab.example.com/group/project/-/merge_requests/12',
+  repo: 'group/project',
   target: 'main',
   isDraft: false,
-  ...(head === undefined ? {} : { pipeline: head }),
+  ...(head === undefined ? {} : { checks: head }),
 })
 
-const of = (one: Mr, estimateMs?: number): Status => ({ kind: 'mr', mr: one, ...(estimateMs === undefined ? {} : { estimateMs }) })
+const of = (one: Change, estimateMs?: number): Status => ({
+  kind: 'change',
+  provider: 'gitlab',
+  change: one,
+  ...(estimateMs === undefined ? {} : { estimateMs }),
+})
 
 const RUNNING = [
   job('build', 'build', 'success'),
@@ -58,8 +66,8 @@ test('elapsed time reads minutes and seconds', () => {
 
 test('nothing to show without an open merge request or without glab', () => {
   expect(segmentFor({ kind: 'none' }, NOW, 'de')).toBeUndefined()
-  for (const reason of ['no-glab', 'no-auth', 'not-gitlab', 'error'] as const) {
-    expect(segmentFor({ kind: 'unavailable', reason }, NOW, 'de')).toBeUndefined()
+  for (const reason of ['no-cli', 'no-auth', 'no-host', 'error'] as const) {
+    expect(segmentFor({ kind: 'unavailable', provider: 'gitlab', reason }, NOW, 'de')).toBeUndefined()
   }
 })
 
@@ -163,7 +171,7 @@ test('the card names the failed jobs only when there are some', () => {
 
 test('a toast for each final state a pipeline reaches', () => {
   const green = mr(pipeline('success', GREEN, 291_000))
-  expect(toastFor(green, 'de')).toEqual({ key: `4711:${green.pipeline?.finishedAt}`, text: 'Pipeline !12 grün (4:51)' })
+  expect(toastFor(green, 'de')).toEqual({ key: `4711:${green.checks?.finishedAt}`, text: 'Pipeline !12 grün (4:51)' })
   expect(toastFor(mr(pipeline('failed', FAILED, 168_000)), 'de')?.text).toBe('Pipeline !12 fehlgeschlagen: test:unit')
   expect(toastFor(mr(pipeline('manual', [job('deploy', 'deploy', 'manual')])), 'de')).toEqual({
     key: '4711:manual:deploy',

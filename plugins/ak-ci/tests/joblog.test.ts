@@ -1,7 +1,7 @@
 import { expect, test } from 'claude-code/testing'
 
 import { clean, draftFor, excerpt } from '../hooks/joblog'
-import type { Job, Mr } from '../hooks/model'
+import type { Change, Job } from '../hooks/model'
 
 const lines = (count: number, at?: { line: number; text: string }) =>
   Array.from({ length: count }, (_, index) => (at && index + 1 === at.line ? at.text : `line ${index + 1}`)).join('\n')
@@ -58,18 +58,34 @@ test('a long excerpt is cut from the front', () => {
   expect(result.endsWith('line 100')).toBe(true)
 })
 
-test('the draft names the merge request, job and stage, the excerpt fenced', () => {
-  const mr: Mr = { iid: 12, title: 'Add the login form', webUrl: 'https://gitlab.example.com/x', target: 'main', isDraft: false }
-  const job: Job = { id: 9, name: 'test:unit', stage: 'test', status: 'failed', allowFailure: false }
-  expect(draftFor(mr, job, 'ERROR: boom', 'de')).toBe(
+test('the draft names the change, job and stage, the excerpt fenced', () => {
+  const change: Change = {
+    ref: '!12',
+    number: 12,
+    title: 'Add the login form',
+    webUrl: 'https://gitlab.example.com/x',
+    repo: 'group/project',
+    target: 'main',
+    isDraft: false,
+  }
+  const job: Job = { id: 9, name: 'test:unit', group: 'test', status: 'failed', allowFailure: false, hasLog: true }
+  expect(draftFor(change, job, 'ERROR: boom', 'de')).toBe(
     'Die Pipeline von !12 ist im Job test:unit (Stage test) fehlgeschlagen. Auszug aus dem Log:\n\n```text\nERROR: boom\n```',
   )
 })
 
 test('a log cut at 4 MiB says that its end is missing', () => {
-  const mr: Mr = { iid: 12, title: 'Add the login form', webUrl: 'https://gitlab.example.com/x', target: 'main', isDraft: false }
-  const job: Job = { id: 9, name: 'test:unit', stage: 'test', status: 'failed', allowFailure: false }
-  expect(draftFor(mr, job, 'line 1', 'de', true)).toBe(
+  const change: Change = {
+    ref: '!12',
+    number: 12,
+    title: 'Add the login form',
+    webUrl: 'https://gitlab.example.com/x',
+    repo: 'group/project',
+    target: 'main',
+    isDraft: false,
+  }
+  const job: Job = { id: 9, name: 'test:unit', group: 'test', status: 'failed', allowFailure: false, hasLog: true }
+  expect(draftFor(change, job, 'line 1', 'de', true)).toBe(
     'Die Pipeline von !12 ist im Job test:unit (Stage test) fehlgeschlagen. Auszug aus dem Log:\n\n' +
       'Das Log ist länger als 4 MiB; sein Ende fehlt im Auszug.\n\n```text\nline 1\n```',
   )
