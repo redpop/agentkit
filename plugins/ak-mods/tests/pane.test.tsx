@@ -633,6 +633,127 @@ test("the row's segment button runs its command", { plugins: MODS }, async ($, o
   await ui.unmount()
 })
 
+const ACTIONS = [
+  { label: 'open', command: 'zap', args: 'now' },
+  { label: 'Copy link', command: 'zop' },
+]
+
+/** A mod with a segment that has a button and actions, switched on. */
+const withActions = async ($: Engine, name = 'ak-a', title = 'Alpha') => {
+  await callAs($, name, 'declare', { name, title, summary: 's', details: 'd' })
+  await callAs($, name, 'set', { name, on: true })
+  await callAs($, name, 'segment', { text: 'x', button: { label: 'go', command: 'zap' }, actions: ACTIONS })
+}
+
+test('an open card with actions shows ⋯ beside its button, the actions not yet', { plugins: MODS }, async ($, on) => {
+  engine(on)
+  await withActions($)
+
+  for (const surface of SURFACES) {
+    const ui = await $.ui.mount({ ...PANE, surface })
+    await ui.press({ key: 'more-ak-a' })
+    expect(await ui.find({ key: 'menu-ak-a' })).toMatchObject({ text: '⋯', props: { label: '⋯' } })
+    expect(await ui.find({ key: 'seg-ak-a' })).toBeDefined()
+    expect(await ui.find({ key: 'act-ak-a-0' })).toBeUndefined()
+    // The card stays open between surfaces: close it again.
+    await ui.press({ key: 'more-ak-a' })
+    await ui.unmount()
+  }
+})
+
+test('a closed card shows no ⋯', { plugins: MODS }, async ($, on) => {
+  engine(on)
+  await withActions($)
+
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  expect(await ui.find({ key: 'menu-ak-a' })).toBeUndefined()
+  await ui.unmount()
+})
+
+test('a segment without actions draws no ⋯', { plugins: MODS }, async ($, on) => {
+  engine(on)
+  await callAs($, 'ak-a', 'declare', { name: 'ak-a', title: 'Alpha', summary: 's', details: 'd' })
+  await callAs($, 'ak-a', 'set', { name: 'ak-a', on: true })
+  await callAs($, 'ak-a', 'segment', { text: 'x', button: { label: 'go', command: 'zap' }, actions: [] })
+
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  await ui.press({ key: 'more-ak-a' })
+  expect(await ui.find({ key: 'menu-ak-a' })).toBeUndefined()
+  await ui.unmount()
+})
+
+test('⋯ opens the actions, a second press closes them', { plugins: MODS }, async ($, on) => {
+  engine(on)
+  await withActions($)
+
+  for (const surface of SURFACES) {
+    const ui = await $.ui.mount({ ...PANE, surface })
+    await ui.press({ key: 'more-ak-a' })
+    await ui.press({ key: 'menu-ak-a' })
+    expect((await ui.find({ key: 'act-ak-a-0' }))?.text).toBe('open')
+    expect((await ui.find({ key: 'act-ak-a-1' }))?.text).toBe('Copy link')
+    await ui.press({ key: 'menu-ak-a' })
+    expect(await ui.find({ key: 'act-ak-a-0' })).toBeUndefined()
+    await ui.press({ key: 'more-ak-a' })
+    await ui.unmount()
+  }
+})
+
+test('an action runs its command and closes the menu', { plugins: MODS }, async ($, on) => {
+  engine(on)
+  const ran: string[] = []
+  for (const command of ['zap', 'zop']) {
+    on('command.run', { command }, (_, e) => {
+      ran.push(`${e.command} [${e.args}]`)
+
+      return { text: '' }
+    })
+  }
+  await withActions($)
+
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  await ui.press({ key: 'more-ak-a' })
+  await ui.press({ key: 'menu-ak-a' })
+  await ui.press({ key: 'act-ak-a-0' })
+  expect(ran).toEqual(['zap [now]'])
+  expect(await ui.find({ key: 'act-ak-a-0' })).toBeUndefined()
+  // Closed, so the next press of ⋯ opens it again.
+  await ui.press({ key: 'menu-ak-a' })
+  await ui.press({ key: 'act-ak-a-1' })
+  expect(ran).toEqual(['zap [now]', 'zop []'])
+  await ui.unmount()
+})
+
+test('opening another card closes the menu', { plugins: MODS }, async ($, on) => {
+  engine(on)
+  await withActions($)
+  await withActions($, 'ak-b', 'Beta')
+
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  await ui.press({ key: 'more-ak-a' })
+  await ui.press({ key: 'menu-ak-a' })
+  await ui.press({ key: 'more-ak-b' })
+  await ui.press({ key: 'more-ak-a' })
+  expect(await ui.find({ key: 'menu-ak-a' })).toBeDefined()
+  expect(await ui.find({ key: 'act-ak-a-0' })).toBeUndefined()
+  await ui.unmount()
+})
+
+test('the actions are Buttons without a hotkey', { plugins: MODS }, async ($, on) => {
+  engine(on)
+  await withActions($)
+
+  for (const surface of SURFACES) {
+    const ui = await $.ui.mount({ ...PANE, surface })
+    await ui.press({ key: 'more-ak-a' })
+    await ui.press({ key: 'menu-ak-a' })
+    expect((await ui.find({ key: 'act-ak-a-0' }))?.props.hotkey).toBeUndefined()
+    expect((await ui.find({ key: 'menu-ak-a' }))?.props.hotkey).toBeUndefined()
+    await ui.press({ key: 'more-ak-a' })
+    await ui.unmount()
+  }
+})
+
 test('on the desktop app an open row lists its card under the segment, each value once; the terminal keeps the detail', { plugins: PLUGINS }, async ($, on) => {
   engine(on)
   await callAs($, 'ak-fixture', 'declare', { name: 'ak-fixture', title: 'Fixture', summary: 's', details: 'd' })

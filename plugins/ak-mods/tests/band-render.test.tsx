@@ -477,6 +477,18 @@ test("a segment's detail is the pane's, not the band's", { plugins: [consumer('a
   await ui.unmount()
 })
 
+test('actions never reach the band', { plugins: [consumer('ak-a')] }, async ($, on) => {
+  engine(on)
+  await publish($, 'ak-a', 'A', { text: '◆ kept warm', actions: [{ label: 'Copy link', command: 'zap' }] })
+
+  for (const surface of ['terminal', 'desktop'] as const) {
+    const ui = await $.ui.mount({ ...BAND, surface })
+    expect(await ui.find({ type: 'Text', text: '◆ kept warm' })).toBeDefined()
+    expect(await ui.find({ text: /Copy link/ })).toBeUndefined()
+    await ui.unmount()
+  }
+})
+
 test('hasSurvey true returns next(e)', { plugins: [consumer('ak-a')] }, async ($, on) => {
   engine(on)
   await publish($, 'ak-a', 'A', { text: 'ready' })

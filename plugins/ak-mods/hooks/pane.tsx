@@ -10,6 +10,7 @@ import { languageFor, texts } from './i18n'
 const PICKER_SURFACES = new Set(['terminal', 'desktop', 'vscode'])
 
 const EXPANDED = atom({ plugin: 'ak-mods', key: 'expanded' } as const, {})
+const MENU = atom({ plugin: 'ak-mods', key: 'menu' } as const, {})
 
 /** The warning for the mods the band dropped, titles in display order; undefined when all fit. */
 const warning = (
@@ -21,17 +22,19 @@ const warning = (
 
 /**
  * Draws the Mods pane: one row per declared mod in the band's order, its head the title and its
- * triangle, the standard star and the switch; an open row can move up or down. Texts wrap.
+ * triangle, the standard star and the switch; an open row can move up or down and, when its segment
+ * lists actions, opens their `⋯` menu. Texts wrap.
  */
 export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
   const draws = $.ui.resolve(e)
   const { Box, Button, Text } = draws
   // The reads subscribe the pane: a switch, a declare or a publish redraws it
   // (the list reads the switches and the declared mods).
-  const [list, { value: expanded = {} }, { value: stored = {} }, { value: width = e.props.bodyColumns }, isMoved] =
+  const [list, { value: expanded = {} }, { value: menu = {} }, { value: stored = {} }, { value: width = e.props.bodyColumns }, isMoved] =
     await Promise.all([
       $.mods.list(),
       $.state.get({ plugin: 'ak-mods', key: 'expanded' }),
+      $.state.get({ plugin: 'ak-mods', key: 'menu' }),
       $.state.get({ plugin: 'ak-mods', key: 'segments' }),
       $.state.get({ plugin: 'ak-mods', key: 'width' }),
       $.mods.isOrderMoved(),
@@ -61,6 +64,9 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
         // the row is open (a press on its triangle); closed, the segment alone. The terminal adds the detail after it.
         const isOpen = expanded[row.name] === true
         const rows = e.surface !== 'terminal' ? one?.card : undefined
+        // The menu of actions: only an open card has one, and only a segment that lists actions.
+        const actions = isOpen ? one?.actions : undefined
+        const isMenuOpen = actions !== undefined && menu[row.name] === true
 
         // A row reads top to bottom: its head, what the mod does, its live segment, then what opens
         // under the head. The head opens as the desktop app's own cards do: a triangle after the
@@ -99,7 +105,11 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
                   plain
                   dimColor
                   // One row open at a time: opening this one closes any other, so the pane stays short.
-                  onPress={() => update($, EXPANDED, map => (map[row.name] === true ? {} : { [row.name]: true }))}
+                  onPress={() => {
+                    update($, EXPANDED, map => (map[row.name] === true ? {} : { [row.name]: true }))
+                    // The menu belongs to the open card: a press that opens or closes a card ends it.
+                    update($, MENU, () => ({}))
+                  }}
                 />
               </Box>
               <Box flexDirection="row" alignItems="center" columnGap={1} flexShrink={0}>
@@ -142,6 +152,32 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
                     }}
                   />
                 )}
+                {/* The hooks API has no menu element: the toggle is a dim glyph Button like the triangle,
+                    and the actions are Buttons under the row, in place. */}
+                {actions !== undefined && (
+                  <Button
+                    key={`menu-${row.name}`}
+                    label="⋯"
+                    plain
+                    dimColor
+                    onPress={() => update($, MENU, map => (map[row.name] === true ? {} : { [row.name]: true }))}
+                  />
+                )}
+              </Box>
+            )}
+            {isMenuOpen && (
+              <Box flexDirection="row" flexWrap="wrap" columnGap={1} marginTop={1}>
+                {actions.map((action, index) => (
+                  <Button
+                    key={`act-${row.name}-${index}`}
+                    label={action.label}
+                    onPress={() => {
+                      // A command the host refuses changes nothing in the pane.
+                      $.command.run({ command: action.command, args: action.args ?? '' }).catch(() => {})
+                      update($, MENU, () => ({}))
+                    }}
+                  />
+                ))}
               </Box>
             )}
             {/* The detail on a line of its own: beside the segment it would squeeze both into columns. */}
