@@ -6,9 +6,8 @@ import type { EngineInterface } from 'claude-code'
 
 import type { Change, Checks, Job, Status, Unavailable } from '../model'
 import { isBlocking, meanMs, phaseOf } from '../model'
-import type { Failure, Provider } from '../provider'
-
-const TIMEOUT_MS = 10_000
+import type { Failure } from '../provider'
+import { TIMEOUT_MS } from '../provider'
 
 // A refusal glab names, by its message.
 const NO_AUTH = /401|unauthori[sz]ed|not logged in|authenticat/i
@@ -70,8 +69,7 @@ const job = (raw: Raw): Job => {
     group: text(raw.stage) ?? '',
     status: text(raw.status) ?? '',
     allowFailure: raw.allow_failure === true,
-    // A bridge has no log of its own: its downstream pipeline's jobs have.
-    hasLog: downstream === undefined,
+    hasLog: true,
     ...(downstream === undefined ? {} : { downstream: { project: Number(downstream.project_id), pipeline: Number(downstream.id) } }),
   }
 }
@@ -83,7 +81,8 @@ async function jobsOf($: EngineInterface, id: number): Promise<Job[]> {
     api($, `projects/:id/pipelines/${id}/bridges?per_page=100`),
   ])
 
-  return [...list(jobs), ...list(bridges)].map(job)
+  // A bridge has no log of its own, with or without a downstream pipeline: its jobs have.
+  return [...list(jobs).map(job), ...list(bridges).map(one => ({ ...job(one), hasLog: false }))]
 }
 
 /** The mean run of the project's last green pipelines, the head one left out; undefined without any. */
@@ -197,6 +196,3 @@ export async function fetchFailure($: EngineInterface, checks: Checks): Promise<
     return undefined
   }
 }
-
-/** GitLab, through glab. */
-export const gitlab: Provider = { name: 'gitlab', fetchStatus, fetchFailure }

@@ -6,7 +6,8 @@ import type { EngineInterface } from 'claude-code'
 import type { Checks, Job, ProviderName, Status } from './model'
 import { fetchFailure as gitlabFailure, fetchStatus as gitlabStatus } from './providers/gitlab'
 
-const TIMEOUT_MS = 10_000
+/** How long a call to a host's CLI, or to `open`, may run. */
+export const TIMEOUT_MS = 10_000
 
 /**
  * A failed job and its raw log, and whether the log was cut at the read limit; or a failed job
@@ -14,21 +15,14 @@ const TIMEOUT_MS = 10_000
  */
 export type Failure = { job: Job; trace: string; isCut: boolean } | { job: Job; noLog: true }
 
+// Function declarations, not arrows: past an import the hooks loader follows `$` only into those,
+// and never into an object's method. So a host is reached by its name here, each one a module in
+// `providers/` that exports its own `fetchStatus` and `fetchFailure`.
+
 /**
- * A host, read through its CLI. `fetchStatus` keeps each estimate in `estimates` by `Checks.key`
- * across calls, so it is fetched once; `fetchFailure` is undefined when the CLI hands no job over.
- * The hooks loader passes `$` into no method: the mod calls a host through `fetchStatus` and
- * `fetchFailure` below, by its name.
+ * The status from the host `provider` names. `estimates` keeps each estimate by `Checks.key` across
+ * calls, so it is fetched once. A host the mod does not read yet answers as a failure.
  */
-export type Provider = {
-  name: ProviderName
-  fetchStatus($: EngineInterface, estimates: Map<string, number | undefined>): Promise<Status>
-  fetchFailure($: EngineInterface, checks: Checks): Promise<Failure | undefined>
-}
-
-// Function declarations, not arrows: past an import the hooks loader follows `$` only into those.
-
-/** The status from the host `provider` names; nothing from one the mod does not read yet. */
 export async function fetchStatus(
   $: EngineInterface,
   provider: ProviderName,
@@ -38,11 +32,14 @@ export async function fetchStatus(
     case 'gitlab':
       return gitlabStatus($, estimates)
     case 'github':
-      return { kind: 'none' }
+      return { kind: 'unavailable', provider: 'github', reason: 'error' }
   }
 }
 
-/** The failed job with its log from the host `provider` names; none from one the mod does not read yet. */
+/**
+ * The failed job with its log from the host `provider` names; undefined when its CLI hands none over,
+ * and from a host the mod does not read yet.
+ */
 export async function fetchFailure($: EngineInterface, provider: ProviderName, checks: Checks): Promise<Failure | undefined> {
   switch (provider) {
     case 'gitlab':

@@ -2,8 +2,7 @@ import { expect, test } from 'claude-code/testing'
 import type { EngineInterface, ProcessRunResult } from 'claude-code'
 
 import type { Checks } from '../hooks/model'
-import { openUrl } from '../hooks/provider'
-import { gitlab } from '../hooks/providers/gitlab'
+import { fetchFailure, fetchStatus, openUrl } from '../hooks/provider'
 
 const MRS = 'glab api projects/:id/merge_requests?source_branch=:branch&state=opened&order_by=updated_at&per_page=1'
 const MR = 'glab api projects/:id/merge_requests/12'
@@ -77,12 +76,12 @@ const RUNNING = {
 
 test('no open merge request for the branch', async () => {
   const { $ } = host({ [MRS]: { stdout: [] } })
-  expect(await gitlab.fetchStatus($, new Map())).toEqual({ kind: 'none' })
+  expect(await fetchStatus($, 'gitlab', new Map())).toEqual({ kind: 'none' })
 })
 
 test('a merge request without a pipeline', async () => {
   const { $ } = host({ [MRS]: { stdout: [{ iid: 12 }] }, [REPO]: { stdout: PROJECT }, [MR]: { stdout: { ...DETAIL, head_pipeline: null } } })
-  expect(await gitlab.fetchStatus($, new Map())).toEqual({
+  expect(await fetchStatus($, 'gitlab', new Map())).toEqual({
     kind: 'change',
     provider: 'gitlab',
     change: {
@@ -97,9 +96,10 @@ test('a merge request without a pipeline', async () => {
   })
 })
 
+// A bridge has no log of its own, with or without a downstream pipeline.
 test('a running pipeline with its jobs, a bridge among them, and the estimate', async () => {
   const { $, calls } = host(RUNNING)
-  const status = await gitlab.fetchStatus($, new Map())
+  const status = await fetchStatus($, 'gitlab', new Map())
   expect(status.kind).toBe('change')
   if (status.kind !== 'change') return
   expect(status.change.checks).toEqual({
@@ -111,7 +111,7 @@ test('a running pipeline with its jobs, a bridge among them, and the estimate', 
     jobs: [
       { id: 1, name: 'build', group: 'build', status: 'success', allowFailure: false, hasLog: true },
       { id: 2, name: 'test:unit', group: 'test', status: 'running', allowFailure: false, hasLog: true },
-      { id: 3, name: 'deploy', group: 'deploy', status: 'created', allowFailure: true, hasLog: true },
+      { id: 3, name: 'deploy', group: 'deploy', status: 'created', allowFailure: true, hasLog: false },
     ],
   })
   // The head pipeline itself does not count: (4 + 6) / 2 minutes.
@@ -122,8 +122,8 @@ test('a running pipeline with its jobs, a bridge among them, and the estimate', 
 test('the estimate is fetched once per pipeline', async () => {
   const { $, calls } = host(RUNNING)
   const estimates = new Map<string, number | undefined>()
-  await gitlab.fetchStatus($, estimates)
-  const second = await gitlab.fetchStatus($, estimates)
+  await fetchStatus($, 'gitlab', estimates)
+  const second = await fetchStatus($, 'gitlab', estimates)
   expect(calls.filter(call => call.line === GREEN)).toHaveLength(1)
   expect(second.kind === 'change' ? second.estimateMs : undefined).toBe(300_000)
   expect([...estimates.keys()]).toEqual(['4711'])
@@ -131,8 +131,8 @@ test('the estimate is fetched once per pipeline', async () => {
 
 test('the project name is fetched once per working directory', async () => {
   const { $, calls } = host(RUNNING, '/elsewhere')
-  const first = await gitlab.fetchStatus($, new Map())
-  const second = await gitlab.fetchStatus($, new Map())
+  const first = await fetchStatus($, 'gitlab', new Map())
+  const second = await fetchStatus($, 'gitlab', new Map())
   expect(first.kind === 'change' ? first.change.repo : undefined).toBe('group/project')
   expect(second.kind === 'change' ? second.change.repo : undefined).toBe('group/project')
   expect(calls.filter(call => call.line === REPO)).toHaveLength(1)
@@ -140,10 +140,10 @@ test('the project name is fetched once per working directory', async () => {
 
 test('a failed project name is left empty, not the status, and asked again', async () => {
   const { $: failing } = host({ ...RUNNING, [REPO]: { exitCode: 1, stderr: 'glab: 500 Internal Server Error' } }, '/flaky')
-  const first = await gitlab.fetchStatus(failing, new Map())
+  const first = await fetchStatus(failing, 'gitlab', new Map())
   expect(first.kind === 'change' ? first.change.repo : undefined).toBe('')
   const { $, calls } = host(RUNNING, '/flaky')
-  const second = await gitlab.fetchStatus($, new Map())
+  const second = await fetchStatus($, 'gitlab', new Map())
   expect(second.kind === 'change' ? second.change.repo : undefined).toBe('group/project')
   expect(calls.filter(call => call.line === REPO)).toHaveLength(1)
 })
@@ -164,13 +164,13 @@ test('glab missing, not logged in, not a GitLab project, or another failure', as
   const { $ } = host(() => answer)
   for (const [next, reason] of cases) {
     answer = next
-    expect(await gitlab.fetchStatus($, new Map())).toEqual({ kind: 'unavailable', provider: 'gitlab', reason })
+    expect(await fetchStatus($, 'gitlab', new Map())).toEqual({ kind: 'unavailable', provider: 'gitlab', reason })
   }
 })
 
 test('a failed estimate leaves the estimate out, not the pipeline', async () => {
   const { $ } = host({ ...RUNNING, [GREEN]: { exitCode: 1, stderr: 'glab: 500 Internal Server Error' } })
-  const status = await gitlab.fetchStatus($, new Map())
+  const status = await fetchStatus($, 'gitlab', new Map())
   expect(status.kind).toBe('change')
   expect(status.kind === 'change' ? status.change.checks?.jobs.length : 0).toBe(3)
   expect(status.kind === 'change' ? status.estimateMs : 0).toBeUndefined()
@@ -198,13 +198,13 @@ test("a failed job's log, none when glab refuses it", async () => {
   const { $ } = host({
     'glab api projects/:id/jobs/2/trace': { stdout: 'ERROR: boom\n' },
   })
-  expect(await gitlab.fetchFailure($, failing([UNIT]))).toEqual({ job: UNIT, trace: 'ERROR: boom\n', isCut: false })
-  expect(await gitlab.fetchFailure(host({}).$, failing([UNIT]))).toBeUndefined()
+  expect(await fetchFailure($, 'gitlab', failing([UNIT]))).toEqual({ job: UNIT, trace: 'ERROR: boom\n', isCut: false })
+  expect(await fetchFailure(host({}).$, 'gitlab', failing([UNIT]))).toBeUndefined()
 })
 
 test('a job of its own goes before a failed bridge', async () => {
   const { $ } = host({ 'glab api projects/:id/jobs/2/trace': { stdout: 'ERROR: boom\n' } })
-  expect((await gitlab.fetchFailure($, failing([BRIDGE, UNIT])))?.job.name).toBe('test:unit')
+  expect((await fetchFailure($, 'gitlab', failing([BRIDGE, UNIT])))?.job.name).toBe('test:unit')
 })
 
 test('a failed bridge leads to the first failed job of its downstream pipeline', async () => {
@@ -217,7 +217,7 @@ test('a failed bridge leads to the first failed job of its downstream pipeline',
     },
     'glab api projects/77/jobs/52/trace': { stdout: 'FAILED e2e\n', isCut: true },
   })
-  expect(await gitlab.fetchFailure($, failing([BRIDGE]))).toEqual({
+  expect(await fetchFailure($, 'gitlab', failing([BRIDGE]))).toEqual({
     job: { id: 52, name: 'e2e', group: 'verify', status: 'failed', allowFailure: false, hasLog: true },
     trace: 'FAILED e2e\n',
     isCut: true,
@@ -233,7 +233,7 @@ test("a bridge's downstream pipeline comes from GitLab's answer", async () => {
       ],
     },
   })
-  const status = await gitlab.fetchStatus($, new Map())
+  const status = await fetchStatus($, 'gitlab', new Map())
   const bridge = status.kind === 'change' ? status.change.checks?.jobs.at(-1) : undefined
   expect(bridge?.downstream).toEqual({ project: 77, pipeline: 900 })
   // A bridge has no log of its own.
