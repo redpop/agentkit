@@ -7,7 +7,7 @@ export const upsert = (list: readonly ModsInfo[], info: ModsInfo): ModsInfo[] =>
     : [...list, info]
 
 /** The order AgentKit's own mods are listed in until the user moves one. */
-export const DEFAULT_ORDER: readonly string[] = ['ak-usage', 'ak-keepwarm', 'ak-pause', 'ak-gitlab', 'ak-session-id']
+export const DEFAULT_ORDER: readonly string[] = ['ak-usage', 'ak-keepwarm', 'ak-pause', 'ak-gitlab', 'ak-session-id', 'ak-showcase']
 
 /**
  * The full order from a stored one: its names, then the default's names it lacks, each once. A

@@ -125,6 +125,15 @@
       "license": "MIT"
     },
     {
+      "name": "ak-showcase",
+      "source": "./plugins/ak-showcase",
+      "description": "Mod: a style guide in a pane that shows every element, prop and variant a hooks module can draw, with dummy handlers that trigger nothing, plus a demo segment in the shared band",
+      "version": "1.64.3",
+      "category": "development",
+      "keywords": ["mods", "ui", "style-guide", "pane"],
+      "license": "MIT"
+    },
+    {
       "name": "ak-usage",
       "source": "./plugins/ak-usage",
       "description": "Mod: shows how full this session's context is and how much of the 5-hour limit is used, as one compact segment in the shared band",

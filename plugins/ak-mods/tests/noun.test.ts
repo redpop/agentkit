@@ -148,7 +148,7 @@ test('move persists one order for every chat, and resetOrder drops it', { plugin
   expect(titles(await call($, 'ak-a', 'list'))).toEqual(['B', 'A'])
   expect(await call($, 'ak-a', 'isOrderMoved')).toBe(true)
   // The default's names stay in it, so their mods keep their places.
-  expect(await call($, 'ak-a', 'store', 'order')).toEqual(['ak-usage', 'ak-keepwarm', 'ak-pause', 'ak-gitlab', 'ak-session-id', 'ak-b', 'ak-a'])
+  expect(await call($, 'ak-a', 'store', 'order')).toEqual(['ak-usage', 'ak-keepwarm', 'ak-pause', 'ak-gitlab', 'ak-session-id', 'ak-showcase', 'ak-b', 'ak-a'])
 
   await call($, 'ak-a', 'resetOrder')
   expect(titles(await call($, 'ak-a', 'list'))).toEqual(['A', 'B'])

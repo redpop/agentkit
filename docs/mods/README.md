@@ -15,6 +15,7 @@ Requires Claude Code 2.1.309 or later (hooks-module support).
 | [Keep warm](ak-keepwarm/keepwarm.md) | ak-keepwarm | Keeps the prompt cache warm with a small ping before it expires |
 | [Break](ak-pause/pause.md) | ak-pause | Shows how long you have worked without a break, with water and late hints |
 | [Session id](ak-session-id/session-id.md) | ak-session-id | Copies this session's id, to tell another session's agent which one is meant |
+| [Showcase](ak-showcase/showcase.md) | ak-showcase | A style guide in a pane: every element, prop and variant a mod can draw, with dummy controls |
 | [Usage](ak-usage/usage.md) | ak-usage | Shows the context fill and the 5-hour limit as one compact segment |
 
 ## Writing a mod

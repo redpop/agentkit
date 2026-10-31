@@ -1,6 +1,6 @@
 # AgentKit
 
-Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) — 16 plugins with 26 skills, 8 agents, a mod switcher with keep-warm, session-id, usage, GitLab and break mods, and domain knowledge bases for Git workflows, security, React, and more.
+Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) — 17 plugins with 26 skills, 8 agents, a mod switcher with keep-warm, session-id, usage, GitLab, break and showcase mods, and domain knowledge bases for Git workflows, security, React, and more.
 
 ## Plugins
 
@@ -20,6 +20,7 @@ Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/
 | [**ak-review**](#ak-review--quality-assurance) | 9 | — | CodeRabbit review, code explanation, finalize workflow, workflow management, dependency update skill generation, external review delegation, unattended external-tool execution with guided setup, validation hooks |
 | [**ak-security**](#ak-security--security-guidelines) | 3 | — | OWASP security guidelines, LLM security, Semgrep static analysis |
 | [**ak-session-id**](#ak-session-id--copy-the-session-id) | — | — | Mod: `/session-id` copies this session's id for another session's agent; its band segment shows the id's end with a copy button |
+| [**ak-showcase**](#ak-showcase--style-guide-for-mods) | — | — | Mod: a style guide pane with every element, prop and variant a mod can draw, the code under each sample, dummy controls that trigger nothing |
 | [**ak-usage**](#ak-usage--context-and-rate-limit-at-a-glance) | — | — | Mod: one compact band segment with the context fill and the 5-hour limit as bars (`ctx ▬▬▬▬▬  5h ▬▬▬▬▬`, the empty cells dim) |
 | [**ak-writing**](#ak-writing--prose-quality) | 2 | — | Remove AI-slop patterns from German and English prose: docs, commits, emails, blog posts, slides; clear German technical docs loosely based on ASD-STE100 |
 
@@ -55,6 +56,7 @@ Install all plugins:
 /plugin install ak-react@ak-marketplace
 /plugin install ak-security@ak-marketplace
 /plugin install ak-session-id@ak-marketplace
+/plugin install ak-showcase@ak-marketplace
 /plugin install ak-usage@ak-marketplace
 /plugin install ak-writing@ak-marketplace
 ```
@@ -208,6 +210,19 @@ on the terminal. In the desktop app it copies the `local_…` id the session too
 | Command | Purpose | Example |
 |---------|---------|---------|
 | [`/session-id`](docs/mods/ak-session-id/session-id.md) | Copy this session's id, or the engine id | `/session-id`, `/session-id engine` |
+
+### ak-showcase — Style Guide for Mods
+
+A mod (needs `ak-mods`, installed with it) that opens a pane with every element, prop and variant a
+hooks module can draw: text, colours, spacing, layout, hover, buttons, forms, content, graphics,
+the band segment and feedback. Each sample names the code that draws it, each section what does not
+exist. The controls only record that they were used; they trigger nothing.
+
+#### Commands
+
+| Command | Purpose | Example |
+|---------|---------|---------|
+| [`/showcase`](docs/mods/ak-showcase/showcase.md) | Open the style guide pane, or set the demo segment's tone | `/showcase`, `/showcase tone warn` |
 
 ### ak-usage — Context and Rate Limit at a Glance
 

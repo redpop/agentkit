@@ -4,7 +4,7 @@ Reference documentation for all AgentKit components — skills, agents, hooks, a
 
 ## Overview
 
-AgentKit provides 16 plugins with specialized skills, agents, hooks, and mods for Claude Code.
+AgentKit provides 17 plugins with specialized skills, agents, hooks, and mods for Claude Code.
 
 | Category | Count | Description |
 |----------|-------|-------------|
@@ -31,5 +31,6 @@ AgentKit provides 16 plugins with specialized skills, agents, hooks, and mods fo
 | ak-review | Code quality assurance | 9 | — | yes |
 | ak-security | Security guidelines | 3 | — | — |
 | ak-session-id | Session-id mod (copy the id) | — | — | hooks module |
+| ak-showcase | Showcase mod (style guide pane) | — | — | hooks module |
 | ak-usage | Usage mod (context and 5-hour limit) | — | — | hooks module |
 | ak-writing | Prose quality, AI-slop removal, clear German technical docs | 2 | — | — |
