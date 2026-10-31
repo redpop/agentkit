@@ -433,11 +433,11 @@ test('a break length another session set reaches the details at the next redraw'
   const { clock, stored } = engine(on, { block: running(20) })
   const declared = async (): Promise<string[]> => JSON.parse((await run($, 'stand-in', 'declares')).text ?? '[]')
   await start($)
-  expect((await declared()).at(-1)).toMatch(/^Zählt über alle Sessions\. 10 Minuten/)
+  expect((await declared()).at(-1)).toMatch(/^Gezählt wird über alle Sessions\. 10 Minuten/)
   // Another session sets 15 minutes: the store is shared, this session declared 10.
   stored.limits = { workMinutes: 60, breakMinutes: 15 }
   await clock.advance(MIN)
-  expect((await declared()).at(-1)).toMatch(/^Zählt über alle Sessions\. 15 Minuten/)
+  expect((await declared()).at(-1)).toMatch(/^Gezählt wird über alle Sessions\. 15 Minuten/)
   const count = (await declared()).length
   await clock.advance(MIN)
   // Unchanged since: no declare again.

@@ -53,12 +53,12 @@ export function languageFor($: EngineInterface): Promise<Lang> {
 
 const EN = {
   title: 'Showcase',
-  summary: 'A style guide in a pane: every element, prop and variant a mod can draw.',
+  summary: 'A style guide for mod authors: every element, prop and variant a mod can draw.',
   details:
     'Turning it on opens a pane with eleven sections: text, colours, spacing, layout, hover, ' +
     'buttons, forms, content, graphics, the band segment and feedback. Each sample names the prop ' +
-    'that draws it and what does not exist. Its controls only record that they were used: they ' +
-    'send no prompt, run no command or tool and touch no file. /showcase opens the pane.',
+    'that draws it and what does not exist. Its controls trigger nothing; they are only there to ' +
+    'try out. /showcase opens the pane.',
   command: 'Open the style guide pane, or /showcase tone <ok|warn|alert|info|dim> for the demo segment',
   usage: 'Usage: /showcase [tone ok|warn|alert|info|dim]',
   opened: 'Showcase opened.',
@@ -196,12 +196,12 @@ const EN = {
 
 const DE: typeof EN = {
   title: 'Showcase',
-  summary: 'Ein Styleguide im Pane: jedes Element, jede Prop und Variante, die ein Mod zeichnen kann.',
+  summary: 'Ein Styleguide für Mod-Autoren: jedes Element, jede Prop und Variante, die ein Mod zeichnen kann.',
   details:
     'Eingeschaltet öffnet er ein Pane mit elf Abschnitten: Text, Farben, Abstände, Layout, Hover, ' +
-    'Buttons, Formulare, Inhalte, Grafik, das Band-Segment und Rückmeldungen. Jedes Beispiel nennt ' +
-    'die Prop, die es zeichnet, und was es nicht gibt. Seine Bedienelemente halten nur fest, dass ' +
-    'sie benutzt wurden: kein Prompt, kein Befehl, kein Tool, keine Datei. /showcase öffnet das Pane.',
+    'Buttons, Formulare, Inhalte, Grafik, das Band-Segment und Rückmeldungen. Jedes Beispiel ' +
+    'nennt die Prop, die es zeichnet, und was es nicht gibt. Die Bedienelemente lösen nichts aus, ' +
+    'sie sind nur zum Ausprobieren da. /showcase öffnet das Pane.',
   command: 'Das Styleguide-Pane öffnen, oder /showcase tone <ok|warn|alert|info|dim> für das Demo-Segment',
   usage: 'Aufruf: /showcase [tone ok|warn|alert|info|dim]',
   opened: 'Showcase geöffnet.',

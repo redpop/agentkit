@@ -53,12 +53,11 @@ export function languageFor($: EngineInterface): Promise<Lang> {
 
 const EN = {
   title: 'Session id',
-  summary: "Copies this session's id, to tell another session's agent which one is meant.",
+  summary: "Copies this session's id, so you can name it to another session.",
   details:
-    'Its segment in the shared band above the prompt shows the end of the id; copy (key c) ' +
-    'puts the whole id on the clipboard. /session-id does the same. In the desktop app it ' +
-    'copies the local_… id the session tools address, elsewhere the engine id; ' +
-    '/session-id engine copies the engine id even there.',
+    'Above the prompt you see the end of the id. "copy" (key c) or /session-id puts the whole id ' +
+    'on the clipboard. In the desktop app that is the local_… id sessions use to message each ' +
+    'other, elsewhere the engine id; /session-id engine copies the engine id even in the app.',
   command: "Copy this session's id, or /session-id engine for the engine's",
   usage: 'Usage: /session-id [engine]',
   copy: 'copy',
@@ -71,12 +70,12 @@ const EN = {
 
 const DE: typeof EN = {
   title: 'Session-ID',
-  summary: 'Kopiert die ID dieser Session, um dem Agenten einer anderen Session zu sagen, welche gemeint ist.',
+  summary: 'Kopiert die ID dieser Session, damit du sie einer anderen Session nennen kannst.',
   details:
-    'Sein Segment im gemeinsamen Band über der Eingabe zeigt das Ende der ID; kopieren (Taste c) ' +
-    'legt die ganze ID in die Zwischenablage. /session-id tut dasselbe. In der Desktop-App ' +
-    'kopiert es die local_…-ID, die die Session-Werkzeuge ansprechen, sonst die Engine-ID; ' +
-    '/session-id engine kopiert auch dort die Engine-ID.',
+    'Über der Eingabe steht das Ende der ID. „kopieren“ (Taste c) oder /session-id legt die ganze ' +
+    'ID in die Zwischenablage. In der Desktop-App ist das die local_…-ID, mit der sich Sessions ' +
+    'gegenseitig Nachrichten schicken, sonst die Engine-ID; /session-id engine kopiert auch in ' +
+    'der App die Engine-ID.',
   command: 'Die ID dieser Session kopieren, oder /session-id engine für die der Engine',
   usage: 'Aufruf: /session-id [engine]',
   copy: 'kopieren',

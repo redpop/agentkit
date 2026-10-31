@@ -53,15 +53,13 @@ export function languageFor($: EngineInterface): Promise<Lang> {
 
 const EN = {
   title: 'GitLab',
-  summary: 'Shows the merge request of the current branch and how far its pipeline is.',
+  summary: "Shows how far the pipeline of your current branch's merge request is.",
   details:
-    'Its segment in the shared band above the prompt follows the open merge request whose source ' +
-    'is the current branch: no pipeline yet, running with a ring of its finished jobs, the time ' +
-    'so far and an estimate from the last green pipelines, failed with the first failed job, or ' +
-    'green with its duration. "open" opens the merge request; after a failure, "Get errors" puts ' +
-    "an excerpt of the failed job's log in the prompt box. A toast says when the pipeline is done. " +
-    'It reads GitLab through glab, which must be installed and logged in; it asks every 15 seconds ' +
-    'while a pipeline runs, otherwise every few minutes and on every prompt.',
+    'Above the prompt you see where the pipeline stands: none yet, running (with a progress ring, ' +
+    'the time so far and an estimate from earlier green runs), failed (with the first failed job) ' +
+    'or green (with its duration). A toast says when it is done. "open" opens the merge request. ' +
+    'After a failure, "Get errors" puts an excerpt of the job\'s log in the prompt box, so Claude ' +
+    'can look into it. Requires glab, installed and logged in.',
   open: 'open',
   errors: 'Get errors',
   noPipeline: 'no pipeline',
@@ -95,16 +93,14 @@ const EN = {
 
 const DE: typeof EN = {
   title: 'GitLab',
-  summary: 'Zeigt den Merge Request des aktuellen Branches und wie weit seine Pipeline ist.',
+  summary: 'Zeigt, wie weit die Pipeline zum Merge Request deines aktuellen Branches ist.',
   details:
-    'Sein Segment im gemeinsamen Band über der Eingabe folgt dem offenen Merge Request, dessen ' +
-    'Quelle der aktuelle Branch ist: noch keine Pipeline, laufend mit einem Ring der fertigen ' +
-    'Jobs, der bisherigen Zeit und einer Schätzung aus den letzten grünen Pipelines, ' +
-    'fehlgeschlagen mit dem ersten fehlgeschlagenen Job oder grün mit ihrer Dauer. „öffnen“ öffnet ' +
-    'den Merge Request; nach einem Fehler legt „Fehler holen“ einen Auszug aus dem Log des Jobs ' +
-    'ins Eingabefeld. Ein Toast meldet, wenn die Pipeline fertig ist. Es liest GitLab über glab, ' +
-    'das installiert und angemeldet sein muss; solange eine Pipeline läuft, alle 15 Sekunden, ' +
-    'sonst alle paar Minuten und bei jedem Prompt.',
+    'Über der Eingabe siehst du den Stand der Pipeline: noch keine, läuft (mit Fortschrittsring, ' +
+    'bisheriger Zeit und einer Schätzung aus früheren grünen Läufen), fehlgeschlagen (mit dem ' +
+    'ersten roten Job) oder grün (mit Dauer). Ist sie fertig, meldet das ein Toast. „öffnen“ ' +
+    'öffnet den Merge Request. Nach einem Fehler legt „Fehler holen“ einen Auszug aus dem Job-Log ' +
+    'ins Eingabefeld, damit Claude ihn auswerten kann. Voraussetzung: glab ist installiert und ' +
+    'angemeldet.',
   open: 'öffnen',
   errors: 'Fehler holen',
   noPipeline: 'keine Pipeline',

@@ -53,10 +53,11 @@ export function languageFor($: EngineInterface): Promise<Lang> {
 
 const EN = {
   title: 'Break',
-  summary: 'Shows how long you have worked without a break.',
+  summary: 'Shows how long you have worked without a break and reminds you to take one.',
   details: (breakMinutes: number) =>
-    `Counts across sessions. ${breakMinutes} minutes without input count as a break. Reminds you to drink and ` +
-    'speaks up once a block at a quiet moment. Block and break lengths apply to every session.',
+    `Counts across all sessions. ${breakMinutes} minutes without input count as a break. Reminds ` +
+    'you to drink, and once per work block speaks up at a quiet moment. You set block and break ' +
+    'length here; they apply to every session.',
   straight: (duration: string) => `${duration} straight`,
   idle: 'Break',
   water: 'Water',
@@ -80,10 +81,11 @@ const EN = {
 
 const DE: typeof EN = {
   title: 'Pause',
-  summary: 'Zeigt, wie lange du ohne Pause arbeitest.',
+  summary: 'Zeigt, wie lange du schon ohne Pause arbeitest, und erinnert dich an Pausen.',
   details: (breakMinutes: number) =>
-    `Zählt über alle Sessions. ${breakMinutes} Minuten ohne Eingabe gelten als Pause. Erinnert an Wasser und ` +
-    'meldet sich einmal pro Block in einem ruhigen Moment. Block- und Pausenlänge gelten für alle Sessions.',
+    `Gezählt wird über alle Sessions. ${breakMinutes} Minuten ohne Eingabe gelten als Pause. ` +
+    'Erinnert ans Trinken und meldet sich einmal pro Arbeitsblock in einem ruhigen Moment. Block- ' +
+    'und Pausenlänge stellst du hier ein; sie gelten für alle Sessions.',
   straight: (duration: string) => `${duration} am Stück`,
   idle: 'Pause',
   water: 'Wasser',

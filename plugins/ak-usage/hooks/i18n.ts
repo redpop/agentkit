@@ -53,15 +53,12 @@ export function languageFor($: EngineInterface): Promise<Lang> {
 
 const EN = {
   title: 'Usage',
-  summary: "Shows how full this session's context is and how much of the 5-hour limit is used.",
+  summary: "Shows how full this session's context is and how much of your 5-hour limit is used.",
   details:
-    'Its segment in the shared band above the prompt shows the context of this session and the ' +
-    '5-hour window of the account, every session counted; the 7-day window joins from 75 %. On ' +
-    'the desktop app each figure is a ring with its percentage, on the terminal a bar of five ' +
-    'cells. Short of room, the band shows the percentages alone. From 75 % a figure turns the ' +
-    'warning colour, from 90 % the error colour; a window then adds when it resets, and a toast ' +
-    'says so once. The windows are as the last response of this session reported them, and ' +
-    'leave the band once they reset.',
+    'Above the prompt you see the context of this session and the 5-hour limit of your account, ' +
+    'all sessions together; from 75 % the 7-day limit joins them. From 75 % a figure turns the ' +
+    'warning colour, from 90 % the error colour; a limit then also shows when it resets, and a ' +
+    "toast says so once. The figures come from this session's last response.",
   context: 'Context',
   ofTokens: (used: string, window: string) => `${used} of ${window} tokens`,
   windows: { five_hour: '5-hour limit', seven_day: '7-day limit' } as Record<string, string>,
@@ -74,15 +71,13 @@ const EN = {
 
 const DE: typeof EN = {
   title: 'Nutzung',
-  summary: 'Zeigt, wie voll der Kontext dieser Session ist und wie viel vom 5-Stunden-Limit verbraucht ist.',
+  summary: 'Zeigt, wie voll der Kontext dieser Session ist und wie viel deines 5-Stunden-Limits verbraucht ist.',
   details:
-    'Sein Segment im gemeinsamen Band über der Eingabe zeigt den Kontext dieser Session und das ' +
-    '5-Stunden-Fenster des Kontos, alle Sessions zusammen; das 7-Tage-Fenster kommt ab 75 % dazu. ' +
-    'In der Desktop-App ist jeder Wert ein Ring mit seiner Prozentzahl, im Terminal ein Balken aus ' +
-    'fünf Zellen. Bei wenig Platz zeigt das Band nur die Prozentzahlen. Ab 75 % steht ein Wert in ' +
-    'der Warnfarbe, ab 90 % in der Fehlerfarbe; ein Fenster nennt dann seinen Reset, und ein Toast ' +
-    'meldet es einmal. Die Fenster stehen so, wie die letzte Antwort dieser Session sie gemeldet ' +
-    'hat, und verlassen das Band nach ihrem Reset.',
+    'Über der Eingabe siehst du den Kontext dieser Session und das 5-Stunden-Limit deines Kontos ' +
+    'über alle Sessions; ab 75 % kommt das 7-Tage-Limit dazu. Ab 75 % steht ein Wert in der ' +
+    'Warnfarbe, ab 90 % in der Fehlerfarbe; ein Limit nennt dann auch, wann es zurückgesetzt ' +
+    'wird, und ein Toast meldet es einmal. Die Werte stammen aus der letzten Antwort dieser ' +
+    'Session.',
   context: 'Kontext',
   ofTokens: (used: string, window: string) => `${used} von ${window} Tokens`,
   windows: { five_hour: '5-Stunden-Limit', seven_day: '7-Tage-Limit' },

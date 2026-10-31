@@ -53,15 +53,15 @@ export function languageFor($: EngineInterface): Promise<Lang> {
 
 const EN = {
   title: 'Keep warm',
-  summary: 'Keeps the prompt cache warm with a small ping before it expires.',
+  summary: 'Keeps the prompt cache warm, so the next reply after a pause stays fast and cheap.',
   details:
-    'Its segment in the shared band above the prompt shows how long the cache stays warm. ' +
-    '/keepwarm [90m|2h30m|hours|always|off] sends a small ping shortly before the cache would ' +
-    'expire (default 4 hours); the cache read restarts its timer. always keeps every chat warm ' +
-    'until 6 hours after its last turn. A ping the API turns away as busy is sent again; if a ' +
-    'ping writes to the cache instead of reading it, keep warm turns itself off. Here the ' +
-    'pings and the rewrites of a lost cache are counted with their cost. Keep warm survives a ' +
-    'restart: it resumes with the next turn.',
+    'Without activity the cache expires after 5 minutes or an hour, and the next request has to ' +
+    'write the whole context again, which costs. Keep warm sends a small ping shortly before, for ' +
+    '4 hours by default. Above the prompt you see how long the cache stays warm. /keepwarm 90m, ' +
+    '2h30m or a number of hours sets the span; always keeps every chat warm until 6 hours after ' +
+    'its last turn; off turns it off. If a ping finds the cache already lost, keep warm turns ' +
+    'itself off. This card shows the pings and rewrites with their cost. After a restart it ' +
+    'resumes with the next turn.',
   command: "Keep this session's prompt cache warm (default 4 hours), or /keepwarm off",
   // `11:10pm`
   clock: (h: number, m: number) => `${h % 12 || 12}:${String(m).padStart(2, '0')}${h >= 12 ? 'pm' : 'am'}`,
@@ -128,16 +128,16 @@ const EN = {
 
 const DE: typeof EN = {
   title: 'Warmhalten',
-  summary: 'Hält den Prompt-Cache mit einem kleinen Ping warm, bevor er abläuft.',
+  summary: 'Hält den Prompt-Cache warm, damit die nächste Antwort nach einer Pause schnell und günstig bleibt.',
   details:
-    'Sein Segment im gemeinsamen Band über der Eingabe zeigt, wie lange der Cache warm bleibt. ' +
-    '/keepwarm [90m|2h30m|Stunden|always|off] sendet kurz vor Ablauf des Caches einen kleinen ' +
-    'Ping (standardmäßig 4 Stunden lang); das Lesen des Caches startet seine Uhr neu. always hält ' +
-    'jeden Chat bis 6 Stunden nach seiner letzten Antwort warm. Einen Ping, den die API als ' +
-    'überlastet abweist, sendet der Mod erneut; schreibt ein Ping in den Cache, statt ihn zu ' +
-    'lesen, schaltet sich Warmhalten ab. Hier stehen die Pings und das Neuschreiben eines ' +
-    'verlorenen Caches mit ihren Kosten. Warmhalten übersteht einen Neustart: es läuft mit der ' +
-    'nächsten Antwort weiter.',
+    'Ohne Aktivität verfällt der Cache nach 5 Minuten oder einer Stunde, und die nächste Anfrage ' +
+    'muss den ganzen Kontext neu schreiben. Das kostet. Warmhalten schickt kurz vorher einen ' +
+    'kleinen Ping, standardmäßig 4 Stunden lang. Über der Eingabe siehst du, wie lange der Cache ' +
+    'noch warm bleibt. /keepwarm 90m, 2h30m oder eine Stundenzahl wählt die Dauer; always hält ' +
+    'jeden Chat bis 6 Stunden nach seiner letzten Antwort warm; off schaltet ab. Findet ein Ping ' +
+    'den Cache schon verloren vor, schaltet sich Warmhalten ab. Diese Karte zeigt Pings und ' +
+    'Neuschreibungen mit ihren Kosten. Nach einem Neustart läuft es mit der nächsten Antwort ' +
+    'weiter.',
   command: 'Den Prompt-Cache dieser Session warm halten (standardmäßig 4 Stunden), oder /keepwarm off',
   // `23:10`
   clock: (h: number, m: number) => `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`,
