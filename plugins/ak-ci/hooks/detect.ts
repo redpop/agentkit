@@ -19,14 +19,34 @@ async function out($: EngineInterface, argv: string[]): Promise<string | undefin
   }
 }
 
-/** The remote the branch pushes to: its upstream's, else `origin`, else the first one there is. */
+/**
+ * The remote the branch pushes to: its upstream's when that names a remote, else `origin`, else
+ * the first one there is. An upstream that is a local branch names no remote.
+ */
 async function remoteName($: EngineInterface): Promise<string | undefined> {
+  const remotes = ((await out($, ['git', 'remote'])) ?? '').split('\n').map(one => one.trim()).filter(Boolean)
   const upstream = await out($, ['git', 'rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}'])
-  const name = upstream?.split('/')[0]
-  if (name) return name
+  // A remote's name may hold a slash: the longest one the upstream starts with.
+  const tracked = remotes.filter(one => upstream?.startsWith(`${one}/`)).sort((x, y) => y.length - x.length)[0]
+  if (tracked !== undefined) return tracked
   if ((await out($, ['git', 'remote', 'get-url', 'origin'])) !== undefined) return 'origin'
 
-  return (await out($, ['git', 'remote']))?.split('\n')[0]?.trim() || undefined
+  return remotes[0]
+}
+
+// gh is not installed: the call could not start it. Any other rejection is a call still running
+// at the timeout, which the next fetch may not meet.
+const NOT_STARTED = /ENOENT|not found|no such file/i
+
+/** Whether gh is logged in to `host`: github or gitlab; undefined when the call did not finish. */
+async function askGh($: EngineInterface, host: string): Promise<ProviderName | undefined> {
+  try {
+    const result = await $.process.run(['gh', 'auth', 'status', '--hostname', host], { timeoutMs: TIMEOUT_MS })
+
+    return result.exitCode === 0 ? 'github' : 'gitlab'
+  } catch (error) {
+    return NOT_STARTED.test(String(error)) ? 'gitlab' : undefined
+  }
 }
 
 /** The host of a remote URL, https, ssh:// or scp-style (`git@host:path`); undefined for a path. */
@@ -49,10 +69,11 @@ export async function providerFor($: EngineInterface, cache: Map<string, Provide
   if (host === 'github.com') return 'github'
   const known = cache.get(host)
   if (known !== undefined) return known
-  // A gh that is not installed, or not logged in to this host, leaves GitLab.
-  const isGithub = (await out($, ['gh', 'auth', 'status', '--hostname', host])) !== undefined
-  const found: ProviderName = isGithub ? 'github' : 'gitlab'
-  cache.set(host, found)
+  // GitLab unless gh is logged in to the host. An answer that did not come stands for this fetch
+  // only, so the next one asks again.
+  const asked = await askGh($, host)
+  if (asked === undefined) return 'gitlab'
+  cache.set(host, asked)
 
-  return found
+  return asked
 }

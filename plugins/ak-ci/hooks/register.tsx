@@ -140,9 +140,9 @@ async function refresh($: EngineInterface, watch: Watch, gate: Gate): Promise<vo
       arm($, watch, gate)
       return
     }
-    if (next.kind === 'unavailable' && next.reason === 'no-auth' && !watch.isAuthToasted) {
+    if (provider !== undefined && next.kind === 'unavailable' && next.reason === 'no-auth' && !watch.isAuthToasted) {
       watch.isAuthToasted = true
-      $.ui.toast(texts(await languageFor($)).noAuth(next.provider ?? 'gitlab'))
+      $.ui.toast(texts(await languageFor($)).noAuth(next.provider ?? provider))
     }
     watch.status = next
     await announce($, watch)

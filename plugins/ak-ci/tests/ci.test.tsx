@@ -12,10 +12,12 @@ const BRIDGES = 'glab api projects/:id/pipelines/4711/bridges?per_page=100'
 const GREEN = 'glab api projects/:id/pipelines?status=success&per_page=5'
 const TRACE = 'glab api projects/:id/jobs/2/trace'
 const REPO = 'glab api projects/:id'
-// The remote the repository has: a GitLab host gh is not asked about.
+// The remote the repository has: a host gh is not logged in to, so GitLab.
 const REMOTE: Record<string, Answer> = {
   'git rev-parse --abbrev-ref --symbolic-full-name @{u}': { exitCode: 128 },
+  'git remote': { stdout: 'origin' },
   'git remote get-url origin': { stdout: 'https://gitlab.example.com/group/project.git' },
+  'gh auth status --hostname gitlab.example.com': { exitCode: 1 },
 }
 
 type Answer = { exitCode?: number; stdout?: unknown; stderr?: string }
