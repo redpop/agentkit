@@ -62,3 +62,8 @@ claude plugin test plugins/ak-mods/tests/fixture
 
 The second test command proves the fixture mod fails open with `ak-mods` absent.
 `tests/fixture/` is a test-only harness (version 0.0.0), not part of the marketplace.
+
+## License
+
+The line icons the band draws are [Lucide](https://lucide.dev) icons (ISC, partly MIT from
+Feather), see [LICENSE-lucide](LICENSE-lucide).

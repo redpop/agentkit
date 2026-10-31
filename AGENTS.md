@@ -144,7 +144,7 @@ plugins/{plugin-name}/
 | `ak-meta` | 4 | 2 | |
 | `ak-improve` | - | 2 | knowledge/ (1 file) |
 | `ak-knowledge` | 4 | 1 | |
-| `ak-mods` | - | - | hooks module (TSX), types/ |
+| `ak-mods` | - | - | hooks module (TSX), types/, LICENSE-lucide (icons, ISC) |
 | `ak-keepwarm` | - | - | hooks module (TSX), tests/, LICENSE (upstream MIT) |
 | `ak-session-id` | - | - | hooks module (TSX), tests/ |
 | `ak-showcase` | - | - | hooks module (TSX), types/, tests/ |
