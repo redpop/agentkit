@@ -230,7 +230,7 @@ Rules for `git log`, not review criteria for diffs.
   in the body.
 
 Versions stay synchronized across `marketplace.json` and all `plugin.json` files (currently
-`1.67.6`) — that one **is** checkable in a diff. The one exception is the test-only harness
+`1.67.7`) — that one **is** checkable in a diff. The one exception is the test-only harness
 `plugins/ak-mods/tests/fixture`, which stays at `0.0.0`.
 
 ## Task completion workflow

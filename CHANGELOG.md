@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.67.7] - 2026-10-31
+
+### 🐛 Fixed
+
+- `ak-mods` — on the desktop app the band's two rows sit a little apart; the terminal is unchanged.
+
 ## [1.67.6] - 2026-10-31
 
 ### 🐛 Fixed
