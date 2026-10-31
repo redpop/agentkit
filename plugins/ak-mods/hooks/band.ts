@@ -13,10 +13,6 @@ export type Layout = { rows: readonly (readonly Segment[])[]; hidden: readonly s
 
 const ROW_SEPARATOR = 3
 
-// Where the band draws pictures, a cell is wider than a space of the text beside it: two part the
-// segments there, still wider than the gaps inside one.
-const PICTURED_SEPARATOR = 2
-
 /**
  * The order segments drop in when the band runs out of room: lowest priority first (default 5),
  * of equal ones the last shown first. Where they draw is the order they come in, not this.
@@ -89,7 +85,7 @@ const cut = (text: string, columns: number): string =>
 /** A row's width: its segments and the separators between them. */
 const rowWidth = (segments: readonly Segment[], isPictured: boolean): number =>
   segments.reduce(
-    (sum, segment, at) => sum + (at > 0 ? (isPictured ? PICTURED_SEPARATOR : ROW_SEPARATOR) : 0) + widthOf(segment, isPictured),
+    (sum, segment, at) => sum + (at > 0 ? ROW_SEPARATOR : 0) + widthOf(segment, isPictured),
     0,
   )
 

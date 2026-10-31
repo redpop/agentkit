@@ -36,6 +36,7 @@ test('the context alone where no rate limit is reported', () => {
       rich: [
         { text: 'ctx 67%', tone: 'ok', ring: 67 },
         { text: ' 67%', tone: 'ok' },
+        { text: ' ctx', tone: 'dim' },
       ],
     },
     detail: 'ctx 67%',
@@ -44,7 +45,7 @@ test('the context alone where no rate limit is reported', () => {
   })
 })
 
-test('the compact form keeps each percentage, labels on the terminal only', () => {
+test('the compact form keeps each percentage with its label', () => {
   expect(reading(usage(134400, { five_hour: 2 }), 0)?.compact).toEqual({
     text: 'ctx 67%  5h 2%',
     parts: [
@@ -56,9 +57,11 @@ test('the compact form keeps each percentage, labels on the terminal only', () =
     rich: [
       { text: 'ctx 67%', tone: 'ok', ring: 67 },
       { text: ' 67%', tone: 'ok' },
+      { text: ' ctx', tone: 'dim' },
       { text: '  ', tone: 'dim' },
       { text: '5h 2%', tone: 'ok', ring: 2 },
       { text: ' 2%', tone: 'ok' },
+      { text: ' 5h', tone: 'dim' },
     ],
   })
 })

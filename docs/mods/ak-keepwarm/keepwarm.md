@@ -37,7 +37,7 @@ above the prompt, once the chat has made a request:
 | `○ cold 12m  rewrite ≈ $0.42` | The cache expired that long ago; a ping cannot help, and the button is hidden |
 
 On the desktop app the circle is a ring that empties with the time left, beside the time and the
-word `cache`: `◕ 42m cache`. Kept warm, the ring is full in the info colour; cold, it is empty.
+word `cache`: `◕ 42m cache`. Kept warm, a flame in the info colour stands in its place; cold, the ring is empty.
 Cooling, it says what is at stake: `cache drops in 4m  next message rewrites 200k tokens ≈ $0.80`.
 Cold, it reads as its neighbours do, a value then a dim label: the empty ring, then what the next
 message costs, `≈ $0.80 cache`, yellow from $1. How long it has been cold is the pane's.
@@ -45,7 +45,8 @@ A press on the segment's text opens the Mods pane at this mod, which lists the c
 lifetime, the context, the rewrite estimate and, once there are some, the pings, rewrites and
 retries.
 
-When the band is short of room, the segment turns compact: kept warm `◆ warm`, warm or cooling the
+When the band is short of room, the segment turns compact: kept warm `◆ warm` (the flame and
+`warm` on the desktop app), warm or cooling the
 ring and the time left (`◕ 42m`), cold the empty ring and the rewrite cost (`○ ≈ $0.80`). While the
 cache is warm or cooling, the compact text is the **keep warm** button: a press starts the loop, with
 no key. Cold, a press opens the Mods pane: starting the loop then would rewrite the cache at once.

@@ -7,8 +7,8 @@ export type ModsRow = ModsInfo & { isOn: boolean; isStandard: boolean }
 /** A segment's colour: its state, not its mod. `ok` draws in the text colour; only the others colour it. */
 export type ModsTone = 'ok' | 'warn' | 'alert' | 'info' | 'dim'
 
-/** The line icons ak-mods draws: an id (`#`), a copy, a check mark. */
-export type ModsIcon = 'id' | 'copy' | 'check'
+/** The line icons ak-mods draws: an id (`#`), a copy, a check mark, a clock, a flame. */
+export type ModsIcon = 'id' | 'copy' | 'check' | 'clock' | 'flame'
 
 /**
  * A run of a segment's text in its own tone; without one, in the segment's. In `rich`, a run with a

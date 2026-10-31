@@ -366,15 +366,15 @@ const segment = (): Segment => {
     return {
       text: `◆ ${t.keptWarm}`,
       rich: [
-        { text: t.ringKept, tone: 'info', ring: 100 },
-        { text: ` ${t.keptWarm}`, tone: 'info' },
+        { text: t.ringKept, tone: 'info', icon: 'flame' },
+        { text: t.keptWarm, tone: 'info' },
       ],
       // Short of room, the band keeps what matters most: that the cache is kept warm.
       compact: {
         text: `◆ ${t.warmShort}`,
         rich: [
-          { text: t.ringKept, tone: 'info', ring: 100 },
-          { text: ` ${t.warmShort}`, tone: 'info' },
+          { text: t.ringKept, tone: 'info', icon: 'flame' },
+          { text: t.warmShort, tone: 'info' },
         ],
       },
       ...more,

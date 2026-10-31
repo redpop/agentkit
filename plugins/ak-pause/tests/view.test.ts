@@ -38,15 +38,15 @@ test('23 minutes into a block', () => {
     text: '23 min am Stück',
     parts: [{ text: '23 min am Stück', tone: 'ok' }],
     rich: [
-      { text: '23 min am Stück', tone: 'ok', ring: 38 },
-      { text: ' 23 min', tone: 'ok' },
+      { text: '23 min am Stück', tone: 'ok', icon: 'clock' },
+      { text: '23 min', tone: 'ok' },
     ],
     compact: {
       text: '23 min',
       parts: [{ text: '23 min', tone: 'ok' }],
       rich: [
-        { text: '23 min', tone: 'ok', ring: 38 },
-        { text: ' 23 min', tone: 'ok' },
+        { text: '23 min', tone: 'ok', icon: 'clock' },
+        { text: '23 min', tone: 'ok' },
       ],
     },
     tone: 'ok',
@@ -59,19 +59,18 @@ test('the tone rises with the block', () => {
   const hour = segmentOf(at(72).block, at(72).now, 'de')
   expect(hour?.tone).toBe('warn')
   expect(hour?.text).toBe('1 h 12 am Stück')
-  expect(hour?.rich?.[0]?.ring).toBe(100)
   expect(segmentOf(at(95).block, at(95).now, 'de')?.tone).toBe('alert')
   expect(segmentOf(at(95).block, at(95).now, 'en')?.text).toBe('1 h 35 straight')
 })
 
-test('a break draws dim and empty', () => {
+test('a break draws dim', () => {
   const block = touch(undefined, T)
   const segment = segmentOf(block, T + 10 * MIN, 'de')
   expect(segment?.text).toBe('Pause')
   expect(segment?.tone).toBe('dim')
   expect(segment?.rich).toEqual([
-    { text: 'Pause', tone: 'dim', ring: 0 },
-    { text: ' Pause', tone: 'dim' },
+    { text: 'Pause', tone: 'dim', icon: 'clock' },
+    { text: 'Pause', tone: 'dim' },
   ])
   expect(segment?.button).toBeUndefined()
 })
@@ -131,7 +130,7 @@ test('the hints name the block', () => {
   expect(toastText(3_660_000, 'en')).toBe('1 h 01 straight. A good moment for a break.')
 })
 
-test('the tones and the ring follow the block length set', () => {
+test('the tones follow the block length set', () => {
   const limits = { workMs: 45 * MIN, breakMs: 10 * MIN }
   const tone = (minutes: number) => {
     const { block, now } = at(minutes)
@@ -143,8 +142,6 @@ test('the tones and the ring follow the block length set', () => {
   expect(tone(45)).toBe('warn')
   expect(tone(67)).toBe('warn')
   expect(tone(68)).toBe('alert')
-  const { block, now } = at(30)
-  expect(segmentOf(block, now, 'de', limits)?.rich?.[0]?.ring).toBe(67)
 })
 
 test('the settings offer the lengths, the defaults marked, the current ones selected', () => {

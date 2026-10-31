@@ -38,6 +38,8 @@ const ICONS: Record<ModsIcon, string> = {
   id: '<path d="M5 9h14M5 15h14M10.5 4 8.5 20M15.5 4l-2 16"/>',
   copy: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/>',
   check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+  flame: '<path d="M12 21c-3.6 0-6-2.5-6-5.8 0-3.6 3-5.4 3.6-9.2 2.6 1.6 3.6 3.8 3.4 6 1.2-.6 2-1.8 2.2-3.4 1.8 1.6 2.8 4 2.8 6.6 0 3.3-2.4 5.8-6 5.8Z"/>',
 }
 
 const iconOf = (icon: unknown): ModsIcon | undefined =>
@@ -459,13 +461,13 @@ export async function renderBand(
   const t = texts(await languageFor($))
   const { Box, Button, Text } = draws
   // A cell of space between two segments, three with its two gaps: no rule
-  // draws there, the space alone parts them. Where the band draws pictures,
-  // the two gaps alone: a cell there is wider than a space of the text.
-  const separator = (key: string) => <Box key={key} minWidth={isPictured ? 0 : 1} />
+  // draws there, the space alone parts them, wider than any gap inside a
+  // segment, so what belongs together reads as one.
+  const separator = (key: string) => <Box key={key} minWidth={1} />
   // Every space is a gap of the Box, one cell wide: a surface that draws its
   // buttons with chrome spaces them alike. Buttons draw plain (`1: label`,
   // `m: mods +N`): the widths `layout` counts, with the separator and its two
-  // gaps as three (two where the band draws pictures), a segment's text and button one apart. The `mods` button
+  // gaps as three, a segment's text and button one apart. The `mods` button
   // sits at the right edge of the last row, at least three from the last
   // segment.
 

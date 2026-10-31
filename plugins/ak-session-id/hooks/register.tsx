@@ -62,14 +62,14 @@ const segment = async ($: EngineInterface): Promise<Segment> => {
       text: `✓ ${t.copiedShort}`,
       rich: [
         { text: t.copiedShort, icon: 'check' },
-        { text: ` ${t.copiedShort}` },
+        { text: t.copiedShort },
       ],
       // Compact, only the icon changes: the same width, so the band keeps its layout.
       compact: {
         text: `✓…${shown.slice(-COMPACT_TAIL)}`,
         rich: [
           { text: t.copiedShort, icon: 'check' },
-          { text: ` …${shown.slice(-COMPACT_TAIL)}` },
+          { text: `…${shown.slice(-COMPACT_TAIL)}` },
         ],
       },
       card,
@@ -82,14 +82,14 @@ const segment = async ($: EngineInterface): Promise<Segment> => {
     text: tail(shown),
     rich: [
       { text: 'id', icon: 'id' },
-      { text: ` …${shown.slice(-TAIL)}` },
+      { text: `…${shown.slice(-TAIL)}` },
     ],
     // Short of room: the icon and fewer characters, still text, so the id stays a press away.
     compact: {
       text: `#…${shown.slice(-COMPACT_TAIL)}`,
       rich: [
         { text: 'id', icon: 'id' },
-        { text: ` …${shown.slice(-COMPACT_TAIL)}` },
+        { text: `…${shown.slice(-COMPACT_TAIL)}` },
       ],
     },
     card,

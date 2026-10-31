@@ -57,15 +57,16 @@ export function segmentOf(block: Block | undefined, now: number, lang: Lang, lim
   const tone: Tone = isBreak ? 'dim' : toneOf(worked, limits)
   const short = isBreak ? t.idle : durationText(worked)
   const long = isBreak ? t.idle : t.straight(short)
-  const ring = isBreak ? 0 : Math.min(100, Math.round((worked / limits.workMs) * 100))
   const isThirsty = isWaterDue(block, now, limits.breakMs)
 
   const extras: Part[] = [
     ...(isThirsty ? [{ text: ` ${t.water}`, tone: 'info' as const }] : []),
     ...(isLate(now) ? [{ text: ` ${t.late}`, tone: 'dim' as const }] : []),
   ]
-  // The ring's own text is what a reader that cannot see it gets; the run beside it can be pressed.
-  const pictured = (lead: string): Part[] => [{ text: lead, tone, ring }, { text: ` ${short}`, tone }, ...extras]
+  // A clock, not a ring: a ring in the band reads as a fill, and the block's tone already rises
+  // toward its end. The clock's own text is what a reader that cannot see it gets; the run beside
+  // it can be pressed. An icon carries its own air, so no space follows it.
+  const pictured = (lead: string): Part[] => [{ text: lead, tone, icon: 'clock' }, { text: short, tone }, ...extras]
   const parts: Part[] = [{ text: long, tone }, ...extras]
   const compact: Part[] = [{ text: short, tone }, ...extras]
 

@@ -1,8 +1,8 @@
 # ak-pause
 
 Shows how long you have worked without a break, counted across every Claude Code session. A mod:
-one segment in the shared band above the prompt, a ring that fills to the block's end beside the time
-(`52 min am Stück`). Needs `ak-mods`, which installs with it, switches the mod on or off per chat
+one segment in the shared band above the prompt, the time in a colour that rises toward the block's
+end (`52 min am Stück`). Needs `ak-mods`, which installs with it, switches the mod on or off per chat
 and draws the band.
 
 Requires Claude Code 2.1.309 or later (hooks-module support).

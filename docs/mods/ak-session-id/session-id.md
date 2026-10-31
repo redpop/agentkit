@@ -37,7 +37,7 @@ desktop id and the engine id whole; outside the desktop app the engine id alone.
 segment says `✓ copied` for two seconds, then shows the id again.
 
 When the band is short of room, the segment turns compact: the icon and the last four characters,
-`# …5f6a` (`#…5f6a` on the terminal). After a copy only the icon turns to a check mark, so the
+`#…5f6a`, the icon and the characters drawn as one. After a copy only the icon turns to a check mark, so the
 band keeps its layout. A press on it still copies, without the key.
 
 On the terminal and in the Mods pane the **copy** button (key `c`) runs `/session-id`. The segment

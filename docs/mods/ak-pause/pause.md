@@ -7,8 +7,8 @@ Requires Claude Code 2.1.309 or later (hooks-module support). Switched per chat 
 
 ## In short
 
-- **The time** (`4 min am Stück`) is how long you have worked without a break. The ring beside it
-  fills to the end of the block: an hour unless you set another length.
+- **The time** (`4 min am Stück`) is how long you have worked without a break. Its colour rises
+  toward the end of the block: an hour unless you set another length.
 - **What counts as work** on macOS is any input at the machine: the mouse, the keyboard or the
   trackpad, in any app. On Linux and Windows it is only what you do in Claude: sending a prompt, or
   typing in the prompt box without sending it. There, fifteen minutes in your editor or browser
@@ -61,9 +61,10 @@ prompt, once there has been an input. With the default lengths:
 | 60 to 89 | warning | `1 h 12 am Stück` |
 | 90 and more | error | `1 h 35 am Stück` |
 
-On the desktop app the time is a ring that fills to the block's end, beside the duration: `◔ 23
-min`. When the band is short of room, the segment drops `am Stück`. The segment has priority 4: when
-the band runs out of room it goes before usage (7) and CI (6).
+On the desktop app a clock icon stands before the duration: `🕑 23 min`. It is no ring, as the
+band's rings are fills: the colour tells how near the block's end is. When the band is short of
+room, the segment drops `am Stück`. The segment has priority 4: when the band runs out of room it
+goes before usage (7) and CI (6).
 
 Two hints join the segment when due:
 

@@ -41,9 +41,9 @@ Mods pane at this mod, which lists the context with the tokens used and the wind
 680k of 1M tokens`) and every window still current, the week below 75 % too, each window with its
 reset.
 
-When the band is short of room, the segment turns compact: each figure's percentage alone,
-`ctx 67%  5h 42%`, and on the desktop app its ring and percentage, `◔ 67%  ◔ 42%`. The order tells
-the figures apart; the bars and resets are left out.
+When the band is short of room, the segment turns compact: each figure's percentage and label,
+`ctx 67%  5h 42%`, and on the desktop app its ring, percentage and dim label, `◔ 67% ctx  ◔ 42% 5h`.
+The bars and resets are left out.
 
 Without `ak-mods` (or when it refuses the mod, or a publish fails), the mod draws its own band
 instead, never both, with the same parts and colours.

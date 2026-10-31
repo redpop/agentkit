@@ -140,8 +140,8 @@ export const reading = (usage: SessionUsage, now: number, lang: Lang = 'en'): Re
     ...(percent >= WARN && resetsAt !== undefined ? [{ text: `  ${reset(resetsAt)}`, tone: 'dim' as const }] : []),
   ])
 
-  // Where the band is short of room, each figure's percentage alone: `ctx 67%  5h 2%`, and on the
-  // desktop app its ring and percentage, the order telling the figures apart. No bars, no resets.
+  // Where the band is short of room, each figure's percentage and label: `ctx 67%  5h 2%`, and on
+  // the desktop app its ring, percentage and label: `◔ 67% ctx`. No bars, no resets.
   const compactParts = figures.flatMap(({ label, percent }, at): Part[] => [
     { text: `${at > 0 ? '  ' : ''}${label} `, tone: 'dim' },
     { text: `${percent}%`, tone: toneOf(percent) },
@@ -153,6 +153,7 @@ export const reading = (usage: SessionUsage, now: number, lang: Lang = 'en'): Re
       ...(at > 0 ? [{ text: '  ', tone: 'dim' as const }] : []),
       { text: `${label} ${percent}%`, tone: toneOf(percent), ring: percent },
       { text: ` ${percent}%`, tone: toneOf(percent) },
+      { text: ` ${label}`, tone: 'dim' as const },
     ]),
   }
 

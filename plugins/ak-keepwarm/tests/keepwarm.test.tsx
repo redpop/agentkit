@@ -537,14 +537,14 @@ test('publishes the kept-warm segment with the stop button, without its end', OW
   expect(segments(toasts).at(-1)).toEqual({
     text: '◆ kept warm',
     rich: [
-      { text: 'cache kept warm', tone: 'info', ring: 100 },
-      { text: ' kept warm', tone: 'info' },
+      { text: 'cache kept warm', tone: 'info', icon: 'flame' },
+      { text: 'kept warm', tone: 'info' },
     ],
     compact: {
       text: '◆ warm',
       rich: [
-        { text: 'cache kept warm', tone: 'info', ring: 100 },
-        { text: ' warm', tone: 'info' },
+        { text: 'cache kept warm', tone: 'info', icon: 'flame' },
+        { text: 'warm', tone: 'info' },
       ],
     },
     card: card(`kept warm until ${clockTime(START + 4 * 60 * MIN)}`),

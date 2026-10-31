@@ -165,12 +165,13 @@ test('layout leaves rich runs wider than the room out of a pictured band', () =>
   expect(kept?.rich).toBeUndefined()
 })
 
-test('layout parts the segments of a pictured band by two cells', () => {
-  // 20 + 3 + 20 + 10 = 53 > 52 on the terminal; 20 + 2 + 20 + 10 = 52 pictured
+test('layout parts the segments of a pictured band by three cells, as on the terminal', () => {
+  // Terminal: 20 + 3 + 20 + 10 = 53. Pictured: 19 + 3 + 19 + 10, and 2 cells kept free: 53
   const two = [seg('a', 'x'.repeat(20)), seg('b', 'y'.repeat(20))]
 
-  expect(layout(two, 52).rows.length).toBe(2)
-  expect(layout(two, 52, true).rows.length).toBe(1)
+  expect(layout(two, 53).rows.length).toBe(1)
+  expect(layout(two, 53, true).rows.length).toBe(1)
+  expect(layout(two, 52, true).rows.length).toBe(2)
 })
 
 const compact = { text: 'c'.repeat(5) }
@@ -230,9 +231,9 @@ test('compact steps drop the lowest priority', () => {
 test('a pictured band counts its text at 0.95 of a cell, a proportional face being narrower', () => {
   const two = [seg('a', 'x'.repeat(40)), seg('b', 'y'.repeat(40))]
 
-  // Terminal: 40 + 3 + 40 + 10 = 93 > 90. Pictured: 38 + 2 + 38 + 10, and 2 cells kept free at
-  // the end so the `mods` button never meets the band's edge: 90.
-  expect(layout(two, 90).rows.length).toBe(2)
-  expect(layout(two, 90, true).rows.length).toBe(1)
-  expect(layout(two, 89, true).rows.length).toBe(2)
+  // Terminal: 40 + 3 + 40 + 10 = 93 > 91. Pictured: 38 + 3 + 38 + 10, and 2 cells kept free at
+  // the end so the `mods` button never meets the band's edge: 91.
+  expect(layout(two, 91).rows.length).toBe(2)
+  expect(layout(two, 91, true).rows.length).toBe(1)
+  expect(layout(two, 90, true).rows.length).toBe(2)
 })

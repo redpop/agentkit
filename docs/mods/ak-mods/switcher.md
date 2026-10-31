@@ -94,7 +94,8 @@ The last row always keeps room for the button, and on the desktop app two cells 
 estimate a little short never pushes it against the band's edge. Each segment counts as wide as it
 draws: on the terminal its text, on the desktop app its rich runs, a ring or an icon as three cells,
 a character as 0.95 of a cell (a cell there is as wide as a character of the code font, the band's
-text narrower), and a button on its text adds nothing there.
+text narrower), and a button on its text adds nothing there. Three cells part two segments on
+either surface, more than any gap inside one, so what belongs to one segment reads as one.
 
 The Mods pane then names the dropped mods in a dim line, `N mods do not fit the band: …`, so you can
 switch some off. The pane counts with the band's width as it was last recorded: pressing the `mods`
