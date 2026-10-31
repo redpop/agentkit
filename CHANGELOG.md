@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.66.0] - 2026-10-31
+
+### ✨ Added
+
+- `ak-ci` — a new mod that replaces `ak-gitlab`: the CI state of your branch above the prompt, on
+  GitLab through `glab` and on GitHub through `gh`. It picks the host from the branch's remote. On
+  GitHub it shows the checks of the open pull request, else those of the commit the branch pushed
+  last, with a time estimate from earlier green runs. On a failure, Get errors puts an excerpt of
+  the failed Actions job's log into the prompt box. `/ci-open`, `/ci-errors` and `/ci-link` work on
+  both hosts.
+- `ak-mods` — a mod's open card can carry a `⋯` menu of further actions; `ak-ci` puts open and Copy
+  link there.
+- `ak-showcase` — a sample of the card menu, and the band segment's parts now list its actions.
+- A GitHub Actions workflow runs the Markdown, JSON and shell checks on pull requests and pushes to
+  `main`; Markdown is linted only where a change touched it.
+
+### 🗑️ Removed
+
+- `ak-gitlab` — superseded by `ak-ci`. Uninstall it, install `ak-ci` and switch **CI** on in the
+  Mods pane (`/ak-mods`).
+
 ## [1.65.3] - 2026-10-31
 
 ### 🐛 Fixed
