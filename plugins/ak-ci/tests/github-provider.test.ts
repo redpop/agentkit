@@ -1,8 +1,8 @@
 import { expect, test } from 'claude-code/testing'
 import type { EngineInterface, ProcessRunResult } from 'claude-code'
 
-import type { Job } from '../hooks/model'
-import { fetchStatus } from '../hooks/provider'
+import type { Checks, Job } from '../hooks/model'
+import { fetchFailure, fetchStatus } from '../hooks/provider'
 import { aggregate } from '../hooks/providers/github'
 
 const SHA = '0a1b2c3d4e5f60718293a4b5c6d7e8f901234567'
@@ -11,7 +11,7 @@ const REPO = 'gh repo view --json nameWithOwner,url'
 const BRANCH = 'git rev-parse --abbrev-ref HEAD'
 const UPSTREAM = 'git rev-parse @{u}'
 const RUNS = `gh api repos/{owner}/{repo}/commits/${SHA}/check-runs?per_page=100`
-const STATUSES = `gh api repos/{owner}/{repo}/commits/${SHA}/status`
+const STATUSES = `gh api repos/{owner}/{repo}/commits/${SHA}/status?per_page=100`
 const WORKFLOWS = `gh api repos/{owner}/{repo}/actions/runs?head_sha=${SHA}&per_page=100`
 
 type Answer = { exitCode?: number; stdout?: unknown; stderr?: string } | 'missing' | 'hanging'
@@ -306,4 +306,128 @@ test('settled checks finish at the latest completion', async () => {
   const checks = status.kind === 'change' ? status.change.checks : undefined
   expect(checks?.status).toBe('failed')
   expect(checks?.finishedAt).toBe('2026-10-29T10:04:00Z')
+})
+
+// The estimate: one call for each workflow among the checks' jobs, only while they run.
+const HISTORY = (name: string) => `gh run list --workflow ${name} --status success --limit 5 --json databaseId,createdAt,updatedAt,headSha`
+const ran = (minutes: number, headSha = 'f'.repeat(40)) => ({
+  databaseId: minutes,
+  headSha,
+  createdAt: '2026-10-28T10:00:00Z',
+  updatedAt: new Date(Date.parse('2026-10-28T10:00:00Z') + minutes * 60_000).toISOString().replace('.000Z', 'Z'),
+})
+// Two workflows on a suite of their own: the names are kept across tests.
+const TWO = {
+  ...RUNNING,
+  [RUNS]: {
+    stdout: {
+      check_runs: [
+        { ...CHECK_RUNS.check_runs[0], check_suite: { id: 910 } },
+        { ...CHECK_RUNS.check_runs[1], check_suite: { id: 911 } },
+      ],
+    },
+  },
+  [WORKFLOWS]: {
+    stdout: {
+      workflow_runs: [
+        { id: 7101, name: 'lint', check_suite_id: 910 },
+        { id: 7102, name: 'build', check_suite_id: 911 },
+      ],
+    },
+  },
+}
+const estimateOf = (status: Awaited<ReturnType<typeof fetchStatus>>) => (status.kind === 'change' ? status.estimateMs : undefined)
+
+test("estimate is the longest workflow's mean", async () => {
+  const { $, calls } = host({
+    ...TWO,
+    [HISTORY('lint')]: { stdout: [ran(3), ran(5)] },
+    [HISTORY('build')]: { stdout: [ran(6), ran(6), ran(6)] },
+  })
+  const estimates = new Map<string, number | undefined>()
+  expect(estimateOf(await fetchStatus($, 'github', estimates))).toBe(360_000)
+  // Once per checks: the second fetch asks the history of neither.
+  expect(estimateOf(await fetchStatus($, 'github', estimates))).toBe(360_000)
+  expect(calls.filter(call => call.line.startsWith('gh run list '))).toHaveLength(2)
+})
+
+test("the head commit's own runs are left out of the estimate", async () => {
+  const { $ } = host({ ...TWO, [HISTORY('lint')]: { stdout: [ran(2), ran(40, SHA)] }, [HISTORY('build')]: { stdout: [] } })
+  expect(estimateOf(await fetchStatus($, 'github', new Map()))).toBe(120_000)
+})
+
+test('no green history leaves the estimate out', async () => {
+  const { $ } = host({ ...TWO, [HISTORY('lint')]: { stdout: [] }, [HISTORY('build')]: { stdout: [] } })
+  const estimates = new Map<string, number | undefined>()
+  expect(estimateOf(await fetchStatus($, 'github', estimates))).toBeUndefined()
+  expect(estimates.has(SHA)).toBe(true)
+})
+
+test('a failed history call leaves the estimate out and is asked again', async () => {
+  let isDown = true
+  const { $, calls } = host(line => {
+    if (line === HISTORY('lint')) return isDown ? { exitCode: 1, stderr: 'HTTP 502' } : { stdout: [ran(4)] }
+    if (line === HISTORY('build')) return { stdout: [ran(2)] }
+
+    return (TWO as Record<string, Answer>)[line] ?? { exitCode: 1, stderr: 'unexpected call' }
+  })
+  const estimates = new Map<string, number | undefined>()
+  const first = await fetchStatus($, 'github', estimates)
+  expect(first.kind).toBe('change')
+  expect(estimateOf(first)).toBeUndefined()
+  isDown = false
+  expect(estimateOf(await fetchStatus($, 'github', estimates))).toBe(240_000)
+  expect(calls.filter(call => call.line === HISTORY('lint'))).toHaveLength(2)
+})
+
+test('no estimate once the checks have settled', async () => {
+  const { $, calls } = host({ ...RUNNING, [RUNS]: { stdout: { check_runs: [run(1, 'completed', 'success')] } } })
+  expect(estimateOf(await fetchStatus($, 'github', new Map()))).toBeUndefined()
+  expect(calls.some(call => call.line.startsWith('gh run list '))).toBe(false)
+})
+
+const checks = (jobs: Job[]): Checks => ({ key: SHA, status: 'failed', webUrl: '', createdAt: '', jobs })
+const job = (extra: Partial<Job>): Job => ({ id: 77, name: 'test', group: 'check', status: 'failed', allowFailure: false, hasLog: true, ...extra })
+
+test("fetchFailure returns the first failed Actions job's log", async () => {
+  const { $, calls } = host({ 'gh run view --job 77 --log-failed': { stdout: 'test\tStep\tERROR: boom\n' } })
+  const failure = await fetchFailure($, 'github', checks([job({ id: 76, status: 'success' }), job({}), job({ id: 78 })]))
+  expect(failure).toEqual({ job: job({}), trace: 'test\tStep\tERROR: boom', isCut: false })
+  expect(calls.map(call => call.line)).toEqual(['gh run view --job 77 --log-failed'])
+})
+
+test('a failed check without log returns noLog', async () => {
+  // The status shares its id with the check run after it: the first blocking job answers.
+  const status = job({ id: 77, name: 'CodeRabbit', group: 'status', hasLog: false })
+  const { $, calls } = host({})
+  expect(await fetchFailure($, 'github', checks([status, job({ id: 77, name: 'test' })]))).toEqual({ job: status, noLog: true })
+  expect(calls).toEqual([])
+})
+
+test('fetchFailure skips an allowed failure and is undefined without a failed job or a log', async () => {
+  const { $ } = host({})
+  expect(await fetchFailure($, 'github', checks([job({ allowFailure: true }), job({ status: 'success' })]))).toBeUndefined()
+  expect(await fetchFailure($, 'github', checks([job({})]))).toBeUndefined()
+})
+
+// Hardening of the commit endpoints.
+test('the commit status is asked for a hundred', async () => {
+  const { $, calls } = host(RUNNING)
+  await fetchStatus($, 'github', new Map())
+  expect(calls.some(call => call.line === STATUSES && call.line.endsWith('/status?per_page=100'))).toBe(true)
+})
+
+test('a commit the repository lacks is no change, not an error', async () => {
+  for (const stderr of ['gh: No commit found for SHA: abc (HTTP 422)', 'gh: Not Found (HTTP 404)']) {
+    const { $ } = host({ ...TIP, [RUNS]: { exitCode: 1, stderr }, [STATUSES]: { exitCode: 1, stderr } })
+    expect(await fetchStatus($, 'github', new Map())).toEqual({ kind: 'none' })
+  }
+})
+
+test('a check run without a finite suite id does not ask the workflows', async () => {
+  const { $, calls } = host({ ...RUNNING, [RUNS]: { stdout: { check_runs: [{ ...CHECK_RUNS.check_runs[0], check_suite: {} }] } } })
+  const status = await fetchStatus($, 'github', new Map())
+  await fetchStatus($, 'github', new Map())
+  expect(calls.some(call => call.line === WORKFLOWS)).toBe(false)
+  expect(status.kind === 'change' ? status.change.checks?.jobs.map(one => one.group) : undefined).toEqual(['GitHub Actions'])
 })

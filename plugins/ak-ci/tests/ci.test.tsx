@@ -391,6 +391,27 @@ test('get errors appends the excerpt to the draft', OWNED, async ($, on) => {
   expect(fills[0]?.text).toContain('ERROR: boom')
 })
 
+test('get errors on a check without log toasts its name and leaves the prompt box alone', OWNED, async ($, on) => {
+  const { clock, toasts, fills, set } = engine(on, { draft: 'Bitte prüfen' })
+  const sha = '0a1b2c3d4e5f60718293a4b5c6d7e8f901234567'
+  set({
+    'git remote get-url origin': { stdout: 'https://github.com/owner/repo.git' },
+    'gh pr view --json number,title,url,baseRefName,isDraft,headRefOid,state': {
+      stdout: { number: 12, title: 'Add the login form', url: 'https://github.com/owner/repo/pull/12', baseRefName: 'main', isDraft: false, headRefOid: sha, state: 'OPEN' },
+    },
+    'gh repo view --json nameWithOwner,url': { stdout: { nameWithOwner: 'owner/repo', url: 'https://github.com/owner/repo' } },
+    [`gh api repos/{owner}/{repo}/commits/${sha}/check-runs?per_page=100`]: { stdout: { check_runs: [] } },
+    [`gh api repos/{owner}/{repo}/commits/${sha}/status?per_page=100`]: {
+      stdout: { statuses: [{ id: 55, context: 'CodeRabbit', state: 'failure', created_at: '2026-10-29T09:59:00Z', updated_at: '2026-10-29T10:01:00Z' }] },
+    },
+  })
+  await start($)
+  await clock.settle()
+  await run($, 'ci-errors')
+  expect(plain(toasts).some(one => one.includes('CodeRabbit'))).toBe(true)
+  expect(fills).toEqual([])
+})
+
 test('get errors under a dialog toasts and inserts nothing', OWNED, async ($, on) => {
   const { clock, toasts, set } = engine(on, { isFilled: false })
   set({ ...FAILED, [TRACE]: { stdout: 'ERROR: boom\n' } })

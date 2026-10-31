@@ -91,6 +91,7 @@ const EN = {
   noMr: 'No open merge request for this branch',
   noBox: 'Prompt box not available, excerpt not inserted',
   noLog: 'Job log not readable',
+  noLogFor: (name: string) => `${name} has no log to read`,
   cut: 'The log is longer than 4 MiB; its end is missing from the excerpt.',
   draft: (ref: string, job: string, stage: string) =>
     `The pipeline of ${ref} failed in job ${job} (stage ${stage}). Excerpt from the log:`,
@@ -132,6 +133,7 @@ const DE: typeof EN = {
   noMr: 'Kein offener Merge Request für diesen Branch',
   noBox: 'Eingabefeld nicht verfügbar, Auszug nicht eingefügt',
   noLog: 'Job-Log nicht lesbar',
+  noLogFor: (name: string) => `${name} hat kein Log zum Lesen`,
   cut: 'Das Log ist länger als 4 MiB; sein Ende fehlt im Auszug.',
   draft: (ref: string, job: string, stage: string) =>
     `Die Pipeline von ${ref} ist im Job ${job} (Stage ${stage}) fehlgeschlagen. Auszug aus dem Log:`,

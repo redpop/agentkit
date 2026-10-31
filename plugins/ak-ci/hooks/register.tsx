@@ -261,9 +261,13 @@ export const register: Register = on => {
     const { status } = watch
     const failure =
       status.kind === 'change' && status.change.checks !== undefined ? await fetchFailure($, status.provider, status.change.checks) : undefined
-    // A failed job without a log of its own gets the same toast as an unreadable log.
-    if (status.kind !== 'change' || failure === undefined || 'noLog' in failure) {
+    if (status.kind !== 'change' || failure === undefined) {
       $.ui.toast(t.noLog)
+      return {}
+    }
+    // A check without a log of its own (a commit status) is named; the prompt box stays as it is.
+    if ('noLog' in failure) {
+      $.ui.toast(t.noLogFor(failure.job.name))
       return {}
     }
     const body = draftFor(status.change, failure.job, excerpt(failure.trace), lang, failure.isCut)

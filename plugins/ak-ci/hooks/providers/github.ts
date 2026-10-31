@@ -9,11 +9,14 @@ import type { EngineInterface, ProcessRunResult } from 'claude-code'
 import { list, NOT_STARTED, out, record, Refused, text, TIMEOUT_MS } from '../cli'
 import type { Raw } from '../cli'
 import type { Change, Checks, Job, Status, Unavailable } from '../model'
-import { isBlocking } from '../model'
+import { isBlocking, meanMs, phaseOf } from '../model'
+import type { Failure } from '../provider'
 
 // A refusal gh names, by its message; and the one that only says the branch has no pull request.
 const NO_AUTH = /401|unauthori[sz]ed|not logged in|authenticat|gh auth login|bad credentials/i
 const NO_PR = /no pull requests found/i
+// A commit the repository does not have, as a fork's upstream can name one: nothing to show, no error.
+const NO_COMMIT = /HTTP 404|HTTP 422|no commit found/i
 
 // The app whose check runs are GitHub Actions jobs, with a workflow and a log.
 const ACTIONS = 'github-actions'
@@ -76,9 +79,21 @@ async function json($: EngineInterface, argv: string[]): Promise<unknown> {
   }
 }
 
-/** The JSON gh answers for an API path; throws `Refused` when there is none. */
+/** A commit endpoint's answer that the repository has no such commit. */
+class NoCommit extends Error {}
+
+/** The JSON gh answers for an API path; throws `Refused` when there is none, `NoCommit` for a missing commit. */
 async function api($: EngineInterface, path: string): Promise<unknown> {
-  return json($, ['api', path])
+  const result = await run($, ['api', path])
+  if (result.exitCode !== 0) {
+    if (/\/commits\//.test(path) && NO_COMMIT.test(result.stderr)) throw new NoCommit()
+    throw new Refused(refusal(result))
+  }
+  try {
+    return JSON.parse(result.stdout)
+  } catch {
+    throw new Refused('error')
+  }
 }
 
 /** The branch's latest pull request; undefined when it has none. */
@@ -128,13 +143,15 @@ const workflows = new Map<number, string>()
  * One that fails leaves them unknown, not the status, and asks again next time.
  */
 async function learnWorkflows($: EngineInterface, sha: string, runs: readonly Raw[]): Promise<void> {
-  const unknown = runs.some(one => text(record(one.app)?.slug) === ACTIONS && !workflows.has(Number(record(one.check_suite)?.id)))
+  // A suite without a finite id is skipped, or it would be asked again on every fetch.
+  const suiteOf = (one: Raw) => Number(record(one.check_suite)?.id)
+  const unknown = runs.some(one => text(record(one.app)?.slug) === ACTIONS && Number.isFinite(suiteOf(one)) && !workflows.has(suiteOf(one)))
   if (!unknown) return
   try {
     const found = record(await api($, `repos/{owner}/{repo}/actions/runs?head_sha=${sha}&per_page=100`))
     for (const one of list(found?.workflow_runs)) {
       const name = text(one.name)
-      if (name !== undefined) workflows.set(Number(one.check_suite_id), name)
+      if (name !== undefined && Number.isFinite(Number(one.check_suite_id))) workflows.set(Number(one.check_suite_id), name)
     }
   } catch {
     // Grouped by the app's name until the next fetch.
@@ -177,7 +194,7 @@ const times = (values: (string | undefined)[]): string[] => values.filter((one):
 async function checksOf($: EngineInterface, sha: string): Promise<Omit<Checks, 'webUrl'> | undefined> {
   const [runsFound, statusesFound] = await Promise.all([
     api($, `repos/{owner}/{repo}/commits/${sha}/check-runs?per_page=100`),
-    api($, `repos/{owner}/{repo}/commits/${sha}/status`),
+    api($, `repos/{owner}/{repo}/commits/${sha}/status?per_page=100`),
   ])
   const runs = list(record(runsFound)?.check_runs)
   const statuses = list(record(statusesFound)?.statuses)
@@ -204,11 +221,51 @@ async function checksOf($: EngineInterface, sha: string): Promise<Omit<Checks, '
 }
 
 /**
+ * The mean run of each workflow among the jobs, from its last green runs with the head commit's
+ * own left out; the longest of them is the whole. Undefined without any green run. Throws when a
+ * workflow's history cannot be read, or a job's workflow is not known yet.
+ */
+async function estimateFor($: EngineInterface, sha: string, jobs: readonly Job[]): Promise<number | undefined> {
+  const known = new Set(workflows.values())
+  const actions = jobs.filter(one => one.hasLog)
+  if (actions.some(one => !known.has(one.group))) throw new Refused('error')
+  const means: number[] = []
+  for (const name of new Set(actions.map(one => one.group))) {
+    const green = list(await json($, ['run', 'list', '--workflow', name, '--status', 'success', '--limit', '5', '--json', 'databaseId,createdAt,updatedAt,headSha']))
+    const durations = green
+      .filter(one => text(one.headSha) !== sha)
+      .map(one => Date.parse(text(one.updatedAt) ?? '') - Date.parse(text(one.createdAt) ?? ''))
+      .filter(ms => Number.isFinite(ms) && ms > 0)
+    const mean = meanMs(durations)
+    if (mean !== undefined) means.push(mean)
+  }
+
+  return means.length === 0 ? undefined : Math.max(...means)
+}
+
+/**
+ * The estimate of checks that run, fetched once per `Checks.key` and kept in `estimates`. One that
+ * fails leaves the estimate out and is asked again next time.
+ */
+async function estimateOf($: EngineInterface, estimates: Map<string, number | undefined>, checks: Checks): Promise<number | undefined> {
+  if (!estimates.has(checks.key) && phaseOf(checks) === 'running') {
+    try {
+      estimates.set(checks.key, await estimateFor($, checks.key, checks.jobs))
+    } catch {
+      // Left out until the next fetch.
+    }
+  }
+
+  return estimates.get(checks.key)
+}
+
+/**
  * The open pull request whose head is the current branch, with its head commit's checks; else the
- * tip the branch pushed to its upstream, when that commit has any check. `estimates` keeps each
- * estimate by `Checks.key`, as on GitLab; GitHub's checks carry none yet.
+ * tip the branch pushed to its upstream, when that commit has any check, and a commit the
+ * repository lacks is none. `estimates` keeps each estimate by `Checks.key`, so it is fetched once.
  */
 export async function fetchStatus($: EngineInterface, estimates: Map<string, number | undefined>): Promise<Status> {
+  let onTip = false
   try {
     const pr = await pullRequest($)
     if (pr !== undefined && text(pr.state) === 'OPEN') {
@@ -216,6 +273,7 @@ export async function fetchStatus($: EngineInterface, estimates: Map<string, num
       const number = Number(pr.number)
       const webUrl = text(pr.url) ?? ''
       const [repo, checks] = await Promise.all([repoOf($), sha === '' ? undefined : checksOf($, sha)])
+      const estimateMs = checks === undefined ? undefined : await estimateOf($, estimates, { ...checks, webUrl })
       const change: Change = {
         ref: `#${number}`,
         number,
@@ -227,18 +285,46 @@ export async function fetchStatus($: EngineInterface, estimates: Map<string, num
         ...(checks === undefined ? {} : { checks: { ...checks, webUrl: `${webUrl}/checks` } }),
       }
 
-      return { kind: 'change', provider: 'github', change }
+      return { kind: 'change', provider: 'github', change, ...(estimateMs === undefined ? {} : { estimateMs }) }
     }
 
     // No open pull request: the pushed tip, named by the branch. No upstream, no segment.
+    onTip = true
     const [branch, sha] = await Promise.all([out($, ['git', 'rev-parse', '--abbrev-ref', 'HEAD']), out($, ['git', 'rev-parse', '@{u}'])])
     if (branch === undefined || sha === undefined || sha === '') return { kind: 'none' }
     const [repo, checks] = await Promise.all([repoOf($), checksOf($, sha)])
     if (checks === undefined) return { kind: 'none' }
     const webUrl = repo.url === '' ? '' : `${repo.url}/commit/${sha}`
+    const estimateMs = await estimateOf($, estimates, { ...checks, webUrl })
 
-    return { kind: 'change', provider: 'github', change: { ref: branch, webUrl, repo: repo.name, isDraft: false, checks: { ...checks, webUrl } } }
+    return {
+      kind: 'change',
+      provider: 'github',
+      change: { ref: branch, webUrl, repo: repo.name, isDraft: false, checks: { ...checks, webUrl } },
+      ...(estimateMs === undefined ? {} : { estimateMs }),
+    }
   } catch (error) {
+    // The tip is a commit this repository lacks: nothing to show. A pull request names its own.
+    if (error instanceof NoCommit && onTip) return { kind: 'none' }
     return { kind: 'unavailable', provider: 'github', reason: error instanceof Refused ? error.reason : 'error' }
+  }
+}
+
+/**
+ * The first job that failed the checks, with its log when it has one: an Actions job's, through
+ * its id; a commit status or another app's check has none, so `noLog`. Undefined when no job
+ * failed, or gh hands no log over.
+ */
+export async function fetchFailure($: EngineInterface, checks: Checks): Promise<Failure | undefined> {
+  const failed = checks.jobs.find(isBlocking)
+  if (failed === undefined) return undefined
+  if (!failed.hasLog) return { job: failed, noLog: true }
+  try {
+    const result = await run($, ['run', 'view', '--job', String(failed.id), '--log-failed'])
+    if (result.exitCode !== 0) return undefined
+
+    return { job: failed, trace: result.stdout.trimEnd(), isCut: result.isStdoutTruncated }
+  } catch {
+    return undefined
   }
 }

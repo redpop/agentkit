@@ -5,7 +5,7 @@ import type { EngineInterface } from 'claude-code'
 
 import { TIMEOUT_MS } from './cli'
 import type { Checks, Job, ProviderName, Status } from './model'
-import { fetchStatus as githubStatus } from './providers/github'
+import { fetchFailure as githubFailure, fetchStatus as githubStatus } from './providers/github'
 import { fetchFailure as gitlabFailure, fetchStatus as gitlabStatus } from './providers/gitlab'
 
 /**
@@ -36,15 +36,14 @@ export async function fetchStatus(
 }
 
 /**
- * The failed job with its log from the host `provider` names; undefined when its CLI hands none over,
- * and from a host the mod does not read yet.
+ * The failed job with its log from the host `provider` names; undefined when its CLI hands none over.
  */
 export async function fetchFailure($: EngineInterface, provider: ProviderName, checks: Checks): Promise<Failure | undefined> {
   switch (provider) {
     case 'gitlab':
       return gitlabFailure($, checks)
     case 'github':
-      return undefined
+      return githubFailure($, checks)
   }
 }
 
