@@ -1,7 +1,7 @@
 {
   "name": "ak-showcase",
   "description": "Mod: a style guide in a pane that shows every element, prop and variant a hooks module can draw, with dummy handlers that trigger nothing, plus a demo segment in the shared band",
-  "version": "1.65.2",
+  "version": "1.65.3",
   "author": {
     "name": "redpop",
     "url": "https://github.com/redpop"
