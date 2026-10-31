@@ -11,6 +11,10 @@ export const ALERT = 90
 // glyph, the empty ones dim, so the bar reads as one line in any font. One cell wide.
 const CELLS = 5
 const CELL = '▬'
+// The gap between two figures where the band draws pictures. A space of the band's proportional
+// face is narrow, and each run is a button with its own padding: fewer would bind a figure's label
+// to the next ring as tightly as to its own value.
+const FIGURE_GAP = ' '.repeat(7)
 
 // The rate-limit windows a reading names, by the band's label; their titles are the language's.
 const WINDOWS = [
@@ -108,8 +112,8 @@ const figuresOf = (usage: SessionUsage, now: number): Figure[] => {
  * the reset draw dim, its filled cells and percentage in its own figure's tone; the segment's tone
  * follows the fullest figure. A window whose reset has passed is left out until the next response
  * reports it again. The detail holds every percentage and reset: `ctx 67% · 5h 42% (resets 11:10pm)`.
- * Where the band draws pictures, the rich runs show each figure as its label, then a ring with its
- * percentage. Undefined while there is nothing to show.
+ * Where the band draws pictures, the rich runs show each figure as a ring with its percentage and
+ * label. Undefined while there is nothing to show.
  */
 export const reading = (usage: SessionUsage, now: number, lang: Lang = 'en'): Reading | undefined => {
   const figures = figuresOf(usage, now)
@@ -130,18 +134,18 @@ export const reading = (usage: SessionUsage, now: number, lang: Lang = 'en'): Re
     })
     .filter(part => part.text !== '')
 
-  // Where the band draws pictures, each figure is its label, then a ring with its percentage:
-  // `5h ◔ 42%`, as the terminal leads with the label. A label after its value sat as near the next
-  // ring as its own. Rings and percentages in the figure's tone, labels and resets dim.
+  // Where the band draws pictures, each figure is a ring with its percentage and label beside it:
+  // `◔ 42% 5h`. Rings and percentages in the figure's tone, labels and resets dim.
   const rich = figures.flatMap(({ label, percent, resetsAt }, at): Part[] => [
-    { text: `${at > 0 ? '    ' : ''}${label} `, tone: 'dim' },
+    ...(at > 0 ? [{ text: FIGURE_GAP, tone: 'dim' as const }] : []),
     { text: `${label} ${percent}%`, tone: toneOf(percent), ring: percent },
-    { text: `${percent}%`, tone: toneOf(percent) },
+    { text: ` ${percent}%`, tone: toneOf(percent) },
+    { text: ` ${label}`, tone: 'dim' },
     ...(percent >= WARN && resetsAt !== undefined ? [{ text: `  ${reset(resetsAt)}`, tone: 'dim' as const }] : []),
   ])
 
-  // Where the band is short of room, each figure's label and percentage: `ctx 67%  5h 2%`, and on
-  // the desktop app its label, ring and percentage: `ctx ◔ 67%`. No bars, no resets.
+  // Where the band is short of room, each figure's percentage and label: `ctx 67%  5h 2%`, and on
+  // the desktop app its ring, percentage and label: `◔ 67% ctx`. No bars, no resets.
   const compactParts = figures.flatMap(({ label, percent }, at): Part[] => [
     { text: `${at > 0 ? '  ' : ''}${label} `, tone: 'dim' },
     { text: `${percent}%`, tone: toneOf(percent) },
@@ -150,10 +154,10 @@ export const reading = (usage: SessionUsage, now: number, lang: Lang = 'en'): Re
     text: compactParts.map(part => part.text).join(''),
     parts: compactParts,
     rich: figures.flatMap(({ label, percent }, at): Part[] => [
-      // As wide a gap as the full form's, so the figures stay apart.
-      { text: `${at > 0 ? '    ' : ''}${label} `, tone: 'dim' as const },
+      ...(at > 0 ? [{ text: FIGURE_GAP, tone: 'dim' as const }] : []),
       { text: `${label} ${percent}%`, tone: toneOf(percent), ring: percent },
-      { text: `${percent}%`, tone: toneOf(percent) },
+      { text: ` ${percent}%`, tone: toneOf(percent) },
+      { text: ` ${label}`, tone: 'dim' as const },
     ]),
   }
 

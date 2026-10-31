@@ -34,16 +34,17 @@ percentage and reset after the bars, `· ctx 67% · 5h 42% (resets 11:10pm)`. Th
 7: when the band runs out of room it is dropped last. In AgentKit's default order it comes first in
 the band; the Mods pane moves it. It has no button.
 
-On the desktop app each figure draws as its label, then a ring filled to its percentage and the
-percentage: `ctx ◔ 67%    5h ◔ 42%`. A window from 75 % adds its reset there too. The ring and
+On the desktop app each figure draws as a ring filled to its percentage, with the percentage and the
+label beside it: `◔ 67% ctx   ◔ 42% 5h`. A window from 75 % adds its reset there too. The ring and
 the percentage take the figure's colour; the terminal keeps the bars. A press on a figure opens the
 Mods pane at this mod, which lists the context with the tokens used and the window's size (`68% ·
 680k of 1M tokens`) and every window still current, the week below 75 % too, each window with its
 reset.
 
-When the band is short of room, the segment turns compact: each figure's label and percentage,
-`ctx 67%  5h 42%`, and on the desktop app its dim label, ring and percentage, `ctx ◔ 67%    5h ◔ 42%`.
-The bars and resets are left out.
+When the band is short of room, the segment turns compact: each figure's percentage and label,
+`ctx 67%  5h 42%`, and on the desktop app its ring, percentage and dim label, `◔ 67% ctx   ◔ 42% 5h`.
+On the desktop app a wide gap parts the two figures, so a label stays with its own value. The bars
+and resets are left out.
 
 Without `ak-mods` (or when it refuses the mod, or a publish fails), the mod draws its own band
 instead, never both, with the same parts and colours.
