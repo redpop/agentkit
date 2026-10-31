@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.65.0] - 2026-10-31
+
+### ✨ Added
+
+- `ak-showcase` — a new mod: a style guide in a pane that shows every element, prop and variant a
+  mod can draw (text, colours, spacing, layout, hover, buttons, forms, content, graphics, the band
+  segment, feedback), the code under each sample and what does not exist. Its controls only record
+  that they were used and trigger nothing. `/showcase` opens it.
+
+### 🐛 Fixed
+
+- `ak-mods` — in the Mods pane a mod's summary is one size under its title, and the open card's
+  details and the pane's closing note one size under that, so a card no longer reads as one block.
+- `ak-mods` — on the desktop app a segment in the Mods pane wraps as one line instead of squeezing
+  each coloured run into a column of its own; its button keeps its size, and its detail moves to a
+  line of its own.
+- `ak-keepwarm` — no dot before the rewrite hint: `cache drops in 4m  next message rewrites …`.
+
 ## [1.64.3] - 2026-10-30
 
 ### 🐛 Fixed
