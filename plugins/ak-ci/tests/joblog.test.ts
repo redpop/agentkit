@@ -69,7 +69,7 @@ test('the draft names the change, job and stage, the excerpt fenced', () => {
     isDraft: false,
   }
   const job: Job = { id: 9, name: 'test:unit', group: 'test', status: 'failed', allowFailure: false, hasLog: true }
-  expect(draftFor(change, job, 'ERROR: boom', 'de')).toBe(
+  expect(draftFor('gitlab', change, job, 'ERROR: boom', 'de')).toBe(
     'Die Pipeline von !12 ist im Job test:unit (Stage test) fehlgeschlagen. Auszug aus dem Log:\n\n```text\nERROR: boom\n```',
   )
 })
@@ -85,8 +85,16 @@ test('a log cut at 4 MiB says that its end is missing', () => {
     isDraft: false,
   }
   const job: Job = { id: 9, name: 'test:unit', group: 'test', status: 'failed', allowFailure: false, hasLog: true }
-  expect(draftFor(change, job, 'line 1', 'de', true)).toBe(
+  expect(draftFor('gitlab', change, job, 'line 1', 'de', true)).toBe(
     'Die Pipeline von !12 ist im Job test:unit (Stage test) fehlgeschlagen. Auszug aus dem Log:\n\n' +
       'Das Log ist länger als 4 MiB; sein Ende fehlt im Auszug.\n\n```text\nline 1\n```',
   )
+})
+
+test('on GitHub the draft names the checks and the workflow', () => {
+  const job: Job = { id: 77, name: 'build', group: 'check', status: 'failed', allowFailure: false, hasLog: true }
+  const pr: Change = { ref: '#12', number: 12, title: 'Add the login form', webUrl: 'https://github.com/owner/repo/pull/12', repo: 'owner/repo', target: 'main', isDraft: false }
+  const tip: Change = { ref: 'main', webUrl: 'https://github.com/owner/repo/commit/0a1b2c3', repo: 'owner/repo', isDraft: false }
+  expect(draftFor('github', pr, job, 'x', 'en')).toStartWith('The checks of #12 failed in job build (workflow check). Excerpt from the log:')
+  expect(draftFor('github', tip, job, 'x', 'de')).toStartWith('Die Checks auf main sind im Job build (Workflow check) fehlgeschlagen. Auszug aus dem Log:')
 })

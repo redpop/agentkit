@@ -3,7 +3,7 @@
 
 import type { Lang } from './i18n'
 import { texts } from './i18n'
-import type { Change, Job } from './model'
+import type { Change, Job, ProviderName } from './model'
 
 // GitLab's collapsible sections: `section_start:<time>:<name>[<options>]\r\e[0K`.
 const SECTION = /section_(?:start|end):\d+:[^\r\n]*?\r\x1b\[0K/g
@@ -47,11 +47,12 @@ export function excerpt(trace: string, maxChars = 12_000): string {
 }
 
 /**
- * The prompt-box draft: what failed where, then the excerpt in a fenced block. A log cut at the
- * read limit says that its end, where the error usually is, is missing.
+ * The prompt-box draft: what failed where, in the words of the host `provider` names, then the
+ * excerpt in a fenced block. A log cut at the read limit says that its end, where the error usually
+ * is, is missing.
  */
-export function draftFor(change: Change, job: Job, excerpt: string, lang: Lang, isCut = false): string {
+export function draftFor(provider: ProviderName, change: Change, job: Job, excerpt: string, lang: Lang, isCut = false): string {
   const t = texts(lang)
 
-  return `${t.draft(change.ref, job.name, job.group)}\n\n${isCut ? `${t.cut}\n\n` : ''}\`\`\`text\n${excerpt}\n\`\`\``
+  return `${t.draft(provider, change.ref, change.number === undefined, job.name, job.group)}\n\n${isCut ? `${t.cut}\n\n` : ''}\`\`\`text\n${excerpt}\n\`\`\``
 }
