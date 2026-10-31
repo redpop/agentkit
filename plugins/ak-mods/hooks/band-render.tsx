@@ -259,7 +259,8 @@ type Draws = {
  * between pictures one: a Button holds text alone, so the pictures stay
  * beside it. The desktop app draws a Button's text uncoloured: with
  * `keepsColor`, for a press that only opens the Mods pane, a run in a colour
- * stays text in its own stretch, and the press is on the rest. With `flows`,
+ * stays text in its own stretch, and the press is on the rest: the plain runs,
+ * or where there are none, the dim ones. With `flows`,
  * where nothing is pressed, each stretch of text is one Text that wraps as a
  * line does: runs side by side as flex children would each wrap in a column
  * of their own once the row runs short.
@@ -281,15 +282,22 @@ export const segmentView = (
 
     return props.color !== undefined ? 'color' : props.dimColor === true ? 'dim' : 'plain'
   }
+  // Where the press only opens the pane and no run is plain, a dim run is the press: drawn dim on the
+  // Button itself it keeps its look, and a segment in a colour still opens its card.
+  const isDimPressed =
+    keepsColor &&
+    !(one.rich ?? []).some(part => !isGlyph(part) && part.text.trim() !== '' && lookOf(part) === 'plain')
   // The hotkey arms the first stretch alone: one key, one press.
   let isArmed = false
   const pressable = (at: number, children: ReturnType<ElementConstructor<TextProps>>[], parts: ModsPart[] = []) => {
     const look = lookOf(parts[0])
     if (press === undefined || Button === undefined) return children
     // Space alone presses nothing. Where the press only opens the pane, the value is the button and
-    // what frames it stays text: a dim label in its dimness, a coloured run in its colour.
+    // what frames it stays text: a dim label in its dimness, a coloured run in its colour. With no
+    // plain value, the dim label is the press.
     if (parts.length > 0 && parts.every(part => part.text.trim() === '')) return children
-    if (keepsColor && look !== 'plain') return children
+    if (keepsColor && look === 'color') return children
+    if (keepsColor && look === 'dim' && !isDimPressed) return children
     const armed = isArmed ? undefined : hotkey
     isArmed = true
     // Drawn uncoloured, a stretch of dim runs keeps its dimness on the Button itself.

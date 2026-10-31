@@ -848,7 +848,7 @@ test('on the desktop app the info tone draws its text in a fixed colour', { plug
   await ui.unmount()
 })
 
-test('on the desktop app a toned run that only opens the pane keeps its colour and stays text', { plugins: [consumer('ak-a')] }, async ($, on) => {
+test('on the desktop app a toned run that only opens the pane keeps its colour and stays text; with no plain run, the dim label is the press', { plugins: [consumer('ak-a')] }, async ($, on) => {
   engine(on)
   const opened = opening(on)
   await publish($, 'ak-a', 'A', {
@@ -861,9 +861,8 @@ test('on the desktop app a toned run that only opens the pane keeps its colour a
   // A Button draws its label alone, uncoloured: the toned run stays text, in its colour.
   expect(await exactly(ui, ' warm')).toMatchObject({ type: 'Text', props: { color: '#4889cd' } })
   expect(await ui.find({ key: 'text-ak-a-press-1' })).toBeUndefined()
-  // Its dim label stays text too: nothing here is the press, `m` opens the pane.
-  expect(await ui.find({ key: 'text-ak-a-press-2' })).toBeUndefined()
-  expect(await exactly(ui, ' cache')).toMatchObject({ type: 'Text', props: { dimColor: true } })
+  // No run is plain, so its dim label is the press, dim on the Button: the pane still opens from the band.
+  expect(await ui.find({ key: 'text-ak-a-press-2' })).toMatchObject({ type: 'Button', props: { dimColor: true } })
   expect(opened).toEqual([])
   await ui.unmount()
 })
