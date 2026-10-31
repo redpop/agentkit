@@ -1,0 +1,53 @@
+name: check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  # The repo is not lint-clean yet (see the note in .markdownlint-cli2.jsonc: about a thousand
+  # findings, a backlog to work down file by file). The job runs and prints every finding but
+  # does not fail the check, so a green tick here does not mean clean. Drop continue-on-error
+  # once the backlog is gone.
+  markdownlint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Lint markdown
+        continue-on-error: true
+        run: npx --yes markdownlint-cli2@0.18.1 "plugins/**/*.md"
+
+  json:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate JSON
+        run: |
+          status=0
+          for f in .claude-plugin/marketplace.json plugins/*/.claude-plugin/plugin.json; do
+            python3 -m json.tool "$f" > /dev/null || { echo "::error file=$f::invalid JSON"; status=1; }
+          done
+          exit $status
+
+  shellcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: ShellCheck hook scripts
+        run: shellcheck plugins/*/hooks/*.sh
+
+  # Not here, on purpose:
+  #
+  # plugins (claude plugin validate / test) and typecheck (tsc over the hooks modules).
+  # Both need the Claude Code CLI, and the CLI refuses to run without a login ("Not logged in").
+  # tsc also needs claude-code.d.ts, which is embedded in the CLI binary and only written to disk
+  # when a logged-in session loads the plugin-authoring skill; the npm package does not ship it.
+  # A login would need an API key stored as a repository secret, which this repo does not use.
+  # Run both locally, as described in AGENTS.md.

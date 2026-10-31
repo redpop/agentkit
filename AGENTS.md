@@ -14,6 +14,9 @@ and domain knowledge bases. Built on the official Claude Code Plugin Architectur
 No build step required — the codebase is Markdown, JSON, and shell scripts, plus six TSX
 hooks modules (`ak-mods`, `ak-keepwarm`, `ak-session-id`, `ak-usage`, `ak-gitlab`, `ak-pause`, `ak-showcase`) that Claude Code loads directly.
 
+CI (`.github/workflows/check.yml`) runs the markdown, JSON and shell checks below on every pull request. The plugin
+validate/test and type-check steps need a logged-in Claude Code CLI, so they run locally only.
+
 **Test a plugin locally:**
 
 ```bash
