@@ -17,8 +17,9 @@ type CardRow = NonNullable<Segment['card']>[number]
 
 const PRIORITY = 6
 
-/** A span of time as minutes and seconds: `3:12`, `62:05`. */
+/** A span of time as minutes and seconds: `3:12`, `62:05`; empty for one that is not known. */
 export function elapsed(ms: number): string {
+  if (!Number.isFinite(ms)) return ''
   const seconds = Math.max(0, Math.floor(ms / 1000))
 
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`
@@ -28,7 +29,11 @@ export function elapsed(ms: number): string {
 const since = (checks: Checks) => Date.parse(checks.startedAt ?? checks.createdAt)
 
 // How long settled checks ran; undefined while the provider names no end (held ones).
-const ran = (checks: Checks) => (checks.finishedAt === undefined ? undefined : Date.parse(checks.finishedAt) - since(checks))
+const ran = (checks: Checks) => {
+  const ms = checks.finishedAt === undefined ? Number.NaN : Date.parse(checks.finishedAt) - since(checks)
+
+  return Number.isFinite(ms) ? ms : undefined
+}
 
 // The job held checks wait for: the first manual job they may not pass by.
 const held = (checks: Checks) =>
@@ -88,14 +93,17 @@ export function segmentFor(status: Status, nowMs: number, lang: Lang): Segment |
     const minutes = status.estimateMs === undefined ? undefined : String(Math.max(1, Math.round(status.estimateMs / 60_000)))
     const lead: Part = { text: `${id.text} `, tone: 'dim' }
     const count: Part = { text: jobs, tone: 'info' }
+    // Without a known start there is no time so far: only the estimate stays.
+    const plain = minutes === undefined ? time : `${time}${time === '' ? '~' : '/~'}${minutes}m`
+    const rich = minutes === undefined ? time : `${time} ${t.of(minutes)}`.trimStart()
 
     return drawn(
-      [lead, count, { text: ` ${time}${minutes === undefined ? '' : `/~${minutes}m`}`, tone: 'dim' }],
+      [lead, count, ...(plain === '' ? [] : [{ text: ` ${plain}`, tone: 'dim' as const }])],
       [
         lead,
         { ...count, ring: total === 0 ? 0 : Math.round((done / total) * 100) },
         { text: ` ${jobs}`, tone: 'info' },
-        { text: ` ${time}${minutes === undefined ? '' : ` ${t.of(minutes)}`}`, tone: 'dim' },
+        ...(rich === '' ? [] : [{ text: ` ${rich}`, tone: 'dim' as const }]),
       ],
       [lead, count],
       'info',
@@ -155,6 +163,7 @@ export function cardFor(status: Status, nowMs: number, lang: Lang): CardRow[] {
   const failed = checks.jobs.filter(isBlocking).map(job => job.name)
   const start = new Date(since(checks))
   const duration = phaseOf(checks) === 'running' ? nowMs - since(checks) : ran(checks)
+  const time = duration === undefined ? '' : elapsed(duration)
 
   return [
     ...rows,
@@ -162,8 +171,8 @@ export function cardFor(status: Status, nowMs: number, lang: Lang): CardRow[] {
     { label: t.checks[provider], value: `${provider === 'github' ? checks.key.slice(0, 7) : `#${checks.key}`} ${checks.status}` },
     { label: t.card.groups[provider], value: [...groups].map(([name, jobs]) => `${name} ${groupMark(jobs)}`).join(' · ') },
     ...(failed.length === 0 ? [] : [{ label: t.card.failed, value: failed.join(', ') }]),
-    { label: t.card.started, value: t.time(start.getHours(), start.getMinutes()) },
-    ...(duration === undefined ? [] : [{ label: t.card.duration, value: elapsed(duration) }]),
+    ...(Number.isNaN(start.getTime()) ? [] : [{ label: t.card.started, value: t.time(start.getHours(), start.getMinutes()) }]),
+    ...(time === '' ? [] : [{ label: t.card.duration, value: time }]),
   ]
 }
 

@@ -259,7 +259,8 @@ export const register: Register = on => {
 
   on('command.run', { command: 'ci-open' }, async $ => {
     const { status } = watch
-    if (status.kind === 'change') await openUrl($, status.change.webUrl)
+    // A change whose address is not known (the repository lookup failed) has nothing to open.
+    if (status.kind === 'change' && status.change.webUrl !== '') await openUrl($, status.change.webUrl)
     else $.ui.toast(texts(await languageFor($)).noChange(watch.provider))
 
     return {}
@@ -270,7 +271,7 @@ export const register: Register = on => {
   on('command.run', { command: 'ci-link' }, async $ => {
     const t = texts(await languageFor($))
     const { status } = watch
-    if (status.kind !== 'change') {
+    if (status.kind !== 'change' || status.change.webUrl === '') {
       $.ui.toast(t.noChange(watch.provider))
       return {}
     }

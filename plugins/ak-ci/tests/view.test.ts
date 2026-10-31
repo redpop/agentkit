@@ -62,6 +62,19 @@ test('elapsed time reads minutes and seconds', () => {
   expect(elapsed(192_000)).toBe('3:12')
   expect(elapsed(3_725_000)).toBe('62:05')
   expect(elapsed(4_000)).toBe('0:04')
+  // An unknown start leaves no time to show.
+  expect(elapsed(Number.NaN)).toBe('')
+})
+
+test('checks of an unknown start show no time, never NaN', () => {
+  const unknown = { ...pipeline('running', RUNNING), createdAt: '', startedAt: undefined }
+  const text = segmentFor(of(mr(unknown), 300_000), NOW, 'de')?.text ?? ''
+  expect(text).not.toContain('NaN')
+  expect(text).toBe('!12 4/7 ~5m')
+  const settled = { ...pipeline('success', GREEN), createdAt: '', startedAt: undefined, finishedAt: '2026-10-29T10:04:51Z' }
+  expect(segmentFor(of(mr(settled)), NOW, 'de')?.text).toBe('!12 ✓')
+  const card = JSON.stringify(cardFor(of(mr(unknown)), NOW, 'de'))
+  expect(card).not.toContain('NaN')
 })
 
 test('nothing to show without an open merge request or without glab', () => {

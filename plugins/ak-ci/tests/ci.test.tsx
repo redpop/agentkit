@@ -84,7 +84,8 @@ const github = (runs: object[], { isTip = false } = {}): Record<string, Answer> 
     : {
         stdout: { number: 12, title: 'Add the login form', url: 'https://github.com/owner/repo/pull/12', baseRefName: 'main', isDraft: false, headRefOid: SHA, state: 'OPEN' },
       },
-  'git rev-parse --abbrev-ref HEAD': { stdout: 'main' },
+  'git rev-parse --abbrev-ref --symbolic-full-name @{u}': { stdout: 'origin/main' },
+  'git remote': { stdout: 'origin' },
   'git rev-parse @{u}': { stdout: SHA },
   'gh repo view --json nameWithOwner,url': { stdout: { nameWithOwner: 'owner/repo', url: 'https://github.com/owner/repo' } },
   [`gh api repos/{owner}/{repo}/commits/${SHA}/check-runs?per_page=100`]: { stdout: { check_runs: runs } },
@@ -548,6 +549,20 @@ test('/ci-link without a clipboard shows the URL in the toast', OWNED, async ($,
   await run($, 'ci-link')
   expect(copied).toEqual([])
   expect(plain(toasts).at(-1)).toContain(`https://github.com/owner/repo/commit/${SHA}`)
+})
+
+test('open and copy link without an address say there is no change, and run and copy nothing', OWNED, async ($, on) => {
+  const { clock, toasts, runs, copied, set } = engine(on)
+  // The repository lookup failed: the tip is shown, but its address is not known.
+  set({ ...github(GH_SUCCESS, { isTip: true }), 'gh repo view --json nameWithOwner,url': { exitCode: 1, stderr: 'HTTP 502' } })
+  await start($)
+  await clock.settle()
+  const before = plain(toasts).length
+  await run($, 'ci-open')
+  await run($, 'ci-link')
+  expect(runs.filter(line => line.startsWith('open'))).toEqual([])
+  expect(copied).toEqual([])
+  expect(plain(toasts).slice(before)).toEqual(Array(2).fill('Kein offener Pull Request und keine Checks für diesen Branch'))
 })
 
 test('/ci-link without a change says so', OWNED, async ($, on) => {

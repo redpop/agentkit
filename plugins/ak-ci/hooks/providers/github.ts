@@ -8,6 +8,7 @@ import type { EngineInterface, ProcessRunResult } from 'claude-code'
 
 import { list, NOT_STARTED, out, record, Refused, text, TIMEOUT_MS } from '../cli'
 import type { Raw } from '../cli'
+import { trackedBranch } from '../detect'
 import type { Change, Checks, Job, Status, Unavailable } from '../model'
 import { isBlocking, meanMs, phaseOf } from '../model'
 import type { Failure } from '../provider'
@@ -298,13 +299,14 @@ export async function fetchStatus($: EngineInterface, estimates: Map<string, num
       return { kind: 'change', provider: 'github', change, ...(estimateMs === undefined ? {} : { estimateMs }) }
     }
 
-    // No open pull request: the pushed tip, named by the branch. No upstream, no segment.
+    // No open pull request: the pushed tip, named by the upstream's branch, as its checks are the
+    // upstream's. No upstream, no segment.
     onTip = true
-    const [branch, sha] = await Promise.all([out($, ['git', 'rev-parse', '--abbrev-ref', 'HEAD']), out($, ['git', 'rev-parse', '@{u}'])])
-    if (branch === undefined || sha === undefined || sha === '') return { kind: 'none' }
+    const [branch, sha] = await Promise.all([trackedBranch($), out($, ['git', 'rev-parse', '@{u}'])])
+    if (branch === undefined || branch === '' || sha === undefined || sha === '') return { kind: 'none' }
     const [repo, checks] = await Promise.all([repoOf($), checksOf($, sha)])
     if (checks === undefined) return { kind: 'none' }
-    const webUrl = repo.url === '' ? '' : `${repo.url}/commit/${sha}`
+    const webUrl = repo.url === '' ? '' : `${repo.url}/commit/${sha}/checks`
     const estimateMs = await estimateOf($, estimates, { ...checks, webUrl })
 
     return {
@@ -321,16 +323,21 @@ export async function fetchStatus($: EngineInterface, estimates: Map<string, num
 }
 
 /**
- * The first job that failed the checks, with its log when it has one: an Actions job's, through
- * its id; a commit status, another app's check, or a job with an empty log has none, so `noLog`. Undefined when no job
- * failed, or gh hands no log over.
+ * The first Actions job that failed the checks, else the first failed job of any kind, with its
+ * log when it has one: an Actions job's, through its id. A commit status, another app's check, or
+ * a job with an empty log has none, so `noLog`. Undefined when no job failed, or gh hands no log
+ * over.
  */
 export async function fetchFailure($: EngineInterface, checks: Checks): Promise<Failure | undefined> {
-  const failed = checks.jobs.find(isBlocking)
+  const blocking = checks.jobs.filter(isBlocking)
+  const failed = blocking.find(one => one.hasLog) ?? blocking[0]
   if (failed === undefined) return undefined
   if (!failed.hasLog) return { job: failed, noLog: true }
   try {
-    const result = await run($, ['run', 'view', '--job', String(failed.id), '--log-failed'])
+    let result = await run($, ['run', 'view', '--job', String(failed.id), '--log-failed'])
+    // GitHub turns red at the first failure while the run goes on, and gh refuses the log of a run
+    // in progress. The job itself has finished: its whole log is there through the API.
+    if (result.exitCode !== 0) result = await run($, ['api', `repos/{owner}/{repo}/actions/jobs/${failed.id}/logs`])
     if (result.exitCode !== 0) return undefined
 
     // A job that failed before any step logged leaves nothing to excerpt.

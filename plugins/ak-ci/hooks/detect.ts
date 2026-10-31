@@ -9,18 +9,38 @@ import type { ProviderName } from './model'
 // Function declarations, not arrows: past an import the hooks loader follows `$` only into those.
 
 /**
- * The remote the branch pushes to: its upstream's when that names a remote, else `origin`, else
- * the first one there is. An upstream that is a local branch names no remote.
+ * The remote the branch tracks and its upstream's name as `git branch -vv` shows it; both
+ * undefined without an upstream. A remote's name may hold a slash: the longest one the upstream
+ * starts with. An upstream that is a local branch names no remote.
  */
-async function remoteName($: EngineInterface): Promise<string | undefined> {
+async function tracking($: EngineInterface): Promise<{ remotes: string[]; remote?: string; upstream?: string }> {
   const remotes = ((await out($, ['git', 'remote'])) ?? '').split('\n').map(one => one.trim()).filter(Boolean)
   const upstream = await out($, ['git', 'rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}'])
-  // A remote's name may hold a slash: the longest one the upstream starts with.
-  const tracked = remotes.filter(one => upstream?.startsWith(`${one}/`)).sort((x, y) => y.length - x.length)[0]
-  if (tracked !== undefined) return tracked
+  const remote = remotes.filter(one => upstream?.startsWith(`${one}/`)).sort((x, y) => y.length - x.length)[0]
+
+  return { remotes, ...(remote === undefined ? {} : { remote }), ...(upstream === undefined ? {} : { upstream }) }
+}
+
+/**
+ * The remote the branch pushes to: its upstream's when that names a remote, else `origin`, else
+ * the first one there is.
+ */
+async function remoteName($: EngineInterface): Promise<string | undefined> {
+  const { remotes, remote } = await tracking($)
+  if (remote !== undefined) return remote
   if ((await out($, ['git', 'remote', 'get-url', 'origin'])) !== undefined) return 'origin'
 
   return remotes[0]
+}
+
+/**
+ * The branch the local one tracks, as the remote names it (`main` for `origin/main`); undefined
+ * without an upstream.
+ */
+export async function trackedBranch($: EngineInterface): Promise<string | undefined> {
+  const { remote, upstream } = await tracking($)
+
+  return remote === undefined ? upstream : upstream?.slice(remote.length + 1)
 }
 
 /** Whether gh is logged in to `host`: github or gitlab; undefined when the call did not finish. */

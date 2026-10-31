@@ -8,7 +8,8 @@ import { aggregate } from '../hooks/providers/github'
 const SHA = '0a1b2c3d4e5f60718293a4b5c6d7e8f901234567'
 const PR = 'gh pr view --json number,title,url,baseRefName,isDraft,headRefOid,state'
 const REPO = 'gh repo view --json nameWithOwner,url'
-const BRANCH = 'git rev-parse --abbrev-ref HEAD'
+const TRACKED = 'git rev-parse --abbrev-ref --symbolic-full-name @{u}'
+const REMOTES = 'git remote'
 const UPSTREAM = 'git rev-parse @{u}'
 const RUNS = `gh api repos/{owner}/{repo}/commits/${SHA}/check-runs?per_page=100`
 const STATUSES = `gh api repos/{owner}/{repo}/commits/${SHA}/status?per_page=100`
@@ -159,7 +160,8 @@ test('a pull request without any check', async () => {
 
 const TIP = {
   [PR]: { exitCode: 1, stderr: 'no pull requests found for branch "main"' },
-  [BRANCH]: { stdout: 'main\n' },
+  [TRACKED]: { stdout: 'origin/main\n' },
+  [REMOTES]: { stdout: 'origin\n' },
   [UPSTREAM]: { stdout: `${SHA}\n` },
   [REPO]: { stdout: REPOSITORY },
   [RUNS]: { stdout: CHECK_RUNS },
@@ -181,13 +183,29 @@ test('no PR, pushed branch with checks', async () => {
   expect(status.provider).toBe('github')
   expect(status.change).toEqual({
     ref: 'main',
-    webUrl: `https://github.example.com/owner/repo/commit/${SHA}`,
+    webUrl: `https://github.example.com/owner/repo/commit/${SHA}/checks`,
     repo: 'owner/repo',
     isDraft: false,
-    checks: { ...status.change.checks, webUrl: `https://github.example.com/owner/repo/commit/${SHA}` },
+    checks: { ...status.change.checks, webUrl: `https://github.example.com/owner/repo/commit/${SHA}/checks` },
   })
-  expect(status.change.webUrl.endsWith(`/commit/${SHA}`)).toBe(true)
   expect(status.change.checks?.jobs).toHaveLength(2)
+})
+
+test('a branch tip is named by its upstream branch, not the local one', async () => {
+  const { $ } = host({ ...TIP, [TRACKED]: { stdout: 'origin/main\n' } })
+  const status = await fetchStatus($, 'github', new Map())
+  expect(status.kind === 'change' ? status.change.ref : undefined).toBe('main')
+  // A remote whose name holds a slash is taken off whole.
+  const slashed = host({ ...TIP, [TRACKED]: { stdout: 'team/fork/feature/x\n' }, [REMOTES]: { stdout: 'origin\nteam/fork\n' } })
+  const other = await fetchStatus(slashed.$, 'github', new Map())
+  expect(other.kind === 'change' ? other.change.ref : undefined).toBe('feature/x')
+})
+
+test('a tip without a repository page has no address', async () => {
+  // Another working directory: the repository page of '/repo' is kept once known.
+  const { $ } = host({ ...TIP, [REPO]: { exitCode: 1, stderr: 'HTTP 502' } }, '/unreachable')
+  const status = await fetchStatus($, 'github', new Map())
+  expect(status.kind === 'change' ? [status.change.webUrl, status.change.checks?.webUrl] : undefined).toEqual(['', ''])
 })
 
 test('no PR, tip without any check', async () => {
@@ -397,11 +415,34 @@ test("fetchFailure returns the first failed Actions job's log", async () => {
 })
 
 test('a failed check without log returns noLog', async () => {
-  // The status shares its id with the check run after it: the first blocking job answers.
   const status = job({ id: 77, name: 'CodeRabbit', group: 'status', hasLog: false })
   const { $, calls } = host({})
-  expect(await fetchFailure($, 'github', checks([status, job({ id: 77, name: 'test' })]))).toEqual({ job: status, noLog: true })
+  expect(await fetchFailure($, 'github', checks([status]))).toEqual({ job: status, noLog: true })
   expect(calls).toEqual([])
+})
+
+test('fetchFailure takes the first failed Actions job, past a status or another app in front', async () => {
+  const status = job({ id: 70, name: 'CodeRabbit', group: 'status', hasLog: false })
+  const { $, calls } = host({ 'gh run view --job 77 --log-failed': { stdout: 'boom\n' } })
+  const failure = await fetchFailure($, 'github', checks([status, job({ id: 77, name: 'test' })]))
+  expect(failure).toEqual({ job: job({ id: 77, name: 'test' }), trace: 'boom', isCut: false })
+  expect(calls.map(call => call.line)).toEqual(['gh run view --job 77 --log-failed'])
+})
+
+const IN_PROGRESS = { exitCode: 1, stderr: 'job 77 is still in progress; logs will be available when it is complete' }
+const JOB_LOG = 'gh api repos/{owner}/{repo}/actions/jobs/77/logs'
+
+test('fetchFailure reads the job log through the API when gh refuses a run still in progress', async () => {
+  const { $, calls } = host({ 'gh run view --job 77 --log-failed': IN_PROGRESS, [JOB_LOG]: { stdout: 'step\tERROR: boom\n' } })
+  expect(await fetchFailure($, 'github', checks([job({})]))).toEqual({ job: job({}), trace: 'step\tERROR: boom', isCut: false })
+  expect(calls.map(call => call.line)).toEqual(['gh run view --job 77 --log-failed', JOB_LOG])
+})
+
+test('fetchFailure is undefined when the API log is out of reach too, and noLog when it is empty', async () => {
+  const refused = host({ 'gh run view --job 77 --log-failed': IN_PROGRESS, [JOB_LOG]: { exitCode: 1, stderr: 'HTTP 404' } })
+  expect(await fetchFailure(refused.$, 'github', checks([job({})]))).toBeUndefined()
+  const empty = host({ 'gh run view --job 77 --log-failed': IN_PROGRESS, [JOB_LOG]: { stdout: '\n' } })
+  expect(await fetchFailure(empty.$, 'github', checks([job({})]))).toEqual({ job: job({}), noLog: true })
 })
 
 test('fetchFailure skips an allowed failure and is undefined without a failed job or a log', async () => {
