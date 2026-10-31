@@ -3,21 +3,10 @@
 
 import type { EngineInterface } from 'claude-code'
 
-import { TIMEOUT_MS } from './cli'
+import { NOT_STARTED, out, TIMEOUT_MS } from './cli'
 import type { ProviderName } from './model'
 
 // Function declarations, not arrows: past an import the hooks loader follows `$` only into those.
-
-/** What a command writes to stdout, trimmed; undefined when it exits non-zero or cannot start. */
-async function out($: EngineInterface, argv: string[]): Promise<string | undefined> {
-  try {
-    const result = await $.process.run(argv, { timeoutMs: TIMEOUT_MS })
-
-    return result.exitCode === 0 ? result.stdout.trim() : undefined
-  } catch {
-    return undefined
-  }
-}
 
 /**
  * The remote the branch pushes to: its upstream's when that names a remote, else `origin`, else
@@ -33,10 +22,6 @@ async function remoteName($: EngineInterface): Promise<string | undefined> {
 
   return remotes[0]
 }
-
-// gh is not installed: the call could not start it. Any other rejection is a call still running
-// at the timeout, which the next fetch may not meet.
-const NOT_STARTED = /ENOENT|not found|no such file/i
 
 /** Whether gh is logged in to `host`: github or gitlab; undefined when the call did not finish. */
 async function askGh($: EngineInterface, host: string): Promise<ProviderName | undefined> {

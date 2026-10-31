@@ -5,6 +5,7 @@ import type { EngineInterface } from 'claude-code'
 
 import { TIMEOUT_MS } from './cli'
 import type { Checks, Job, ProviderName, Status } from './model'
+import { fetchStatus as githubStatus } from './providers/github'
 import { fetchFailure as gitlabFailure, fetchStatus as gitlabStatus } from './providers/gitlab'
 
 /**
@@ -19,7 +20,7 @@ export type Failure = { job: Job; trace: string; isCut: boolean } | { job: Job; 
 
 /**
  * The status from the host `provider` names. `estimates` keeps each estimate by `Checks.key` across
- * calls, so it is fetched once. A host the mod does not read yet answers as a failure.
+ * calls, so it is fetched once.
  */
 export async function fetchStatus(
   $: EngineInterface,
@@ -30,7 +31,7 @@ export async function fetchStatus(
     case 'gitlab':
       return gitlabStatus($, estimates)
     case 'github':
-      return { kind: 'unavailable', provider: 'github', reason: 'error' }
+      return githubStatus($, estimates)
   }
 }
 

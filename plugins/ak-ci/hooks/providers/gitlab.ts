@@ -4,25 +4,15 @@
 
 import type { EngineInterface } from 'claude-code'
 
-import { TIMEOUT_MS } from '../cli'
-import type { Change, Checks, Job, Status, Unavailable } from '../model'
+import { list, NOT_STARTED, record, Refused, text, TIMEOUT_MS } from '../cli'
+import type { Raw } from '../cli'
+import type { Change, Checks, Job, Status } from '../model'
 import { isBlocking, meanMs, phaseOf } from '../model'
 import type { Failure } from '../provider'
 
 // A refusal glab names, by its message.
 const NO_AUTH = /401|unauthori[sz]ed|not logged in|authenticat/i
 const NOT_GITLAB = /not a git repository|no git remote|none of the git remotes|could not determine/i
-
-/** A call that did not answer: why, as the segment reports it. */
-class Refused extends Error {
-  constructor(readonly reason: Unavailable) {
-    super(reason)
-  }
-}
-
-// glab is not installed: the call could not start it. Any other rejection is a call still
-// running at the timeout, which a slow network causes and the next fetch may not.
-const NOT_STARTED = /ENOENT|not found|no such file/i
 
 // Function declarations, not arrows: past an import the hooks loader follows `$` only into those.
 
@@ -53,12 +43,6 @@ async function api($: EngineInterface, path: string): Promise<unknown> {
     throw new Refused('error')
   }
 }
-
-type Raw = Record<string, unknown>
-
-const record = (value: unknown): Raw | undefined => (typeof value === 'object' && value !== null ? (value as Raw) : undefined)
-const list = (value: unknown): Raw[] => (Array.isArray(value) ? value.map(record).filter((one): one is Raw => one !== undefined) : [])
-const text = (value: unknown): string | undefined => (typeof value === 'string' ? value : undefined)
 
 const job = (raw: Raw): Job => {
   const downstream = record(raw.downstream_pipeline)
