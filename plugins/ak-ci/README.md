@@ -14,6 +14,9 @@ and logged in: `gh` for GitHub, `glab` for GitLab.
 /plugin install ak-ci@ak-marketplace
 ```
 
+A new chat starts with the mod off: switch **CI** on in the Mods pane (`/ak-mods`), and mark it with
+the star to have it on in every new chat.
+
 ## Use
 
 - The segment follows the open merge request (GitLab) or pull request (GitHub) whose source is the
