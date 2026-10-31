@@ -18,8 +18,8 @@ and logged in: `gh` for GitHub, `glab` for GitLab.
 
 - The segment follows the open merge request (GitLab) or pull request (GitHub) whose source is the
   current branch. On GitHub a branch without a pull request shows the checks of its pushed tip,
-  named by the branch. On the desktop app a running pipeline shows a ring of its finished jobs,
-  the time so far and an estimate.
+  named by the upstream's branch. On the desktop app a running pipeline shows a ring of its
+  finished jobs, the time so far and an estimate.
 - **open** (`/ci-open`) opens the change; after a failure, **Get errors** (`/ci-errors`) puts an
   excerpt of the failed job's log in the prompt box as a draft. The card's **⋯** menu offers
   **open** and **Copy link** (`/ci-link`).

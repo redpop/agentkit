@@ -45,7 +45,7 @@ outside Actions group as `status`.
 
 It shows one segment in the band that [`ak-mods`](../ak-mods/switcher.md) draws above the prompt.
 Its first word is the change: `!12` for a merge request, `#12` for a pull request, the branch name
-(`main`) for a branch tip.
+(`main`, the upstream's branch) for a branch tip.
 
 | Segment | Meaning |
 | --------- | --------- |
@@ -53,7 +53,7 @@ Its first word is the change: `!12` for a merge request, `#12` for a pull reques
 | `!12 no pipeline` / `#12 no checks` (dim) | The change has no pipeline or checks yet |
 | `!12 4/7 3:12/~5m` | Running: 4 of 7 jobs finished, 3:12 so far, about 5 minutes in all |
 | `#12 ✗ markdownlint 2:48` | Failed in `markdownlint` after 2:48, in the error colour |
-| `main ✓ 4:51` | Green after 4:51 |
+| `main ✓ 4:51` | Green after 4:51 (here the pushed tip of the GitHub branch `main`) |
 | `!12 ⏸ deploy` | Held at the manual job or the check `deploy`, in the warning colour |
 | `!12 canceled` (dim) | Canceled or skipped |
 
@@ -120,7 +120,7 @@ the card calls its stages `Stages` on GitLab and `Workflows` on GitHub.
 
 | Command | Does |
 | --------- | --------- |
-| `/ci-open` | Opens the merge request, pull request or, for a branch tip, the commit in the browser (the **open** button) |
+| `/ci-open` | Opens the merge request, pull request or, for a branch tip, the commit's checks page in the browser (the **open** button) |
 | `/ci-errors` | Puts an excerpt of the failed job's log in the prompt box (the **Get errors** button) |
 | `/ci-link` | Copies the address **open** would open (**Copy link** in the card's menu) |
 
@@ -136,7 +136,9 @@ press Enter.
   failed job. A log longer than 4 MiB is read up to that limit; the draft then says that its end
   is missing.
 - **GitHub:** the job is the first failed check run that belongs to a GitHub Actions job; its log
-  comes from `gh run view --job <id> --log-failed`. A failed check from outside Actions (a review
+  comes from `gh run view --job <id> --log-failed`. GitHub turns red at the first failure while
+  other jobs still run, and gh refuses the log of a run in progress; the mod then reads the
+  finished job's whole log through the API. A failed check from outside Actions (a review
   bot, say), or a job that failed before any step logged, has no log: a toast names the check and
   nothing goes into the prompt box. **open** still leads to it.
 
@@ -153,7 +155,7 @@ press Enter.
 - A fetch that fails keeps the last segment. When the CLI is not logged in, the segment goes and a
   toast says so once; when it is missing or the host is not known, the mod stays silent.
 - A toast says when the checks turn green, fail or stop at a manual job, once per state they
-  reach. A pipeline that had already finished before the session started gets none; one created
+  reach. A pipeline or checks that had already finished before the session started gets none; one created
   later gets its toast even when it finished between two fetches.
   - GitLab: a retried job that turns the same pipeline green toasts again, and so does a second
     manual job. A pipeline held at the same manual job twice toasts once.
