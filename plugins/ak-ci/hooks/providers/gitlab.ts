@@ -4,10 +4,10 @@
 
 import type { EngineInterface } from 'claude-code'
 
+import { TIMEOUT_MS } from '../cli'
 import type { Change, Checks, Job, Status, Unavailable } from '../model'
 import { isBlocking, meanMs, phaseOf } from '../model'
 import type { Failure } from '../provider'
-import { TIMEOUT_MS } from '../provider'
 
 // A refusal glab names, by its message.
 const NO_AUTH = /401|unauthori[sz]ed|not logged in|authenticat/i

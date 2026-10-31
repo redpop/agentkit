@@ -12,6 +12,11 @@ const BRIDGES = 'glab api projects/:id/pipelines/4711/bridges?per_page=100'
 const GREEN = 'glab api projects/:id/pipelines?status=success&per_page=5'
 const TRACE = 'glab api projects/:id/jobs/2/trace'
 const REPO = 'glab api projects/:id'
+// The remote the repository has: a GitLab host gh is not asked about.
+const REMOTE: Record<string, Answer> = {
+  'git rev-parse --abbrev-ref --symbolic-full-name @{u}': { exitCode: 128 },
+  'git remote get-url origin': { stdout: 'https://gitlab.example.com/group/project.git' },
+}
 
 type Answer = { exitCode?: number; stdout?: unknown; stderr?: string }
 
@@ -69,7 +74,7 @@ const engine = (on: On, { draft = '', isFilled = true } = {}) => {
   on('process.run', (_, e) => {
     const line = e.argv.join(' ')
     runs.push(line)
-    const answer = answers[line] ?? (line.startsWith('open ') ? {} : { exitCode: 1, stderr: 'unexpected call' })
+    const answer = answers[line] ?? REMOTE[line] ?? (line.startsWith('open ') ? {} : { exitCode: 1, stderr: 'unexpected call' })
 
     return {
       value: {

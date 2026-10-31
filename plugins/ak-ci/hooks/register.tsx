@@ -9,6 +9,7 @@ import type { EngineInterface, Register, Timer } from 'claude-code'
 
 import { languageFor, learnLanguage, texts } from './i18n'
 import { draftFor, excerpt } from './joblog'
+import { providerFor } from './detect'
 import type { ProviderName, Status } from './model'
 import { phaseOf } from './model'
 import { fetchFailure, fetchStatus, openUrl } from './provider'
@@ -23,8 +24,6 @@ const TICK_MS = 5_000
 const AFTER_PUSH_MS = 10_000
 // Fetches closer than this to the last one are dropped: a prompt, its turn and a push come together.
 const QUIET_MS = 3_000
-// The host the mod reads.
-const PROVIDER: ProviderName = 'gitlab'
 // The Bash commands after which the branch or its pipeline may have changed.
 const MOVES = /\bgit\s+(?:checkout|switch|push)\b|\bglab\s+mr\s+create\b/
 
@@ -40,6 +39,8 @@ type Watch = {
   shown: Segment | undefined
   // Each pipeline's estimate by its key, fetched once.
   estimates: Map<string, number | undefined>
+  // The host each remote's host name is on, found once.
+  hosts: Map<string, ProviderName>
   // The toasts given, by the state a pipeline reached; the pipelines seen, by key, so one already
   // settled at first sight gets none.
   toasted: Set<string>
@@ -57,6 +58,7 @@ const watching = (): Watch => ({
   status: { kind: 'none' },
   shown: undefined,
   estimates: new Map(),
+  hosts: new Map(),
   toasted: new Set(),
   seen: new Set(),
   isAuthToasted: false,
@@ -131,7 +133,8 @@ async function refresh($: EngineInterface, watch: Watch, gate: Gate): Promise<vo
       stop(watch)
       return
     }
-    const next = await fetchStatus($, PROVIDER, watch.estimates)
+    const provider = await providerFor($, watch.hosts)
+    const next: Status = provider === undefined ? { kind: 'none' } : await fetchStatus($, provider, watch.estimates)
     watch.lastEnded = await $.clock.now()
     if (next.kind === 'unavailable' && next.reason === 'error') {
       arm($, watch, gate)
@@ -139,7 +142,7 @@ async function refresh($: EngineInterface, watch: Watch, gate: Gate): Promise<vo
     }
     if (next.kind === 'unavailable' && next.reason === 'no-auth' && !watch.isAuthToasted) {
       watch.isAuthToasted = true
-      $.ui.toast(texts(await languageFor($)).noAuth(next.provider ?? PROVIDER))
+      $.ui.toast(texts(await languageFor($)).noAuth(next.provider ?? 'gitlab'))
     }
     watch.status = next
     await announce($, watch)
@@ -256,7 +259,8 @@ export const register: Register = on => {
     const lang = await languageFor($)
     const t = texts(lang)
     const { status } = watch
-    const failure = status.kind === 'change' && status.change.checks !== undefined ? await fetchFailure($, PROVIDER, status.change.checks) : undefined
+    const failure =
+      status.kind === 'change' && status.change.checks !== undefined ? await fetchFailure($, status.provider, status.change.checks) : undefined
     // A failed job without a log of its own gets the same toast as an unreadable log.
     if (status.kind !== 'change' || failure === undefined || 'noLog' in failure) {
       $.ui.toast(t.noLog)

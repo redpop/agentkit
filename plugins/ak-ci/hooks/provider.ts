@@ -3,11 +3,9 @@
 
 import type { EngineInterface } from 'claude-code'
 
+import { TIMEOUT_MS } from './cli'
 import type { Checks, Job, ProviderName, Status } from './model'
 import { fetchFailure as gitlabFailure, fetchStatus as gitlabStatus } from './providers/gitlab'
-
-/** How long a call to a host's CLI, or to `open`, may run. */
-export const TIMEOUT_MS = 10_000
 
 /**
  * A failed job and its raw log, and whether the log was cut at the read limit; or a failed job
