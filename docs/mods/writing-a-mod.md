@@ -224,16 +224,22 @@ export const register: Register = on => {
   and publishes again; settings not all well formed are left out), an optional `tone` (`ok`, `warn`,
   `alert`, `info` or `dim`; `ak-mods` picks the colour, and `ok` stays the text colour; a part
   without a tone takes the segment's), an optional `priority` (default 5; higher stays longer when
-  the band drops segments, but it never sets a segment's place) and at most one `button` (`label`,
-  an optional `hotkey`, the `command` it runs, its `args`, and `isPaneOnly` for an action seldom
-  taken, which the Mods pane shows and the band leaves out, room included, and `isOnText` for a
-  segment whose one action is plain from what it shows, such as copying an id: on the desktop app
-  the text itself is the button, hotkey with it). The button runs a slash command the mod already
+  the band drops segments, but it never sets a segment's place) and at most one `button` in the band
+  (`label`, an optional `hotkey`, the `command` it runs, its `args`, and `isPaneOnly` for an action
+  seldom taken, which the Mods pane shows and the band leaves out, room included, and `isOnText`
+  for a segment whose one action is plain from what it shows, such as copying an id: on the desktop
+  app the text itself is the button, hotkey with it). The button runs a slash command the mod already
   answers, so no handler crosses from one plugin to another. A segment is one line: a control
   character (a newline, ESC) in the text, a part, the detail or the label draws as a space, and a
   `hotkey` that is not exactly one printable character is left out. When two shown mods ask for one
   hotkey, the first shown keeps it; a mod dropped from the band takes none, a mod drawn compact
   takes none (another may then take it), and `m` is the band's own `mods` button's, never a mod's.
+  A segment has one button in the band; more actions go in an optional `actions` list, `{ label,
+  command, args? }[]`. The Mods pane draws a dim `⋯` button beside the segment's own in the open
+  card, and a press shows the actions as buttons under the row, in place; a second press, running
+  an action, or opening, closing or switching the card closes them. They are never drawn in the band,
+  carry no hotkey, and run a slash command the mod already answers, as the button does. One action
+  not well formed drops the whole list, as with `settings`.
 - **One segment per mod.** Publishing again replaces it; `$.mods.segment(undefined)` clears it.
   `ak-mods` clears it itself when the mod is switched off and when the chat ends, whatever ends it.
   So the mod publishes at `session.start`, again whenever what the segment shows changes, after a
@@ -307,7 +313,7 @@ export const register: Register = on => {
   (`$ is passed to "…", which is not a function declared at the top of this file`). A mod with state
   of its own keeps it in one object that `register` creates and passes along, and its helpers
   (`refresh($, watch, gate)`, `show($, watch, gate)`) are function declarations at the top;
-  `plugins/ak-gitlab/hooks/register.tsx` does this. Inside such a helper, a callback that spells
+  `plugins/ak-ci/hooks/register.tsx` does this. Inside such a helper, a callback that spells
   `$.clock.after(…)` or passes `$` on to another top-level declaration is fine.
 - **A tool call's fields sit on the event itself.** A `tool.call` hook on `Bash` reads the command
   as `e.command`, not `e.input.command`; the types in the engine's `claude-code.d.ts` name each
@@ -370,8 +376,8 @@ What the test kit gives a test, and what it does not:
 - **The test's own `$` carries the engine's events, not the host's nouns.** It has no `process`,
   `http` or `fs`, and it raises an event with its input object (`$.prompt.submit({ text, wait,
   origin })`), not with a plugin's arguments. A helper module that takes `$` (a module that runs a
-  CLI, say) is tested with a `$` of its own that carries the one noun it uses, as
-  `plugins/ak-gitlab/tests/glab.test.ts` does with `{ process: { run } }`.
+  CLI, say) is tested with a `$` of its own that carries the nouns it uses, as
+  `plugins/ak-ci/tests/gitlab-provider.test.ts` does with `{ process: { run }, session: { cwd } }`.
 - **Inside the mod, the host's calls go through hooks the test registers.** A mod's
   `$.process.run(argv, init)` reaches the test's `on('process.run', (_, e) => ({ value: … }))`,
   with `e.argv` and `e.init`; a call such as `prompt.read` answers `{ value }` the same way, an

@@ -11,7 +11,7 @@ Requires Claude Code 2.1.309 or later (hooks-module support).
 | Mod | Plugin | Purpose |
 |-----|--------|---------|
 | [Mod switcher](ak-mods/switcher.md) | ak-mods | The Mods pane: ○ Off / ● On, ☆ / ★ Standard, a triangle for details and ↑ / ↓ to reorder per mod; the shared band |
-| [GitLab](ak-gitlab/gitlab.md) | ak-gitlab | Shows the current branch's merge request and how far its pipeline is |
+| [CI](ak-ci/ci.md) | ak-ci | Shows the current branch's merge or pull request (GitLab, GitHub) and how far its pipeline or checks are |
 | [Keep warm](ak-keepwarm/keepwarm.md) | ak-keepwarm | Keeps the prompt cache warm, so the next reply after a pause stays fast and cheap |
 | [Break](ak-pause/pause.md) | ak-pause | Shows how long you have worked without a break, with water and late hints |
 | [Session id](ak-session-id/session-id.md) | ak-session-id | Copies this session's id, so you can name it to another session |

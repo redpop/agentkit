@@ -1,0 +1,69 @@
+name: check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  # The repo is not lint-clean yet (see the note in .markdownlint-cli2.jsonc: about a thousand
+  # findings, a backlog to work down file by file). So the job lints only the Markdown files under
+  # plugins/ that the push or pull request changes, and fails on any finding in them. It never
+  # fixes anything: the root config has no "fix", and the plugin hook config that has one is not
+  # passed. A push whose base is unknown (new branch, zero SHA) lints nothing and passes.
+  markdownlint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Lint changed markdown
+        env:
+          BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          if [ -z "$BASE" ] || [ "$BASE" = 0000000000000000000000000000000000000000 ] \
+            || ! git cat-file -e "$BASE^{commit}" 2>/dev/null; then
+            echo "No usable base commit; nothing to lint."
+            exit 0
+          fi
+          mapfile -d '' files < <(git diff --name-only --diff-filter=d -z "$BASE" HEAD -- 'plugins/**/*.md')
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "No changed markdown files under plugins/."
+            exit 0
+          fi
+          printf 'Linting %s\n' "${files[@]}"
+          npx --yes markdownlint-cli2@0.18.1 "${files[@]}"
+
+  json:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate JSON
+        run: |
+          status=0
+          for f in .claude-plugin/marketplace.json plugins/*/.claude-plugin/plugin.json; do
+            python3 -m json.tool "$f" > /dev/null || { echo "::error file=$f::invalid JSON"; status=1; }
+          done
+          exit $status
+
+  shellcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: ShellCheck hook scripts
+        run: shellcheck plugins/*/hooks/*.sh
+
+  # Not here, on purpose:
+  #
+  # plugins (claude plugin validate / test) and typecheck (tsc over the hooks modules).
+  # Both need the Claude Code CLI, and the CLI refuses to run without a login ("Not logged in").
+  # tsc also needs claude-code.d.ts, which is embedded in the CLI binary and only written to disk
+  # when a logged-in session loads the plugin-authoring skill; the npm package does not ship it.
+  # A login would need an API key stored as a repository secret, which this repo does not use.
+  # Run both locally, as described in AGENTS.md.

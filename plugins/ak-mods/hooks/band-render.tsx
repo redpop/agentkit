@@ -101,6 +101,18 @@ const settingOf = (setting: unknown): ModsSetting | undefined => {
   return { key: one.key, label: spaced(one.label), value: one.value, options: options as ModsSetting['options'] }
 }
 
+/** The actions of a segment's card menu, or undefined when they are no list of label and command texts or none. */
+const actionsOf = (actions: unknown): ModsSegment['actions'] => {
+  if (!Array.isArray(actions) || actions.length === 0) return undefined
+  const list = (actions as Partial<Record<'label' | 'command' | 'args', unknown>>[]).map(action =>
+    typeof action?.label === 'string' && typeof action.command === 'string'
+      ? { label: spaced(action.label), command: spaced(action.command), args: typeof action.args === 'string' ? action.args : undefined }
+      : undefined,
+  )
+
+  return list.some(action => action === undefined) ? undefined : (list as NonNullable<ModsSegment['actions']>)
+}
+
 /** The stored settings, or undefined: a command, and every row a setting `settingOf` keeps. */
 const settingsOf = (settings: unknown): ModsSegment['settings'] => {
   const one = (settings ?? {}) as Partial<Record<'command' | 'rows', unknown>>
@@ -122,7 +134,7 @@ const settingsOf = (settings: unknown): ModsSegment['settings'] => {
  * rich runs that are no list of texts are left out, a ring is held to 0 to
  * 100, an icon ak-mods does not draw is left out, card rows that are no list of label and value texts are left out, a
  * compact form without text is left out, its parts and rich runs checked as the segment's, settings that are
- * not all well formed (see `settingsOf`) are left out, and a segment without text
+ * not all well formed (see `settingsOf`) are left out, actions that are no list of label and command texts are left out, and a segment without text
  * is not drawn.
  */
 const checked = (info: ModsInfo, stored: unknown): Segment | undefined => {
@@ -142,6 +154,7 @@ const checked = (info: ModsInfo, stored: unknown): Segment | undefined => {
     detail: typeof one.detail === 'string' && one.detail !== '' ? spaced(one.detail) : undefined,
     card: cardOf(one.card),
     settings: settingsOf(one.settings),
+    actions: actionsOf(one.actions),
     tone: toneOf(one.tone),
     priority: typeof one.priority === 'number' && Number.isFinite(one.priority) ? one.priority : undefined,
     button:

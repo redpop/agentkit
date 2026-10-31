@@ -65,6 +65,11 @@ export type ModsSegment = {
    * slash command stores the setting and publishes again. Shown only while the mod has a segment.
    */
   settings?: { command: string; rows: ModsSetting[] }
+  /**
+   * Actions in the open card's `⋯` menu in the Mods pane, in order: each a Button that runs its
+   * `command` with `args` (none when left out) and closes the menu. Never drawn in the band.
+   */
+  actions?: { label: string; command: string; args?: string }[]
   tone?: ModsTone
   /** Higher stays visible longer when the band runs out of room; 5 when left out. */
   priority?: number
@@ -122,6 +127,8 @@ declare module 'claude-code' {
       /** Mirrors the stored order, so a drawing redraws on a move; the store decides. */
       order: string[]
       expanded: Record<string, boolean>
+      /** The mod whose card menu is open; at most one, and only while its card is open. */
+      menu: Record<string, boolean>
       segments: Record<string, ModsSegment>
       /**
        * The band's width in cells (its `bodyColumns`: the terminal's less the five of the engine's

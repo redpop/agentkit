@@ -63,7 +63,7 @@ prompt, once there has been an input. With the default lengths:
 
 On the desktop app the time is a ring that fills to the block's end, beside the duration: `◔ 23
 min`. When the band is short of room, the segment drops `am Stück`. The segment has priority 4: when
-the band runs out of room it goes before usage (7) and GitLab (6).
+the band runs out of room it goes before usage (7) and CI (6).
 
 Two hints join the segment when due:
 

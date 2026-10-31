@@ -40,11 +40,14 @@ export async function toggleMod($: EngineInterface, width: number | undefined, n
   const isShown = panes.some(pane => pane.id === PANE.id && pane.isShown)
   if (isShown && held.value?.[name] === true) {
     await $.state.set({ plugin: 'ak-mods', key: 'expanded' }, {}).catch(() => undefined)
+    await $.state.set({ plugin: 'ak-mods', key: 'menu' }, {}).catch(() => undefined)
     await $.ui.close({ id: PANE.id })
 
     return 'closed'
   }
   await $.state.set({ plugin: 'ak-mods', key: 'expanded' }, { [name]: true }).catch(() => undefined)
+  // The card menu belongs to the open card, as in the pane: a card opened from here starts without it.
+  await $.state.set({ plugin: 'ak-mods', key: 'menu' }, {}).catch(() => undefined)
   if (width !== undefined) {
     await $.state.set({ plugin: 'ak-mods', key: 'width' }, width).catch(() => undefined)
   }

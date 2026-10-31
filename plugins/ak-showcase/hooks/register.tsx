@@ -37,6 +37,8 @@ const segment = async ($: EngineInterface): Promise<Segment> => {
       command: 'showcase',
       rows: [{ key: 'tone', label: t.band.tone, value: tone, options: TONES.map(value => ({ value })) }],
     },
+    // The ⋯ menu of the open card in the Mods pane; /showcase demo only records the pick.
+    actions: t.demoActions.map(({ label, args }) => ({ label, command: 'showcase', args })),
     tone,
     priority: 1,
     button: { label: t.open, command: 'showcase', isPaneOnly: true },
@@ -141,6 +143,14 @@ export const register: Register = on => {
       await $.ui.open({ id: PANE, title: t.title })
 
       return { text: t.opened }
+    }
+    if (verb === 'demo') {
+      // An action of the demo segment's ⋯ menu: it only records itself, like every control here.
+      const action = t.demoActions.find(one => one.args === `demo ${value}`)
+      if (action === undefined || rest.length > 0) return { text: t.usage }
+      await $.state.set({ plugin: 'ak-showcase', key: 'last' }, `Menu action ${action.label}`)
+
+      return { text: t.demoRan(action.label) }
     }
     const tone = toneOf(value)
     if (verb !== 'tone' || tone === undefined || rest.length > 0) return { text: t.usage }

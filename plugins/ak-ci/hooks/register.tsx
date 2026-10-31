@@ -1,30 +1,32 @@
-// GitLab: the merge request of the current branch and its head pipeline, at a glance. Inspired by
-// the feature set of a third-party GitLab plugin (MIT); no code is taken over.
+// CI: the merge or pull request of the current branch and its checks, at a glance; on GitHub a
+// branch without a pull request shows the checks of its pushed tip. Inspired by the feature set of
+// a third-party GitLab plugin (MIT); no code is taken over.
 //
-// GitLab is read through glab, which brings its own login: the mod holds no token. It asks every
-// 15 seconds while a pipeline runs, every few minutes while a merge request is open (pushes also
+// GitLab is read through glab, GitHub through gh, each with its own login: the mod holds no token.
+// It asks every 15 seconds while checks run, every few minutes while a change is shown (pushes also
 // come from outside Claude), and on every prompt, turn end and push Claude makes.
 
 import type { EngineInterface, Register, Timer } from 'claude-code'
 
-import { fetchFailure, fetchStatus, openUrl } from './glab'
 import { languageFor, learnLanguage, texts } from './i18n'
 import { draftFor, excerpt } from './joblog'
-import type { Status } from './model'
+import { providerFor } from './detect'
+import type { ProviderName, Status } from './model'
 import { phaseOf } from './model'
+import { fetchFailure, fetchStatus, openUrl } from './provider'
 import type { Segment } from './view'
 import { cardFor, segmentFor, toastFor } from './view'
 
-const NAME = 'ak-gitlab'
+const NAME = 'ak-ci'
 const FAST_MS = 15_000
 const SLOW_MS = 150_000
 const TICK_MS = 5_000
-// GitLab attaches a push's pipeline to the merge request a few seconds later: look again then.
+// The host attaches a push's checks to the change a few seconds later: look again then.
 const AFTER_PUSH_MS = 10_000
 // Fetches closer than this to the last one are dropped: a prompt, its turn and a push come together.
 const QUIET_MS = 3_000
-// The Bash commands after which the branch or its pipeline may have changed.
-const MOVES = /\bgit\s+(?:checkout|switch|push)\b|\bglab\s+mr\s+create\b/
+// The Bash commands after which the branch or its checks may have changed.
+const MOVES = /\bgit\s+(?:checkout|switch|push)\b|\bglab\s+mr\s+create\b|\bgh\s+pr\s+create\b/
 
 // Publishes while ak-mods switches the mod and it is on; whether it is off. Both fail open.
 type Publish = (isOn: () => Promise<boolean>, send: () => Promise<void>) => Promise<void>
@@ -36,14 +38,17 @@ type Watch = {
   status: Status
   // The segment as last drawn, for the own band too.
   shown: Segment | undefined
-  // Each pipeline's estimate, fetched once.
-  estimates: Map<number, number | undefined>
-  // The toasts given, by the state a pipeline reached; the pipelines seen, so one already settled
-  // at first sight gets none.
+  // Each pipeline's estimate by its key, fetched once.
+  estimates: Map<string, number | undefined>
+  // The host each remote's host name is on, found once; the one the last fetch asked, for the texts.
+  hosts: Map<string, ProviderName>
+  provider: ProviderName | undefined
+  // The toasts given, by the state the checks reached; the checks seen, by key, so ones already
+  // settled at first sight get none.
   toasted: Set<string>
-  seen: Set<number>
+  seen: Set<string>
   isAuthToasted: boolean
-  // When the session started: a pipeline created later gets its toast even when first seen settled.
+  // When the session started: checks created later get their toast even when first seen settled.
   since: number
   inflight: Promise<void> | undefined
   lastEnded: number
@@ -55,6 +60,8 @@ const watching = (): Watch => ({
   status: { kind: 'none' },
   shown: undefined,
   estimates: new Map(),
+  hosts: new Map(),
+  provider: undefined,
   toasted: new Set(),
   seen: new Set(),
   isAuthToasted: false,
@@ -80,19 +87,19 @@ async function show($: EngineInterface, watch: Watch, gate: Gate): Promise<void>
   const lang = await languageFor($)
   const { status } = watch
   const segment = segmentFor(status, now, lang)
-  watch.shown = segment === undefined || status.kind !== 'mr' ? segment : { ...segment, card: cardFor(status.mr, now, lang) }
+  watch.shown = segment === undefined ? segment : { ...segment, card: cardFor(status, now, lang) }
   await gate.publish(() => $.mods.isOn({ name: NAME }), () => $.mods.segment(watch.shown))
   $.ui.invalidate('ui.render')
 }
 
 /**
- * The next fetch, by what the status shows: soon while the pipeline runs, with the time moving in
- * between; later while a merge request is open; none without one.
+ * The next fetch, by what the status shows: soon while the checks run, with the time moving in
+ * between; later while a change (a merge or pull request, a branch tip) is shown; none without one.
  */
 function arm($: EngineInterface, watch: Watch, gate: Gate): void {
   stop(watch)
-  if (watch.status.kind !== 'mr') return
-  const isRunning = phaseOf(watch.status.mr.pipeline) === 'running'
+  if (watch.status.kind !== 'change') return
+  const isRunning = phaseOf(watch.status.change.checks) === 'running'
   watch.poll = $.clock.after(isRunning ? FAST_MS : SLOW_MS, () => {
     refresh($, watch, gate).catch(() => {})
   })
@@ -104,16 +111,22 @@ function arm($: EngineInterface, watch: Watch, gate: Gate): void {
 }
 
 /**
- * A toast for each state a pipeline reaches while the mod watches it. A pipeline that was there
- * before the session started gets none for the state it had at first sight.
+ * A toast for each state the checks reach while the mod watches them. Checks that were there
+ * before the session started get none for the state they had at first sight. GitHub checks seen
+ * running again (a re-run) may reach a state they had before: its toast comes again.
  */
 async function announce($: EngineInterface, watch: Watch): Promise<void> {
   const { status } = watch
-  if (status.kind !== 'mr' || status.mr.pipeline === undefined) return
-  const { id, createdAt } = status.mr.pipeline
-  const toast = toastFor(status.mr, await languageFor($))
-  const isOld = !watch.seen.has(id) && Date.parse(createdAt) < watch.since
-  watch.seen.add(id)
+  if (status.kind !== 'change' || status.change.checks === undefined) return
+  const { key, createdAt } = status.change.checks
+  // GitHub only: a GitLab pipeline held at a manual job that runs and stops at the same job again
+  // is the same wait, not news.
+  if (status.provider === 'github' && phaseOf(status.change.checks) === 'running') {
+    for (const given of watch.toasted) if (given.startsWith(`${key}:`)) watch.toasted.delete(given)
+  }
+  const toast = toastFor(status, await languageFor($))
+  const isOld = !watch.seen.has(key) && Date.parse(createdAt) < watch.since
+  watch.seen.add(key)
   if (toast === undefined || watch.toasted.has(toast.key)) return
   watch.toasted.add(toast.key)
   if (!isOld) $.ui.toast(toast.text)
@@ -129,15 +142,17 @@ async function refresh($: EngineInterface, watch: Watch, gate: Gate): Promise<vo
       stop(watch)
       return
     }
-    const next = await fetchStatus($, watch.estimates)
+    const provider = await providerFor($, watch.hosts)
+    watch.provider = provider
+    const next: Status = provider === undefined ? { kind: 'none' } : await fetchStatus($, provider, watch.estimates)
     watch.lastEnded = await $.clock.now()
     if (next.kind === 'unavailable' && next.reason === 'error') {
       arm($, watch, gate)
       return
     }
-    if (next.kind === 'unavailable' && next.reason === 'no-auth' && !watch.isAuthToasted) {
+    if (provider !== undefined && next.kind === 'unavailable' && next.reason === 'no-auth' && !watch.isAuthToasted) {
       watch.isAuthToasted = true
-      $.ui.toast(texts(await languageFor($)).noAuth)
+      $.ui.toast(texts(await languageFor($)).noAuth(next.provider ?? provider))
     }
     watch.status = next
     await announce($, watch)
@@ -150,7 +165,7 @@ async function refresh($: EngineInterface, watch: Watch, gate: Gate): Promise<vo
   return watch.inflight
 }
 
-/** A fetch off the hook that asked: it runs glab, which the prompt or the turn should not wait for. */
+/** A fetch off the hook that asked: it runs glab or gh, which the prompt or the turn should not wait for. */
 function soon($: EngineInterface, watch: Watch, gate: Gate, ms = 0): void {
   $.clock.after(ms, () => {
     refresh($, watch, gate).catch(() => {})
@@ -197,8 +212,9 @@ export const register: Register = on => {
     } catch {
       isSwitched = false
     }
-    await $.command.register({ name: 'gitlab-open', description: 'Open the merge request of the current branch' })
-    await $.command.register({ name: 'gitlab-errors', description: "Put the failed job's log excerpt in the prompt box" })
+    await $.command.register({ name: 'ci-open', description: 'Open the merge or pull request of the current branch, or its checks' })
+    await $.command.register({ name: 'ci-link', description: 'Copy the link ci-open opens' })
+    await $.command.register({ name: 'ci-errors', description: "Put the failed job's log excerpt in the prompt box" })
     soon($, watch, gate)
 
     return next(e)
@@ -211,7 +227,7 @@ export const register: Register = on => {
     return done
   }).catch(($, e, next) => next(e))
 
-  // A subagent's turn changes nothing on GitLab the main loop has not.
+  // A subagent's turn changes nothing on the host the main loop has not.
   on('turn.complete', async ($, e, next) => {
     const done = await next(e)
     if (!e.agentId) soon($, watch, gate)
@@ -219,8 +235,8 @@ export const register: Register = on => {
     return done
   }).catch(($, e, next) => next(e))
 
-  // A checkout, switch or push, or a new merge request: look at once, and again once GitLab has
-  // attached the new pipeline.
+  // A checkout, switch or push, or a new merge or pull request: look at once, and again once the
+  // host has attached the new checks.
   on('tool.call', { tool: 'Bash' }, async ($, e, next) => {
     const done = await next(e)
     if (MOVES.test(e.command)) {
@@ -241,25 +257,48 @@ export const register: Register = on => {
     return next(e)
   }).catch(($, e, next) => next(e))
 
-  on('command.run', { command: 'gitlab-open' }, async $ => {
+  on('command.run', { command: 'ci-open' }, async $ => {
     const { status } = watch
-    if (status.kind === 'mr') await openUrl($, status.mr.webUrl)
-    else $.ui.toast(texts(await languageFor($)).noMr)
+    // A change whose address is not known (the repository lookup failed) has nothing to open.
+    if (status.kind === 'change' && status.change.webUrl !== '') await openUrl($, status.change.webUrl)
+    else $.ui.toast(texts(await languageFor($)).noChange(watch.provider))
+
+    return {}
+  })
+
+  // The address ci-open opens, copied. Should no clipboard take it, the toast names it and why, so
+  // it can be copied by hand.
+  on('command.run', { command: 'ci-link' }, async $ => {
+    const t = texts(await languageFor($))
+    const { status } = watch
+    if (status.kind !== 'change' || status.change.webUrl === '') {
+      $.ui.toast(t.noChange(watch.provider))
+      return {}
+    }
+    const url = status.change.webUrl
+    const copied = await $.ui.copy({ text: url })
+    $.ui.toast(copied.isCopied ? t.copied : t.notCopied(url, copied.reason))
 
     return {}
   })
 
   // The failed job's log as a draft after what is typed: a sentence can be added before it goes.
-  on('command.run', { command: 'gitlab-errors' }, async $ => {
+  on('command.run', { command: 'ci-errors' }, async $ => {
     const lang = await languageFor($)
     const t = texts(lang)
     const { status } = watch
-    const failure = status.kind === 'mr' && status.mr.pipeline !== undefined ? await fetchFailure($, status.mr.pipeline) : undefined
-    if (status.kind !== 'mr' || failure === undefined) {
+    const failure =
+      status.kind === 'change' && status.change.checks !== undefined ? await fetchFailure($, status.provider, status.change.checks) : undefined
+    if (status.kind !== 'change' || failure === undefined) {
       $.ui.toast(t.noLog)
       return {}
     }
-    const body = draftFor(status.mr, failure.job, excerpt(failure.trace), lang, failure.isCut)
+    // A check without a log of its own (a commit status) is named; the prompt box stays as it is.
+    if ('noLog' in failure) {
+      $.ui.toast(t.noLogFor(failure.job.name))
+      return {}
+    }
+    const body = draftFor(status.provider, status.change, failure.job, excerpt(failure.trace), lang, failure.isCut)
     const box = await $.prompt.read()
     const filled = await $.prompt.fill({ text: box.text === '' ? body : `\n\n${body}`, mode: 'append' })
     if (!filled.isFilled) $.ui.toast(t.noBox)
@@ -302,7 +341,7 @@ export const register: Register = on => {
   })
 
   // This mod's switch changed, and the write landed: when on, fetch and publish again (ak-mods
-  // cleared the segment at the switch-off); when off, stop asking GitLab. Not from inside this
+  // cleared the segment at the switch-off); when off, stop asking the host. Not from inside this
   // hook: it runs within the `set` of ak-mods, where a segment call resolves without reaching it.
   on('state.set', { plugin: 'ak-mods', key: 'on' }, async ($, e, next) => {
     const done = await next(e)

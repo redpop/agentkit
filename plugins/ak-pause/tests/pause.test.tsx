@@ -80,7 +80,7 @@ type Segment = Parameters<EngineInterface['mods']['segment']>[0]
 
 const SEGMENT = 'segment '
 
-// ak-mods cannot be loaded here, so a plugin above the mod stands in for it, as in ak-gitlab's
+// ak-mods cannot be loaded here, so a plugin above the mod stands in for it, as in ak-ci's
 // tests: declaring switches the mod on, and each published segment comes out as a toast.
 const owner: Register = on => {
   // Between `hold` and `release` a segment call resolves without being stored, as inside the call

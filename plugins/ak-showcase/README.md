@@ -16,6 +16,7 @@ Requires Claude Code 2.1.309 or later (hooks-module support).
 ## Use
 
 - `/showcase` opens the pane; `/showcase tone warn` sets the demo segment's tone.
+- The demo segment's `⋯` menu in the Mods pane runs `/showcase demo check` or `demo clear`.
 - Eleven sections: text, colours, spacing, layout, hover, buttons, forms, content, graphics, band
   segment, feedback. Each section is one file in `hooks/sections/`, readable as a template.
 - The controls are dummies: they only record that they were used. Only the feedback section shows

@@ -12,7 +12,11 @@ and domain knowledge bases. Built on the official Claude Code Plugin Architectur
 ## Dev environment
 
 No build step required — the codebase is Markdown, JSON, and shell scripts, plus six TSX
-hooks modules (`ak-mods`, `ak-keepwarm`, `ak-session-id`, `ak-usage`, `ak-gitlab`, `ak-pause`, `ak-showcase`) that Claude Code loads directly.
+hooks modules (`ak-mods`, `ak-keepwarm`, `ak-session-id`, `ak-usage`, `ak-ci`, `ak-pause`, `ak-showcase`) that Claude Code loads directly.
+
+CI (`.github/workflows/check.yml`) runs the markdown, JSON and shell checks below on pull requests
+and pushes to `main`; it lints only the changed Markdown under `plugins/`. The plugin validate/test
+and type-check steps need a logged-in Claude Code CLI, so they run locally only.
 
 **Test a plugin locally:**
 
@@ -57,8 +61,8 @@ claude plugin validate plugins/ak-session-id
 claude plugin test plugins/ak-session-id
 claude plugin validate plugins/ak-usage
 claude plugin test plugins/ak-usage
-claude plugin validate plugins/ak-gitlab
-claude plugin test plugins/ak-gitlab
+claude plugin validate plugins/ak-ci
+claude plugin test plugins/ak-ci
 claude plugin validate plugins/ak-pause
 claude plugin test plugins/ak-pause
 claude plugin validate plugins/ak-showcase
@@ -94,15 +98,15 @@ S=$R/plugins/ak-session-id
 echo "{\"compilerOptions\":{$O},\"include\":[\"$T/fx\",\"$S/hooks\",\"$S/tests\"]}" > "$T/session-id.json"
 U=$R/plugins/ak-usage
 echo "{\"compilerOptions\":{$O},\"include\":[\"$T/fx\",\"$U/hooks\",\"$U/tests\"]}" > "$T/usage.json"
-G=$R/plugins/ak-gitlab
-echo "{\"compilerOptions\":{$O},\"include\":[\"$T/fx\",\"$G/hooks\",\"$G/tests\"]}" > "$T/gitlab.json"
+C=$R/plugins/ak-ci
+echo "{\"compilerOptions\":{$O},\"include\":[\"$T/fx\",\"$C/hooks\",\"$C/tests\"]}" > "$T/ci.json"
 P=$R/plugins/ak-pause
 echo "{\"compilerOptions\":{$O},\"include\":[\"$T/fx\",\"$P/hooks\",\"$P/tests\"]}" > "$T/pause.json"
 W=$R/plugins/ak-showcase
 echo "{\"compilerOptions\":{$O},\"include\":[\"$T/fx\",\"$W/hooks\",\"$W/types\",\"$W/tests\"]}" > "$T/showcase.json"
 npx -y -p typescript@5 tsc -p "$T/mods.json" && npx -y -p typescript@5 tsc -p "$T/fixture.json" &&
   npx -y -p typescript@5 tsc -p "$T/keepwarm.json" && npx -y -p typescript@5 tsc -p "$T/session-id.json" &&
-  npx -y -p typescript@5 tsc -p "$T/usage.json" && npx -y -p typescript@5 tsc -p "$T/gitlab.json" &&
+  npx -y -p typescript@5 tsc -p "$T/usage.json" && npx -y -p typescript@5 tsc -p "$T/ci.json" &&
   npx -y -p typescript@5 tsc -p "$T/pause.json" && npx -y -p typescript@5 tsc -p "$T/showcase.json"
 )
 ```
@@ -145,7 +149,7 @@ plugins/{plugin-name}/
 | `ak-session-id` | - | - | hooks module (TSX), tests/ |
 | `ak-showcase` | - | - | hooks module (TSX), types/, tests/ |
 | `ak-usage` | - | - | hooks module (TSX), tests/ |
-| `ak-gitlab` | - | - | hooks module (TSX), tests/ |
+| `ak-ci` | - | - | hooks module (TSX), tests/ |
 | `ak-pause` | - | - | hooks module (TSX), tests/ |
 | `ak-notifications` | - | - | hooks |
 | `ak-react` | 2 | - | knowledge/ (1 file) |
@@ -207,7 +211,7 @@ AgentKit mod in this repository: its own plugin in `plugins/ak-<name>/`, switche
 Read [Writing an AgentKit mod](docs/mods/writing-a-mod.md) first and follow its recipe, rules and
 testing section. Claude Code's `plugin-authoring` skill is the reference for the hooks API and its
 types, but it writes a mod into a session folder outside the repository and knows nothing of the
-`ak-mods` contract: build here, not there. `plugins/ak-usage` and `plugins/ak-gitlab` are complete
+`ak-mods` contract: build here, not there. `plugins/ak-usage` and `plugins/ak-ci` are complete
 examples.
 
 ## Commit and PR guidelines
@@ -226,7 +230,7 @@ Rules for `git log`, not review criteria for diffs.
   in the body.
 
 Versions stay synchronized across `marketplace.json` and all `plugin.json` files (currently
-`1.65.3`) — that one **is** checkable in a diff. The one exception is the test-only harness
+`1.66.0`) — that one **is** checkable in a diff. The one exception is the test-only harness
 `plugins/ak-mods/tests/fixture`, which stays at `0.0.0`.
 
 ## Task completion workflow
