@@ -1,7 +1,7 @@
 {
   "name": "ak-gitlab",
   "description": "Mod: shows the merge request of the current branch and its pipeline as one segment in the shared band, on GitLab via glab",
-  "version": "1.65.1",
+  "version": "1.65.2",
   "author": {
     "name": "redpop",
     "url": "https://github.com/redpop"
