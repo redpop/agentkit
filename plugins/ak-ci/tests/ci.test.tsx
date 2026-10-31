@@ -352,6 +352,41 @@ test('retry toasts again', OWNED, async ($, on) => {
   expect(plain(toasts)).toEqual(['Pipeline !12 fehlgeschlagen: test:unit', 'Pipeline !12 grün (4:51)'])
 })
 
+test('a GitLab pipeline held at the same manual job toasts once, though it ran between', OWNED, async ($, on) => {
+  const { clock, toasts, set } = engine(on)
+  const held = gitlab('manual', ['success', 'manual'])
+  set(RUNNING)
+  await start($)
+  await clock.settle()
+  set(held)
+  await clock.advance(15_000)
+  // The job runs, then the pipeline stops at the same manual job again.
+  set(gitlab('running', ['success', 'running']))
+  await clock.advance(5_000)
+  await turn($)
+  await clock.settle()
+  set(held)
+  await clock.advance(15_000)
+  expect(plain(toasts)).toEqual(['Pipeline !12 wartet auf test:unit'])
+})
+
+test('GitHub checks held at the same manual check toast again after they ran', OWNED, async ($, on) => {
+  const { clock, toasts, set } = engine(on)
+  const held = github([checkRun(1, 'deploy', 'waiting')])
+  set(github(GH_RUNNING))
+  await start($)
+  await clock.settle()
+  set(held)
+  await clock.advance(15_000)
+  set(github([checkRun(1, 'deploy', 'in_progress')]))
+  await clock.advance(5_000)
+  await turn($)
+  await clock.settle()
+  set(held)
+  await clock.advance(15_000)
+  expect(plain(toasts)).toEqual(['Checks #12 warten auf deploy', 'Checks #12 warten auf deploy'])
+})
+
 test('failed checks on GitHub toast once while the other checks still finish', OWNED, async ($, on) => {
   const { clock, toasts, set } = engine(on)
   set(github(GH_RUNNING))

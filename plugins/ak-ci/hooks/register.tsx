@@ -112,14 +112,16 @@ function arm($: EngineInterface, watch: Watch, gate: Gate): void {
 
 /**
  * A toast for each state the checks reach while the mod watches them. Checks that were there
- * before the session started get none for the state they had at first sight. Checks seen running
- * again (a retry, a re-run) may reach a state they had before: its toast comes again.
+ * before the session started get none for the state they had at first sight. GitHub checks seen
+ * running again (a re-run) may reach a state they had before: its toast comes again.
  */
 async function announce($: EngineInterface, watch: Watch): Promise<void> {
   const { status } = watch
   if (status.kind !== 'change' || status.change.checks === undefined) return
   const { key, createdAt } = status.change.checks
-  if (phaseOf(status.change.checks) === 'running') {
+  // GitHub only: a GitLab pipeline held at a manual job that runs and stops at the same job again
+  // is the same wait, not news.
+  if (status.provider === 'github' && phaseOf(status.change.checks) === 'running') {
     for (const given of watch.toasted) if (given.startsWith(`${key}:`)) watch.toasted.delete(given)
   }
   const toast = toastFor(status, await languageFor($))

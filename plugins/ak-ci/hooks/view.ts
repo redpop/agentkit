@@ -140,7 +140,8 @@ export function cardFor(status: Status, nowMs: number, lang: Lang): CardRow[] {
   const rows: CardRow[] = [
     { label: t.card.change, value: named },
     ...(change.target === undefined ? [] : [{ label: t.card.target, value: change.target }]),
-    { label: t.card.draft, value: change.isDraft ? t.yes : t.no },
+    // A branch tip is no pull request, so it is no draft either.
+    ...(change.number === undefined ? [] : [{ label: t.card.draft, value: change.isDraft ? t.yes : t.no }]),
   ]
   const checks = change.checks
   if (checks === undefined) return rows

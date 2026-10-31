@@ -258,6 +258,11 @@ test('on GitHub the card shows the commit short and the workflows', () => {
   expect(cardFor(of(mr(pipeline('running', RUNNING))), NOW, 'en').map(row => row.label)).toContain('Stages')
 })
 
+test('a branch tip has no draft row, a pull request has', () => {
+  expect(cardFor(onGithub(tip(checksOn('running', RUNNING))), NOW, 'en').map(row => row.label)).not.toContain('Draft')
+  expect(cardFor(onGithub(pr(checksOn('running', RUNNING))), NOW, 'en').map(row => row.label)).toContain('Draft')
+})
+
 test('toasts use the host’s word for the checks', () => {
   expect(toastFor(onGithub(pr(checksOn('success', GREEN, 291_000))), 'en')?.text).toBe('Checks #12 green (4:51)')
   expect(toastFor(onGithub(tip(checksOn('failed', LINTED))), 'en')?.text).toBe('Checks on main failed: markdownlint')
