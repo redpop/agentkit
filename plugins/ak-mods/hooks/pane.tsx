@@ -123,11 +123,11 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
               {row.summary}
             </Text>
             {one !== undefined && (
-              <Box flexDirection="row" alignItems="center" columnGap={1} marginTop={1}>
-                {segmentView(draws, e.surface, one, `text-${row.name}`)}
-                {rows === undefined && one.detail !== undefined && (
-                  <Text key={`detail-${row.name}`} dimColor>{`· ${one.detail}`}</Text>
-                )}
+              // The segment takes the room and wraps as a line; the button keeps its size at the end.
+              <Box flexDirection="row" alignItems="center" justifyContent="space-between" columnGap={1} marginTop={1}>
+                <Box flexGrow={1} flexShrink={1}>
+                  {segmentView(draws, e.surface, one, `text-${row.name}`, undefined, undefined, false, true)}
+                </Box>
                 {one.button !== undefined && (
                   <Button
                     key={`seg-${row.name}`}
@@ -140,6 +140,12 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
                   />
                 )}
               </Box>
+            )}
+            {/* The detail on a line of its own: beside the segment it would squeeze both into columns. */}
+            {one !== undefined && rows === undefined && one.detail !== undefined && (
+              <Text key={`detail-${row.name}`} size="footnote" dimColor>
+                {one.detail}
+              </Text>
             )}
             {isOpen && rows !== undefined && (
               <Box flexDirection="column" marginTop={1}>

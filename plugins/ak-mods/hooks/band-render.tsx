@@ -243,7 +243,10 @@ type Draws = {
  * between pictures one: a Button holds text alone, so the pictures stay
  * beside it. The desktop app draws a Button's text uncoloured: with
  * `keepsColor`, for a press that only opens the Mods pane, a run in a colour
- * stays text in its own stretch, and the press is on the rest.
+ * stays text in its own stretch, and the press is on the rest. With `flows`,
+ * where nothing is pressed, each stretch of text is one Text that wraps as a
+ * line does: runs side by side as flex children would each wrap in a column
+ * of their own once the row runs short.
  */
 export const segmentView = (
   { Box, Text, Svg, Button }: Draws,
@@ -253,6 +256,7 @@ export const segmentView = (
   press?: () => void,
   hotkey?: string,
   keepsColor = false,
+  flows = false,
 ) => {
   // A run's look as a Button can carry it: coloured, dim or plain. A Button draws its text in one
   // look, so a pressable line is cut where the look changes.
@@ -309,6 +313,14 @@ export const segmentView = (
           <Svg key={`${key}-${at}`} source={ringSvg(first.ring, first.tone ?? one.tone)} alt={first.text} width={20} height={16} />
         ) : first?.icon !== undefined ? (
           <Svg key={`${key}-${at}`} source={iconSvg(first.icon, first.tone ?? one.tone)} alt={first.text} width={20} height={16} />
+        ) : flows && press === undefined ? (
+          <Text key={`${key}-${at}`} tabular>
+            {[first, ...rest].map((part, offset) => (
+              <Text key={`${key}-${at + offset}`} {...toneProps(part?.tone ?? one.tone, surface)}>
+                {part?.text}
+              </Text>
+            ))}
+          </Text>
         ) : (
           pressable(
             at,

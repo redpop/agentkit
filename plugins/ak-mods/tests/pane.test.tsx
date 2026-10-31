@@ -494,14 +494,37 @@ test("a row shows its mod's current segment, on every surface", { plugins: MODS 
   }
 })
 
-test("a row shows its segment's detail, dim, after the text", { plugins: MODS }, async ($, on) => {
+test("a row shows its segment's detail, small and dim, on a line under the segment", { plugins: MODS }, async ($, on) => {
   engine(on)
   await callAs($, 'ak-a', 'declare', { name: 'ak-a', title: 'Alpha', summary: 's', details: 'd' })
   await callAs($, 'ak-a', 'set', { name: 'ak-a', on: true })
   await callAs($, 'ak-a', 'segment', { text: '◆ kept warm', detail: '1 ping $0.01' })
 
   const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
-  expect(await ui.find({ type: 'Text', text: '· 1 ping $0.01' })).toMatchObject({ props: { dimColor: true } })
+  expect(await ui.find({ type: 'Text', text: '1 ping $0.01' })).toMatchObject({ props: { size: 'footnote', dimColor: true } })
+  await ui.unmount()
+})
+
+test("a row's segment flows as one line of text that wraps, not as columns", { plugins: MODS }, async ($, on) => {
+  engine(on)
+  await callAs($, 'ak-a', 'declare', { name: 'ak-a', title: 'Alpha', summary: 's', details: 'd' })
+  await callAs($, 'ak-a', 'set', { name: 'ak-a', on: true })
+  await callAs($, 'ak-a', 'segment', {
+    text: 'warm 5m next message rewrites $1.38',
+    rich: [
+      { text: 'warm', ring: 50 },
+      { text: ' 5m', tone: 'warn' },
+      { text: ' next message rewrites ', tone: 'dim' },
+      { text: '$1.38', tone: 'warn' },
+    ],
+  })
+
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  // The runs between pictures sit in one Text, which wraps as a line; side by side as flex children
+  // each would wrap in a column of its own.
+  const line = await ui.find({ type: 'Text', text: ' 5m next message rewrites $1.38' })
+  expect(line).toBeDefined()
+  expect(line?.children).toHaveLength(3)
   await ui.unmount()
 })
 
@@ -633,7 +656,7 @@ test('on the desktop app an open row lists its card under the segment, each valu
   await desk.unmount()
 
   const term = await $.ui.mount({ ...PANE, surface: 'terminal' })
-  expect(await exactly(term, '· ctx 42% · 5h 7% (resets 11:10pm)')).toBeDefined()
+  expect(await exactly(term, 'ctx 42% · 5h 7% (resets 11:10pm)')).toBeDefined()
   expect(await exactly(term, '5-hour limit')).toBeUndefined()
   await term.unmount()
 })
