@@ -264,8 +264,8 @@ test('/showcase tone sets the demo tone; anything else names the usage', async (
   const ui = await mountAt($, 'desktop', 'band')
   expect(await ui.find({ type: 'Text', text: /tone: 'warn'/ })).toBeDefined()
   await ui.unmount()
-  expect((await showcase($, 'tone purple')).text).toBe('Usage: /showcase [tone ok|warn|alert|info|dim]')
-  expect((await showcase($, 'loud')).text).toBe('Usage: /showcase [tone ok|warn|alert|info|dim]')
+  expect((await showcase($, 'tone purple')).text).toBe('Usage: /showcase [tone ok|warn|alert|info|dim | demo check|clear]')
+  expect((await showcase($, 'loud')).text).toBe('Usage: /showcase [tone ok|warn|alert|info|dim | demo check|clear]')
 })
 
 test('/showcase demo <action> only records the menu action', async ($, on) => {
@@ -276,7 +276,7 @@ test('/showcase demo <action> only records the menu action', async ($, on) => {
   const ui = await mountAt($, 'desktop', 'buttons')
   expect(await ui.find({ type: 'Text', text: 'Last action: Menu action Run check' })).toBeDefined()
   await ui.unmount()
-  expect((await showcase($, 'demo nope')).text).toBe('Usage: /showcase [tone ok|warn|alert|info|dim]')
+  expect((await showcase($, 'demo nope')).text).toBe('Usage: /showcase [tone ok|warn|alert|info|dim | demo check|clear]')
 })
 
 test('without ak-mods the own band opens the pane', async ($, on) => {

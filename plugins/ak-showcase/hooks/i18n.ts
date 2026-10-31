@@ -60,7 +60,7 @@ const EN = {
     'that draws it and what does not exist. Its controls trigger nothing; they are only there to ' +
     'try out. /showcase opens the pane.',
   command: 'Open the style guide pane, or /showcase tone <ok|warn|alert|info|dim> for the demo segment',
-  usage: 'Usage: /showcase [tone ok|warn|alert|info|dim]',
+  usage: 'Usage: /showcase [tone ok|warn|alert|info|dim | demo check|clear]',
   opened: 'Showcase opened.',
   toneSet: (tone: string) => `Demo segment tone: ${tone}`,
   // The demo segment's `actions`, and what running one says. The pane's menu sample lists the same.
@@ -211,7 +211,7 @@ const DE: typeof EN = {
     'nennt die Prop, die es zeichnet, und was es nicht gibt. Die Bedienelemente lösen nichts aus, ' +
     'sie sind nur zum Ausprobieren da. /showcase öffnet das Pane.',
   command: 'Das Styleguide-Pane öffnen, oder /showcase tone <ok|warn|alert|info|dim> für das Demo-Segment',
-  usage: 'Aufruf: /showcase [tone ok|warn|alert|info|dim]',
+  usage: 'Aufruf: /showcase [tone ok|warn|alert|info|dim | demo check|clear]',
   opened: 'Showcase geöffnet.',
   toneSet: (tone: string) => `Ton des Demo-Segments: ${tone}`,
   demoActions: [
