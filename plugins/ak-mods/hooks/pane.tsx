@@ -118,7 +118,10 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
                 />
               </Box>
             </Box>
-            <Text dimColor>{row.summary}</Text>
+            {/* One step under the title, one above the open card's note. */}
+            <Text size="footnote" dimColor>
+              {row.summary}
+            </Text>
             {one !== undefined && (
               <Box flexDirection="row" alignItems="center" columnGap={1} marginTop={1}>
                 {segmentView(draws, e.surface, one, `text-${row.name}`)}
@@ -146,7 +149,7 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
             {isOpen && (
               <Box marginTop={1}>
                 {/* A note under the card, not its body: small, so an open card stays short. */}
-                <Text size="footnote" dimColor>
+                <Text size="caption" dimColor>
                   {row.details}
                 </Text>
               </Box>
@@ -210,7 +213,7 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
       )}
       {/* A footnote to the whole pane, not to the last mod: set apart by space alone, small and dim. */}
       <Box marginTop={1}>
-        <Text size="footnote" dimColor>
+        <Text size="caption" dimColor>
           {t.footer}
         </Text>
       </Box>
