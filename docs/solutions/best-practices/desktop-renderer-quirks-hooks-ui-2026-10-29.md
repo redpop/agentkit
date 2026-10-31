@@ -39,9 +39,14 @@ names itself by its glyph. Bold or coloured text beside it is a separate `Text`,
 outside the press. Cut pressable text where its look changes, and leave runs of plain space as text:
 a Button around a blank run is an empty hover target.
 
-**Theme keys are not painted on `Text`.** `color: 'warning'`, `'error'` and `'suggestion'` draw in
-the plain text colour there. Pass a fixed hex on the desktop surface and the theme key on the
-terminal. A tone between the light and dark theme's value reads on either appearance:
+**Theme keys on `Text` follow the desktop app's own palette, not the terminal's.** In the shared
+band they were seen drawing in the plain text colour (`warning`, `error`, `suggestion`). In a
+`Pane` (the `ak-showcase` mod, 2026-10-31) most of them do paint: `success`, `error`, `warning`,
+`claude`, `merged`, `autoAccept`, `bashBorder` and the diff keys in their colour, while `inactive`,
+`subtle`, `suggestion`, `remember`, `permission` and `ide` all come out grey and the dimmed diff
+keys barely show. So a theme key is no guarantee of a colour on the desktop app. Where the colour
+carries meaning, pass a fixed hex on the desktop surface and the theme key on the terminal. A tone
+between the light and dark theme's value reads on either appearance:
 
 ```tsx
 const DESKTOP_TONES = { warn: '#cd8f2d', alert: '#db4c46', info: '#4889cd' }
