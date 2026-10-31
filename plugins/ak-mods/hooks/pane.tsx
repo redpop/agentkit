@@ -118,10 +118,13 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
                 />
               </Box>
             </Box>
-            {/* Small under the title: the size of the open card's note, which then differs by place. */}
-            <Text size="caption" dimColor>
-              {row.summary}
-            </Text>
+            {/* Small under the title: the size of the open card's note, which then differs by place. A
+                step of air above it, so a long line does not run up against the switch. */}
+            <Box marginTop="xs">
+              <Text size="caption" dimColor>
+                {row.summary}
+              </Text>
+            </Box>
             {one !== undefined && (
               // The segment takes the room and wraps as a line; the button keeps its size at the end.
               <Box flexDirection="row" alignItems="center" justifyContent="space-between" columnGap={1} marginTop={1}>
