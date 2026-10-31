@@ -16,7 +16,7 @@ import type { Failure } from '../provider'
 const NO_AUTH = /401|unauthori[sz]ed|not logged in|authenticat|gh auth login|bad credentials/i
 const NO_PR = /no pull requests found/i
 // A commit the repository does not have, as a fork's upstream can name one: nothing to show, no error.
-const NO_COMMIT = /HTTP 404|HTTP 422|no commit found/i
+const NO_COMMIT = /HTTP 422|no commit found/i
 
 // The app whose check runs are GitHub Actions jobs, with a workflow and a log.
 const ACTIONS = 'github-actions'
@@ -222,41 +222,51 @@ async function checksOf($: EngineInterface, sha: string): Promise<Omit<Checks, '
 
 /**
  * The mean run of each workflow among the jobs, from its last green runs with the head commit's
- * own left out; the longest of them is the whole. Undefined without any green run. Throws when a
- * workflow's history cannot be read, or a job's workflow is not known yet.
+ * own left out; the longest of them is the whole, undefined without any green run. The workflows
+ * are asked together. A job whose workflow is not known (its lookup failed) is left out, and
+ * `isComplete` says there was none. Throws when a workflow's history cannot be read.
  */
-async function estimateFor($: EngineInterface, sha: string, jobs: readonly Job[]): Promise<number | undefined> {
+async function estimateFor(
+  $: EngineInterface,
+  sha: string,
+  jobs: readonly Job[],
+): Promise<{ ms: number | undefined; isComplete: boolean }> {
   const known = new Set(workflows.values())
   const actions = jobs.filter(one => one.hasLog)
-  if (actions.some(one => !known.has(one.group))) throw new Refused('error')
-  const means: number[] = []
-  for (const name of new Set(actions.map(one => one.group))) {
-    const green = list(await json($, ['run', 'list', '--workflow', name, '--status', 'success', '--limit', '5', '--json', 'databaseId,createdAt,updatedAt,headSha']))
-    const durations = green
-      .filter(one => text(one.headSha) !== sha)
-      .map(one => Date.parse(text(one.updatedAt) ?? '') - Date.parse(text(one.createdAt) ?? ''))
-      .filter(ms => Number.isFinite(ms) && ms > 0)
-    const mean = meanMs(durations)
-    if (mean !== undefined) means.push(mean)
-  }
+  const names = [...new Set(actions.filter(one => known.has(one.group)).map(one => one.group))]
+  const means = await Promise.all(
+    names.map(async name => {
+      const green = list(await json($, ['run', 'list', '--workflow', name, '--status', 'success', '--limit', '5', '--json', 'databaseId,createdAt,updatedAt,headSha']))
 
-  return means.length === 0 ? undefined : Math.max(...means)
+      return meanMs(
+        green
+          .filter(one => text(one.headSha) !== sha)
+          .map(one => Date.parse(text(one.updatedAt) ?? '') - Date.parse(text(one.createdAt) ?? ''))
+          .filter(ms => Number.isFinite(ms) && ms > 0),
+      )
+    }),
+  )
+  const found = means.filter((one): one is number => one !== undefined)
+
+  return { ms: found.length === 0 ? undefined : Math.max(...found), isComplete: names.length === new Set(actions.map(one => one.group)).size }
 }
 
 /**
  * The estimate of checks that run, fetched once per `Checks.key` and kept in `estimates`. One that
- * fails leaves the estimate out and is asked again next time.
+ * fails, or that misses a workflow whose name is not known yet, is not kept and is asked again
+ * next time.
  */
 async function estimateOf($: EngineInterface, estimates: Map<string, number | undefined>, checks: Checks): Promise<number | undefined> {
-  if (!estimates.has(checks.key) && phaseOf(checks) === 'running') {
-    try {
-      estimates.set(checks.key, await estimateFor($, checks.key, checks.jobs))
-    } catch {
-      // Left out until the next fetch.
-    }
-  }
+  if (estimates.has(checks.key)) return estimates.get(checks.key)
+  if (phaseOf(checks) !== 'running') return undefined
+  try {
+    const { ms, isComplete } = await estimateFor($, checks.key, checks.jobs)
+    if (isComplete) estimates.set(checks.key, ms)
 
-  return estimates.get(checks.key)
+    return ms
+  } catch {
+    return undefined
+  }
 }
 
 /**
@@ -312,7 +322,7 @@ export async function fetchStatus($: EngineInterface, estimates: Map<string, num
 
 /**
  * The first job that failed the checks, with its log when it has one: an Actions job's, through
- * its id; a commit status or another app's check has none, so `noLog`. Undefined when no job
+ * its id; a commit status, another app's check, or a job with an empty log has none, so `noLog`. Undefined when no job
  * failed, or gh hands no log over.
  */
 export async function fetchFailure($: EngineInterface, checks: Checks): Promise<Failure | undefined> {
@@ -323,7 +333,11 @@ export async function fetchFailure($: EngineInterface, checks: Checks): Promise<
     const result = await run($, ['run', 'view', '--job', String(failed.id), '--log-failed'])
     if (result.exitCode !== 0) return undefined
 
-    return { job: failed, trace: result.stdout.trimEnd(), isCut: result.isStdoutTruncated }
+    // A job that failed before any step logged leaves nothing to excerpt.
+    const trace = result.stdout.trimEnd()
+    if (trace === '') return { job: failed, noLog: true }
+
+    return { job: failed, trace, isCut: result.isStdoutTruncated }
   } catch {
     return undefined
   }

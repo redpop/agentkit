@@ -418,7 +418,7 @@ test('the commit status is asked for a hundred', async () => {
 })
 
 test('a commit the repository lacks is no change, not an error', async () => {
-  for (const stderr of ['gh: No commit found for SHA: abc (HTTP 422)', 'gh: Not Found (HTTP 404)']) {
+  for (const stderr of ['gh: No commit found for SHA: abc (HTTP 422)', 'gh: Unprocessable (HTTP 422)']) {
     const { $ } = host({ ...TIP, [RUNS]: { exitCode: 1, stderr }, [STATUSES]: { exitCode: 1, stderr } })
     expect(await fetchStatus($, 'github', new Map())).toEqual({ kind: 'none' })
   }
@@ -430,4 +430,56 @@ test('a check run without a finite suite id does not ask the workflows', async (
   await fetchStatus($, 'github', new Map())
   expect(calls.some(call => call.line === WORKFLOWS)).toBe(false)
   expect(status.kind === 'change' ? status.change.checks?.jobs.map(one => one.group) : undefined).toEqual(['GitHub Actions'])
+})
+
+test('a 404 on the tip is an error, not none: the repository may be out of reach', async () => {
+  const stderr = 'gh: Not Found (HTTP 404)'
+  const { $ } = host({ ...TIP, [RUNS]: { exitCode: 1, stderr }, [STATUSES]: { exitCode: 1, stderr } })
+  expect(await fetchStatus($, 'github', new Map())).toEqual({ kind: 'unavailable', provider: 'github', reason: 'error' })
+})
+
+test('a job that failed before any step logged returns noLog', async () => {
+  const { $ } = host({ 'gh run view --job 77 --log-failed': { stdout: '\n' } })
+  expect(await fetchFailure($, 'github', checks([job({})]))).toEqual({ job: job({}), noLog: true })
+})
+
+test('the workflows are asked together', async () => {
+  const lines: string[] = []
+  let open = 0
+  let most = 0
+  const { $ } = host({
+    ...TWO,
+    [HISTORY('lint')]: { stdout: [ran(3)] },
+    [HISTORY('build')]: { stdout: [ran(6)] },
+  })
+  const inner = $.process.run
+  ;($ as unknown as { process: { run: typeof inner } }).process.run = async (argv, init) => {
+    lines.push(argv.join(' '))
+    if (argv[1] === 'run') {
+      open++
+      most = Math.max(most, open)
+      await Promise.resolve()
+      open--
+    }
+
+    return inner(argv, init)
+  }
+  expect(estimateOf(await fetchStatus($, 'github', new Map()))).toBe(360_000)
+  expect(most).toBe(2)
+})
+
+test('a workflow whose name stays unknown is left out of the estimate, which is asked again', async () => {
+  // A suite of its own, whose workflow lookup fails: the run keeps the app name as its group.
+  const unnamed = { ...CHECK_RUNS.check_runs[1], check_suite: { id: 920 } }
+  const { $, calls } = host({
+    ...TWO,
+    [RUNS]: { stdout: { check_runs: [{ ...CHECK_RUNS.check_runs[0], check_suite: { id: 910 } }, unnamed] } },
+    [WORKFLOWS]: { exitCode: 1, stderr: 'HTTP 502' },
+    [HISTORY('lint')]: { stdout: [ran(3)] },
+  })
+  const estimates = new Map<string, number | undefined>()
+  expect(estimateOf(await fetchStatus($, 'github', estimates))).toBe(180_000)
+  expect(estimates.has(SHA)).toBe(false)
+  await fetchStatus($, 'github', estimates)
+  expect(calls.filter(call => call.line === HISTORY('lint'))).toHaveLength(2)
 })

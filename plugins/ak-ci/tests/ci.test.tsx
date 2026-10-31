@@ -412,6 +412,31 @@ test('get errors on a check without log toasts its name and leaves the prompt bo
   expect(fills).toEqual([])
 })
 
+test('get errors on a job with an empty log toasts its name and leaves the prompt box alone', OWNED, async ($, on) => {
+  const { clock, toasts, fills, set } = engine(on, { draft: 'Bitte prüfen' })
+  const sha = '0a1b2c3d4e5f60718293a4b5c6d7e8f901234567'
+  set({
+    'git remote get-url origin': { stdout: 'https://github.com/owner/repo.git' },
+    'gh pr view --json number,title,url,baseRefName,isDraft,headRefOid,state': {
+      stdout: { number: 12, title: 'Add the login form', url: 'https://github.com/owner/repo/pull/12', baseRefName: 'main', isDraft: false, headRefOid: sha, state: 'OPEN' },
+    },
+    'gh repo view --json nameWithOwner,url': { stdout: { nameWithOwner: 'owner/repo', url: 'https://github.com/owner/repo' } },
+    [`gh api repos/{owner}/{repo}/commits/${sha}/check-runs?per_page=100`]: {
+      stdout: { check_runs: [{ id: 77, name: 'build', status: 'completed', conclusion: 'failure', started_at: '2026-10-29T10:00:00Z', completed_at: '2026-10-29T10:01:00Z', app: { slug: 'github-actions', name: 'GitHub Actions' }, check_suite: { id: 930 } }] },
+    },
+    [`gh api repos/{owner}/{repo}/actions/runs?head_sha=${sha}&per_page=100`]: { stdout: { workflow_runs: [{ name: 'check', check_suite_id: 930 }] } },
+    'gh run view --job 77 --log-failed': { stdout: '' },
+    [`gh api repos/{owner}/{repo}/commits/${sha}/status?per_page=100`]: {
+      stdout: { statuses: [] },
+    },
+  })
+  await start($)
+  await clock.settle()
+  await run($, 'ci-errors')
+  expect(plain(toasts).some(one => one.includes('build'))).toBe(true)
+  expect(fills).toEqual([])
+})
+
 test('get errors under a dialog toasts and inserts nothing', OWNED, async ($, on) => {
   const { clock, toasts, set } = engine(on, { isFilled: false })
   set({ ...FAILED, [TRACE]: { stdout: 'ERROR: boom\n' } })
