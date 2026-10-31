@@ -417,7 +417,8 @@ const segment = (): Segment => {
       rich: [
         { text: t.ringLeft(minutes(left)), tone: 'warn', ring },
         { text: ` ${t.drops(minutes(left))}`, tone: 'warn' },
-        { text: ` · ${t.nextRewrites} `, tone: 'dim' },
+        // No dot between: the dim tone parts the two, as the terminal's two spaces do.
+        { text: `  ${t.nextRewrites} `, tone: 'dim' },
         { text: t.tokensAt(tokens(S.ctx), cost), tone: 'warn' },
       ],
       compact: {

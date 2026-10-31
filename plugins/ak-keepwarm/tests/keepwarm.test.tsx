@@ -462,7 +462,7 @@ test('publishes the warn segment with the keepwarm button while cooling', OWNED,
     rich: [
       { text: 'cache 4m left', tone: 'warn', ring: 7 },
       { text: ' cache drops in 4m', tone: 'warn' },
-      { text: ' · next message rewrites ', tone: 'dim' },
+      { text: '  next message rewrites ', tone: 'dim' },
       { text: `200k tokens ${COST}`, tone: 'warn' },
     ],
     compact: {
