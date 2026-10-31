@@ -480,8 +480,10 @@ export async function renderBand(
   // sits at the right edge of the last row, at least three from the last
   // segment.
 
+  // A step, not a cell, between the rows: the terminal draws it as none, the desktop app as a little
+  // air, so a segment that moves to the second row does not sit on the first.
   const band = (
-    <Box flexDirection="column">
+    <Box flexDirection="column" rowGap="sm">
       {rows.map((row, index) => (
         <Box key={`band-row-${index}`} flexDirection="row" columnGap={1}>
           {row.flatMap((one, at) => [

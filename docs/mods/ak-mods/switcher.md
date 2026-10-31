@@ -82,7 +82,7 @@ When the segments do not fit the width, the band degrades in steps:
 1. All segments fit: one row.
 2. They do not fit: every segment that has a compact form switches to it, the whole band together,
    and the band stays one row.
-3. Compact, they still do not fit: two rows, never more.
+3. Compact, they still do not fit: two rows, never more, a little apart on the desktop app.
 4. They still do not fit: the segments with the lowest priority drop out, of equal ones the last
    shown first, and the `mods` button counts them: `mods +2`. The others keep their places: the
    priority decides what drops, never where a segment draws.

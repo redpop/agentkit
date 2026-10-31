@@ -131,7 +131,7 @@ test('one row for two segments parted by space alone', { plugins: [consumer('ak-
   }
 })
 
-test('second row when too wide', { plugins: [consumer('ak-a'), consumer('ak-b')] }, async ($, on) => {
+test('second row when too wide, a step below the first', { plugins: [consumer('ak-a'), consumer('ak-b')] }, async ($, on) => {
   engine(on)
   await publish($, 'ak-a', 'A', { text: 'alpha-one' })
   await publish($, 'ak-b', 'B', { text: 'beta-two' })
@@ -143,6 +143,11 @@ test('second row when too wide', { plugins: [consumer('ak-a'), consumer('ak-b')]
     expect((await ui.find({ key: 'band-row-1' }))?.text).toBe('beta-twomods')
     await ui.unmount()
   }
+  // A step apart, which the terminal draws as no line and the desktop app as a little air.
+  const ui = await $.ui.mount({ ...BAND, surface: 'desktop', props: { ...BAND.props, bodyColumns: 20 } })
+  const boxes = (await ui.findAll({ type: 'Box' })) as { props: Record<string, unknown> }[]
+  expect(boxes.some(box => box.props.flexDirection === 'column' && box.props.rowGap === 'sm')).toBe(true)
+  await ui.unmount()
 })
 
 /** A `ui.panes` that lists the Mods pane, `isShown` as told, and a `ui.close` that records. */
