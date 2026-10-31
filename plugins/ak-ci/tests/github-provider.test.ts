@@ -3,7 +3,7 @@ import type { EngineInterface, ProcessRunResult } from 'claude-code'
 
 import type { Checks, Job } from '../hooks/model'
 import { fetchFailure, fetchStatus } from '../hooks/provider'
-import { aggregate } from '../hooks/providers/github'
+import { aggregate, plainLog } from '../hooks/providers/github'
 
 const SHA = '0a1b2c3d4e5f60718293a4b5c6d7e8f901234567'
 const PR = 'gh pr view --json number,title,url,baseRefName,isDraft,headRefOid,state'
@@ -523,4 +523,29 @@ test('a workflow whose name stays unknown is left out of the estimate, which is 
   expect(estimates.has(SHA)).toBe(false)
   await fetchStatus($, 'github', estimates)
   expect(calls.filter(call => call.line === HISTORY('lint'))).toHaveLength(2)
+})
+
+const STAMP = '2026-10-31T20:43:44.3686234Z'
+
+test('plainLog drops the job, step and time in front, gh\'s escaped colours and the echoed step script', () => {
+  const failed = [
+    `lint\tLint\t\uFEFF${STAMP} ##[group]Run npx markdownlint-cli2 a.md`,
+    `lint\tLint\t${STAMP} ^[[36;1mnpx markdownlint-cli2 a.md^[[0m`,
+    `lint\tLint\t${STAMP} env:`,
+    `lint\tLint\t${STAMP} ##[endgroup]`,
+    `lint\tLint\t${STAMP} a.md:4:1 MD018/no-missing-space-atx`,
+    `lint\tLint\t${STAMP} ##[error]Process completed with exit code 1.`,
+  ].join('\n')
+  expect(plainLog(failed)).toBe('a.md:4:1 MD018/no-missing-space-atx\n##[error]Process completed with exit code 1.')
+})
+
+test('plainLog reads the API log form too, and keeps a line without a time as it is', () => {
+  expect(plainLog(`\uFEFF${STAMP} Run tests\n${STAMP} \x1b[31mERROR: boom\x1b[0m\nplain\tline`)).toBe(
+    'Run tests\n\x1b[31mERROR: boom\x1b[0m\nplain\tline',
+  )
+})
+
+test('fetchFailure hands over the plain log', async () => {
+  const { $ } = host({ 'gh run view --job 77 --log-failed': { stdout: `test\tStep\t${STAMP} ERROR: boom\n` } })
+  expect(await fetchFailure($, 'github', checks([job({})]))).toEqual({ job: job({}), trace: 'ERROR: boom', isCut: false })
 })

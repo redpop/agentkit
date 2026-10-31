@@ -19,6 +19,12 @@ const NO_PR = /no pull requests found/i
 // A commit the repository does not have, as a fork's upstream can name one: nothing to show, no error.
 const NO_COMMIT = /HTTP 422|no commit found/i
 
+// A job log's line as gh hands it over: `--log-failed` puts the job and the step in front, both
+// forms the time, the log's first line after a byte-order mark. gh writes a colour code's escape
+// as `^[`; the step's own script, echoed before it runs, sits in a `##[group]Run` block.
+const LOG_PREFIX = /^\uFEFF?(?:[^\t\n]*\t[^\t\n]*\t)?\uFEFF?\d{4}-\d\d-\d\dT[\d:.]+Z ?/
+const CARET_ANSI = /\^\[\[[0-9;]*[A-Za-z]/g
+
 // The app whose check runs are GitHub Actions jobs, with a workflow and a log.
 const ACTIONS = 'github-actions'
 
@@ -322,6 +328,20 @@ export async function fetchStatus($: EngineInterface, estimates: Map<string, num
   }
 }
 
+/** A job log as the step wrote it: no job, step or time in front, no colours, no echoed script. */
+export function plainLog(trace: string): string {
+  const kept: string[] = []
+  let inScript = false
+  for (const raw of trace.split('\n')) {
+    const line = raw.replace(LOG_PREFIX, '').replace(CARET_ANSI, '')
+    if (line.startsWith('##[group]Run ')) inScript = true
+    else if (inScript && line.startsWith('##[endgroup]')) inScript = false
+    else if (!inScript) kept.push(line)
+  }
+
+  return kept.join('\n')
+}
+
 /**
  * The first Actions job that failed the checks, else the first failed job of any kind, with its
  * log when it has one: an Actions job's, through its id. A commit status, another app's check, or
@@ -341,7 +361,7 @@ export async function fetchFailure($: EngineInterface, checks: Checks): Promise<
     if (result.exitCode !== 0) return undefined
 
     // A job that failed before any step logged leaves nothing to excerpt.
-    const trace = result.stdout.trimEnd()
+    const trace = plainLog(result.stdout).trimEnd()
     if (trace === '') return { job: failed, noLog: true }
 
     return { job: failed, trace, isCut: result.isStdoutTruncated }
