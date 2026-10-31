@@ -1,13 +1,13 @@
 # AgentKit
 
-Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) — 17 plugins with 26 skills, 8 agents, a mod switcher with keep-warm, session-id, usage, GitLab, break and showcase mods, and domain knowledge bases for Git workflows, security, React, and more.
+Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) — 17 plugins with 26 skills, 8 agents, a mod switcher with keep-warm, session-id, usage, CI, break and showcase mods, and domain knowledge bases for Git workflows, security, React, and more.
 
 ## Plugins
 
 | Plugin | Skills | Agents | Description |
 |--------|--------|--------|-------------|
 | [**ak-git**](#ak-git--smart-git-operations) | 1 | 2 | Smart commits, change analysis, conflict resolution, releases |
-| [**ak-ci**](#ak-ci--ci-for-the-merge-request-at-a-glance) | — | — | Mod: one band segment with the current branch's merge request and its pipeline (`!12 4/7 3:12/~5m`), a button to open it and one to put a failed job's log in the prompt box |
+| [**ak-ci**](#ak-ci--ci-for-the-merge-or-pull-request-at-a-glance) | — | — | Mod: one band segment with the current branch's merge request (GitLab) or pull request (GitHub) and its pipeline or checks (`!12 4/7 3:12/~5m`), a button to open it and one to put a failed job's log in the prompt box |
 | [**ak-improve**](#ak-improve--code-improvement) | — | 2 | Code refactoring and performance optimization agents |
 | [**ak-js**](#ak-js--javascript-config-doctor) | 1 | 1 | JS config validation, 11 cross-file rules, monorepo-aware |
 | [**ak-keepwarm**](#ak-keepwarm--keep-the-prompt-cache-warm) | — | — | Mod: `/keepwarm` pings the prompt cache before it expires; its band segment shows how long it stays warm |
@@ -233,18 +233,21 @@ every session counted, a bar of five cells each (`ctx ▬▬▬▬▬  5h ▬▬
 so once. See
 [Usage](docs/mods/ak-usage/usage.md).
 
-### ak-ci — CI for the Merge Request at a Glance
+### ak-ci — CI for the Merge or Pull Request at a Glance
 
-A mod (needs `ak-mods`, installed with it, and a logged-in `glab`) that shows one segment in the
-shared band above the prompt: the open merge request of the current branch and its head pipeline,
-running with a ring of its finished jobs, the time so far and an estimate (`!12 4/7 3:12/~5m`),
-failed with the first failed job, or green with its duration. A toast says when it settles. See
+A mod (needs `ak-mods`, installed with it, and a logged-in `glab` for GitLab or `gh` for GitHub)
+that shows one segment in the shared band above the prompt: the open merge request or pull request
+of the current branch and its head pipeline or checks (on GitHub, without a pull request, those of
+the pushed branch tip), running with a ring of its finished jobs, the time so far and an estimate
+(`!12 4/7 3:12/~5m`), failed with the first failed job, or green with its duration. A toast says
+when it settles. See
 [CI](docs/mods/ak-ci/ci.md).
 
 | Command | Purpose | Example |
 |---------|---------|---------|
-| [`/ci-open`](docs/mods/ak-ci/ci.md#commands) | Open the merge request in the browser | `/ci-open` |
+| [`/ci-open`](docs/mods/ak-ci/ci.md#commands) | Open the merge or pull request (or the branch tip's commit) in the browser | `/ci-open` |
 | [`/ci-errors`](docs/mods/ak-ci/ci.md#commands) | Put an excerpt of the failed job's log in the prompt box | `/ci-errors` |
+| [`/ci-link`](docs/mods/ak-ci/ci.md#commands) | Copy the address `/ci-open` would open | `/ci-link` |
 
 ### ak-pause — Breaks at a Glance
 
