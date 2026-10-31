@@ -17,10 +17,10 @@ have it, and on the right the standard star, then the on/off switch; the summary
 dim type. A switched-on mod that publishes a segment also shows it below, in its band colour and
 with the segment's button, and its detail on a line under it, small and dimmed; the pane draws on
 every surface, so this is where a segment is always visible. A press on the triangle opens the row's
-details, a size smaller still and dim, then the mod's settings, if it has any, and **↑ Up** and **↓
-Down**, which move the mod one place (the first has no ↑, the last no ↓); one row is open at a time,
-so opening one closes any other and the pane stays short. In a narrow pane the title wraps and the
-star and the switch keep their size. On the desktop app a segment with card rows shows no detail
+details, in the summary's small dim type, then the mod's settings, if it has any, and **↑ Up** and
+**↓ Down**, which move the mod one place (the first has no ↑, the last no ↓); one row is open at a
+time, so opening one closes any other and the pane stays short. In a narrow pane the title wraps and
+the star and the switch keep their size. On the desktop app a segment with card rows shows no detail
 there: opened, the row lists the card's rows under the segment, in small type, labels dim in one
 column, each value once, rows of long values such as an id a line apart, above the mod's details. A
 mod that publishes settings shows them in its open row as pickers, below its details and above the

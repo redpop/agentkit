@@ -118,8 +118,8 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
                 />
               </Box>
             </Box>
-            {/* One step under the title, one above the open card's note. */}
-            <Text size="footnote" dimColor>
+            {/* Small under the title: the size of the open card's note, which then differs by place. */}
+            <Text size="caption" dimColor>
               {row.summary}
             </Text>
             {one !== undefined && (

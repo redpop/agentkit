@@ -116,8 +116,8 @@ test('a row shows title, summary and switches', { plugins: PLUGINS }, async ($, 
   for (const surface of SURFACES) {
     const ui = await $.ui.mount({ ...PANE, surface })
     expect((await ui.find({ type: 'Text', text: 'Fixture' }))?.text).toBe('Fixture')
-    // One step under the title, one above the open card's details.
-    expect(await ui.find({ type: 'Text', text: 's' })).toMatchObject({ text: 's', props: { size: 'footnote', dimColor: true } })
+    // Small under the title, as the open card's details are.
+    expect(await ui.find({ type: 'Text', text: 's' })).toMatchObject({ text: 's', props: { size: 'caption', dimColor: true } })
     expect((await ui.find({ key: 'on-ak-fixture' }))?.text).toBe('○ Off')
     // The desktop app draws a Button's label, never its children: the glyph is the label.
     expect(await ui.find({ key: 'std-ak-fixture' })).toMatchObject({ text: '☆', props: { label: '☆' } })
@@ -156,7 +156,7 @@ test('More reveals details', { plugins: PLUGINS }, async ($, on) => {
   const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
   expect(await ui.find({ type: 'Text', text: /^d$/ })).toBeUndefined()
   await ui.press({ key: 'more-ak-fixture' })
-  // Smaller than the summary and dim: the details are a note under the card, not its body.
+  // Small and dim: the details are a note under the card, not its body.
   expect(await ui.find({ type: 'Text', text: /^d$/ })).toMatchObject({ props: { size: 'caption', dimColor: true } })
   expect(await ui.find({ key: 'more-ak-fixture' })).toMatchObject({ text: '▼', props: { label: '▼' } })
   await ui.unmount()
