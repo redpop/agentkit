@@ -394,12 +394,14 @@ const segment = (): Segment => {
         { text: ` ${minutes(left)}`, tone: 'ok' },
         { text: ` ${t.cacheWord}`, tone: 'dim' },
       ],
-      // Short of room: the ring and the time left; the compact text is the keep button.
+      // Short of room: the ring, the time left and the dim word that says whose time it is; the
+      // compact text is the keep button.
       compact: {
         text: time,
         rich: [
           { text: t.ringLeft(minutes(left)), tone: 'ok', ring },
           { text: ` ${minutes(left)}`, tone: 'ok' },
+          { text: ` ${t.cacheWord}`, tone: 'dim' },
         ],
       },
       ...more,
@@ -426,6 +428,7 @@ const segment = (): Segment => {
         rich: [
           { text: t.ringLeft(minutes(left)), tone: 'warn', ring },
           { text: ` ${minutes(left)}`, tone: 'warn' },
+          { text: ` ${t.cacheWord}`, tone: 'dim' },
         ],
       },
       parts: [
@@ -456,6 +459,7 @@ const segment = (): Segment => {
       rich: [
         { text: t.ringCold, tone: 'dim', ring: 0 },
         { text: ` ${cost}`, tone: rewrite >= NOTABLE_USD ? 'warn' : 'ok' },
+        { text: ` ${t.cacheWord}`, tone: 'dim' },
       ],
     },
     ...more,

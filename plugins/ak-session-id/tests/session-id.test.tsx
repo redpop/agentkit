@@ -196,7 +196,7 @@ test('publishes the end of the desktop id with the copy button', OWNED, async ($
   expect(segments(toasts).at(-1)).toEqual({
     text: `id …${HOST.slice(-6)}`,
     rich: [{ text: 'id', icon: 'id' }, { text: `…${HOST.slice(-6)}` }],
-    compact: { text: `#…${HOST.slice(-4)}`, rich: [{ text: 'id', icon: 'id' }, { text: `…${HOST.slice(-4)}` }] },
+    compact: { text: `#${HOST.slice(-4)}`, rich: [{ text: 'id', icon: 'id' }, { text: HOST.slice(-4) }] },
     card: [
       { label: 'Desktop id', value: HOST },
       { label: 'Engine id', value: ENGINE },
@@ -217,7 +217,7 @@ test('a copy shows a check mark for two seconds, then the id again', OWNED, asyn
     text: '✓ copied',
     rich: [{ text: 'copied', icon: 'check' }, { text: 'copied' }],
     // Compact, only the icon changes: the same width, so the band keeps its layout.
-    compact: { text: `✓…${HOST.slice(-4)}`, rich: [{ text: 'copied', icon: 'check' }, { text: `…${HOST.slice(-4)}` }] },
+    compact: { text: `✓${HOST.slice(-4)}`, rich: [{ text: 'copied', icon: 'check' }, { text: HOST.slice(-4) }] },
   })
   await clock.advance(2100)
   expect(segments(toasts).at(-1)?.text).toBe(`id …${HOST.slice(-6)}`)

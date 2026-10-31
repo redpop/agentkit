@@ -58,7 +58,7 @@ test('the compact form keeps each percentage with its label', () => {
       { text: 'ctx 67%', tone: 'ok', ring: 67 },
       { text: ' 67%', tone: 'ok' },
       { text: ' ctx', tone: 'dim' },
-      { text: '  ', tone: 'dim' },
+      { text: '    ', tone: 'dim' },
       { text: '5h 2%', tone: 'ok', ring: 2 },
       { text: ' 2%', tone: 'ok' },
       { text: ' 5h', tone: 'dim' },

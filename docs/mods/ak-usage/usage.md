@@ -42,7 +42,7 @@ Mods pane at this mod, which lists the context with the tokens used and the wind
 reset.
 
 When the band is short of room, the segment turns compact: each figure's percentage and label,
-`ctx 67%  5h 42%`, and on the desktop app its ring, percentage and dim label, `◔ 67% ctx  ◔ 42% 5h`.
+`ctx 67%  5h 42%`, and on the desktop app its ring, percentage and dim label, `◔ 67% ctx    ◔ 42% 5h`.
 The bars and resets are left out.
 
 Without `ak-mods` (or when it refuses the mod, or a publish fails), the mod draws its own band

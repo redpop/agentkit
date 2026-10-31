@@ -150,7 +150,8 @@ export const reading = (usage: SessionUsage, now: number, lang: Lang = 'en'): Re
     text: compactParts.map(part => part.text).join(''),
     parts: compactParts,
     rich: figures.flatMap(({ label, percent }, at): Part[] => [
-      ...(at > 0 ? [{ text: '  ', tone: 'dim' as const }] : []),
+      // As wide a gap as the full form's: two spaces would bind a label to the next ring.
+      ...(at > 0 ? [{ text: '    ', tone: 'dim' as const }] : []),
       { text: `${label} ${percent}%`, tone: toneOf(percent), ring: percent },
       { text: ` ${percent}%`, tone: toneOf(percent) },
       { text: ` ${label}`, tone: 'dim' as const },

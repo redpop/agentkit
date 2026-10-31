@@ -425,6 +425,7 @@ const WARM = {
     rich: [
       { text: 'cache 60m left', tone: 'ok', ring: 100 },
       { text: ' 60m', tone: 'ok' },
+      { text: ' cache', tone: 'dim' },
     ],
   },
   card: card('60m left'),
@@ -470,6 +471,7 @@ test('publishes the warn segment with the keepwarm button while cooling', OWNED,
       rich: [
         { text: 'cache 4m left', tone: 'warn', ring: 7 },
         { text: ' 4m', tone: 'warn' },
+        { text: ' cache', tone: 'dim' },
       ],
     },
     card: card('4m left'),
@@ -511,6 +513,7 @@ test('publishes the cold segment without a button', OWNED, async ($, on) => {
       rich: [
         { text: 'cache cold', tone: 'dim', ring: 0 },
         { text: ` ${COST}`, tone: 'ok' },
+        { text: ' cache', tone: 'dim' },
       ],
     },
     card: card('cold for 12m'),
