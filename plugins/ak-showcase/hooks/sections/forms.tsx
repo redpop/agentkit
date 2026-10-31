@@ -1,11 +1,6 @@
 import { Footer, Group, Snippet, hasForms } from './kit'
 import type { Kit } from './kit'
 
-const FRUITS = [
-  { value: 'apple', label: 'Apple' },
-  { value: 'pear', label: 'Pear' },
-  { value: 'plum', label: 'Plum' },
-]
 
 /** Forms: Input and Select, and a toggle built from what exists. Typing and picking only keep the value. */
 export const formsSection = (k: Kit) => {
@@ -13,7 +8,7 @@ export const formsSection = (k: Kit) => {
   const t = k.t.forms
   const shown = (key: string, label: string) => (
     <Text dimColor size="footnote">
-      {label}: {k.fields[key] ?? '—'}
+      {label}: {k.fields[key] || '—'}
     </Text>
   )
   const isOn = k.fields['toggle-buttons'] === 'on'
@@ -50,13 +45,13 @@ export const formsSection = (k: Kit) => {
       {Group(k, t.single, [
         <Input
           key="input-single"
-          label="Name"
+          label={t.name}
           placeholder={t.placeholder}
           value={k.fields['input-single'] ?? ''}
           onSubmit={value => k.put('input-single', value)}
         />,
         shown('input-single', t.typed),
-        Snippet(k, '<Input key="…" label="Name" placeholder="…" onSubmit={keep}>'),
+        Snippet(k, `<Input key="…" label="${t.name}" placeholder="…" onSubmit={keep}>`),
       ])}
       {Group(k, t.multi, [
         <Input
@@ -73,8 +68,8 @@ export const formsSection = (k: Kit) => {
       {Group(k, t.select, [
         <Select
           key="select-fruit"
-          label="Fruit"
-          options={FRUITS}
+          label={t.fruit}
+          options={t.fruits}
           value={k.fields['select-fruit'] ?? 'apple'}
           onSelect={value => k.put('select-fruit', value)}
         />,

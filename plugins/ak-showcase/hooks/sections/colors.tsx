@@ -21,7 +21,18 @@ export const colorsSection = (k: Kit) => {
     <Box flexDirection="column">
       {Group(k, t.theme, THEME.map(key => (
         <Box flexDirection="row" columnGap="md">
-          <Text color={key}>■ {key}</Text>
+          {/* A fixed column, so a long key does not push its snippet onto a second row. */}
+          <Box width={20} flexShrink={0}>
+            {key === 'inverseText' ? (
+              <Text color={key} backgroundColor="text" wrap="truncate-end">
+                ■ {key}
+              </Text>
+            ) : (
+              <Text color={key} wrap="truncate-end">
+                ■ {key}
+              </Text>
+            )}
+          </Box>
           {Snippet(k, `color="${key}"`)}
         </Box>
       )))}

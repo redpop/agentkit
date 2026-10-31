@@ -15,12 +15,12 @@ export const hoverSection = (k: Kit) => {
             borderStyle="round"
             borderColor="subtle"
             paddingX={1}
-            hover={{ borderColor: 'claude', backgroundColor: 'subtle' }}
+            hover={{ borderColor: 'claude' }}
           >
             <Text>{t.hoverMe}</Text>
           </Box>
         </Box>,
-        Snippet(k, `<Box key="…" hover={{ borderColor: 'claude', backgroundColor: 'subtle' }}>`),
+        Snippet(k, `<Box key="…" borderStyle="round" hover={{ borderColor: 'claude' }}>`),
       ])}
       {Group(k, t.text, [
         <Box key="hover-text" flexDirection="row">
@@ -29,13 +29,13 @@ export const hoverSection = (k: Kit) => {
         Snippet(k, `<Text hover={{ color: 'claude', bold: true, underline: true }}>`),
       ])}
       {Group(k, t.row, [
-        <Box key="hover-row" flexDirection="row" columnGap={2} hover={{ backgroundColor: 'subtle' }}>
+        <Box key="hover-row" flexDirection="row" columnGap={2}>
           <Text hover={{ bold: true }}>{t.hoverMe}</Text>
           <Text dimColor hover={{ dimColor: false, color: 'suggestion' }}>
             2m
           </Text>
         </Box>,
-        Snippet(k, `<Box key="row" hover={…}><Text hover={{ bold: true }}>`),
+        Snippet(k, `<Box key="row"><Text hover={{ bold: true }}>`),
       ])}
       {Footer(k, t.missing, t.note)}
     </Box>

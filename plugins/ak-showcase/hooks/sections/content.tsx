@@ -7,7 +7,7 @@ const SOURCE = `export const greet = (name: string): string => {
   return hour < 12 ? \`Good morning, \${name}\` : \`Hello, \${name}\`
 }`
 
-const DIFF = `@@ -1,4 +1,4 @@
+const DIFF = `@@ -1,3 +1,3 @@
  export const greet = (name: string): string => {
 -  return 'Hello ' + name
 +  return \`Hello, \${name}\`

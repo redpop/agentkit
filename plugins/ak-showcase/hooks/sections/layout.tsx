@@ -72,13 +72,13 @@ export const layoutSection = (k: Kit) => {
         Snippet(k, '<Box borderStyle="round" borderColor="claude">'),
       ])}
       {Group(k, t.card, [
-        <Box flexDirection="column" borderStyle="round" borderColor="claude" backgroundColor="subtle" padding={1}>
+        <Box flexDirection="column" borderStyle="round" borderColor="claude" padding={1}>
           <Text weight="semibold">Card</Text>
           <Text>{t.cardText}</Text>
         </Box>,
-        Snippet(k, '<Box borderStyle="round" backgroundColor="subtle" padding={1}>'),
+        Snippet(k, '<Box borderStyle="round" borderColor="claude" padding={1}>'),
       ])}
-      {Footer(k, t.missing)}
+      {Footer(k, t.missing, k.surface === 'desktop' ? t.desktopNote : undefined)}
     </Box>
   )
 }
