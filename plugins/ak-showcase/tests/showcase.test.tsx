@@ -1,5 +1,5 @@
 import { expect, mock, test } from 'claude-code/testing'
-import type { On } from 'claude-code'
+import type { On, Register } from 'claude-code'
 import type { Engine } from 'claude-code/testing'
 
 // Run on its own, ak-showcase finds no ak-mods: the mod is on (fail-open), draws its pane and its
@@ -188,6 +188,61 @@ test('a press is reported as the last action', async ($, on) => {
   await ui.unmount()
 })
 
+test('the buttons section shows a menu built from Buttons', async ($, on) => {
+  engine(on)
+  await start($)
+  const ui = await mountAt($, 'desktop', 'buttons')
+  expect(await ui.find({ key: 'menu-open' })).toBeDefined()
+  expect(await ui.find({ key: 'menu-action-0' })).toBeUndefined()
+  await ui.press({ key: 'menu-open' })
+  expect(await ui.find({ key: 'menu-action-0' })).toBeDefined()
+  expect(await ui.find({ key: 'menu-action-1' })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /actions/ })).toBeDefined()
+  // A second press and a pick both close it.
+  await ui.press({ key: 'menu-open' })
+  expect(await ui.find({ key: 'menu-action-0' })).toBeUndefined()
+  await ui.press({ key: 'menu-open' })
+  await ui.press({ key: 'menu-action-0' })
+  expect(await ui.find({ key: 'menu-action-0' })).toBeUndefined()
+  await ui.unmount()
+})
+
+// ak-mods cannot be loaded here, so a plugin above the mod stands in for it: it switches the mod on
+// and turns each published segment into a toast. An inline plugin is loaded as a module of its own:
+// it reaches the test only through `$`.
+const owner: Register = on => {
+  on('engine.create', async ($, e, next) => {
+    const built = await next(e)
+
+    return {
+      ...built,
+      mods: {
+        declare: async () => true,
+        isOn: async () => true,
+        set: async () => {},
+        setStandard: async () => {},
+        move: async () => {},
+        resetOrder: async () => {},
+        isOrderMoved: async () => false,
+        list: async () => [],
+        segment: async (segment: unknown) => {
+          await built.ui.toast('segment ' + JSON.stringify(segment))
+        },
+      },
+    }
+  })
+}
+
+test('the demo segment carries actions', { plugins: [{ name: 'ak-mods', tier: 'prepend', register: owner }] }, async ($, on) => {
+  const { toasts } = engine(on)
+  await start($)
+
+  const published = toasts.filter(text => text.startsWith('segment ')).map(text => JSON.parse(text.slice(8)))
+  const actions: { label: string; command: string }[] = published.at(-1)?.actions ?? []
+  expect(actions.length).toBeGreaterThanOrEqual(2)
+  for (const action of actions) expect(action.command).toMatch(/^showcase/)
+})
+
 test('typing and picking keep the value under the element', async ($, on) => {
   engine(on)
   await start($)
@@ -211,6 +266,17 @@ test('/showcase tone sets the demo tone; anything else names the usage', async (
   await ui.unmount()
   expect((await showcase($, 'tone purple')).text).toBe('Usage: /showcase [tone ok|warn|alert|info|dim]')
   expect((await showcase($, 'loud')).text).toBe('Usage: /showcase [tone ok|warn|alert|info|dim]')
+})
+
+test('/showcase demo <action> only records the menu action', async ($, on) => {
+  engine(on)
+  await start($)
+
+  expect((await showcase($, 'demo check')).text).toBe('Demo action: Run check')
+  const ui = await mountAt($, 'desktop', 'buttons')
+  expect(await ui.find({ type: 'Text', text: 'Last action: Menu action Run check' })).toBeDefined()
+  await ui.unmount()
+  expect((await showcase($, 'demo nope')).text).toBe('Usage: /showcase [tone ok|warn|alert|info|dim]')
 })
 
 test('without ak-mods the own band opens the pane', async ($, on) => {

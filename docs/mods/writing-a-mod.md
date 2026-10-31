@@ -224,16 +224,22 @@ export const register: Register = on => {
   and publishes again; settings not all well formed are left out), an optional `tone` (`ok`, `warn`,
   `alert`, `info` or `dim`; `ak-mods` picks the colour, and `ok` stays the text colour; a part
   without a tone takes the segment's), an optional `priority` (default 5; higher stays longer when
-  the band drops segments, but it never sets a segment's place) and at most one `button` (`label`,
-  an optional `hotkey`, the `command` it runs, its `args`, and `isPaneOnly` for an action seldom
-  taken, which the Mods pane shows and the band leaves out, room included, and `isOnText` for a
-  segment whose one action is plain from what it shows, such as copying an id: on the desktop app
-  the text itself is the button, hotkey with it). The button runs a slash command the mod already
+  the band drops segments, but it never sets a segment's place) and at most one `button` in the band
+  (`label`, an optional `hotkey`, the `command` it runs, its `args`, and `isPaneOnly` for an action
+  seldom taken, which the Mods pane shows and the band leaves out, room included, and `isOnText`
+  for a segment whose one action is plain from what it shows, such as copying an id: on the desktop
+  app the text itself is the button, hotkey with it). The button runs a slash command the mod already
   answers, so no handler crosses from one plugin to another. A segment is one line: a control
   character (a newline, ESC) in the text, a part, the detail or the label draws as a space, and a
   `hotkey` that is not exactly one printable character is left out. When two shown mods ask for one
   hotkey, the first shown keeps it; a mod dropped from the band takes none, a mod drawn compact
   takes none (another may then take it), and `m` is the band's own `mods` button's, never a mod's.
+  A segment has one button in the band; more actions go in an optional `actions` list, `{ label,
+  command, args? }[]`. The Mods pane draws a dim `⋯` button beside the segment's own in the open
+  card, and a press shows the actions as buttons under the row, in place; a second press, running
+  an action, or opening, closing or switching the card closes them. They are never drawn in the band,
+  carry no hotkey, and run a slash command the mod already answers, as the button does. One action
+  not well formed drops the whole list, as with `settings`.
 - **One segment per mod.** Publishing again replaces it; `$.mods.segment(undefined)` clears it.
   `ak-mods` clears it itself when the mod is switched off and when the chat ends, whatever ends it.
   So the mod publishes at `session.start`, again whenever what the segment shows changes, after a

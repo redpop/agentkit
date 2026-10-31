@@ -16,6 +16,39 @@ export const buttonsSection = (k: Kit) => {
     </Box>
   )
 
+  // The Mods pane's `⋯` menu, built the same way: a dim plain Button toggles the actions, which are
+  // Buttons under the row, in place. The pane keeps whether it is open; a pick closes it.
+  const isMenuOpen = k.fields['card-menu'] === 'open'
+  const menu = [
+    <Box key="menu-row" flexDirection="column" rowGap="xs">
+      <Box flexDirection="row" columnGap={1}>
+        <Text>Showcase</Text>
+        <Button
+          key="menu-open"
+          label="⋯"
+          plain
+          dimColor
+          onPress={() => k.put('card-menu', isMenuOpen ? 'closed' : 'open')}
+        />
+      </Box>
+      {isMenuOpen && (
+        <Box flexDirection="row" flexWrap="wrap" columnGap={1}>
+          {k.t.demoActions.map(({ label }, index) => (
+            <Button
+              key={`menu-action-${index}`}
+              label={label}
+              onPress={() => {
+                k.put('card-menu', 'closed')
+                k.act(`Menu action ${label}`)
+              }}
+            />
+          ))}
+        </Box>
+      )}
+    </Box>,
+    Snippet(k, '$.mods.segment({ actions: [{ label, command, args }], … })'),
+  ]
+
   return (
     <Box flexDirection="column">
       {Group(k, 'Button', [
@@ -66,6 +99,7 @@ export const buttonsSection = (k: Kit) => {
         </Box>,
         Snippet(k, '<Button plain label="★">'),
       ])}
+      {Group(k, t.menu, menu)}
       {Footer(k, t.missing, k.surface === 'desktop' ? t.note : undefined)}
     </Box>
   )

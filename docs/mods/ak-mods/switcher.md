@@ -25,7 +25,10 @@ there: opened, the row lists the card's rows under the segment, in small type, l
 column, each value once, rows of long values such as an id a line apart, above the mod's details. A
 mod that publishes settings shows them in its open row as pickers, below its details and above the
 move buttons, one per setting, its label dim before it, the labels in one column; a pick runs the
-mod's own command, which stores the value. The mobile app, which draws no picker yet, shows the
+mod's own command, which stores the value. A mod that lists `actions` has a dim **⋯** beside its
+segment's own button in the open row; a press shows the actions as buttons under that row, in place,
+and a second press, running one, or opening, closing or switching the card closes them. The band
+never draws them. The mobile app, which draws no picker yet, shows the
 values as text. There each mod sits on a faint rounded surface of its own; the terminal parts the
 mods by space. While the order differs from the default, **Reset order** follows the mods and puts
 the default back; a move that brings the default back hides it as well. A note on how the switches
@@ -52,17 +55,17 @@ the stored order and takes it again once it is back.
 ## Band
 
 `ak-mods` owns one band above the prompt for all AgentKit mods. Each switched-on mod contributes one
-short segment: a text, a tone, and at most one button. The text may come in parts, each in its own
-tone, so a label sits dim beside its value. On the desktop app a segment may draw in a richer form:
-runs as the parts are, any of them a ring filled to a share, such as `◔ 42% 5h`. The terminal draws
-the text. On the desktop app the text of a segment with a card is a plain button, marked under the
-pointer as buttons are: a press opens the Mods pane with that mod's row open alone and scrolled into
-view, where the card's rows show, or else its detail. A second press closes the row and the pane.
-The band cuts off what a mod draws outside it, so no card floats above it. A button runs the mod's
-slash command, so pressing it does what the command does. The band ends with a `mods` button, hotkey
-`m`, that does what `/ak-mods` does: it opens the Mods pane, or closes it while it is shown. No
-mod's button takes the hotkey `m` in the band. With no switched-on mod showing a segment, there is
-no band and no button; `/ak-mods` still opens the pane.
+short segment: a text, a tone, and at most one button in the band. The text may come in parts, each
+in its own tone, so a label sits dim beside its value. On the desktop app a segment may draw in a
+richer form: runs as the parts are, any of them a ring filled to a share, such as `◔ 42% 5h`. The
+terminal draws the text. On the desktop app the text of a segment with a card is a plain button,
+marked under the pointer as buttons are: a press opens the Mods pane with that mod's row open alone
+and scrolled into view, where the card's rows show, or else its detail. A second press closes the
+row and the pane. The band cuts off what a mod draws outside it, so no card floats above it. A
+button runs the mod's slash command, so pressing it does what the command does. The band ends with a
+`mods` button, hotkey `m`, that does what `/ak-mods` does: it opens the Mods pane, or closes it
+while it is shown. No mod's button takes the hotkey `m` in the band. With no switched-on mod showing
+a segment, there is no band and no button; `/ak-mods` still opens the pane.
 
 The band stays quiet at rest. Colour marks only what needs attention: `ok` draws in the text colour,
 `warn` in the theme's warning colour, `alert` in its error colour, `info` in its suggestion colour,

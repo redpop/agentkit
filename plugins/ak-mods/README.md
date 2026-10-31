@@ -23,6 +23,9 @@ Run `/ak-mods` to open the pane, and again to close it. Each mod's head has thre
   Down**, which move the mod one place; **Reset order** below the mods, shown while the order
   differs from the default, puts it back.
 
+An open row of a mod that lists `actions` shows a dim **⋯** beside the segment's button; a press
+shows the actions as buttons under the row.
+
 Each switched-on mod shows one segment in a single band above the prompt. The band ends with a
 `mods` button (hotkey `m`) that opens the pane, or closes it while it is shown. When the segments do
 not fit, every segment with a compact form switches to it, then the band grows to two rows, then

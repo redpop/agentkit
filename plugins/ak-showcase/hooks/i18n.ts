@@ -63,6 +63,12 @@ const EN = {
   usage: 'Usage: /showcase [tone ok|warn|alert|info|dim]',
   opened: 'Showcase opened.',
   toneSet: (tone: string) => `Demo segment tone: ${tone}`,
+  // The demo segment's `actions`, and what running one says. The pane's menu sample lists the same.
+  demoActions: [
+    { label: 'Run check', args: 'demo check' },
+    { label: 'Clear log', args: 'demo clear' },
+  ],
+  demoRan: (label: string) => `Demo action: ${label}`,
   open: 'open',
   section: 'Section',
   last: 'Last action',
@@ -127,8 +133,9 @@ const EN = {
     plainHotkey: 'plain with hotkey: drawn as "1: Yes", pressed by key while the pane has focus',
     children: 'Text children: a chip with a dim part',
     glyph: 'One glyph as label: a control by itself',
+    menu: 'Menu, built from Buttons: the ⋯ in the Mods pane',
     note: 'The desktop app draws only the label: children lose their colour and weight there. secondary looks like the default, and role="dismiss" inside a pane is a plain button.',
-    missing: 'No colour of your own, no icon beside a label, no disabled state, no size, no tooltip.',
+    missing: 'No menu element (build one from Buttons), no colour of your own, no icon beside a label, no disabled state, no size, no tooltip.',
   },
   forms: {
     single: 'Input, one line',
@@ -181,7 +188,7 @@ const EN = {
     ],
     tone: 'Tone of the demo segment',
     unswitched: 'ak-mods does not switch this mod, so it draws its own band instead of a segment.',
-    missing: 'One segment per mod, one line, at most one button. No own colours: ak-mods picks them per tone.',
+    missing: 'One segment per mod, one line, one button in the band. More actions go in `actions`, the ⋯ menu of the open card in the Mods pane. No own colours: ak-mods picks them per tone.',
   },
   feedback: {
     toast: 'Show a toast',
@@ -206,6 +213,11 @@ const DE: typeof EN = {
   usage: 'Aufruf: /showcase [tone ok|warn|alert|info|dim]',
   opened: 'Showcase geöffnet.',
   toneSet: (tone: string) => `Ton des Demo-Segments: ${tone}`,
+  demoActions: [
+    { label: 'Prüfung starten', args: 'demo check' },
+    { label: 'Protokoll leeren', args: 'demo clear' },
+  ],
+  demoRan: (label: string) => `Demo-Aktion: ${label}`,
   open: 'öffnen',
   section: 'Abschnitt',
   last: 'Letzte Aktion',
@@ -270,8 +282,9 @@ const DE: typeof EN = {
     plainHotkey: 'plain mit hotkey: gezeichnet als "1: Ja", per Taste gedrückt, solange das Pane den Fokus hat',
     children: 'Text-Kinder: ein Chip mit dimmem Teil',
     glyph: 'Ein Zeichen als Label: ein eigenes Bedienelement',
+    menu: 'Menü, aus Buttons gebaut: das ⋯ im Mods-Pane',
     note: 'Die Desktop-App zeichnet nur das Label: Kinder verlieren dort Farbe und Stärke. secondary sieht aus wie der Standard, und role="dismiss" ist im Pane ein normaler Button.',
-    missing: 'Keine eigene Farbe, kein Icon neben dem Label, kein deaktivierter Zustand, keine Größe, kein Tooltip.',
+    missing: 'Kein Menü-Element (aus Buttons bauen), keine eigene Farbe, kein Icon neben dem Label, kein deaktivierter Zustand, keine Größe, kein Tooltip.',
   },
   forms: {
     single: 'Input, einzeilig',
@@ -324,7 +337,7 @@ const DE: typeof EN = {
     ],
     tone: 'Ton des Demo-Segments',
     unswitched: 'ak-mods schaltet diesen Mod nicht, also zeichnet er statt eines Segments sein eigenes Band.',
-    missing: 'Ein Segment pro Mod, eine Zeile, höchstens ein Button. Keine eigenen Farben: ak-mods wählt sie je Ton.',
+    missing: 'Ein Segment pro Mod, eine Zeile, ein Button im Band. Weitere Aktionen kommen in `actions`, das ⋯-Menü der geöffneten Karte im Mods-Pane. Keine eigenen Farben: ak-mods wählt sie je Ton.',
   },
   feedback: {
     toast: 'Toast zeigen',

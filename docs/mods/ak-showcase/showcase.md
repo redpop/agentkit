@@ -21,6 +21,7 @@ props that draw it.
 | --- | --- |
 | `/showcase` | Turns the mod on and opens the pane |
 | `/showcase tone <ok\|warn\|alert\|info\|dim>` | Sets the tone of the demo segment in the band |
+| `/showcase demo <check\|clear>` | What the demo segment's menu actions run: only records itself as the last action |
 
 ## Pane
 
@@ -34,7 +35,7 @@ of buttons on the mobile app. Under it, the last action a control reported.
 | Spacing | The `Space` steps `xs` to `xl` and numbers, as `gap` and as `padding` |
 | Layout and borders | `flexDirection`, `justifyContent`, `alignItems`, border styles and colours, a card |
 | Hover | `hover` on a Box, a Text and a whole row |
-| Buttons | Default, `primary`, `secondary`, `dimColor`, `plain`, `role="dismiss"`, `autoFocus`, `hover`, `hotkey`, Text children, a glyph as label |
+| Buttons | Default, `primary`, `secondary`, `dimColor`, `plain`, `role="dismiss"`, `autoFocus`, `hover`, `hotkey`, Text children, a glyph as label, a menu built from Buttons |
 | Forms | `Input` on one line and on several, `Select`, and a toggle built from buttons or a Select |
 | Content | `Code` as source and as a diff, `Markdown`, `Link` |
 | Graphics | `Svg` as an image and with `isInteractive` (CSS hover, animation, a `<title>` tooltip) |
@@ -70,6 +71,7 @@ draws above the prompt. It carries one of every part a segment can have:
 | `card` | The tone and the ring as rows in the Mods pane |
 | `settings` | A tone picker in the mod's card in the Mods pane, which runs `/showcase tone …` |
 | `button` | **open**, in the Mods pane only (`isPaneOnly`) |
+| `actions` | Two dummy actions in the `⋯` menu of the open card in the Mods pane, never in the band |
 | `tone`, `priority` | The tone picked, priority 1: the first segment to go when the band is full |
 
 Without `ak-mods` (or when it refuses the mod, or a publish fails), the mod draws its own band
