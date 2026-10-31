@@ -66,8 +66,8 @@ draws above the prompt. It carries one of every part a segment can have:
 | Part | In the demo |
 | --- | --- |
 | `text`, `parts` | `Showcase 60%`, the word dim |
-| `rich` | A check icon and a ring filled to 60 % on the desktop app |
-| `compact` | `SC 60%`, or the ring alone, when the band is short of room |
+| `rich` | A check icon, `Showcase` and a ring filled to 60 % beside its value on the desktop app |
+| `compact` | `SC 60%`, on the desktop app the ring, `60%` and a dim `SC`, when the band is short of room |
 | `card` | The tone and the ring as rows in the Mods pane |
 | `settings` | A tone picker in the mod's card in the Mods pane, which runs `/showcase tone …` |
 | `button` | **open**, in the Mods pane only (`isPaneOnly`) |

@@ -23,12 +23,22 @@ const segment = async ($: EngineInterface): Promise<Segment> => {
   return {
     text: `Showcase ${RING}%`,
     parts: [{ text: 'Showcase', tone: 'dim' }, { text: ` ${RING}%` }],
+    // As a mod should: a run of text beside every picture, so the value reads and can be pressed. An
+    // icon carries its own air, a ring is followed by a space; the label after its value draws dim.
     rich: [
       { text: 'check', icon: 'check' },
-      { text: ' Showcase ' },
+      { text: 'Showcase  ' },
       { text: `${RING}%`, ring: RING },
+      { text: ` ${RING}%` },
     ],
-    compact: { text: `SC ${RING}%`, rich: [{ text: `${RING}%`, ring: RING }] },
+    compact: {
+      text: `SC ${RING}%`,
+      rich: [
+        { text: `${RING}%`, ring: RING },
+        { text: ` ${RING}%` },
+        { text: ' SC', tone: 'dim' },
+      ],
+    },
     card: [
       { label: 'tone', value: tone },
       { label: 'ring', value: `${RING}%` },

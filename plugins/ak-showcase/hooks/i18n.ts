@@ -179,7 +179,7 @@ const EN = {
     parts: [
       'text: the plain line the terminal draws',
       'parts: the line in runs, each with its own tone',
-      'rich: the desktop line, with a ring (0–100) and a line icon (id, copy, check)',
+      'rich: the desktop line, with a ring (0–100) and a line icon (id, copy, check, clock, flame)',
       'compact: the short form when the band runs out of room',
       'card: label and value rows in the Mods pane',
       'settings: a picker in the Mods pane that runs /showcase tone …',
@@ -329,7 +329,7 @@ const DE: typeof EN = {
     parts: [
       'text: die einfache Zeile, die das Terminal zeichnet',
       'parts: die Zeile in Abschnitten, jeder mit eigenem Ton',
-      'rich: die Desktop-Zeile, mit Ring (0–100) und Linien-Icon (id, copy, check)',
+      'rich: die Desktop-Zeile, mit Ring (0–100) und Linien-Icon (id, copy, check, clock, flame)',
       'compact: die Kurzform, wenn dem Band der Platz ausgeht',
       'card: Zeilen aus Label und Wert im Mods-Pane',
       'settings: eine Auswahl im Mods-Pane, die /showcase tone … ausführt',
