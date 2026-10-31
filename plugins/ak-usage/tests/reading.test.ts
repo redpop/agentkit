@@ -23,9 +23,9 @@ test('the context alone where no rate limit is reported', () => {
       { text: '▬▬', tone: 'dim' },
     ],
     rich: [
+      { text: 'ctx ', tone: 'dim' },
       { text: 'ctx 67%', tone: 'ok', ring: 67 },
-      { text: ' 67%', tone: 'ok' },
-      { text: ' ctx', tone: 'dim' },
+      { text: '67%', tone: 'ok' },
     ],
     compact: {
       text: 'ctx 67%',
@@ -34,9 +34,9 @@ test('the context alone where no rate limit is reported', () => {
         { text: '67%', tone: 'ok' },
       ],
       rich: [
+        { text: 'ctx ', tone: 'dim' },
         { text: 'ctx 67%', tone: 'ok', ring: 67 },
-        { text: ' 67%', tone: 'ok' },
-        { text: ' ctx', tone: 'dim' },
+        { text: '67%', tone: 'ok' },
       ],
     },
     detail: 'ctx 67%',
@@ -55,13 +55,12 @@ test('the compact form keeps each percentage with its label', () => {
       { text: '2%', tone: 'ok' },
     ],
     rich: [
+      { text: 'ctx ', tone: 'dim' },
       { text: 'ctx 67%', tone: 'ok', ring: 67 },
-      { text: ' 67%', tone: 'ok' },
-      { text: ' ctx', tone: 'dim' },
-      { text: '    ', tone: 'dim' },
+      { text: '67%', tone: 'ok' },
+      { text: '    5h ', tone: 'dim' },
       { text: '5h 2%', tone: 'ok', ring: 2 },
-      { text: ' 2%', tone: 'ok' },
-      { text: ' 5h', tone: 'dim' },
+      { text: '2%', tone: 'ok' },
     ],
   })
 })
@@ -163,16 +162,16 @@ test('a window at 90 % or more is an alert, keyed by its kind and reset', () => 
   expect(alerts([{ kind: 'seven_day', percentUsed: 90 }], NOW)).toEqual([{ key: 'seven_day@', text: '7-day limit at 90 %' }])
 })
 
-test('where the band draws pictures, each figure is a ring with its percentage and label, a short window with its reset', () => {
+test('where the band draws pictures, each figure is its label, a ring and its percentage, a short window with its reset', () => {
   const now = reading(windows(resets('five_hour', 81, at(28, 23, 10))), NOW)
   expect(now?.rich).toEqual([
+    { text: '5h ', tone: 'dim' },
     { text: '5h 81%', tone: 'warn', ring: 81 },
-    { text: ' 81%', tone: 'warn' },
-    { text: ' 5h', tone: 'dim' },
+    { text: '81%', tone: 'warn' },
     { text: '  resets 11:10pm', tone: 'dim' },
   ])
   const two = reading({ ...usage(134400, { five_hour: 7 }) }, NOW)
-  expect(two?.rich.map(part => part.text).join('')).toBe('ctx 67% 67% ctx    5h 7% 7% 5h')
+  expect(two?.rich.map(part => part.text).join('')).toBe('ctx ctx 67%67%    5h 5h 7%7%')
 })
 
 test('the hover card shows every window still current, the week below 75 % too, each with its reset', () => {

@@ -57,7 +57,7 @@ the stored order and takes it again once it is back.
 `ak-mods` owns one band above the prompt for all AgentKit mods. Each switched-on mod contributes one
 short segment: a text, a tone, and at most one button in the band. The text may come in parts, each
 in its own tone, so a label sits dim beside its value. On the desktop app a segment may draw in a
-richer form: runs as the parts are, any of them a ring filled to a share, such as `◔ 42% 5h`. The
+richer form: runs as the parts are, any of them a ring filled to a share, such as `5h ◔ 42%`. The
 terminal draws the text. On the desktop app the text of a segment with a card is a plain button,
 marked under the pointer as buttons are: a press opens the Mods pane with that mod's row open alone
 and scrolled into view, where the card's rows show, or else its detail. A second press closes the
