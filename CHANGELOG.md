@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.67.3] - 2026-10-31
+
+### 🐛 Fixed
+
+- `ak-usage` — on the desktop app each figure leads with its label (`ctx ◔ 23%    5h ◔ 2%`), so a
+  label no longer reads as the next ring's.
+
 ## [1.67.2] - 2026-10-31
 
 ### 🐛 Fixed
