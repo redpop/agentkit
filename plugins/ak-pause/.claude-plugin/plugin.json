@@ -1,7 +1,7 @@
 {
   "name": "ak-pause",
   "description": "Mod: shows how long you have worked without a break, across sessions, as one segment in the shared band, with water and late hints",
-  "version": "1.67.3",
+  "version": "1.67.4",
   "author": {
     "name": "redpop",
     "url": "https://github.com/redpop"
