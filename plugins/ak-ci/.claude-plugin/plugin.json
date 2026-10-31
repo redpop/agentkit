@@ -1,7 +1,7 @@
 {
   "name": "ak-ci",
   "description": "Mod: shows the merge or pull request of the current branch and its CI checks as one segment in the shared band, on GitLab via glab and on GitHub via gh",
-  "version": "1.67.0",
+  "version": "1.67.1",
   "author": {
     "name": "redpop",
     "url": "https://github.com/redpop"
