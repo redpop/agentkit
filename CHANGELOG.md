@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.67.0] - 2026-10-31
+
+### ✨ Added
+
+- `ak-mods` — two more line icons for a segment's rich runs: `clock` and `flame`.
+
+### 🔄 Changed
+
+- The compact band tells its segments apart at a glance on the desktop app. `ak-usage` keeps its
+  dim labels there (`◔ 10% ctx  ◔ 37% 5h`) instead of relying on the order of two bare
+  percentages. A ring now always means a fill: `ak-pause` draws a clock before its time, and
+  `ak-keepwarm` a flame while it keeps the cache warm. `ak-session-id` draws its icon and the id's
+  last characters as one (`#…1aee`).
+- `ak-mods` — segments sit three cells apart on the desktop app, as on the terminal, so the gap
+  between two segments is wider than any gap inside one.
+
 ## [1.66.0] - 2026-10-31
 
 ### ✨ Added
