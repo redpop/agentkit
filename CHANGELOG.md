@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.68.2] - 2026-11-01
+
+### 🐛 Fixed
+
+- `ak-mods` — a segment with a card ending in plain text no longer sits wider from its neighbour
+  than one ending in a coloured run: its pressed text's button chrome now stands in for the spacer
+  there too.
+- `ak-todo` — the folds' names stand an en space from their triangle.
+
 ## [1.68.1] - 2026-11-01
 
 ### 🐛 Fixed
