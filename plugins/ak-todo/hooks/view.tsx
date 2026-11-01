@@ -2,7 +2,7 @@ import type { EngineInterface } from 'claude-code'
 
 import type { Lang } from './i18n'
 import { texts } from './i18n'
-import { numbered } from './list'
+import { clean, numbered } from './list'
 import type { TodoList } from './list'
 
 export type Segment = NonNullable<Parameters<EngineInterface['mods']['segment']>[0]>
@@ -10,7 +10,11 @@ export type Segment = NonNullable<Parameters<EngineInterface['mods']['segment']>
 // The band shows the first open task up to this many characters.
 const FIRST_MAX = 40
 
-const cut = (text: string): string => (Array.from(text).length > FIRST_MAX ? Array.from(text).slice(0, FIRST_MAX - 1).join('') + '…' : text)
+const cut = (raw: string): string => {
+  const text = clean(raw)
+
+  return Array.from(text).length > FIRST_MAX ? Array.from(text).slice(0, FIRST_MAX - 1).join('') + '…' : text
+}
 
 /** The mod's part of the shared band: open tasks and the first of them, notes counted; none for an empty list. */
 export const segmentOf = (list: TodoList, lang: Lang): Segment | undefined => {

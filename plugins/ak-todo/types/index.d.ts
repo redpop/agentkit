@@ -21,8 +21,12 @@ declare module 'claude-code' {
       conversation: string
       /** The person's changes Claude has not been told of yet, one line each. */
       pending: string[]
-      /** Whether the person closed the pane in this session; it then stays closed. */
+      /** Whether the person closed the pane in this conversation; it then opens only when asked. */
       isPaneClosed: boolean
+      /** Whether the pane is open. */
+      isPaneOpen: boolean
+      /** The pane's own view: the row being edited, the kind a new entry gets, the open folds, the row whose menu is open. */
+      view: { editing?: number; kind: Kind; open: string[]; menu?: number }
     }
   }
 }

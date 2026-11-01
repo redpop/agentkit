@@ -80,3 +80,10 @@ test('clear done reports how many went to the trash', () => {
   const cleared = applyCommand(done.list, { kind: 'clear-done' }, T, 'de')
   expect(cleared.reply).toBe('1 erledigte in den Papierkorb gelegt.')
 })
+
+test('later and back echo the entry, in both languages', () => {
+  const later = applyCommand(withEntries(['task', 'a']), { kind: 'later', ref: 'T1' }, T, 'de')
+  if (!('list' in later)) throw new Error('no list')
+  expect(later.reply).toBe('Später: T1 a')
+  expect(applyCommand(later.list, { kind: 'later', ref: 'T1' }, T, 'en').reply).toBe('Back: T1 a')
+})

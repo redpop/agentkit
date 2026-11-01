@@ -12,7 +12,7 @@ const chat = { id: 'S1' }
 
 // The engine beneath the plugin: the clock, the store, the toasts, what reached the model beside
 // each prompt, the system prompt, the selection and the prompts the mod submitted.
-const engine = (on: On, stored: Record<string, unknown> = {}) => {
+const engine = (on: On, stored: Record<string, unknown> = {}, lang = 'en_US.UTF-8') => {
   const clock = mock.clock(on, { now: T })
   on('store.get', (_, e) => ({ value: stored[e.key] }))
   on('store.set', (_, e) => {
@@ -26,12 +26,14 @@ const engine = (on: On, stored: Record<string, unknown> = {}) => {
     return { value: undefined }
   })
   on('store.keys', () => ({ value: Object.keys(stored) }))
-  mock.env(on, { LANG: 'en_US.UTF-8' })
+  mock.env(on, { LANG: lang })
   chat.id = 'S1'
   const toasts: string[] = []
   const contexts: (readonly string[] | undefined)[] = []
   const submitted: string[] = []
   const selection: { text?: string } = {}
+  const box = { text: '' }
+  const opened: string[] = []
   on('session.id', () => ({ value: chat.id }))
   on('session.start', (_, e) => ({ cwd: e.cwd }))
   on('session.end', (_, e) => ({ sessionId: e.sessionId }))
@@ -43,7 +45,17 @@ const engine = (on: On, stored: Record<string, unknown> = {}) => {
     return { value: undefined }
   })
   on('ui.selection', () => ({ value: selection.text === undefined ? undefined : { text: selection.text } }))
-  on('ui.open', () => ({ value: { isPlaced: true } }))
+  on('ui.open', (_, e) => {
+    opened.push(e.id)
+
+    return { value: { isPlaced: true } }
+  })
+  on('prompt.read', () => ({ value: { text: box.text, cursor: box.text.length } }))
+  on('prompt.fill', (_, e) => {
+    box.text = e.mode === 'append' ? box.text + e.text : e.text
+
+    return { isFilled: true }
+  })
   on('ui.close', () => ({ value: undefined }))
   on('ui.invalidate', () => ({ value: undefined }))
   on('prompt.submit', (_, e) => {
@@ -59,7 +71,7 @@ const engine = (on: On, stored: Record<string, unknown> = {}) => {
     return <Text>engine</Text>
   })
 
-  return { clock, toasts, contexts, submitted, selection, stored }
+  return { clock, toasts, contexts, submitted, selection, stored, box, opened }
 }
 
 type Segment = Parameters<EngineInterface['mods']['segment']>[0]
@@ -103,6 +115,11 @@ const owner: Register = on => {
     return next(e)
   })
   on('command.run', { command: 'stand-in' }, async ($, e) => {
+    if (e.args === 'close') {
+      await $.ui.close({ id: 'ak-todo' })
+
+      return {}
+    }
     await $.mods.set({ name: 'ak-todo', on: e.args === 'on' })
 
     return {}
@@ -250,4 +267,155 @@ test('without ak-mods the mod runs on and keeps the list', async ($, on) => {
   await run($, 'todo', 'Fix login')
   await submit($)
   expect(contexts.at(-1)?.[0]?.includes('Fix login')).toBe(true)
+})
+
+const PANE = {
+  plugin: 'ak-todo',
+  component: 'Pane',
+  requestId: 'ak-todo',
+  surface: 'desktop',
+  props: { title: 'Todo', isFocused: false, bodyColumns: 60, placement: 'dock', scroll: { offset: 0, bodyRows: 40 }, view: {} },
+} as const
+
+const listOf = (...items: ['task' | 'note', string][]): TodoList =>
+  items.reduce((list, [kind, text]) => {
+    const result = add(list, { kind, text, owner: 'user' }, T)
+    if ('error' in result) throw new Error(result.error)
+
+    return result.list
+  }, emptyList(T))
+
+const texts = async (ui: { findAll: (q: { type: 'Text' }) => Promise<{ text?: string }[]> }) => (await ui.findAll({ type: 'Text' })).map(t => t.text)
+
+test('the pane lists tasks, folded done and later, and notes', OWNED, async ($, on) => {
+  const list = listOf(['task', 'a'], ['task', 'b'], ['task', 'c'], ['note', 'n'])
+  list.entries[1] = { ...list.entries[1]!, status: 'done' }
+  list.entries[2] = { ...list.entries[2]!, isDeferred: true }
+  engine(on, { 'list:S1': list })
+  await start($)
+  const ui = await $.ui.mount(PANE)
+  const shown = await texts(ui)
+  expect(shown.includes('T1 a')).toBe(true)
+  expect(shown.includes('T2 b')).toBe(false)
+  expect(shown.includes('N1 n')).toBe(true)
+  expect((await ui.find({ key: 'fold-done' }))?.text).toBe('▶︎ Done (1)')
+  expect((await ui.find({ key: 'fold-later' }))?.text).toBe('▶︎ Later (1)')
+  await ui.press({ key: 'fold-done' })
+  expect((await texts(ui)).includes('T2 b')).toBe(true)
+  await ui.unmount()
+})
+
+test('Do now marks doing and submits the prompt', OWNED, async ($, on) => {
+  const { clock, submitted, stored } = engine(on, { 'list:S1': listOf(['task', 'Fix login']) })
+  await start($)
+  const ui = await $.ui.mount(PANE)
+  await ui.press({ key: 'do-1' })
+  await clock.settle()
+  expect(submitted).toEqual(['Work on T1 now: Fix login'])
+  expect((stored['list:S1'] as TodoList).entries[0]?.status).toBe('doing')
+  await ui.unmount()
+})
+
+test('Discuss fills an empty box with the German draft', OWNED, async ($, on) => {
+  const { box } = engine(on, { 'list:S1': listOf(['task', 'Fix login']) }, 'de_DE.UTF-8')
+  await start($)
+  const ui = await $.ui.mount(PANE)
+  await ui.press({ key: 'discuss-1' })
+  expect(box.text).toBe('Zu Punkt T1 (Fix login): ')
+  await ui.unmount()
+})
+
+test('Discuss appends to a box that has text', OWNED, async ($, on) => {
+  const { box } = engine(on, { 'list:S1': listOf(['note', 'Port 3000']) })
+  await start($)
+  box.text = 'Also:'
+  const ui = await $.ui.mount(PANE)
+  await ui.press({ key: 'discuss-1' })
+  expect(box.text).toBe('Also:\nAbout item N1 (Port 3000): ')
+  await ui.unmount()
+})
+
+test('↑ on T2 makes it T1', OWNED, async ($, on) => {
+  const { stored } = engine(on, { 'list:S1': listOf(['task', 'a'], ['task', 'b']) })
+  await start($)
+  const ui = await $.ui.mount(PANE)
+  expect(await ui.find({ key: 'up-1' })).toBeUndefined()
+  await ui.press({ key: 'up-2' })
+  expect((stored['list:S1'] as TodoList).entries.map(e => e.text)).toEqual(['b', 'a'])
+  expect((await texts(ui)).includes('T1 b')).toBe(true)
+  await ui.unmount()
+})
+
+// The kit cannot raise the person's close mark: a close reaches the mod as a plugin's. The person's
+// close (origin `person`) keeping the pane shut is checked on the desktop app.
+test('the pane opens on a first entry and on /todo; a close by a plugin does not keep it shut', OWNED, async ($, on) => {
+  const { opened } = engine(on)
+  await start($)
+  await run($, 'todo', 'first')
+  expect(opened).toEqual(['ak-todo'])
+  await run($, 'todo', 'second')
+  expect(opened).toEqual(['ak-todo'])
+  await run($, 'stand-in', 'close')
+  await run($, 'todo', 'rm 1')
+  await run($, 'todo', 'rm 1')
+  await run($, 'todo', 'third')
+  expect(opened).toEqual(['ak-todo', 'ak-todo'])
+  // /todo alone closes the open pane, and opens it again.
+  await run($, 'todo')
+  await run($, 'todo')
+  expect(opened).toEqual(['ak-todo', 'ak-todo', 'ak-todo'])
+})
+
+test('the input adds a note when the switch says note', OWNED, async ($, on) => {
+  const { stored } = engine(on)
+  await start($)
+  const ui = await $.ui.mount(PANE)
+  await ui.press({ key: 'kind' })
+  await ui.input({ key: 'new', text: 'Uses port 3000' })
+  expect((stored['list:S1'] as TodoList).entries).toEqual([{ id: 1, kind: 'note', text: 'Uses port 3000', owner: 'user' }])
+  await ui.unmount()
+})
+
+test('Edit swaps the row for an input and saves the new text', OWNED, async ($, on) => {
+  const { stored } = engine(on, { 'list:S1': listOf(['task', 'old']) })
+  await start($)
+  const ui = await $.ui.mount(PANE)
+  await ui.press({ key: 'edit-1' })
+  await ui.input({ key: 'text-1', text: 'new' })
+  expect((stored['list:S1'] as TodoList).entries[0]?.text).toBe('new')
+  await ui.unmount()
+})
+
+test('a narrow pane puts row actions behind one button', OWNED, async ($, on) => {
+  engine(on, { 'list:S1': listOf(['task', 'a']) })
+  await start($)
+  const ui = await $.ui.mount({ ...PANE, props: { ...PANE.props, bodyColumns: 30 } })
+  expect(await ui.find({ key: 'do-1' })).toBeUndefined()
+  expect(await ui.find({ key: 'done-1' })).toBeDefined()
+  await ui.press({ key: 'menu-1' })
+  expect(await ui.find({ key: 'do-1' })).toBeDefined()
+  await ui.unmount()
+})
+
+test('the trash restores and empties', OWNED, async ($, on) => {
+  const { stored } = engine(on, { 'list:S1': listOf(['task', 'a'], ['task', 'b']) })
+  await start($)
+  const ui = await $.ui.mount(PANE)
+  await ui.press({ key: 'rm-1' })
+  await ui.press({ key: 'rm-2' })
+  await ui.press({ key: 'fold-trash' })
+  await ui.press({ key: 'restore-2' })
+  expect((stored['list:S1'] as TodoList).entries.map(e => e.text)).toEqual(['a'])
+  await ui.press({ key: 'empty-trash' })
+  expect((stored['list:S1'] as TodoList).trash).toEqual([])
+  await ui.unmount()
+})
+
+test('the segment stays one line for an entry stored before cleaning', OWNED, async ($, on) => {
+  const list = listOf(['task', 'x'])
+  list.entries[0] = { ...list.entries[0]!, text: 'two\nlines' }
+  const { clock, toasts } = engine(on, { 'list:S1': list })
+  await start($)
+  await clock.settle()
+  expect(last(toasts)).toBe('1 open · two lines')
 })
