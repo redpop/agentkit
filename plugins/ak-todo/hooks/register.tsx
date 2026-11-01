@@ -196,9 +196,10 @@ async function runCommand($: EngineInterface, cmd: Cmd): Promise<string> {
     const ref = cmd.ref.toUpperCase().replace(/^(\d)/, 'T$1')
     if (!entry) return t.notFound(ref)
     // Off the command's hook: submitted from inside it, the prompt would wait on the turn it holds.
+    // The person asked for it: their own words, without the frame a plugin's prompt carries.
     const text = `${cmd.text}\n\n> ${ref} ${entry.text}`
     $.clock.after(0, () => {
-      $.prompt.submit({ text }).catch(() => {})
+      $.prompt.submit({ text, asUser: true }).catch(() => {})
     })
 
     return t.asked(ref)
@@ -258,9 +259,10 @@ async function doNow($: EngineInterface, id: number, republish: () => void): Pro
   republish()
   if (out.ref === undefined || out.text === undefined) return
   const text = texts(await languageFor($)).workOn(out.ref, out.text)
-  // Off the press: while a turn runs, the engine queues the prompt.
+  // Off the press: while a turn runs, the engine queues the prompt. The person pressed it: their own
+  // words, without the frame a plugin's prompt carries.
   $.clock.after(0, () => {
-    $.prompt.submit({ text }).catch(() => {})
+    $.prompt.submit({ text, asUser: true }).catch(() => {})
   })
 }
 
@@ -551,7 +553,8 @@ export const register: Register = on => {
             <Button key="take-sel" label={t.takeSelection} plain onPress={command({ kind: 'sel', entry: view.kind })} />
           </Box>
           {Input && (
-            <Box marginTop={1}>
+            // The field takes the card's whole width, its own submit button at the right end.
+            <Box key="new-field" marginTop={1} width="100%" flexDirection="column" alignItems="stretch">
               <Input
                 key={`new-${added}`}
                 placeholder={isNote ? t.notePlaceholder : t.taskPlaceholder}

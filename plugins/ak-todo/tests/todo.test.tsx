@@ -31,6 +31,7 @@ const engine = (on: On, stored: Record<string, unknown> = {}, lang = 'en_US.UTF-
   const toasts: string[] = []
   const contexts: (readonly string[] | undefined)[] = []
   const submitted: string[] = []
+  const asUser: boolean[] = []
   const selection: { text?: string } = {}
   const box = { text: '' }
   const model: { reply?: string; gate?: Promise<void>; calls: { model: string; prompt: string }[] } = { calls: [] }
@@ -72,7 +73,10 @@ const engine = (on: On, stored: Record<string, unknown> = {}, lang = 'en_US.UTF-
   on('ui.invalidate', () => ({ value: undefined }))
   on('prompt.submit', (_, e) => {
     if (e.origin?.kind === 'composer') contexts.push(e.context)
-    else submitted.push(e.text)
+    else {
+      submitted.push(e.text)
+      asUser.push(e.origin?.kind === 'plugin' && e.origin.asUser === true)
+    }
 
     return { text: e.text, context: e.context }
   })
@@ -83,7 +87,7 @@ const engine = (on: On, stored: Record<string, unknown> = {}, lang = 'en_US.UTF-
     return <Text>engine</Text>
   })
 
-  return { clock, toasts, contexts, submitted, selection, stored, box, opened, model, placement, focused }
+  return { clock, toasts, contexts, submitted, selection, stored, box, opened, model, placement, focused, asUser }
 }
 
 type Segment = Parameters<EngineInterface['mods']['segment']>[0]
@@ -676,4 +680,25 @@ test('an empty list keeps the Mods card: a pane-only segment with the way to the
   expect(segment?.isPaneOnly).toBe(true)
   expect(segment?.button).toEqual({ label: 'Todo', command: 'todo', args: 'show', isOnText: true })
   expect(segment?.settings?.rows.map(row => row.key)).toEqual(['detect', 'model'])
+})
+
+test('the add field spans the pane, its button at the right end', OWNED, async ($, on) => {
+  engine(on)
+  await start($)
+  const ui = await $.ui.mount(PANE)
+  const field = await ui.find({ key: 'new-field' })
+  expect(field?.props).toMatchObject({ width: '100%', flexDirection: 'column', alignItems: 'stretch' })
+  await ui.unmount()
+})
+
+test('Do now and /todo ask submit as the person\'s own words, without the plugin frame', OWNED, async ($, on) => {
+  const { clock, asUser } = engine(on, { 'list:S1': stored1('Fix login') })
+  await start($)
+  const ui = await $.ui.mount(PANE)
+  await ui.press({ key: 'open-1' })
+  await ui.press({ key: 'do-1' })
+  await run($, 'todo', 'ask T1 still needed?')
+  await clock.settle()
+  expect(asUser).toEqual([true, true])
+  await ui.unmount()
 })
