@@ -28,7 +28,8 @@ Requires Claude Code 2.1.309 or later (hooks-module support). Switched per chat 
 The pane opens on `/todo` alone and on the first entry of a conversation. Once you close it, it
 opens only when you ask again, for the rest of the conversation.
 
-- **Tasks:** open and running tasks first, then a folded **Done (n)** and a folded **Later (n)**.
+- **Tasks:** open and running tasks first, then a folded **Later (n)** and a folded **Done (n)**:
+  what waits is still to do, so it comes before what is finished. The numbers follow that order.
 - **Notes** below, in their own order.
 - Each row shows its number (`T1`, `N1`), its text and a dot in the owner's colour: one for your
   entries, one for Claude's.
@@ -39,7 +40,8 @@ opens only when you ask again, for the rest of the conversation.
   busy, the request waits for its turn to end.
 - **Discuss** writes `About item T2 (Fix login):` (in German `Zu Punkt T2 (Fix login):`) into the
   prompt box, after what is already there. Nothing is sent until you press Enter.
-- At the bottom: a switch for **Task** or **Note**, **Take selection**, and a field to add an entry.
+- At the top: a switch for **Task** or **Note**, **From selection**, and a field to add an entry;
+  where the pane is narrow, **From selection** moves to a line of its own.
 - The trash, when it holds entries: **Restore** per entry and **Empty trash**.
 
 ## Band

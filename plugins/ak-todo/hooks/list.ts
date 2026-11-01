@@ -30,10 +30,10 @@ export const normalise = (text: string): string => clean(text).toLowerCase()
 const isActive = (e: Entry) => e.status !== 'done' && e.isDeferred !== true
 const isDone = (e: Entry) => e.status === 'done'
 
-/** Tasks in the order shown (open and doing, then done, then deferred) and notes in list order. */
+/** Tasks in the order shown (open and doing, then deferred, then done) and notes in list order. */
 export const numbered = (list: TodoList): { tasks: Numbered[]; notes: Numbered[] } => {
   const tasks = list.entries.filter(e => e.kind === 'task')
-  const ordered = [...tasks.filter(isActive), ...tasks.filter(isDone), ...tasks.filter(e => !isActive(e) && !isDone(e))]
+  const ordered = [...tasks.filter(isActive), ...tasks.filter(e => !isActive(e) && !isDone(e)), ...tasks.filter(isDone)]
 
   return {
     tasks: ordered.map((entry, i) => ({ ref: `T${i + 1}`, entry })),

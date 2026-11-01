@@ -20,12 +20,12 @@ const refs = (list: TodoList) => {
   return { tasks: tasks.map(n => `${n.ref} ${n.entry.text}`), notes: notes.map(n => `${n.ref} ${n.entry.text}`) }
 }
 
-test('numbers open tasks before done before deferred', () => {
+test('numbers open tasks before deferred before done', () => {
   let list = withEntries(['task', 'a'], ['task', 'b'], ['note', 'n'], ['task', 'c'], ['task', 'd'])
   list = ok(update(list, 1, { status: 'done' }, T)).list
   list = ok(update(list, 2, { isDeferred: true }, T)).list
   list = ok(update(list, 4, { status: 'doing' }, T)).list
-  expect(refs(list)).toEqual({ tasks: ['T1 c', 'T2 d', 'T3 a', 'T4 b'], notes: ['N1 n'] })
+  expect(refs(list)).toEqual({ tasks: ['T1 c', 'T2 d', 'T3 b', 'T4 a'], notes: ['N1 n'] })
 })
 
 test('resolves T3, N2 and a bare 3', () => {

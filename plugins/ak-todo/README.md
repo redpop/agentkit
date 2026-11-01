@@ -16,7 +16,7 @@ Requires Claude Code 2.1.309 or later (hooks-module support).
 
 - `/todo <text>` adds a task, `/note <text>` a note. Both answer at once, also while Claude works,
   and never interrupt its turn. `/todo` alone opens or closes the pane.
-- `/todo sel` and `/note sel`, or **Take selection** in the pane, add the text you selected in the
+- `/todo sel` and `/note sel`, or **From selection** in the pane, add the text you selected in the
   chat.
 - A task is work to do; a note is something Claude keeps in mind for this session.
 - Claude reads the list with every prompt. It adds tasks for what it sets aside, may change, finish,

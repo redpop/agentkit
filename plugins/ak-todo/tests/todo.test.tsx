@@ -711,3 +711,24 @@ test('the trash fold names itself first, its triangle after, as the Mods pane ca
   expect((await ui.find({ key: 'fold-trash' }))?.text).toBe('Trash (1)\u2002▶\uFE0E')
   await ui.unmount()
 })
+
+test('the pane shows what waits for later above what is done', OWNED, async ($, on) => {
+  const list = listOf(['task', 'a'], ['task', 'b'], ['task', 'c'])
+  list.entries[1] = { ...list.entries[1]!, status: 'done' }
+  list.entries[2] = { ...list.entries[2]!, isDeferred: true }
+  engine(on, { 'list:S1': list })
+  await start($)
+  const ui = await $.ui.mount(PANE)
+  const folds = (await ui.findAll({ type: 'Button' })).map(b => b.key).filter(k => k?.startsWith('fold-'))
+  expect(folds).toEqual(['fold-later', 'fold-done'])
+  await ui.unmount()
+})
+
+test('the selection button is short and its row wraps before it is cut', OWNED, async ($, on) => {
+  engine(on, {}, 'de_DE.UTF-8')
+  await start($)
+  const ui = await $.ui.mount(PANE)
+  expect((await ui.find({ key: 'take-sel' }))?.text).toBe('Aus Markierung')
+  expect((await ui.find({ key: 'kinds' }))?.props.flexWrap).toBe('wrap')
+  await ui.unmount()
+})
