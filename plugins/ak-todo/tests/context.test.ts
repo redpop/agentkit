@@ -1,6 +1,6 @@
 import { expect, test } from 'claude-code/testing'
 
-import { SECTION, joinNotes, listContext } from '../hooks/context'
+import { SECTION, joinNotes, listContext, unsent } from '../hooks/context'
 import { add, emptyList, update } from '../hooks/list'
 import type { Changed, Failure } from '../hooks/list'
 
@@ -33,4 +33,11 @@ test('SECTION names the ask-first rule and the no-remove rule', () => {
 test('joinNotes of nothing is undefined', () => {
   expect(joinNotes([])).toBeUndefined()
   expect(joinNotes(['a', 'b'])).toBe('Changed by the user since your last turn:\n- a\n- b')
+})
+
+test('unsent keeps the notes added after the prompt was sent, also when the cap dropped some', () => {
+  expect(unsent(['a', 'b', 'c'], ['a', 'b'])).toEqual(['c'])
+  expect(unsent(['b', 'c', 'd'], ['a', 'b'])).toEqual(['c', 'd'])
+  expect(unsent(['x'], ['a', 'b'])).toEqual(['x'])
+  expect(unsent(['a', 'b'], ['a', 'b'])).toEqual([])
 })

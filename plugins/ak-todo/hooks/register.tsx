@@ -3,7 +3,7 @@ import type { EngineInterface, Register } from 'claude-code'
 
 import { applyCommand, parseCommand } from './command'
 import type { Applied, Cmd } from './command'
-import { SECTION, SECTION_ID, joinNotes, listContext } from './context'
+import { SECTION, SECTION_ID, joinNotes, listContext, unsent } from './context'
 import { DETECT_SYSTEM, detectPrompt, parseDetected } from './detect'
 import { languageFor, learnLanguage, texts } from './i18n'
 import { add, clean, emptyList, emptyTrash, normalise, numbered, resolve, update } from './list'
@@ -77,10 +77,13 @@ async function togglePane($: EngineInterface): Promise<void> {
  * Every change of the list goes through here: follows the conversation first, applies `change` to
  * the list as it stands at the write (again on a write that lost to another), stores it under the
  * conversation the list belongs to, queues the person's change note for Claude, and opens the pane
- * on a first entry. Answers the reply of the change.
+ * on a first entry. With `only`, nothing happens unless the list is that conversation's. Answers the
+ * reply of the change.
  */
-async function mutate($: EngineInterface, change: (list: TodoList, now: number) => Applied): Promise<string> {
+async function mutate($: EngineInterface, change: (list: TodoList, now: number) => Applied, only?: string): Promise<string> {
   const id = await follow($)
+  // A change meant for one conversation is dropped once another holds the list.
+  if (only !== undefined && id !== only) return ''
   const now = await $.clock.now()
   const out: { applied: Applied; wasEmpty: boolean } = { applied: { reply: '' }, wasEmpty: false }
   await updateState($, LIST, value => {
@@ -117,7 +120,7 @@ async function segmentNow($: EngineInterface): Promise<Segment | undefined> {
  * The detection pass: asks the small model for what the answer leaves open and adds each as
  * Claude's task, skipping what the list holds. A failed or odd reply adds nothing and says nothing.
  */
-async function detect($: EngineInterface, answer: string): Promise<boolean> {
+async function detect($: EngineInterface, answer: string, conversation: string): Promise<boolean> {
   const settings = await loadSettings($)
   if (!settings.detect || answer.trim() === '') return false
   let reply: string
@@ -142,7 +145,7 @@ async function detect($: EngineInterface, answer: string): Promise<boolean> {
     out.isChanged = list !== current
 
     return out.isChanged ? { list, reply: '' } : { reply: '' }
-  })
+  }, conversation)
 
   return out.isChanged
 }
@@ -365,7 +368,7 @@ export const register: Register = on => {
     const blocks = [listContext(await listOf($)), joinNotes(pending)].filter((b): b is string => b !== undefined)
     if (blocks.length === 0) return next(e)
     const done = await next({ ...e, context: [...(e.context ?? []), ...blocks] })
-    if (done.drop === undefined && pending.length > 0) await $.state.set(PENDING, [])
+    if (done.drop === undefined && pending.length > 0) await updateState($, PENDING, value => unsent(value ?? [], pending))
 
     return done
   }).catch(($, e, next) => next(e))
@@ -406,8 +409,10 @@ export const register: Register = on => {
     if (e.agentId !== undefined || e.isAborted || e.reason !== 'answer') return done
     if (await isOff(() => $.mods.isOn({ name: NAME }))) return done
     const answer = e.answer
+    // The answer belongs to the conversation that held the list when it ended.
+    const conversation = await follow($)
     $.clock.after(0, () => {
-      detect($, answer)
+      detect($, answer, conversation)
         .then(isChanged => (isChanged ? publish(() => $.mods.isOn({ name: NAME }), async () => $.mods.segment(await segmentNow($))) : undefined))
         .catch(() => {})
     })

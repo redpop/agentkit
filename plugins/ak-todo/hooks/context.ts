@@ -32,3 +32,16 @@ export const listContext = (list: TodoList): string | undefined => {
 /** The person's changes since Claude's last turn, as one block; nothing when there are none. */
 export const joinNotes = (notes: readonly string[]): string | undefined =>
   notes.length === 0 ? undefined : ['Changed by the user since your last turn:', ...notes.map(n => `- ${n}`)].join('\n')
+
+/**
+ * The change notes still to send, once a prompt carried `sent`: what was added after it went. The
+ * queue keeps its last 20, so the oldest sent may be gone already; and a conversation that moved on
+ * holds notes of its own, which match nothing sent.
+ */
+export const unsent = (current: readonly string[], sent: readonly string[]): string[] => {
+  for (let k = Math.min(sent.length, current.length); k > 0; k--) {
+    if (current.slice(0, k).every((note, i) => note === sent[sent.length - k + i])) return current.slice(k)
+  }
+
+  return [...current]
+}

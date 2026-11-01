@@ -46,9 +46,9 @@ opens only when you ask again, for the rest of the conversation.
 
 One segment in the band that [`ak-mods`](../ak-mods/switcher.md) draws above the prompt, once the
 list has an entry: the number of open tasks and the first of them, and the number of notes, for
-example `3 open · Fix login · 2 notes`. A press on the text opens the pane. With nothing open it
-reads `all done`. Without `ak-mods` (or when it refuses the mod, or a publish fails) the mod draws
-the same text in a band of its own, never both.
+example `3 open · Fix login · 2 notes`. A press on the text opens the pane. With no open task it
+reads how many wait for later (`1 later`), or `all done`. Without `ak-mods` (or when it refuses the
+mod, or a publish fails) the mod draws the same text in a band of its own, never both.
 
 ## Commands
 
@@ -68,7 +68,7 @@ once.
 | `/todo edit N <text>` | Change an entry's text |
 | `/todo rm N` | Delete an entry (it goes to the trash) |
 | `/todo ask N <text>` | Send `<text>` with entry `N` quoted under it |
-| `/todo trash`, `/todo restore N` | List the trash, bring entry `N` back |
+| `/todo trash`, `/todo restore <n>` | List the trash, bring back entry `<n>`, its number in that list |
 | `/todo clear done` | Put every done task in the trash |
 | `/todo detect on`, `/todo detect off` | Switch automatic detection |
 | `/todo model haiku`, `/todo model sonnet` | Choose the detection model |
@@ -90,8 +90,8 @@ once.
 Off by default. When on, after each of Claude's answers a small model (`haiku`, or `sonnet`) looks
 for work the answer set aside and questions it left open, and adds up to five as Claude's tasks.
 What matches an entry already in the list is skipped. A call that fails or answers something odd
-adds nothing and shows nothing. The switch and the model apply to every session: `/todo detect`,
-`/todo model`, or the two pickers in the mod's card in the Mods pane.
+adds nothing and shows nothing. The switch and the model apply to every session: `/todo detect on`
+or `off`, `/todo model haiku` or `sonnet`, or the two pickers in the mod's card in the Mods pane.
 
 ## Keeping the list
 

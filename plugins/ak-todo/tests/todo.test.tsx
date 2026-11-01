@@ -577,3 +577,28 @@ test('/todo model with an unknown alias replies with the choices and adds nothin
   expect((await run($, 'todo', 'model opus')).text).toBe('Detection models: haiku, sonnet.')
   expect(stored['list:S1']).toBeUndefined()
 })
+
+test('detection that ends after the conversation moved on adds to neither list', OWNED, async ($, on) => {
+  const { clock, model, stored } = engine(on, { settings: { detect: true, model: 'haiku' } })
+  let open = () => {}
+  model.gate = new Promise<void>(resolve => (open = resolve))
+  model.reply = '["Fix the cache"]'
+  await start($)
+  await answered($, 'I left the cache for later.')
+  const settling = clock.settle()
+  chat.id = 'S2'
+  open()
+  await settling
+  await clock.settle()
+  expect(stored['list:S1']).toBeUndefined()
+  expect(stored['list:S2']).toBeUndefined()
+})
+
+test('the band does not say all done while tasks wait for later', OWNED, async ($, on) => {
+  const list = stored1('a')
+  list.entries[0] = { ...list.entries[0]!, isDeferred: true }
+  const { clock, toasts } = engine(on, { 'list:S1': list })
+  await start($)
+  await clock.settle()
+  expect(last(toasts)).toBe('1 later')
+})

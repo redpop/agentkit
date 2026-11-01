@@ -26,7 +26,9 @@ export const segmentOf = (list: TodoList, lang: Lang, settings: Settings): Segme
   const { tasks, notes } = numbered(list)
   if (tasks.length + notes.length === 0) return undefined
   const open = tasks.filter(n => n.entry.status !== 'done' && n.entry.isDeferred !== true)
-  const head = open.length > 0 ? `${t.open(open.length)} · ${cut(open[0]!.entry.text)}` : tasks.length > 0 ? t.allDone : ''
+  const later = tasks.filter(n => n.entry.status !== 'done' && n.entry.isDeferred === true).length
+  const head =
+    open.length > 0 ? `${t.open(open.length)} · ${cut(open[0]!.entry.text)}` : later > 0 ? t.laterCount(later) : tasks.length > 0 ? t.allDone : ''
   const text = [head, notes.length > 0 ? t.notes(notes.length) : ''].filter(Boolean).join(' · ')
 
   return {
