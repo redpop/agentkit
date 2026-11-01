@@ -34,7 +34,7 @@ const partsOf = (parts: unknown, text: string): ModsPart[] | undefined => {
 }
 
 // The line icons, on a 24-unit grid in one stroke: drawn, not glyphs, so they look alike everywhere.
-// Lucide's `hash`, `copy`, `check`, `clock`, `flame`, `list-checks` and `notepad-text` (ISC, see
+// Lucide's `hash`, `copy`, `check`, `clock`, `flame`, `list-todo` and `notepad-text` (ISC, see
 // LICENSE-lucide), drawn thinner.
 const ICONS: Record<ModsIcon, string> = {
   id: '<line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/>',
@@ -42,7 +42,7 @@ const ICONS: Record<ModsIcon, string> = {
   check: '<path d="M20 6 9 17l-5-5"/>',
   clock: '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
   flame: '<path d="M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4"/>',
-  tasks: '<path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/>',
+  tasks: '<rect x="3" y="5" width="6" height="6" rx="1"/><path d="m3 17 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/>',
   note: '<path d="M8 2v4"/><path d="M12 2v4"/><path d="M16 2v4"/><rect width="16" height="18" x="4" y="4" rx="2"/><path d="M8 10h6"/><path d="M8 14h8"/><path d="M8 18h5"/>',
 }
 
