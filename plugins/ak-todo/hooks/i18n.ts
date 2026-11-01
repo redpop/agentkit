@@ -73,6 +73,19 @@ const EN = {
   empty: 'Nothing to add: the text is empty.',
   full: 'The list is full (100 entries). Remove some first.',
   notATask: (ref: string) => `${ref} is a note, not a task.`,
+  open: (n: number) => `${n} open`,
+  notes: (n: number) => (n === 1 ? '1 note' : `${n} notes`),
+  allDone: 'all done',
+  show: 'Todo',
+  nothingSelected: 'Nothing selected.',
+  storeFull: 'List is full: nothing saved.',
+  emptyList: 'The list is empty. Add with /todo <text> or /note <text>.',
+  trashEmpty: 'The trash is empty.',
+  trashHeader: 'Trash (restore with /todo restore <n>):',
+  detectOn: 'Detection on: open items in answers become tasks.',
+  detectOff: 'Detection off.',
+  asked: (ref: string) => `Sent with ${ref}.`,
+  isOff: 'ak-todo is off in this chat. Turn it on with /ak-mods or /todo.',
 }
 
 const DE: typeof EN = {
@@ -98,6 +111,19 @@ const DE: typeof EN = {
   empty: 'Nichts hinzuzufügen: der Text ist leer.',
   full: 'Die Liste ist voll (100 Einträge). Entferne erst welche.',
   notATask: (ref: string) => `${ref} ist eine Notiz, keine Aufgabe.`,
+  open: (n: number) => `${n} offen`,
+  notes: (n: number) => (n === 1 ? '1 Notiz' : `${n} Notizen`),
+  allDone: 'alles erledigt',
+  show: 'Todo',
+  nothingSelected: 'Nichts markiert.',
+  storeFull: 'Liste voll: nichts gespeichert.',
+  emptyList: 'Die Liste ist leer. Hinzufügen mit /todo <Text> oder /note <Text>.',
+  trashEmpty: 'Der Papierkorb ist leer.',
+  trashHeader: 'Papierkorb (zurückholen mit /todo restore <n>):',
+  detectOn: 'Erkennung an: offene Punkte in Antworten werden Aufgaben.',
+  detectOff: 'Erkennung aus.',
+  asked: (ref: string) => `Mit ${ref} gesendet.`,
+  isOff: 'ak-todo ist in diesem Chat aus. Einschalten mit /ak-mods oder /todo.',
 }
 
 /** The texts of ak-todo in a language. */

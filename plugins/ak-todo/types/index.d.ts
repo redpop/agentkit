@@ -15,8 +15,12 @@ export type TodoList = { v: 1; nextId: number; entries: Entry[]; trash: Entry[];
 declare module 'claude-code' {
   interface PluginState {
     'ak-todo': {
-      /** This conversation's tasks and notes, mirrored to `$.store`. */
-      list: Shaped<TodoList>
+      /** This conversation's tasks and notes, mirrored to `$.store`; read through `parseList`. */
+      list: TodoList
+      /** The conversation `list` belongs to; another id means the list must be loaded afresh. */
+      conversation: string
+      /** The person's changes Claude has not been told of yet, one line each. */
+      pending: string[]
       /** Whether the person closed the pane in this session; it then stays closed. */
       isPaneClosed: boolean
     }

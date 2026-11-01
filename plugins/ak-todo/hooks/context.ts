@@ -2,7 +2,7 @@ import { numbered } from './list'
 import type { Numbered, TodoList } from './list'
 
 /** The id of the system-prompt section. */
-export const SECTION_ID = 'ak-todo'
+export const SECTION_ID = 'ak-todo:list'
 
 /** The system-prompt instruction: short, as it rides on every request. */
 export const SECTION = [
