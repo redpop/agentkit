@@ -732,3 +732,16 @@ test('the selection button is short and its row wraps before it is cut', OWNED, 
   expect((await ui.find({ key: 'kinds' }))?.props.flexWrap).toBe('wrap')
   await ui.unmount()
 })
+
+test('while a row is edited its field sits on a line of its own, so nothing beside it is cut off', OWNED, async ($, on) => {
+  engine(on, { 'list:S1': listOf(['note', 'Port 3000']) })
+  await start($)
+  const ui = await $.ui.mount(PANE)
+  await ui.press({ key: 'open-1' })
+  await ui.press({ key: 'edit-1' })
+  expect(await ui.find({ key: 'text-1' })).toBeDefined()
+  const header = await ui.find({ key: 'line-1' })
+  expect(JSON.stringify(header?.children)).not.toContain('text-1')
+  expect(JSON.stringify(header?.children)).toContain('open-1')
+  await ui.unmount()
+})
