@@ -547,9 +547,10 @@ export const register: Register = on => {
     return (
       <Box flexDirection="column">
         {/* Capture first: what the pane is for. The kind as two choices side by side, the picked
-            one framed; the selection beside them; the field under them, emptied after each add. */}
+            one framed; the selection beside them, short, and on a line of its own where the pane
+            is too narrow for both; the field under them, emptied after each add. */}
         <Box flexDirection="column" {...card} marginBottom={2}>
-          <Box flexDirection="row" alignItems="center" columnGap={1}>
+          <Box key="kinds" flexDirection="row" flexWrap="wrap" alignItems="center" columnGap={1}>
             <Button key="kind-task" label={t.kindTask} plain={isNote ? true : undefined} dimColor={isNote} onPress={() => void setView($, { kind: 'task' })} />
             <Button key="kind-note" label={t.kindNote} plain={isNote ? undefined : true} dimColor={!isNote} onPress={() => void setView($, { kind: 'note' })} />
             <Box flexGrow={1} />
@@ -575,8 +576,9 @@ export const register: Register = on => {
           <Box flexDirection="column" marginBottom={2}>
             {head(t.tasks, t.open(active.length))}
             {active.map(n => row(n, active))}
-            {fold('done', t.doneFold(done.length), done)}
+            {/* What waits for later is still to do: above what is done. */}
             {fold('later', t.laterFold(later.length), later)}
+            {fold('done', t.doneFold(done.length), done)}
           </Box>
         )}
         {notes.length > 0 && (
