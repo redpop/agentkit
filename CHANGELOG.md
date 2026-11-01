@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.68.0] - 2026-11-01
+
+### ✨ Added
+
+- `ak-todo` — a new mod: tasks and notes for one session that you and Claude both keep, in a pane
+  and one segment in the shared band (`3 open · Fix login`). Add with `/todo <text>`, `/note <text>`,
+  in the pane or from text selected in the chat, also while Claude works, without interrupting its
+  turn. Claude reads the list with every prompt, adds tasks for what it sets aside, may change your
+  entries but never removes them, and asks before it starts on a task; **Do now** and **Discuss**
+  start or draft the talk about one. The list comes back when you reopen the session; `/clear`
+  starts a new one. Automatic detection of open items with a small model is a switch, off by
+  default.
+
+### 🔄 Changed
+
+- `ak-mods` — the default order ends with `ak-todo`.
+
 ## [1.67.7] - 2026-10-31
 
 ### 🐛 Fixed
