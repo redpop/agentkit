@@ -16,6 +16,7 @@ Requires Claude Code 2.1.309 or later (hooks-module support).
 | [Break](ak-pause/pause.md) | ak-pause | Shows how long you have worked without a break, with water and late hints |
 | [Session id](ak-session-id/session-id.md) | ak-session-id | Copies this session's id, so you can name it to another session |
 | [Showcase](ak-showcase/showcase.md) | ak-showcase | A style guide in a pane: every element, prop and variant a mod can draw, with dummy controls |
+| [Todo](ak-todo/todo.md) | ak-todo | Tasks and notes for one session that you and Claude both keep, without interrupting Claude |
 | [Usage](ak-usage/usage.md) | ak-usage | Shows the context fill and the 5-hour limit as one compact segment |
 
 ## Writing a mod

@@ -13,5 +13,6 @@ Hooks are automated actions triggered by Claude Code tool events. They run shell
 | [Break](../mods/ak-pause/pause.md) | ak-pause | Session start/end, prompts, typing, turn start/completion, commands, rendering | Hooks module (TSX) that shows the time worked without a break |
 | [Session id](../mods/ak-session-id/session-id.md) | ak-session-id | Session start/end, commands, rendering | Hooks module (TSX) that copies the session id |
 | [Showcase](../mods/ak-showcase/showcase.md) | ak-showcase | Session start/end, commands, rendering | Hooks module (TSX) that draws a style guide pane |
+| [Todo](../mods/ak-todo/todo.md) | ak-todo | Session start/end, prompts, system prompt, turn completion, its tool, commands, rendering | Hooks module (TSX) that keeps the session's tasks and notes |
 | [Usage](../mods/ak-usage/usage.md) | ak-usage | Session start/end, turn completion, rendering | Hooks module (TSX) that shows the context fill and the rate limits |
 | [Validation Hooks](ak-review/validation-hooks.md) | ak-review | After Write/Edit | Markdown, JSON, shell validation |

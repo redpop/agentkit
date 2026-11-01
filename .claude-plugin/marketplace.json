@@ -134,6 +134,15 @@
       "license": "MIT"
     },
     {
+      "name": "ak-todo",
+      "source": "./plugins/ak-todo",
+      "description": "Mod: tasks and notes for one session that you and Claude both keep, in a pane and one segment in the shared band, without interrupting Claude's turn",
+      "version": "1.67.7",
+      "category": "productivity",
+      "keywords": ["mods", "todo", "tasks", "notes", "pane"],
+      "license": "MIT"
+    },
+    {
       "name": "ak-usage",
       "source": "./plugins/ak-usage",
       "description": "Mod: shows how full this session's context is and how much of the 5-hour limit is used, as one compact segment in the shared band",

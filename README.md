@@ -1,6 +1,6 @@
 # AgentKit
 
-Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) — 17 plugins with 26 skills, 8 agents, a mod switcher with keep-warm, session-id, usage, CI, break and showcase mods, and domain knowledge bases for Git workflows, security, React, and more.
+Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) — 18 plugins with 26 skills, 8 agents, a mod switcher with keep-warm, session-id, usage, CI, break, showcase and todo mods, and domain knowledge bases for Git workflows, security, React, and more.
 
 ## Plugins
 
@@ -21,6 +21,7 @@ Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/
 | [**ak-security**](#ak-security--security-guidelines) | 3 | — | OWASP security guidelines, LLM security, Semgrep static analysis |
 | [**ak-session-id**](#ak-session-id--copy-the-session-id) | — | — | Mod: `/session-id` copies this session's id for another session's agent; its band segment shows the id's end with a copy button |
 | [**ak-showcase**](#ak-showcase--style-guide-for-mods) | — | — | Mod: a style guide pane with every element, prop and variant a mod can draw, the code under each sample, dummy controls that trigger nothing |
+| [**ak-todo**](#ak-todo--tasks-and-notes-for-the-session) | — | — | Mod: tasks and notes for one session that you and Claude both keep, in a pane and one band segment (`3 open · Fix login`); add with `/todo`, `/note` or from selected chat text without interrupting Claude, and the list comes back when you reopen the session |
 | [**ak-usage**](#ak-usage--context-and-rate-limit-at-a-glance) | — | — | Mod: one compact band segment with the context fill and the 5-hour limit as bars (`ctx ▬▬▬▬▬  5h ▬▬▬▬▬`, the empty cells dim) |
 | [**ak-writing**](#ak-writing--prose-quality) | 2 | — | Remove AI-slop patterns from German and English prose: docs, commits, emails, blog posts, slides; clear German technical docs loosely based on ASD-STE100 |
 
@@ -57,6 +58,7 @@ Install all plugins:
 /plugin install ak-security@ak-marketplace
 /plugin install ak-session-id@ak-marketplace
 /plugin install ak-showcase@ak-marketplace
+/plugin install ak-todo@ak-marketplace
 /plugin install ak-usage@ak-marketplace
 /plugin install ak-writing@ak-marketplace
 ```
@@ -261,6 +263,22 @@ with a button to clear it; from 22:00 a dim `Feierabend?`. Once a block it nudge
 moment: a toast after a turn from 60 minutes, or a notification while Claude has been working for
 3 minutes from 50. Nothing of it reaches Claude's context. See
 [Break](docs/mods/ak-pause/pause.md).
+
+### ak-todo — Tasks and Notes for the Session
+
+A mod (needs `ak-mods`, installed with it) that keeps one list of tasks and notes per session, which
+you and Claude both read and write. Add what comes up on the side with `/todo <text>`, `/note <text>`,
+from the pane, or from text you selected in the chat, also while Claude works: nothing interrupts
+its turn. Claude reads the list with every prompt, adds tasks for what it sets aside, may change your
+entries but never removes them, and asks before it starts on a task; **Do now** or a request to work
+through the list starts it. The list comes back when you reopen the session; `/clear` starts a new
+one. A switch, off by default, lets a small model add open items from Claude's answers. See
+[Todo](docs/mods/ak-todo/todo.md).
+
+| Command | What it does | Example |
+| --------- | --------- | --------- |
+| [`/todo`](docs/mods/ak-todo/todo.md#commands) | Add a task, or open the pane; change entries by number | `/todo Fix login`, `/todo done T2` |
+| [`/note`](docs/mods/ak-todo/todo.md#commands) | Add a note Claude keeps in mind | `/note API runs on port 3000` |
 
 ### ak-notifications — macOS Notifications
 
