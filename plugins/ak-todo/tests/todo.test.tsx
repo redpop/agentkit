@@ -33,6 +33,14 @@ const engine = (on: On, stored: Record<string, unknown> = {}, lang = 'en_US.UTF-
   const submitted: string[] = []
   const selection: { text?: string } = {}
   const box = { text: '' }
+  const model: { reply?: string; calls: { model: string; prompt: string }[] } = { calls: [] }
+  on('model.complete', (_, e) => {
+    model.calls.push({ model: e.model, prompt: e.prompt })
+    if (model.reply === undefined) throw new Error('overloaded')
+
+    return { value: { isAnswered: true, text: model.reply, usage: { input_tokens: 1, output_tokens: 1, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 } } }
+  })
+  on('turn.complete', (_, e) => ({ text: e.answer }))
   const opened: string[] = []
   on('session.id', () => ({ value: chat.id }))
   on('session.start', (_, e) => ({ cwd: e.cwd }))
@@ -71,7 +79,7 @@ const engine = (on: On, stored: Record<string, unknown> = {}, lang = 'en_US.UTF-
     return <Text>engine</Text>
   })
 
-  return { clock, toasts, contexts, submitted, selection, stored, box, opened }
+  return { clock, toasts, contexts, submitted, selection, stored, box, opened, model }
 }
 
 type Segment = Parameters<EngineInterface['mods']['segment']>[0]
@@ -418,4 +426,70 @@ test('the segment stays one line for an entry stored before cleaning', OWNED, as
   await start($)
   await clock.settle()
   expect(last(toasts)).toBe('1 open · two lines')
+})
+
+const answered = ($: Engine, answer: string) =>
+  $.turn.complete({ turnId: 'T1', reason: 'answer', answer, durationMs: 1, isAborted: false } as never)
+
+test('detection off by default adds nothing after a turn', OWNED, async ($, on) => {
+  const { clock, model, stored } = engine(on)
+  model.reply = '["Fix the cache"]'
+  await start($)
+  await answered($, 'I left the cache for later.')
+  await clock.settle()
+  expect(model.calls).toEqual([])
+  expect(stored['list:S1']).toBeUndefined()
+})
+
+test('detection on adds Claude-owned tasks', OWNED, async ($, on) => {
+  const { clock, model, stored } = engine(on, { settings: { detect: true, model: 'haiku' } })
+  model.reply = 'Sure: ["Fix the cache", "Ask about the API"]'
+  await start($)
+  await answered($, 'I left the cache for later. Which API?')
+  await clock.settle()
+  expect(model.calls[0]?.model).toBe('haiku')
+  expect((stored['list:S1'] as TodoList).entries.map(e => [e.text, e.owner])).toEqual([
+    ['Fix the cache', 'claude'],
+    ['Ask about the API', 'claude'],
+  ])
+})
+
+test('a model call that fails adds nothing and shows no toast', OWNED, async ($, on) => {
+  const { clock, model, stored, toasts } = engine(on, { settings: { detect: true, model: 'haiku' } })
+  await start($)
+  const before = toasts.filter(t => !t.startsWith(SEGMENT)).length
+  await answered($, 'Some answer.')
+  await clock.settle()
+  expect(model.calls.length).toBe(1)
+  expect(stored['list:S1']).toBeUndefined()
+  expect(toasts.filter(t => !t.startsWith(SEGMENT)).length).toBe(before)
+  // The next turn tries again.
+  model.reply = '["Later thing"]'
+  await answered($, 'Another answer.')
+  await clock.settle()
+  expect((stored['list:S1'] as TodoList).entries.map(e => e.text)).toEqual(['Later thing'])
+})
+
+test('a detected text equal to an existing entry is skipped', OWNED, async ($, on) => {
+  const { clock, model, stored } = engine(on, { settings: { detect: true, model: 'haiku' }, 'list:S1': stored1('Fix the cache') })
+  model.reply = '["fix  the cache", "New one"]'
+  await start($)
+  await answered($, 'x')
+  await clock.settle()
+  expect((stored['list:S1'] as TodoList).entries.map(e => e.text)).toEqual(['Fix the cache', 'New one'])
+})
+
+test('the settings rows pick detection and its model', OWNED, async ($, on) => {
+  const { clock, toasts, stored } = engine(on, { 'list:S1': stored1('a') })
+  await start($)
+  await clock.settle()
+  expect(segments(toasts).at(-1)?.settings?.rows.map(r => [r.key, r.value])).toEqual([
+    ['detect', 'off'],
+    ['model', 'haiku'],
+  ])
+  await run($, 'todo', 'model sonnet')
+  await run($, 'todo', 'detect on')
+  await clock.settle()
+  expect(stored.settings).toEqual({ detect: true, model: 'sonnet' })
+  expect(segments(toasts).at(-1)?.settings?.rows.map(r => r.value)).toEqual(['on', 'sonnet'])
 })

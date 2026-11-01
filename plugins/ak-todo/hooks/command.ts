@@ -15,12 +15,15 @@ export type Cmd =
   | { kind: 'restore'; index: number }
   | { kind: 'clear-done' }
   | { kind: 'detect'; isOn: boolean }
+  | { kind: 'model'; alias: string }
 
 /** A command's outcome: the changed list and the hidden line for Claude, or only a reply. */
 export type Applied = { list: TodoList; reply: string; note?: string } | { reply: string }
 
 const REF = /^[tn]?[1-9]\d*$/i
 const COUNT = /^[1-9]\d*$/
+// The models the detection pass may use.
+const MODELS = /^(haiku|sonnet)$/i
 
 /**
  * The first word is a subcommand only when its arguments parse; otherwise the whole argument string
@@ -44,6 +47,7 @@ export const parseCommand = (command: 'todo' | 'note', args: string): Cmd => {
     if (sub === 'restore' && COUNT.test(first)) return { kind: 'restore', index: Number(first) }
     if (sub === 'clear' && first.toLowerCase() === 'done') return { kind: 'clear-done' }
     if (sub === 'detect' && /^(on|off)$/i.test(first)) return { kind: 'detect', isOn: first.toLowerCase() === 'on' }
+    if (sub === 'model' && MODELS.test(first)) return { kind: 'model', alias: first.toLowerCase() }
   }
   if (rest.length === 2 && sub === 'move' && REF.test(first) && COUNT.test(second)) return { kind: 'move', ref: first, to: Number(second) }
   if (rest.length >= 2 && (sub === 'edit' || sub === 'ask') && REF.test(first)) return { kind: sub, ref: first, text: tail }
@@ -59,7 +63,7 @@ const refOf = (list: TodoList, entry: Entry): string => {
 }
 
 /**
- * Applies a command that changes the list. `toggle`, `sel`, `trash`, `ask` and `detect` are the
+ * Applies a command that changes the list. `toggle`, `sel`, `trash`, `ask`, `detect` and `model` are the
  * caller's: they come back with the list unchanged and no reply.
  */
 export const applyCommand = (list: TodoList, cmd: Cmd, now: number, lang: Lang): Applied => {

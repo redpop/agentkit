@@ -36,6 +36,8 @@ test('parses the subcommands without a ref', () => {
   expect(parseCommand('todo', 'restore 2')).toEqual({ kind: 'restore', index: 2 })
   expect(parseCommand('todo', 'clear done')).toEqual({ kind: 'clear-done' })
   expect(parseCommand('todo', 'detect on')).toEqual({ kind: 'detect', isOn: true })
+  expect(parseCommand('todo', 'model sonnet')).toEqual({ kind: 'model', alias: 'sonnet' })
+  expect(parseCommand('todo', 'model of the car')).toEqual({ kind: 'add', entry: 'task', text: 'model of the car' })
   expect(parseCommand('todo', 'ask T1 what now?')).toEqual({ kind: 'ask', ref: 'T1', text: 'what now?' })
 })
 

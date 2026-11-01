@@ -3,8 +3,9 @@ import type { EngineInterface, Register } from 'claude-code'
 import { applyCommand, parseCommand } from './command'
 import type { Cmd } from './command'
 import { SECTION, SECTION_ID, joinNotes, listContext } from './context'
+import { DETECT_SYSTEM, detectPrompt, parseDetected } from './detect'
 import { languageFor, learnLanguage, texts } from './i18n'
-import { clean, emptyList, emptyTrash, numbered, resolve, update } from './list'
+import { add, clean, emptyList, emptyTrash, normalise, numbered, resolve, update } from './list'
 import type { Entry, Kind, Numbered, TodoList } from './list'
 import { conversationId, loadList, loadSettings, parseList, pruneStale, saveList, saveSettings } from './store'
 import { TOOL, applyTool } from './tool'
@@ -83,7 +84,37 @@ async function keep($: EngineInterface, list: TodoList, note?: string): Promise<
 
 /** The segment for the held list. */
 async function segmentNow($: EngineInterface): Promise<Segment | undefined> {
-  return segmentOf(await listOf($), await languageFor($))
+  return segmentOf(await listOf($), await languageFor($), await loadSettings($))
+}
+
+/**
+ * The detection pass: asks the small model for what the answer leaves open and adds each as
+ * Claude's task, skipping what the list holds. A failed or odd reply adds nothing and says nothing.
+ */
+async function detect($: EngineInterface, answer: string): Promise<boolean> {
+  const settings = await loadSettings($)
+  if (!settings.detect || answer.trim() === '') return false
+  let reply: string
+  try {
+    const done = await $.model.complete({ model: settings.model, system: DETECT_SYSTEM, prompt: detectPrompt(answer, await listOf($)) })
+    if (!done.isAnswered) return false
+    reply = done.text
+  } catch {
+    return false
+  }
+  let list = await listOf($)
+  const now = await $.clock.now()
+  let isChanged = false
+  for (const text of parseDetected(reply)) {
+    if (list.entries.some(e => normalise(e.text) === normalise(text))) continue
+    const result = add(list, { kind: 'task', text, owner: 'claude' }, now)
+    if ('error' in result) continue
+    list = result.list
+    isChanged = true
+  }
+  if (isChanged) await keep($, list)
+
+  return isChanged
 }
 
 /** The trash as the person reads it, newest first. */
@@ -109,6 +140,11 @@ async function runCommand($: EngineInterface, cmd: Cmd): Promise<string> {
     await saveSettings($, { ...(await loadSettings($)), detect: cmd.isOn })
 
     return cmd.isOn ? t.detectOn : t.detectOff
+  }
+  if (cmd.kind === 'model') {
+    await saveSettings($, { ...(await loadSettings($)), model: cmd.alias })
+
+    return t.modelSet(cmd.alias)
   }
   if (cmd.kind === 'sel') {
     const selection = await $.ui.selection()
@@ -308,6 +344,22 @@ export const register: Register = on => {
     (await isOff(() => $.mods.isOn({ name: NAME }))) ? { description: 'Off in this chat. Do not call it.', isDeferred: true } : next(e),
   )
 
+
+  // After an answer of the main loop, and only with detection switched on, the small model looks
+  // for open items, off the hook so the answer is not held.
+  on('turn.complete', async ($, e, next) => {
+    const done = await next(e)
+    if (e.agentId !== undefined || e.isAborted || e.reason !== 'answer') return done
+    if (await isOff(() => $.mods.isOn({ name: NAME }))) return done
+    const answer = e.answer
+    $.clock.after(0, () => {
+      detect($, answer)
+        .then(isChanged => (isChanged ? publish(() => $.mods.isOn({ name: NAME }), async () => $.mods.segment(await segmentNow($))) : undefined))
+        .catch(() => {})
+    })
+
+    return done
+  }).catch(($, e, next) => next(e))
 
   // The person's close keeps the pane closed for the conversation; any close marks it closed.
   on('ui.close', async ($, e, next) => {
