@@ -480,7 +480,8 @@ export const register: Register = on => {
 
       return (
         <Box key={`row-${id}`} flexDirection="column" {...(isOpen ? card : { marginBottom: isTerminal ? 0 : 'xs' })}>
-          <Box flexDirection="row" alignItems="center" columnGap={1}>
+          {/* A text over several lines: the check, the number and the triangle stay at its first. */}
+          <Box key={`line-${id}`} flexDirection="row" alignItems="flex-start" columnGap={1}>
             {isTask && (
               <Button key={`${isDone ? 'undo' : 'done'}-${id}`} label={isDone ? '☑' : '☐'} plain dimColor={isDone} onPress={onEntry(id, now => ({ kind: isDone ? 'undo' : 'done', ref: now }))} />
             )}
@@ -534,7 +535,8 @@ export const register: Register = on => {
     const fold = (name: string, label: string, rows: Numbered[]) =>
       rows.length === 0 ? null : (
         <Box key={`fold-box-${name}`} flexDirection="column" marginTop="xs">
-          <Button key={`fold-${name}`} label={`${view.open.includes(name) ? '▼' : '▶\uFE0E'} ${label}`} plain dimColor onPress={() => void toggleFold($, name)} />
+          {/* The name first, the triangle after it, as the Mods pane's cards open. */}
+          <Button key={`fold-${name}`} label={`${label} ${view.open.includes(name) ? '▼' : '▶\uFE0E'}`} plain dimColor onPress={() => void toggleFold($, name)} />
           {view.open.includes(name) && <Box flexDirection="column" marginTop="xs">{rows.map(n => row(n, rows))}</Box>}
         </Box>
       )
@@ -586,7 +588,7 @@ export const register: Register = on => {
         {/* The trash is a footnote to the pane: small and dim until opened. */}
         {list.trash.length > 0 && (
           <Box flexDirection="column">
-            <Button key="fold-trash" label={`${view.open.includes('trash') ? '▼' : '▶\uFE0E'} ${t.trashFold(list.trash.length)}`} plain dimColor onPress={() => void toggleFold($, 'trash')} />
+            <Button key="fold-trash" label={`${t.trashFold(list.trash.length)} ${view.open.includes('trash') ? '▼' : '▶\uFE0E'}`} plain dimColor onPress={() => void toggleFold($, 'trash')} />
             {view.open.includes('trash') && (
               <Box flexDirection="column" marginTop="xs">
                 {list.trash.map((entry: Entry, i) => (
