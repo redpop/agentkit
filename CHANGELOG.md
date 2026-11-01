@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.68.4] - 2026-11-01
+
+### 🐛 Fixed
+
+- `ak-todo` — the add and edit fields have three lines and so span the pane on the desktop app,
+  their button beside them. A row is edited on a line of its own under its head, so its number
+  and triangle stay in view in a narrow pane.
+
 ## [1.68.3] - 2026-11-01
 
 ### 🐛 Fixed
