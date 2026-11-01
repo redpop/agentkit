@@ -479,9 +479,17 @@ export async function renderBand(
   // draws there, the space alone parts them, wider than any gap inside a
   // segment, so what belongs together reads as one.
   const separator = (key: string) => <Box key={key} minWidth={1} />
-  // Whether the desktop app draws the segment's text as its button: on its text, or compact with one.
-  const isPressedText = (surface: string, one: (typeof rows)[number][number] | undefined) =>
-    surface === 'desktop' && one !== undefined && (one.button?.isOnText === true || (one.isCompact === true && one.button !== undefined))
+  // Whether the desktop app draws the segment's edge on that side as a Button: its text is its
+  // button (on its text, or compact with one) and the run drawn there is text, not a picture,
+  // which carries no chrome. Space alone is not pressed: the edge is the outermost run that shows.
+  const isButtonEdge = (surface: string, one: (typeof rows)[number][number] | undefined, side: 'start' | 'end') => {
+    if (surface !== 'desktop' || one === undefined) return false
+    if (one.button?.isOnText !== true && !(one.isCompact === true && one.button !== undefined)) return false
+    const shown = (one.rich ?? []).filter(part => isGlyph(part) || part.text.trim() !== '')
+    const edge = side === 'start' ? shown[0] : shown[shown.length - 1]
+
+    return edge === undefined || !isGlyph(edge)
+  }
   // Every space is a gap of the Box, one cell wide: a surface that draws its
   // buttons with chrome spaces them alike. Buttons draw plain (`1: label`,
   // `m: mods +N`): the widths `layout` counts, with the separator and its two
@@ -496,9 +504,11 @@ export async function renderBand(
       {rows.map((row, index) => (
         <Box key={`band-row-${index}`} flexDirection="row" columnGap={1}>
           {row.flatMap((one, at) => [
-            // Beside a segment pressed on its text the desktop app draws a Button, whose chrome is
-            // space enough: a spacer there would part it wider than any two plain segments.
-            ...(at > 0 && !(isPressedText(e.surface, one) || isPressedText(e.surface, row[at - 1])) ? [separator(`sep-${one.name}`)] : []),
+            // Where the desktop app draws a Button at the edge between two segments, its chrome is
+            // space enough: a spacer there would part them wider than any two plain segments.
+            ...(at > 0 && !(isButtonEdge(e.surface, one, 'start') || isButtonEdge(e.surface, row[at - 1], 'end'))
+              ? [separator(`sep-${one.name}`)]
+              : []),
             // A segment keeps its width: where the band's count of a row is short by a little, the
             // row runs over its end rather than wrap a segment's text onto a second line.
             <Box key={`segment-${one.name}`} flexDirection="row" columnGap={1} flexShrink={0}>

@@ -38,7 +38,8 @@ export const segmentOf = (list: TodoList, lang: Lang, settings: Settings): Segme
   const done = tasks.filter(n => n.entry.status === 'done')
   const [count, label] = open.length > 0 ? [open.length, t.openWord] : later.length > 0 ? [later.length, t.laterWord] : [done.length, t.doneWord]
   // Each group a figure and its dim label. On the desktop app an em space parts them, which the band
-  // does not squeeze as it does plain spaces; the terminal parts them by a dim dot. An icon run's text is what a reader gets in its place, and what
+  // does not squeeze as it does plain spaces; dim, it is a run of its own and not part of the
+  // pressed figure before it, whose button would grow by it. The terminal parts them by a dim dot. An icon run's text is what a reader gets in its place, and what
   // an ak-mods without the icon draws.
   const groups: { icon: 'tasks' | 'note'; glyph: string; figure: number; label: string }[] = [
     ...(tasks.length > 0 ? [{ icon: 'tasks' as const, glyph: '✓', figure: count, label }] : []),
@@ -50,7 +51,7 @@ export const segmentOf = (list: TodoList, lang: Lang, settings: Settings): Segme
     { text: ` ${group.label}`, tone: 'dim' },
   ])
   const rich: Part[] = groups.flatMap((group, i): Part[] => [
-    ...(i > 0 ? [{ text: GROUP_SPACE }] : []),
+    ...(i > 0 ? [{ text: GROUP_SPACE, tone: 'dim' as const }] : []),
     { text: group.glyph, icon: group.icon },
     { text: ` ${group.figure}` },
     { text: ` ${group.label}`, tone: 'dim' },
@@ -60,7 +61,7 @@ export const segmentOf = (list: TodoList, lang: Lang, settings: Settings): Segme
     { text: `${group.glyph}${group.figure}` },
   ])
   const shortRich: Part[] = groups.flatMap((group, i): Part[] => [
-    ...(i > 0 ? [{ text: GROUP_SPACE }] : []),
+    ...(i > 0 ? [{ text: GROUP_SPACE, tone: 'dim' as const }] : []),
     { text: group.glyph, icon: group.icon },
     { text: ` ${group.figure}` },
   ])

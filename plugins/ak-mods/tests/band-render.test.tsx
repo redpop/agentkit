@@ -163,6 +163,22 @@ test('a pane-only segment is not drawn in the band', { plugins: [consumer('ak-a'
   }
 })
 
+test('beside a pressed segment that begins or ends with an icon the spacer stays, as an icon has no chrome', { plugins: [consumer('ak-a'), consumer('ak-b'), consumer('ak-c')] }, async ($, on) => {
+  engine(on)
+  await publish($, 'ak-a', 'A', { text: 'alpha' })
+  await publish($, 'ak-b', 'B', {
+    text: '3 open',
+    rich: [{ text: '✓', icon: 'tasks' }, { text: ' 3' }, { text: ' ' }, { text: '✎', icon: 'note' }],
+    button: { label: 'open', command: 'fixture-open', isOnText: true },
+  })
+  await publish($, 'ak-c', 'C', { text: 'gamma' })
+
+  const desk = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  expect(await desk.find({ key: 'sep-ak-b' })).toBeDefined()
+  expect(await desk.find({ key: 'sep-ak-c' })).toBeDefined()
+  await desk.unmount()
+})
+
 test('second row when too wide, a step below the first', { plugins: [consumer('ak-a'), consumer('ak-b')] }, async ($, on) => {
   engine(on)
   await publish($, 'ak-a', 'A', { text: 'alpha-one' })

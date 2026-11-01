@@ -647,7 +647,7 @@ test('the segment reads as the other mods: an icon, a figure and its dim label f
     { text: '✓', icon: 'tasks' },
     { text: ' 2' },
     { text: ' open', tone: 'dim' },
-    { text: '\u2003' },
+    { text: '\u2003', tone: 'dim' },
     { text: '✎', icon: 'note' },
     { text: ' 1' },
     { text: ' note', tone: 'dim' },
