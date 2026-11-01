@@ -479,16 +479,31 @@ export async function renderBand(
   // draws there, the space alone parts them, wider than any gap inside a
   // segment, so what belongs together reads as one.
   const separator = (key: string) => <Box key={key} minWidth={1} />
-  // Whether the desktop app draws the segment's edge on that side as a Button: its text is its
-  // button (on its text, or compact with one) and the run drawn there is text, not a picture,
-  // which carries no chrome. Space alone is not pressed: the edge is the outermost run that shows.
+  // Whether the desktop app draws the segment's edge on that side as a Button, whose chrome then
+  // parts it from its neighbour. Space alone is not pressed and a picture carries no chrome, so the
+  // edge is the outermost run that shows, and it must be text. A segment whose text is its button
+  // (on its text, or compact with one) presses every such run. One with a card presses only its
+  // plain runs, or its dim ones where none is plain; a run in a colour stays text, as segmentView
+  // draws it.
   const isButtonEdge = (surface: string, one: (typeof rows)[number][number] | undefined, side: 'start' | 'end') => {
     if (surface !== 'desktop' || one === undefined) return false
-    if (one.button?.isOnText !== true && !(one.isCompact === true && one.button !== undefined)) return false
-    const shown = (one.rich ?? []).filter(part => isGlyph(part) || part.text.trim() !== '')
+    const isOwnButton = one.button?.isOnText === true || (one.isCompact === true && one.button !== undefined)
+    if (!isOwnButton && cardRowsOf(one) === undefined) return false
+    // Without rich runs the text is one stretch in the segment's tone, its parts within it.
+    const runs: ModsPart[] = one.rich ?? [{ text: one.text }]
+    const shown = runs.filter(part => isGlyph(part) || part.text.trim() !== '')
     const edge = side === 'start' ? shown[0] : shown[shown.length - 1]
+    if (edge === undefined) return true
+    if (isGlyph(edge)) return false
+    if (isOwnButton) return true
+    const lookOf = (part: ModsPart) => {
+      const props = toneProps(part.tone ?? one.tone, surface)
 
-    return edge === undefined || !isGlyph(edge)
+      return props.color !== undefined ? 'color' : props.dimColor === true ? 'dim' : 'plain'
+    }
+    const look = lookOf(edge)
+
+    return look === 'plain' || (look === 'dim' && !shown.some(part => !isGlyph(part) && lookOf(part) === 'plain'))
   }
   // Every space is a gap of the Box, one cell wide: a surface that draws its
   // buttons with chrome spaces them alike. Buttons draw plain (`1: label`,
