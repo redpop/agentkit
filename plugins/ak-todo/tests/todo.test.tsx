@@ -33,15 +33,17 @@ const engine = (on: On, stored: Record<string, unknown> = {}, lang = 'en_US.UTF-
   const submitted: string[] = []
   const selection: { text?: string } = {}
   const box = { text: '' }
-  const model: { reply?: string; calls: { model: string; prompt: string }[] } = { calls: [] }
-  on('model.complete', (_, e) => {
+  const model: { reply?: string; gate?: Promise<void>; calls: { model: string; prompt: string }[] } = { calls: [] }
+  on('model.complete', async (_, e) => {
     model.calls.push({ model: e.model, prompt: e.prompt })
+    await model.gate
     if (model.reply === undefined) throw new Error('overloaded')
 
     return { value: { isAnswered: true, text: model.reply, usage: { input_tokens: 1, output_tokens: 1, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 } } }
   })
   on('turn.complete', (_, e) => ({ text: e.answer }))
   const opened: string[] = []
+  const placement = { isPlaced: true }
   on('session.id', () => ({ value: chat.id }))
   on('session.start', (_, e) => ({ cwd: e.cwd }))
   on('session.end', (_, e) => ({ sessionId: e.sessionId }))
@@ -56,7 +58,7 @@ const engine = (on: On, stored: Record<string, unknown> = {}, lang = 'en_US.UTF-
   on('ui.open', (_, e) => {
     opened.push(e.id)
 
-    return { value: { isPlaced: true } }
+    return { value: placement.isPlaced ? { isPlaced: true } : { isPlaced: false, reason: 'too narrow' } }
   })
   on('prompt.read', () => ({ value: { text: box.text, cursor: box.text.length } }))
   on('prompt.fill', (_, e) => {
@@ -79,7 +81,7 @@ const engine = (on: On, stored: Record<string, unknown> = {}, lang = 'en_US.UTF-
     return <Text>engine</Text>
   })
 
-  return { clock, toasts, contexts, submitted, selection, stored, box, opened, model }
+  return { clock, toasts, contexts, submitted, selection, stored, box, opened, model, placement }
 }
 
 type Segment = Parameters<EngineInterface['mods']['segment']>[0]
@@ -88,6 +90,9 @@ const SEGMENT = 'segment '
 // ak-mods cannot be loaded here, so a plugin above the mod stands in for it, as in ak-pause's
 // tests: declaring switches the mod on, and each published segment comes out as a toast.
 const owner: Register = on => {
+  // Between `hold` and `release` a segment call resolves without being stored, as inside the call
+  // ak-mods makes when its card's picker runs a command.
+  let isPressing = false
   on('engine.create', async ($, e, next) => {
     const built = await next(e)
     const set = async ({ name, on: isOn }: { name: string; on: boolean }) => {
@@ -112,6 +117,7 @@ const owner: Register = on => {
         isOrderMoved: async () => false,
         list: async () => [],
         segment: async (segment: Segment) => {
+          if (isPressing) return
           await built.ui.toast('segment ' + JSON.stringify(typeof segment?.text === 'string' ? segment : null))
         },
       },
@@ -123,6 +129,11 @@ const owner: Register = on => {
     return next(e)
   })
   on('command.run', { command: 'stand-in' }, async ($, e) => {
+    if (e.args === 'hold' || e.args === 'release') {
+      isPressing = e.args === 'hold'
+
+      return {}
+    }
     if (e.args === 'close') {
       await $.ui.close({ id: 'ak-todo' })
 
@@ -492,4 +503,77 @@ test('the settings rows pick detection and its model', OWNED, async ($, on) => {
   await clock.settle()
   expect(stored.settings).toEqual({ detect: true, model: 'sonnet' })
   expect(segments(toasts).at(-1)?.settings?.rows.map(r => r.value)).toEqual(['on', 'sonnet'])
+})
+
+test('after a /resume whose id moves late, a press and a prompt follow to the new conversation', OWNED, async ($, on) => {
+  const other = stored1('Other')
+  const { clock, stored, contexts } = engine(on, { 'list:S1': stored1('Fix login'), 'list:S2': other })
+  await start($)
+  await clock.settle()
+  const ui = await $.ui.mount(PANE)
+  // The end's timer still reads the ended chat's id.
+  await $.session.end({ reason: 'resume', sessionId: 'S1', resume: { kind: 'id', id: 'S1' } } as never)
+  await clock.settle()
+  chat.id = 'S2'
+  await submit($)
+  expect(contexts.at(-1)?.[0]?.includes('Other')).toBe(true)
+  await ui.press({ key: 'later-1' })
+  expect((stored['list:S1'] as TodoList).entries.map(e => [e.text, e.isDeferred])).toEqual([['Fix login', undefined]])
+  expect((stored['list:S2'] as TodoList).entries.map(e => e.text)).toEqual(['Other'])
+  await ui.unmount()
+})
+
+test('a user entry added while detection waits on the model is kept, with its own id', OWNED, async ($, on) => {
+  const { clock, model, stored } = engine(on, { settings: { detect: true, model: 'haiku' } })
+  let open = () => {}
+  model.gate = new Promise<void>(resolve => (open = resolve))
+  model.reply = '["Fix the cache"]'
+  await start($)
+  await answered($, 'I left the cache for later.')
+  const settling = clock.settle()
+  await run($, 'todo', 'Fix login')
+  open()
+  await settling
+  await clock.settle()
+  const entries = (stored['list:S1'] as TodoList).entries
+  expect(entries.map(e => e.text)).toEqual(['Fix login', 'Fix the cache'])
+  expect(new Set(entries.map(e => e.id)).size).toBe(2)
+})
+
+test('a settings pick run inside ak-mods\' call still shows the new value', OWNED, async ($, on) => {
+  const { clock, toasts } = engine(on, { 'list:S1': stored1('a') })
+  await start($)
+  await clock.settle()
+  await run($, 'stand-in', 'hold')
+  await run($, 'todo', 'detect on')
+  await run($, 'stand-in', 'release')
+  await clock.settle()
+  expect(segments(toasts).at(-1)?.settings?.rows[0]?.value).toBe('on')
+})
+
+test('a pane press acts on the entry shown, after Claude moved the numbers', OWNED, async ($, on) => {
+  const { stored } = engine(on, { 'list:S1': listOf(['task', 'a'], ['task', 'b']) })
+  await start($)
+  const ui = await $.ui.mount(PANE)
+  await todo($, { action: 'move', id: 2, to: 1 })
+  await ui.press({ key: 'rm-1' })
+  expect((stored['list:S1'] as TodoList).entries.map(e => e.text)).toEqual(['b'])
+  await ui.unmount()
+})
+
+test('a pane the surface did not place opens on the next /todo', OWNED, async ($, on) => {
+  const { opened, placement } = engine(on)
+  placement.isPlaced = false
+  await start($)
+  await run($, 'todo', 'first')
+  placement.isPlaced = true
+  await run($, 'todo')
+  expect(opened).toEqual(['ak-todo', 'ak-todo'])
+})
+
+test('/todo model with an unknown alias replies with the choices and adds nothing', OWNED, async ($, on) => {
+  const { stored } = engine(on)
+  await start($)
+  expect((await run($, 'todo', 'model opus')).text).toBe('Detection models: haiku, sonnet.')
+  expect(stored['list:S1']).toBeUndefined()
 })

@@ -1,7 +1,8 @@
+import { update as updateState } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
 import { applyCommand, parseCommand } from './command'
-import type { Cmd } from './command'
+import type { Applied, Cmd } from './command'
 import { SECTION, SECTION_ID, joinNotes, listContext } from './context'
 import { DETECT_SYSTEM, detectPrompt, parseDetected } from './detect'
 import { languageFor, learnLanguage, texts } from './i18n'
@@ -42,23 +43,26 @@ async function listOf($: EngineInterface): Promise<TodoList> {
  * resume, a /clear), loads that conversation's list, empty when none is stored. A stored value of
  * a bad shape is left as it is until the first change overwrites it.
  */
-async function follow($: EngineInterface): Promise<void> {
+async function follow($: EngineInterface): Promise<string> {
   const id = await conversationId($)
   const { value } = await $.state.get(CONVERSATION)
-  if (value === id) return
+  if (value === id) return id
   const list = (await loadList($, id)) ?? emptyList(await $.clock.now())
   await $.state.set(LIST, list)
   await $.state.set(PENDING, [])
   await $.state.set(PANE_CLOSED, false)
   await $.state.set(CONVERSATION, id)
+
+  return id
 }
 
 /** Opens the pane: when asked, always; on its own (a first entry), unless the person closed it in this conversation. */
 async function openPane($: EngineInterface, isAsked: boolean): Promise<void> {
   const { value: isClosed = false } = await $.state.get(PANE_CLOSED)
   if (!isAsked && isClosed) return
-  await $.ui.open({ id: 'ak-todo', title: texts(await languageFor($)).title })
-  await $.state.set(PANE_OPEN, true)
+  const { isPlaced } = await $.ui.open({ id: 'ak-todo', title: texts(await languageFor($)).title })
+  // A pane no surface placed is not open: the next /todo opens it rather than closing it.
+  await $.state.set(PANE_OPEN, isPlaced)
   if (isAsked) await $.state.set(PANE_CLOSED, false)
 }
 
@@ -69,17 +73,39 @@ async function togglePane($: EngineInterface): Promise<void> {
   else await openPane($, true)
 }
 
-/** Holds and stores a changed list; `note` is queued for Claude when the person made the change. */
-async function keep($: EngineInterface, list: TodoList, note?: string): Promise<void> {
-  const wasEmpty = (await listOf($)).entries.length === 0
-  await $.state.set(LIST, list)
-  if (note !== undefined) {
-    const { value = [] } = await $.state.get(PENDING)
-    await $.state.set(PENDING, [...value, note].slice(-MAX_PENDING))
-  }
-  if (!(await saveList($, await conversationId($), list))) await $.ui.toast(texts(await languageFor($)).storeFull)
+/**
+ * Every change of the list goes through here: follows the conversation first, applies `change` to
+ * the list as it stands at the write (again on a write that lost to another), stores it under the
+ * conversation the list belongs to, queues the person's change note for Claude, and opens the pane
+ * on a first entry. Answers the reply of the change.
+ */
+async function mutate($: EngineInterface, change: (list: TodoList, now: number) => Applied): Promise<string> {
+  const id = await follow($)
+  const now = await $.clock.now()
+  const out: { applied: Applied; wasEmpty: boolean } = { applied: { reply: '' }, wasEmpty: false }
+  await updateState($, LIST, value => {
+    const list = parseList(value) ?? emptyList(now)
+    out.wasEmpty = list.entries.length === 0
+    out.applied = change(list, now)
+
+    return 'list' in out.applied ? out.applied.list : list
+  })
+  const applied = out.applied
+  if (!('list' in applied)) return applied.reply
+  const note = applied.note
+  if (note !== undefined) await updateState($, PENDING, value => [...(value ?? []), note].slice(-MAX_PENDING))
+  if (!(await saveList($, id, applied.list))) await $.ui.toast(texts(await languageFor($)).storeFull)
   $.ui.invalidate('ui.render')
-  if (wasEmpty && list.entries.length > 0) await openPane($, false)
+  if (out.wasEmpty && applied.list.entries.length > 0) await openPane($, false)
+
+  return applied.reply
+}
+
+/** The number an entry has in `list` now, or undefined once it is gone. */
+function refIn(list: TodoList, id: number): string | undefined {
+  const { tasks, notes } = numbered(list)
+
+  return [...tasks, ...notes].find(n => n.entry.id === id)?.ref
 }
 
 /** The segment for the held list. */
@@ -102,19 +128,23 @@ async function detect($: EngineInterface, answer: string): Promise<boolean> {
   } catch {
     return false
   }
-  let list = await listOf($)
-  const now = await $.clock.now()
-  let isChanged = false
-  for (const text of parseDetected(reply)) {
-    if (list.entries.some(e => normalise(e.text) === normalise(text))) continue
-    const result = add(list, { kind: 'task', text, owner: 'claude' }, now)
-    if ('error' in result) continue
-    list = result.list
-    isChanged = true
-  }
-  if (isChanged) await keep($, list)
+  const found = parseDetected(reply)
+  const out = { isChanged: false }
+  // Applied to the list as it stands now: the person may have changed it while the model ran.
+  await mutate($, (current, now) => {
+    let list = current
+    for (const text of found) {
+      if (list.entries.some(e => normalise(e.text) === normalise(text))) continue
+      const result = add(list, { kind: 'task', text, owner: 'claude' }, now)
+      if ('error' in result) continue
+      list = result.list
+    }
+    out.isChanged = list !== current
 
-  return isChanged
+    return out.isChanged ? { list, reply: '' } : { reply: '' }
+  })
+
+  return out.isChanged
 }
 
 /** The trash as the person reads it, newest first. */
@@ -129,7 +159,7 @@ async function trashText($: EngineInterface): Promise<string> {
 async function runCommand($: EngineInterface, cmd: Cmd): Promise<string> {
   const lang = await languageFor($)
   const t = texts(lang)
-  const now = await $.clock.now()
+  await follow($)
   if (cmd.kind === 'toggle') {
     await togglePane($)
 
@@ -146,6 +176,7 @@ async function runCommand($: EngineInterface, cmd: Cmd): Promise<string> {
 
     return t.modelSet(cmd.alias)
   }
+  if (cmd.kind === 'bad-model') return t.models
   if (cmd.kind === 'sel') {
     const selection = await $.ui.selection()
     if (!selection || selection.text.trim() === '') return t.nothingSelected
@@ -164,10 +195,7 @@ async function runCommand($: EngineInterface, cmd: Cmd): Promise<string> {
 
     return t.asked(ref)
   }
-  const applied = applyCommand(await listOf($), cmd, now, lang)
-  if ('list' in applied) await keep($, applied.list, applied.note)
-
-  return applied.reply
+  return mutate($, (list, now) => applyCommand(list, cmd, now, lang))
 }
 
 
@@ -189,20 +217,39 @@ async function toggleFold($: EngineInterface, fold: string): Promise<void> {
 }
 
 /** A pane button that is a command: runs it as `/todo` would, and publishes. */
-async function pressCommand($: EngineInterface, cmd: Cmd, republish: () => Promise<void>): Promise<void> {
+async function pressCommand($: EngineInterface, cmd: Cmd, republish: () => void): Promise<void> {
   await runCommand($, cmd)
-  await republish()
+  republish()
+}
+
+/**
+ * A row's button: the command for the entry with `id`, numbered as the list stands at the press,
+ * so a number that moved since the pane was drawn still names the row pressed.
+ */
+async function pressEntry($: EngineInterface, id: number, make: (ref: string) => Cmd, republish: () => void): Promise<void> {
+  const lang = await languageFor($)
+  await mutate($, (list, now) => {
+    const ref = refIn(list, id)
+
+    return ref === undefined ? { reply: '' } : applyCommand(list, make(ref), now, lang)
+  })
+  republish()
 }
 
 /** **Do now**: the task is being worked on, and Claude is asked to work on it. */
-async function doNow($: EngineInterface, id: number, republish: () => Promise<void>): Promise<void> {
-  const list = await listOf($)
-  const result = update(list, id, { status: 'doing' }, await $.clock.now())
-  if ('error' in result) return
-  const ref = numbered(result.list).tasks.find(n => n.entry.id === id)?.ref ?? ''
-  await keep($, result.list)
-  await republish()
-  const text = texts(await languageFor($)).workOn(ref, result.entry.text)
+async function doNow($: EngineInterface, id: number, republish: () => void): Promise<void> {
+  const out: { ref?: string; text?: string } = {}
+  await mutate($, (list, now) => {
+    const result = update(list, id, { status: 'doing' }, now)
+    if ('error' in result) return { reply: '' }
+    out.ref = refIn(result.list, id)
+    out.text = result.entry.text
+
+    return { list: result.list, reply: '' }
+  })
+  republish()
+  if (out.ref === undefined || out.text === undefined) return
+  const text = texts(await languageFor($)).workOn(out.ref, out.text)
   // Off the press: while a turn runs, the engine queues the prompt.
   $.clock.after(0, () => {
     $.prompt.submit({ text }).catch(() => {})
@@ -218,7 +265,7 @@ async function discuss($: EngineInterface, ref: string, text: string): Promise<v
 }
 
 async function clearTrash($: EngineInterface): Promise<void> {
-  await keep($, emptyTrash(await listOf($), await $.clock.now()))
+  await mutate($, (list, now) => (list.trash.length === 0 ? { reply: '' } : { list: emptyTrash(list, now), reply: '' }))
 }
 
 export const register: Register = on => {
@@ -298,9 +345,12 @@ export const register: Register = on => {
   for (const command of ['todo', 'note'] as const) {
     on('command.run', { command }, async ($, e) => {
       if (await isOff(() => $.mods.isOn({ name: NAME }))) await $.mods.set({ name: NAME, on: true })
-      await follow($)
       const text = await runCommand($, parseCommand(command, e.args))
-      await publish(() => $.mods.isOn({ name: NAME }), async () => $.mods.segment(await segmentNow($)))
+      // Off the hook: a pick in the Mods card runs this inside ak-mods' own call, where a segment
+      // call resolves without reaching ak-mods.
+      $.clock.after(0, () => {
+        publish(() => $.mods.isOn({ name: NAME }), async () => $.mods.segment(await segmentNow($))).catch(() => {})
+      })
 
       return { text }
     })
@@ -309,6 +359,8 @@ export const register: Register = on => {
   // The list and the person's changes reach Claude beside each prompt, never as typed text.
   on('prompt.submit', async ($, e, next) => {
     if (await isOff(() => $.mods.isOn({ name: NAME }))) return next(e)
+    // The id a /clear or resume moved to may have arrived only now.
+    await follow($)
     const { value: pending = [] } = await $.state.get(PENDING)
     const blocks = [listContext(await listOf($)), joinNotes(pending)].filter((b): b is string => b !== undefined)
     if (blocks.length === 0) return next(e)
@@ -329,14 +381,16 @@ export const register: Register = on => {
     if (await isOff(() => $.mods.isOn({ name: NAME }))) {
       return { result: `${NAME} is off in this chat. The person can turn it on with /ak-mods.` }
     }
-    await follow($)
-    const answer = applyTool(await listOf($), e, await $.clock.now())
-    if (answer.list) {
-      await keep($, answer.list)
-      await publish(() => $.mods.isOn({ name: NAME }), async () => $.mods.segment(await segmentNow($)))
-    }
+    const out = { isChanged: false }
+    const text = await mutate($, (list, now) => {
+      const answer = applyTool(list, e, now)
+      out.isChanged = answer.list !== undefined
 
-    return { result: answer.text }
+      return answer.list ? { list: answer.list, reply: answer.text } : { reply: answer.text }
+    })
+    if (out.isChanged) await publish(() => $.mods.isOn({ name: NAME }), async () => $.mods.segment(await segmentNow($)))
+
+    return { result: text }
   }).catch(($, e, next) => next(e))
 
   // The model's view while off: a tool registered earlier waits behind ToolSearch.
@@ -382,8 +436,11 @@ export const register: Register = on => {
     const { tasks, notes } = numbered(list)
     const isNarrow = e.props.bodyColumns < NARROW
     const colours = e.surface === 'desktop' ? OWNER_COLOURS.desktop : OWNER_COLOURS.other
-    const republish = () => publish(() => $.mods.isOn({ name: NAME }), async () => $.mods.segment(await segmentNow($)))
+    const republish = () => {
+      publish(() => $.mods.isOn({ name: NAME }), async () => $.mods.segment(await segmentNow($))).catch(() => {})
+    }
     const command = (cmd: Cmd) => () => void pressCommand($, cmd, republish)
+    const onEntry = (id: number, make: (ref: string) => Cmd) => () => void pressEntry($, id, make, republish)
 
     const active = tasks.filter(n => n.entry.status !== 'done' && n.entry.isDeferred !== true)
     const done = tasks.filter(n => n.entry.status === 'done')
@@ -394,27 +451,26 @@ export const register: Register = on => {
     const row = ({ ref, entry }: Numbered, group: Numbered[]) => {
       const id = entry.id
       const at = group.findIndex(n => n.entry.id === id)
-      const position = Number(ref.slice(1))
       const isTask = entry.kind === 'task'
       const isDone = entry.status === 'done'
       const actions = [
-        ...(at > 0 ? [<Button key={`up-${id}`} label="↑" plain onPress={command({ kind: 'move', ref, to: position - 1 })} />] : []),
-        ...(at >= 0 && at < group.length - 1 ? [<Button key={`down-${id}`} label="↓" plain onPress={command({ kind: 'move', ref, to: position + 1 })} />] : []),
+        ...(at > 0 ? [<Button key={`up-${id}`} label="↑" plain onPress={onEntry(id, now => ({ kind: 'move', ref: now, to: Number(now.slice(1)) - 1 }))} />] : []),
+        ...(at >= 0 && at < group.length - 1 ? [<Button key={`down-${id}`} label="↓" plain onPress={onEntry(id, now => ({ kind: 'move', ref: now, to: Number(now.slice(1)) + 1 }))} />] : []),
         ...(isTask && !isDone && entry.isDeferred !== true ? [<Button key={`do-${id}`} label={t.doNow} plain onPress={() => void doNow($, id, republish)} />] : []),
         <Button key={`discuss-${id}`} label={t.discuss} plain onPress={() => void discuss($, ref, entry.text)} />,
-        ...(isTask && !isDone ? [<Button key={`later-${id}`} label={entry.isDeferred ? t.backLabel : t.laterLabel} plain onPress={command({ kind: 'later', ref })} />] : []),
+        ...(isTask && !isDone ? [<Button key={`later-${id}`} label={entry.isDeferred ? t.backLabel : t.laterLabel} plain onPress={onEntry(id, now => ({ kind: 'later', ref: now }))} />] : []),
         ...(Input ? [<Button key={`edit-${id}`} label={t.edit} plain onPress={() => void setView($, { editing: id })} />] : []),
-        <Button key={`rm-${id}`} label={t.remove} plain dimColor onPress={command({ kind: 'rm', ref })} />,
+        <Button key={`rm-${id}`} label={t.remove} plain dimColor onPress={onEntry(id, now => ({ kind: 'rm', ref: now }))} />,
       ]
       const isMenuOpen = !isNarrow || view.menu === id
 
       return (
         <Box flexDirection="column">
           <Box flexDirection="row" columnGap={1}>
-            {isTask && <Button key={`${isDone ? 'undo' : 'done'}-${id}`} label={isDone ? '☑' : '☐'} plain onPress={command({ kind: isDone ? 'undo' : 'done', ref })} />}
+            {isTask && <Button key={`${isDone ? 'undo' : 'done'}-${id}`} label={isDone ? '☑' : '☐'} plain onPress={onEntry(id, now => ({ kind: isDone ? 'undo' : 'done', ref: now }))} />}
             <Text color={colours[entry.owner]}>●</Text>
             {view.editing === id && Input ? (
-              <Input key={`text-${id}`} value={entry.text} submitLabel={t.save} onSubmit={(value: string) => void pressCommand($, { kind: 'edit', ref, text: value }, republish).then(() => setView($, { editing: undefined }))} />
+              <Input key={`text-${id}`} value={entry.text} submitLabel={t.save} onSubmit={(value: string) => void pressEntry($, id, now => ({ kind: 'edit', ref: now, text: value }), republish).then(() => setView($, { editing: undefined }))} />
             ) : (
               <Text dimColor={isDone}>{`${ref} ${clean(entry.text)}`}</Text>
             )}

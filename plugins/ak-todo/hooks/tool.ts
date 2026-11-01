@@ -73,7 +73,7 @@ export const applyTool = (list: TodoList, input: unknown, now: number): { list?:
   }
   if (typeof input.id !== 'number' || !Number.isInteger(input.id)) return { text: `${action} needs the entry's id.` }
   const id = input.id
-  if (action === 'done') return answer(list, update(list, id, { status: 'done' }, now), 'Done')
+  if (action === 'done') return answer(list, update(list, id, { status: 'done' }, now, 'claude'), 'Done')
   if (action === 'move') {
     if (typeof input.to !== 'number' || !Number.isInteger(input.to) || input.to < 1) return { text: 'move needs to, a position from 1.' }
 
@@ -92,5 +92,5 @@ export const applyTool = (list: TodoList, input: unknown, now: number): { list?:
   if (typeof input.deferred === 'boolean') patch.isDeferred = input.deferred
   if (Object.keys(patch).length === 0) return { text: 'update needs text, status or deferred.' }
 
-  return answer(list, update(list, id, patch, now), 'Updated')
+  return answer(list, update(list, id, patch, now, 'claude'), 'Updated')
 }

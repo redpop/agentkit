@@ -5,6 +5,8 @@ import type { Entry, TodoList } from './list'
 /** A list's store key: this prefix and the conversation's id. */
 export const LIST_PREFIX = 'list:'
 export const SETTINGS_KEY = 'settings'
+/** What `$.store` holds for all sessions together. */
+export const STORE_LIMIT = 4 * 1024 * 1024
 /** Lists untouched this long are dropped at a session start. */
 export const KEEP_MS = 30 * 24 * 60 * 60 * 1000
 
@@ -72,35 +74,45 @@ export async function loadList($: EngineInterface, id: string): Promise<TodoList
 }
 
 // Every stored list by its full key; one with a bad shape is left out.
-async function storedLists($: EngineInterface): Promise<{ lists: Record<string, TodoList>; bad: string[] }> {
+async function storedLists($: EngineInterface): Promise<{ lists: Record<string, TodoList> }> {
   const lists: Record<string, TodoList> = {}
-  const bad: string[] = []
   for (const key of await $.store.keys()) {
     if (!key.startsWith(LIST_PREFIX)) continue
     const list = parseList(await $.store.get(key))
     if (list) lists[key] = list
-    else bad.push(key)
   }
 
-  return { lists, bad }
+  return { lists }
+}
+
+// What the store holds, counted as JSON, with `list` in place of what `key` holds now.
+async function storedSize($: EngineInterface, key: string, list: TodoList): Promise<number> {
+  let size = JSON.stringify(list).length + key.length
+  for (const other of await $.store.keys()) {
+    if (other !== key) size += other.length + JSON.stringify((await $.store.get(other)) ?? null).length
+  }
+
+  return size
 }
 
 /**
- * Writes this conversation's list. When the store refuses the write, the lists of other
- * conversations touched longest ago are dropped one by one and the write tried again; false once
- * none is left to drop and the write still fails.
+ * Writes this conversation's list. When the store refuses the write while it is near its limit,
+ * the lists of other conversations touched longest ago are dropped one by one and the write tried
+ * again; false once none is left to drop and the write still fails. A refusal while the store is
+ * far from full (out of reach, a write cut short) drops nothing.
  */
-export async function saveList($: EngineInterface, id: string, list: TodoList): Promise<boolean> {
+export async function saveList($: EngineInterface, id: string, list: TodoList, limit = STORE_LIMIT): Promise<boolean> {
   const key = LIST_PREFIX + id
   try {
     await $.store.set(key, list)
 
     return true
   } catch {
-    // Over the store's limit, or the store is out of reach: drop the oldest others and retry.
+    // Over the store's limit, or the store is out of reach: decide below.
   }
   let others: string[]
   try {
+    if ((await storedSize($, key, list)) < limit * 0.9) return false
     others = evictable((await storedLists($)).lists, key)
   } catch {
     return false
@@ -119,11 +131,14 @@ export async function saveList($: EngineInterface, id: string, list: TodoList): 
   return false
 }
 
-/** Drops the lists untouched for 30 days and any stored under a list key with a bad shape. */
+/**
+ * Drops the lists untouched for 30 days. A value of a shape this version cannot read stays: a later
+ * version may have written it.
+ */
 export async function pruneStale($: EngineInterface, now: number): Promise<void> {
   try {
-    const { lists, bad } = await storedLists($)
-    for (const key of [...stale(lists, now), ...bad]) await $.store.delete(key)
+    const { lists } = await storedLists($)
+    for (const key of stale(lists, now)) await $.store.delete(key)
   } catch {
     // The store is out of reach: prune at the next start.
   }

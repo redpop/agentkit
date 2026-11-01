@@ -16,11 +16,15 @@ export type Cmd =
   | { kind: 'clear-done' }
   | { kind: 'detect'; isOn: boolean }
   | { kind: 'model'; alias: string }
+  | { kind: 'bad-model'; alias: string }
+  | { kind: 'not-found'; ref: string }
 
 /** A command's outcome: the changed list and the hidden line for Claude, or only a reply. */
 export type Applied = { list: TodoList; reply: string; note?: string } | { reply: string }
 
 const REF = /^[tn]?[1-9]\d*$/i
+// What reads as a number but names no entry: `0`, `-1`, `T0`.
+const NUMBERISH = /^[tn]?-?\d+$/i
 const COUNT = /^[1-9]\d*$/
 // The models the detection pass may use.
 const MODELS = /^(haiku|sonnet)$/i
@@ -42,12 +46,19 @@ export const parseCommand = (command: 'todo' | 'note', args: string): Cmd => {
     if (sub === 'sel') return { kind: 'sel', entry }
     if (sub === 'trash') return { kind: 'trash' }
   }
+  // A subcommand with its arguments in place but a number that names nothing answers so, and adds
+  // nothing: `/todo done 0`.
+  const isOne = rest.length === 1 && ['done', 'undo', 'rm', 'later', 'restore'].includes(sub)
+  const isTwo = (rest.length === 2 && sub === 'move') || (rest.length >= 2 && (sub === 'edit' || sub === 'ask'))
+  if ((isOne || isTwo) && NUMBERISH.test(first) && !(sub === 'restore' ? COUNT : REF).test(first)) return { kind: 'not-found', ref: first }
+  if (rest.length === 2 && sub === 'move' && REF.test(first) && NUMBERISH.test(second) && !COUNT.test(second)) return { kind: 'not-found', ref: second }
   if (rest.length === 1) {
     if ((sub === 'done' || sub === 'undo' || sub === 'rm' || sub === 'later') && REF.test(first)) return { kind: sub, ref: first }
     if (sub === 'restore' && COUNT.test(first)) return { kind: 'restore', index: Number(first) }
     if (sub === 'clear' && first.toLowerCase() === 'done') return { kind: 'clear-done' }
     if (sub === 'detect' && /^(on|off)$/i.test(first)) return { kind: 'detect', isOn: first.toLowerCase() === 'on' }
     if (sub === 'model' && MODELS.test(first)) return { kind: 'model', alias: first.toLowerCase() }
+    if (sub === 'model' && /^[a-z][\w.-]*$/i.test(first)) return { kind: 'bad-model', alias: first }
   }
   if (rest.length === 2 && sub === 'move' && REF.test(first) && COUNT.test(second)) return { kind: 'move', ref: first, to: Number(second) }
   if (rest.length >= 2 && (sub === 'edit' || sub === 'ask') && REF.test(first)) return { kind: sub, ref: first, text: tail }
@@ -63,7 +74,8 @@ const refOf = (list: TodoList, entry: Entry): string => {
 }
 
 /**
- * Applies a command that changes the list. `toggle`, `sel`, `trash`, `ask`, `detect` and `model` are the
+ * Applies a command that changes the list. `toggle`, `sel`, `trash`, `ask`, `detect`, `model` and
+ * `bad-model` are the
  * caller's: they come back with the list unchanged and no reply.
  */
 export const applyCommand = (list: TodoList, cmd: Cmd, now: number, lang: Lang): Applied => {
@@ -80,6 +92,8 @@ export const applyCommand = (list: TodoList, cmd: Cmd, now: number, lang: Lang):
   }
 
   switch (cmd.kind) {
+    case 'not-found':
+      return { reply: t.notFound(cmd.ref.toUpperCase()) }
     case 'add':
       return echo(add(list, { kind: cmd.entry, text: cmd.text, owner: 'user' }, now), t.added, `The person added a ${cmd.entry}`)
     case 'restore': {

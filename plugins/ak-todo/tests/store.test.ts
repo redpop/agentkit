@@ -72,7 +72,7 @@ test('saveList evicts the oldest other list when set rejects, then succeeds', as
     { [LIST_PREFIX + 'old']: listAt(1), [LIST_PREFIX + 'mid']: listAt(5), settings: { detect: false, model: 'haiku' } },
     { rejectsWhile: keys => keys.filter(k => k.startsWith(LIST_PREFIX)).length >= 2 },
   )
-  expect(await saveList(h.$, 'now', listAt(NOW))).toBe(true)
+  expect(await saveList(h.$, 'now', listAt(NOW), 10)).toBe(true)
   expect(h.deleted).toEqual([LIST_PREFIX + 'old'])
   expect(h.data.has(LIST_PREFIX + 'now')).toBe(true)
   expect(h.data.has('settings')).toBe(true)
@@ -80,14 +80,20 @@ test('saveList evicts the oldest other list when set rejects, then succeeds', as
 
 test('saveList answers false when only the current list is left and set still rejects', async () => {
   const h = host({ [LIST_PREFIX + 'now']: listAt(1), [LIST_PREFIX + 'o']: listAt(2) }, { rejectsWhile: () => true })
-  expect(await saveList(h.$, 'now', listAt(NOW))).toBe(false)
+  expect(await saveList(h.$, 'now', listAt(NOW), 10)).toBe(false)
   expect(h.deleted).toEqual([LIST_PREFIX + 'o'])
 })
 
-test('pruneStale drops lists untouched for 30 days and keeps the rest', async () => {
-  const h = host({ [LIST_PREFIX + 'a']: listAt(NOW - KEEP_MS - 1), [LIST_PREFIX + 'b']: listAt(NOW), [LIST_PREFIX + 'bad']: 'x', settings: {} })
+test('saveList deletes nothing when set fails while the store is far from full', async () => {
+  const h = host({ [LIST_PREFIX + 'o']: listAt(2) }, { rejectsWhile: () => true })
+  expect(await saveList(h.$, 'now', listAt(NOW))).toBe(false)
+  expect(h.deleted).toEqual([])
+})
+
+test('pruneStale drops lists untouched for 30 days and keeps the rest, a bad shape too', async () => {
+  const h = host({ [LIST_PREFIX + 'a']: listAt(NOW - KEEP_MS - 1), [LIST_PREFIX + 'b']: listAt(NOW), [LIST_PREFIX + 'bad']: { v: 2 }, settings: {} })
   await pruneStale(h.$, NOW)
-  expect([...h.data.keys()].sort()).toEqual([LIST_PREFIX + 'b', 'settings'])
+  expect([...h.data.keys()].sort()).toEqual([LIST_PREFIX + 'b', LIST_PREFIX + 'bad', 'settings'])
 })
 
 test('loadSettings answers the default when the store throws', async () => {

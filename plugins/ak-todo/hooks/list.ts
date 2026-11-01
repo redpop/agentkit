@@ -77,12 +77,15 @@ export const update = (
   id: number,
   patch: { text?: string; status?: Status; isDeferred?: boolean },
   now: number,
+  by: Owner = 'user',
 ): Changed | Failure => {
   const old = list.entries.find(e => e.id === id)
   if (!old) return { error: 'not-found' }
   if (old.kind === 'note' && (patch.status !== undefined || patch.isDeferred !== undefined)) return { error: 'not-a-task' }
   const text = patch.text === undefined ? old.text : clean(patch.text)
   if (text === '') return { error: 'empty' }
+  // Claude may not bring back, through a new text, what the user removed.
+  if (by === 'claude' && normalise(text) !== normalise(old.text) && list.removed.includes(normalise(text))) return { error: 'removed' }
   const { isDeferred: _, ...rest } = old
   const isDeferred = patch.isDeferred ?? old.isDeferred === true
   const entry: Entry = { ...rest, text, ...(patch.status ? { status: patch.status } : {}), ...(isDeferred ? { isDeferred: true as const } : {}) }

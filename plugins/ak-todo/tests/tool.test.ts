@@ -70,3 +70,8 @@ test('list answers the rendered list', () => {
   expect(applyTool(withEntries(['task', 'a', 'user']), { action: 'list' }, T)).toEqual({ text: 'Session list (ak-todo):\n[T1 id=1 open, user] a' })
   expect(applyTool(emptyList(T), { action: 'list' }, T)).toEqual({ text: 'The session list is empty.' })
 })
+
+test('update cannot bring back a text the user removed', () => {
+  const list = { ...withEntries(['task', 'mine', 'claude']), removed: ['refactor auth'] }
+  expect(applyTool(list, { action: 'update', id: 1, text: 'Refactor  Auth' }, T)).toEqual({ text: 'The user removed this entry earlier. Do not add it again.' })
+})

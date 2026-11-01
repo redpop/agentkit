@@ -38,6 +38,7 @@ test('parses the subcommands without a ref', () => {
   expect(parseCommand('todo', 'detect on')).toEqual({ kind: 'detect', isOn: true })
   expect(parseCommand('todo', 'model sonnet')).toEqual({ kind: 'model', alias: 'sonnet' })
   expect(parseCommand('todo', 'model of the car')).toEqual({ kind: 'add', entry: 'task', text: 'model of the car' })
+  expect(parseCommand('todo', 'model opus')).toEqual({ kind: 'bad-model', alias: 'opus' })
   expect(parseCommand('todo', 'ask T1 what now?')).toEqual({ kind: 'ask', ref: 'T1', text: 'what now?' })
 })
 
@@ -58,9 +59,14 @@ test('unknown ref T9 replies with the ref and leaves the list unchanged', () => 
   expect(result.reply.includes('T9')).toBe(true)
 })
 
-test('0 and -1 are not refs', () => {
-  expect(parseCommand('todo', 'done 0')).toEqual({ kind: 'add', entry: 'task', text: 'done 0' })
-  expect(parseCommand('todo', 'rm -1')).toEqual({ kind: 'add', entry: 'task', text: 'rm -1' })
+test('0 and -1 are refs that match nothing, and change nothing', () => {
+  const list = withEntries(['task', 'a'])
+  for (const args of ['done 0', 'rm -1', 'move T1 0', 'restore 0', 'edit 0 x']) {
+    const result = apply(list, 'todo', args)
+    expect('list' in result).toBe(false)
+    expect(/0|-1/.test(result.reply)).toBe(true)
+  }
+  expect(parseCommand('todo', 'done 0 days')).toEqual({ kind: 'add', entry: 'task', text: 'done 0 days' })
 })
 
 test('done echoes the entry\'s ref and text', () => {
