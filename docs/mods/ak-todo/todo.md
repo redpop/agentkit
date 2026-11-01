@@ -45,7 +45,7 @@ opens only when you ask again, for the rest of the conversation.
 ## Band
 
 One segment in the band that [`ak-mods`](../ak-mods/switcher.md) draws above the prompt, once the
-list has an entry. It reads like the other mods' segments: for the tasks a checked-list icon, a
+list has an entry. It reads like the other mods' segments: for the tasks a todo-list icon, a
 figure and its label in dim beside it, and for the notes a note icon the same way, for example
 `5 open  4 notes`. With no open task the task figure counts what waits for later (`1 later`), then
 what is done. When the band is short of room the segment keeps the icons and the figures. The

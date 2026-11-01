@@ -31,6 +31,7 @@ const engine = (on: On, stored: Record<string, unknown> = {}, lang = 'en_US.UTF-
   const toasts: string[] = []
   const contexts: (readonly string[] | undefined)[] = []
   const submitted: string[] = []
+  const asUser: boolean[] = []
   const selection: { text?: string } = {}
   const box = { text: '' }
   const model: { reply?: string; gate?: Promise<void>; calls: { model: string; prompt: string }[] } = { calls: [] }
@@ -72,7 +73,10 @@ const engine = (on: On, stored: Record<string, unknown> = {}, lang = 'en_US.UTF-
   on('ui.invalidate', () => ({ value: undefined }))
   on('prompt.submit', (_, e) => {
     if (e.origin?.kind === 'composer') contexts.push(e.context)
-    else submitted.push(e.text)
+    else {
+      submitted.push(e.text)
+      asUser.push(e.origin?.kind === 'plugin' && e.origin.asUser === true)
+    }
 
     return { text: e.text, context: e.context }
   })
@@ -83,7 +87,7 @@ const engine = (on: On, stored: Record<string, unknown> = {}, lang = 'en_US.UTF-
     return <Text>engine</Text>
   })
 
-  return { clock, toasts, contexts, submitted, selection, stored, box, opened, model, placement, focused }
+  return { clock, toasts, contexts, submitted, selection, stored, box, opened, model, placement, focused, asUser }
 }
 
 type Segment = Parameters<EngineInterface['mods']['segment']>[0]
@@ -321,8 +325,8 @@ test('the pane lists tasks, folded done and later, and notes', OWNED, async ($, 
   expect(shown.includes('b')).toBe(false)
   expect(shown.includes('n')).toBe(true)
   expect(shown.includes('N1')).toBe(true)
-  expect((await ui.find({ key: 'fold-done' }))?.text).toBe('▶\uFE0E Done (1)')
-  expect((await ui.find({ key: 'fold-later' }))?.text).toBe('▶\uFE0E Later (1)')
+  expect((await ui.find({ key: 'fold-done' }))?.text).toBe('Done (1) ▶\uFE0E')
+  expect((await ui.find({ key: 'fold-later' }))?.text).toBe('Later (1) ▶\uFE0E')
   await ui.press({ key: 'fold-done' })
   expect((await texts(ui)).includes('b')).toBe(true)
   await ui.unmount()
@@ -643,7 +647,7 @@ test('the segment reads as the other mods: an icon, a figure and its dim label f
     { text: '✓', icon: 'tasks' },
     { text: ' 2' },
     { text: ' open', tone: 'dim' },
-    { text: '\u2003' },
+    { text: '\u2003', tone: 'dim' },
     { text: '✎', icon: 'note' },
     { text: ' 1' },
     { text: ' note', tone: 'dim' },
@@ -676,4 +680,43 @@ test('an empty list keeps the Mods card: a pane-only segment with the way to the
   expect(segment?.isPaneOnly).toBe(true)
   expect(segment?.button).toEqual({ label: 'Todo', command: 'todo', args: 'show', isOnText: true })
   expect(segment?.settings?.rows.map(row => row.key)).toEqual(['detect', 'model'])
+})
+
+test('the add field spans the pane, its button at the right end', OWNED, async ($, on) => {
+  engine(on)
+  await start($)
+  const ui = await $.ui.mount(PANE)
+  const field = await ui.find({ key: 'new-field' })
+  expect(field?.props).toMatchObject({ width: '100%', flexDirection: 'column', alignItems: 'stretch' })
+  await ui.unmount()
+})
+
+test('Do now and /todo ask submit as the person\'s own words, without the plugin frame', OWNED, async ($, on) => {
+  const { clock, asUser } = engine(on, { 'list:S1': stored1('Fix login') })
+  await start($)
+  const ui = await $.ui.mount(PANE)
+  await ui.press({ key: 'open-1' })
+  await ui.press({ key: 'do-1' })
+  await run($, 'todo', 'ask T1 still needed?')
+  await clock.settle()
+  expect(asUser).toEqual([true, true])
+  await ui.unmount()
+})
+
+test('a row of several lines keeps its check, number and triangle at its first line', OWNED, async ($, on) => {
+  engine(on, { 'list:S1': listOf(['task', 'a']) })
+  await start($)
+  const ui = await $.ui.mount(PANE)
+  expect((await ui.find({ key: 'line-1' }))?.props.alignItems).toBe('flex-start')
+  await ui.unmount()
+})
+
+test('the trash fold names itself first, its triangle after, as the Mods pane cards do', OWNED, async ($, on) => {
+  const list = listOf(['task', 'a'])
+  list.trash = [{ id: 9, kind: 'task', text: 'gone', owner: 'user', status: 'open' }]
+  engine(on, { 'list:S1': list })
+  await start($)
+  const ui = await $.ui.mount(PANE)
+  expect((await ui.find({ key: 'fold-trash' }))?.text).toBe('Trash (1) ▶\uFE0E')
+  await ui.unmount()
 })

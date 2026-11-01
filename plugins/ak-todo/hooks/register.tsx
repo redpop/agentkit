@@ -196,9 +196,10 @@ async function runCommand($: EngineInterface, cmd: Cmd): Promise<string> {
     const ref = cmd.ref.toUpperCase().replace(/^(\d)/, 'T$1')
     if (!entry) return t.notFound(ref)
     // Off the command's hook: submitted from inside it, the prompt would wait on the turn it holds.
+    // The person asked for it: their own words, without the frame a plugin's prompt carries.
     const text = `${cmd.text}\n\n> ${ref} ${entry.text}`
     $.clock.after(0, () => {
-      $.prompt.submit({ text }).catch(() => {})
+      $.prompt.submit({ text, asUser: true }).catch(() => {})
     })
 
     return t.asked(ref)
@@ -258,9 +259,10 @@ async function doNow($: EngineInterface, id: number, republish: () => void): Pro
   republish()
   if (out.ref === undefined || out.text === undefined) return
   const text = texts(await languageFor($)).workOn(out.ref, out.text)
-  // Off the press: while a turn runs, the engine queues the prompt.
+  // Off the press: while a turn runs, the engine queues the prompt. The person pressed it: their own
+  // words, without the frame a plugin's prompt carries.
   $.clock.after(0, () => {
-    $.prompt.submit({ text }).catch(() => {})
+    $.prompt.submit({ text, asUser: true }).catch(() => {})
   })
 }
 
@@ -478,7 +480,8 @@ export const register: Register = on => {
 
       return (
         <Box key={`row-${id}`} flexDirection="column" {...(isOpen ? card : { marginBottom: isTerminal ? 0 : 'xs' })}>
-          <Box flexDirection="row" alignItems="center" columnGap={1}>
+          {/* A text over several lines: the check, the number and the triangle stay at its first. */}
+          <Box key={`line-${id}`} flexDirection="row" alignItems="flex-start" columnGap={1}>
             {isTask && (
               <Button key={`${isDone ? 'undo' : 'done'}-${id}`} label={isDone ? '☑' : '☐'} plain dimColor={isDone} onPress={onEntry(id, now => ({ kind: isDone ? 'undo' : 'done', ref: now }))} />
             )}
@@ -532,7 +535,8 @@ export const register: Register = on => {
     const fold = (name: string, label: string, rows: Numbered[]) =>
       rows.length === 0 ? null : (
         <Box key={`fold-box-${name}`} flexDirection="column" marginTop="xs">
-          <Button key={`fold-${name}`} label={`${view.open.includes(name) ? '▼' : '▶\uFE0E'} ${label}`} plain dimColor onPress={() => void toggleFold($, name)} />
+          {/* The name first, the triangle after it, as the Mods pane's cards open. */}
+          <Button key={`fold-${name}`} label={`${label} ${view.open.includes(name) ? '▼' : '▶\uFE0E'}`} plain dimColor onPress={() => void toggleFold($, name)} />
           {view.open.includes(name) && <Box flexDirection="column" marginTop="xs">{rows.map(n => row(n, rows))}</Box>}
         </Box>
       )
@@ -551,7 +555,8 @@ export const register: Register = on => {
             <Button key="take-sel" label={t.takeSelection} plain onPress={command({ kind: 'sel', entry: view.kind })} />
           </Box>
           {Input && (
-            <Box marginTop={1}>
+            // The field takes the card's whole width, its own submit button at the right end.
+            <Box key="new-field" marginTop={1} width="100%" flexDirection="column" alignItems="stretch">
               <Input
                 key={`new-${added}`}
                 placeholder={isNote ? t.notePlaceholder : t.taskPlaceholder}
@@ -583,7 +588,7 @@ export const register: Register = on => {
         {/* The trash is a footnote to the pane: small and dim until opened. */}
         {list.trash.length > 0 && (
           <Box flexDirection="column">
-            <Button key="fold-trash" label={`${view.open.includes('trash') ? '▼' : '▶\uFE0E'} ${t.trashFold(list.trash.length)}`} plain dimColor onPress={() => void toggleFold($, 'trash')} />
+            <Button key="fold-trash" label={`${t.trashFold(list.trash.length)} ${view.open.includes('trash') ? '▼' : '▶\uFE0E'}`} plain dimColor onPress={() => void toggleFold($, 'trash')} />
             {view.open.includes('trash') && (
               <Box flexDirection="column" marginTop="xs">
                 {list.trash.map((entry: Entry, i) => (

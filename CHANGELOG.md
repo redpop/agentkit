@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.68.1] - 2026-11-01
+
+### 🐛 Fixed
+
+- `ak-todo` — the add field spans the pane, its button at the right end. **Do now** and
+  `/todo ask` send their prompt as your own words, without the frame a plugin's prompt carries in
+  the chat. A task of several lines keeps its check, number and triangle at its first line, and the
+  folds name themselves before their triangle, as the Mods pane's cards do.
+- `ak-mods` — beside a segment pressed on its text the spacer stays where that segment begins or
+  ends with an icon, which has no button chrome to part it. The tasks icon is Lucide's `list-todo`.
+
 ## [1.68.0] - 2026-11-01
 
 ### ✨ Added
