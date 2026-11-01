@@ -22,8 +22,8 @@ const PANE_CLOSED = { plugin: 'ak-todo', key: 'isPaneClosed' } as const
 const PANE_OPEN = { plugin: 'ak-todo', key: 'isPaneOpen' } as const
 const VIEW = { plugin: 'ak-todo', key: 'view' } as const
 const VIEW_START: { editing?: number; kind: Kind; open: string[]; menu?: number; added?: number } = { kind: 'task', open: [] }
-// The add and edit fields' height: a field of several lines spans the pane on the desktop app,
-// where a one-line field keeps its own narrow width.
+// The add and edit fields' height: in a column box a field of several lines spans the pane on the
+// desktop app, where a one-line field keeps its own narrow width.
 const FIELD_ROWS = 3
 // Claude's mark on its own entries: a fixed colour on the desktop app, where theme keys may draw grey.
 const CLAUDE_COLOUR = { desktop: '#d97757', other: 'claude' } as const
@@ -506,7 +506,9 @@ export const register: Register = on => {
           {/* Edited on a line of its own under the head: the desktop app draws an Input at its own
               width, and beside the number and the triangle it would push them out of the pane. */}
           {isEditing && Input && (
-            <Box marginTop={1}>
+            // A column, as the showcase's multi-line field sits in one: a row box draws its child at
+            // the child's own width, a column stretches it across.
+            <Box key={`edit-box-${id}`} flexDirection="column" marginTop={1}>
               <Input key={`text-${id}`} value={entry.text} rows={FIELD_ROWS} submitLabel={t.save} autoFocus onSubmit={(value: string) => void pressEntry($, id, now => ({ kind: 'edit', ref: now, text: value }), republish).then(() => setView($, { editing: undefined }))} />
             </Box>
           )}
@@ -563,7 +565,8 @@ export const register: Register = on => {
             <Button key="take-sel" label={t.takeSelection} plain onPress={command({ kind: 'sel', entry: view.kind })} />
           </Box>
           {Input && (
-            <Box marginTop={1}>
+            // A column stretches the field across the card; a row would keep it at its own width.
+            <Box key="new-box" flexDirection="column" marginTop={1}>
               <Input
                 key={`new-${added}`}
                 rows={FIELD_ROWS}

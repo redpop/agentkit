@@ -756,3 +756,14 @@ test('the add field and the edit field take several lines, as a multi-line field
   expect((await ui.find({ key: 'text-1' }))?.props.rows).toBe(3)
   await ui.unmount()
 })
+
+test('each field sits in a column box, which stretches a multi-line field across the pane', OWNED, async ($, on) => {
+  engine(on, { 'list:S1': listOf(['task', 'a']) })
+  await start($)
+  const ui = await $.ui.mount(PANE)
+  expect((await ui.find({ key: 'new-box' }))?.props.flexDirection).toBe('column')
+  await ui.press({ key: 'open-1' })
+  await ui.press({ key: 'edit-1' })
+  expect((await ui.find({ key: 'edit-box-1' }))?.props.flexDirection).toBe('column')
+  await ui.unmount()
+})
