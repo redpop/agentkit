@@ -58,6 +58,21 @@ const EN = {
     'Add with /todo <text> or /note <text>, from the pane, or from text selected in the chat, also ' +
     'while Claude works. Claude reads the list every turn, may add and change entries, removes only ' +
     'its own, and asks before it works on a task. The list comes back when you reopen the session.',
+  added: (ref: string, text: string) => `Added: ${ref} ${text}`,
+  done: (ref: string, text: string) => `Done: ${ref} ${text}`,
+  undone: (ref: string, text: string) => `Open again: ${ref} ${text}`,
+  removedEntry: (ref: string, text: string) => `Removed: ${ref} ${text}`,
+  later: (ref: string, text: string) => `Later: ${ref} ${text}`,
+  back: (ref: string, text: string) => `Back: ${ref} ${text}`,
+  moved: (ref: string, text: string) => `Moved: ${ref} ${text}`,
+  edited: (ref: string, text: string) => `Changed: ${ref} ${text}`,
+  restored: (ref: string, text: string) => `Restored: ${ref} ${text}`,
+  cleared: (n: number) => (n === 0 ? 'No done tasks to clear.' : `Moved ${n} done to the trash.`),
+  notFound: (ref: string) => `No entry ${ref}.`,
+  notInTrash: (n: number) => `No entry ${n} in the trash.`,
+  empty: 'Nothing to add: the text is empty.',
+  full: 'The list is full (100 entries). Remove some first.',
+  notATask: (ref: string) => `${ref} is a note, not a task.`,
 }
 
 const DE: typeof EN = {
@@ -68,6 +83,21 @@ const DE: typeof EN = {
     'während Claude arbeitet. Claude liest die Liste in jeder Runde, darf Einträge anlegen und ändern, ' +
     'löscht nur eigene und fragt, bevor es eine Aufgabe angeht. Die Liste kommt beim Wiederöffnen der ' +
     'Session zurück.',
+  added: (ref: string, text: string) => `Hinzugefügt: ${ref} ${text}`,
+  done: (ref: string, text: string) => `Erledigt: ${ref} ${text}`,
+  undone: (ref: string, text: string) => `Wieder offen: ${ref} ${text}`,
+  removedEntry: (ref: string, text: string) => `Entfernt: ${ref} ${text}`,
+  later: (ref: string, text: string) => `Später: ${ref} ${text}`,
+  back: (ref: string, text: string) => `Zurück: ${ref} ${text}`,
+  moved: (ref: string, text: string) => `Verschoben: ${ref} ${text}`,
+  edited: (ref: string, text: string) => `Geändert: ${ref} ${text}`,
+  restored: (ref: string, text: string) => `Wiederhergestellt: ${ref} ${text}`,
+  cleared: (n: number) => (n === 0 ? 'Keine erledigten Aufgaben zum Aufräumen.' : `${n} erledigte in den Papierkorb gelegt.`),
+  notFound: (ref: string) => `Kein Eintrag ${ref}.`,
+  notInTrash: (n: number) => `Kein Eintrag ${n} im Papierkorb.`,
+  empty: 'Nichts hinzuzufügen: der Text ist leer.',
+  full: 'Die Liste ist voll (100 Einträge). Entferne erst welche.',
+  notATask: (ref: string) => `${ref} ist eine Notiz, keine Aufgabe.`,
 }
 
 /** The texts of ak-todo in a language. */
