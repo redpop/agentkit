@@ -745,3 +745,14 @@ test('while a row is edited its field sits on a line of its own, so nothing besi
   expect(JSON.stringify(header?.children)).toContain('open-1')
   await ui.unmount()
 })
+
+test('the add field and the edit field take several lines, as a multi-line field spans the pane', OWNED, async ($, on) => {
+  engine(on, { 'list:S1': listOf(['task', 'a']) })
+  await start($)
+  const ui = await $.ui.mount(PANE)
+  expect((await ui.find({ key: 'new-0' }))?.props.rows).toBe(3)
+  await ui.press({ key: 'open-1' })
+  await ui.press({ key: 'edit-1' })
+  expect((await ui.find({ key: 'text-1' }))?.props.rows).toBe(3)
+  await ui.unmount()
+})

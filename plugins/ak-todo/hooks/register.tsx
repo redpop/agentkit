@@ -22,6 +22,9 @@ const PANE_CLOSED = { plugin: 'ak-todo', key: 'isPaneClosed' } as const
 const PANE_OPEN = { plugin: 'ak-todo', key: 'isPaneOpen' } as const
 const VIEW = { plugin: 'ak-todo', key: 'view' } as const
 const VIEW_START: { editing?: number; kind: Kind; open: string[]; menu?: number; added?: number } = { kind: 'task', open: [] }
+// The add and edit fields' height: a field of several lines spans the pane on the desktop app,
+// where a one-line field keeps its own narrow width.
+const FIELD_ROWS = 3
 // Claude's mark on its own entries: a fixed colour on the desktop app, where theme keys may draw grey.
 const CLAUDE_COLOUR = { desktop: '#d97757', other: 'claude' } as const
 // The change lines kept for Claude between two prompts.
@@ -504,7 +507,7 @@ export const register: Register = on => {
               width, and beside the number and the triangle it would push them out of the pane. */}
           {isEditing && Input && (
             <Box marginTop={1}>
-              <Input key={`text-${id}`} value={entry.text} submitLabel={t.save} autoFocus onSubmit={(value: string) => void pressEntry($, id, now => ({ kind: 'edit', ref: now, text: value }), republish).then(() => setView($, { editing: undefined }))} />
+              <Input key={`text-${id}`} value={entry.text} rows={FIELD_ROWS} submitLabel={t.save} autoFocus onSubmit={(value: string) => void pressEntry($, id, now => ({ kind: 'edit', ref: now, text: value }), republish).then(() => setView($, { editing: undefined }))} />
             </Box>
           )}
           {isOpen && (
@@ -563,6 +566,7 @@ export const register: Register = on => {
             <Box marginTop={1}>
               <Input
                 key={`new-${added}`}
+                rows={FIELD_ROWS}
                 placeholder={isNote ? t.notePlaceholder : t.taskPlaceholder}
                 submitLabel={t.add}
                 onSubmit={(value: string) => void pressCommand($, { kind: 'add', entry: view.kind, text: value }, republish).then(() => setView($, { added: added + 1 }))}
