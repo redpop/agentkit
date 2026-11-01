@@ -57,7 +57,9 @@ const EN = {
   details:
     'Add with /todo <text> or /note <text>, from the pane, or from text selected in the chat, also ' +
     'while Claude works. Claude reads the list every turn, may add and change entries, removes only ' +
-    'its own, and asks before it works on a task. The list comes back when you reopen the session.',
+    'its own, and asks before it works on a task. The list comes back when you reopen the session. ' +
+    'Detect open items: after each of Claude\'s answers a small model adds what the answer set aside or ' +
+    'left open as Claude\'s tasks; off by default, the model below.',
   added: (ref: string, text: string) => `Added: ${ref} ${text}`,
   done: (ref: string, text: string) => `Done: ${ref} ${text}`,
   undone: (ref: string, text: string) => `Open again: ${ref} ${text}`,
@@ -74,9 +76,11 @@ const EN = {
   full: 'The list is full (100 entries). Remove some first.',
   notATask: (ref: string) => `${ref} is a note, not a task.`,
   open: (n: number) => `${n} open`,
-  notes: (n: number) => (n === 1 ? '1 note' : `${n} notes`),
-  allDone: 'all done',
-  laterCount: (n: number) => `${n} later`,
+  emptySegment: 'No entries yet',
+  openWord: 'open',
+  laterWord: 'later',
+  doneWord: 'done',
+  noteWord: (n: number): string => (n === 1 ? 'note' : 'notes'),
   show: 'Todo',
   nothingSelected: 'Nothing selected.',
   storeFull: 'List is full: nothing saved.',
@@ -109,10 +113,11 @@ const EN = {
   takeSelection: 'Take selection',
   kindTask: 'Task',
   kindNote: 'Note',
-  newPlaceholder: 'New entry',
+  taskPlaceholder: 'A task for later…',
+  notePlaceholder: 'Something Claude should keep in mind…',
   add: 'Add',
   save: 'Save',
-  nothingYet: 'Nothing yet. Add a task or a note below.',
+  nothingYet: 'Nothing yet. What comes up on the side goes here, and Claude reads it.',
   workOn: (ref: string, text: string) => `Work on ${ref} now: ${text}`,
   draft: (ref: string, text: string) => `About item ${ref} (${text}): `,
 }
@@ -124,7 +129,9 @@ const DE: typeof EN = {
     'Hinzufügen mit /todo <Text> oder /note <Text>, im Pane oder aus markiertem Chat-Text, auch ' +
     'während Claude arbeitet. Claude liest die Liste in jeder Runde, darf Einträge anlegen und ändern, ' +
     'löscht nur eigene und fragt, bevor es eine Aufgabe angeht. Die Liste kommt beim Wiederöffnen der ' +
-    'Session zurück.',
+    'Session zurück. Offene Punkte erkennen: Nach jeder Antwort von Claude trägt ein kleines Modell ' +
+    'als Claudes Aufgaben ein, was die Antwort aufgeschoben oder offen gelassen hat; standardmäßig aus, ' +
+    'das Modell darunter.',
   added: (ref: string, text: string) => `Hinzugefügt: ${ref} ${text}`,
   done: (ref: string, text: string) => `Erledigt: ${ref} ${text}`,
   undone: (ref: string, text: string) => `Wieder offen: ${ref} ${text}`,
@@ -141,9 +148,11 @@ const DE: typeof EN = {
   full: 'Die Liste ist voll (100 Einträge). Entferne erst welche.',
   notATask: (ref: string) => `${ref} ist eine Notiz, keine Aufgabe.`,
   open: (n: number) => `${n} offen`,
-  notes: (n: number) => (n === 1 ? '1 Notiz' : `${n} Notizen`),
-  allDone: 'alles erledigt',
-  laterCount: (n: number) => `${n} später`,
+  emptySegment: 'Noch keine Einträge',
+  openWord: 'offen',
+  laterWord: 'später',
+  doneWord: 'erledigt',
+  noteWord: (n: number) => (n === 1 ? 'Notiz' : 'Notizen'),
   show: 'Todo',
   nothingSelected: 'Nichts markiert.',
   storeFull: 'Liste voll: nichts gespeichert.',
@@ -176,10 +185,11 @@ const DE: typeof EN = {
   takeSelection: 'Markierung übernehmen',
   kindTask: 'Aufgabe',
   kindNote: 'Notiz',
-  newPlaceholder: 'Neuer Eintrag',
+  taskPlaceholder: 'Eine Aufgabe für später …',
+  notePlaceholder: 'Etwas, das Claude im Kopf behalten soll …',
   add: 'Hinzufügen',
   save: 'Speichern',
-  nothingYet: 'Noch nichts. Unten eine Aufgabe oder Notiz hinzufügen.',
+  nothingYet: 'Noch nichts. Was nebenbei aufkommt, landet hier, und Claude liest es.',
   workOn: (ref: string, text: string) => `Arbeite jetzt an ${ref}: ${text}`,
   draft: (ref: string, text: string) => `Zu Punkt ${ref} (${text}): `,
 }

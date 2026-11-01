@@ -44,6 +44,7 @@ const engine = (on: On, stored: Record<string, unknown> = {}, lang = 'en_US.UTF-
   on('turn.complete', (_, e) => ({ text: e.answer }))
   const opened: string[] = []
   const placement = { isPlaced: true }
+  const focused: boolean[] = []
   on('session.id', () => ({ value: chat.id }))
   on('session.start', (_, e) => ({ cwd: e.cwd }))
   on('session.end', (_, e) => ({ sessionId: e.sessionId }))
@@ -57,6 +58,7 @@ const engine = (on: On, stored: Record<string, unknown> = {}, lang = 'en_US.UTF-
   on('ui.selection', () => ({ value: selection.text === undefined ? undefined : { text: selection.text } }))
   on('ui.open', (_, e) => {
     opened.push(e.id)
+    focused.push(e.focus === true)
 
     return { value: placement.isPlaced ? { isPlaced: true } : { isPlaced: false, reason: 'too narrow' } }
   })
@@ -81,7 +83,7 @@ const engine = (on: On, stored: Record<string, unknown> = {}, lang = 'en_US.UTF-
     return <Text>engine</Text>
   })
 
-  return { clock, toasts, contexts, submitted, selection, stored, box, opened, model, placement }
+  return { clock, toasts, contexts, submitted, selection, stored, box, opened, model, placement, focused }
 }
 
 type Segment = Parameters<EngineInterface['mods']['segment']>[0]
@@ -171,7 +173,7 @@ test('/todo text adds a task and the segment shows it', OWNED, async ($, on) => 
   const reply = await run($, 'todo', 'Fix login')
   await clock.settle()
   expect(reply.text).toBe('Added: T1 Fix login')
-  expect(last(toasts)).toBe('1 open · Fix login')
+  expect(last(toasts)).toBe('1 open')
   expect((stored['list:S1'] as TodoList).entries[0]?.text).toBe('Fix login')
 })
 
@@ -224,7 +226,7 @@ test('a resume of the same conversation brings the list back', OWNED, async ($, 
   const { clock, toasts } = engine(on, { 'list:S1': stored1('Fix login') })
   await start($)
   await clock.settle()
-  expect(last(toasts)).toBe('1 open · Fix login')
+  expect(last(toasts)).toBe('1 open')
 })
 
 test('/clear starts an empty list and keeps the old one stored', OWNED, async ($, on) => {
@@ -234,7 +236,7 @@ test('/clear starts an empty list and keeps the old one stored', OWNED, async ($
   chat.id = 'S2'
   await $.session.end({ reason: 'clear', sessionId: 'S1', resume: { kind: 'id', id: 'S1' } } as never)
   await clock.settle()
-  expect(segments(toasts).at(-1)).toBeUndefined()
+  expect(segments(toasts).at(-1)?.isPaneOnly).toBe(true)
   await run($, 'todo', 'New thing')
   expect((stored['list:S2'] as TodoList).entries.map(e => e.text)).toEqual(['New thing'])
   expect((stored['list:S1'] as TodoList).entries.map(e => e.text)).toEqual(['Fix login'])
@@ -275,7 +277,7 @@ test('switched off: tool says off, no context, no section, no segment; on again:
   expect((await compose($)).sections.some(s => s.id === 'ak-todo:list')).toBe(false)
   await run($, 'stand-in', 'on')
   await clock.settle()
-  expect(last(toasts)).toBe('1 open · Fix login')
+  expect(last(toasts)).toBe('1 open')
   await submit($)
   expect(contexts.at(-1)?.[0]?.includes('Fix login')).toBe(true)
 })
@@ -314,13 +316,15 @@ test('the pane lists tasks, folded done and later, and notes', OWNED, async ($, 
   await start($)
   const ui = await $.ui.mount(PANE)
   const shown = await texts(ui)
-  expect(shown.includes('T1 a')).toBe(true)
-  expect(shown.includes('T2 b')).toBe(false)
-  expect(shown.includes('N1 n')).toBe(true)
-  expect((await ui.find({ key: 'fold-done' }))?.text).toBe('▶︎ Done (1)')
-  expect((await ui.find({ key: 'fold-later' }))?.text).toBe('▶︎ Later (1)')
+  expect(shown.includes('a')).toBe(true)
+  expect(shown.includes('T1')).toBe(true)
+  expect(shown.includes('b')).toBe(false)
+  expect(shown.includes('n')).toBe(true)
+  expect(shown.includes('N1')).toBe(true)
+  expect((await ui.find({ key: 'fold-done' }))?.text).toBe('▶\uFE0E Done (1)')
+  expect((await ui.find({ key: 'fold-later' }))?.text).toBe('▶\uFE0E Later (1)')
   await ui.press({ key: 'fold-done' })
-  expect((await texts(ui)).includes('T2 b')).toBe(true)
+  expect((await texts(ui)).includes('b')).toBe(true)
   await ui.unmount()
 })
 
@@ -328,6 +332,7 @@ test('Do now marks doing and submits the prompt', OWNED, async ($, on) => {
   const { clock, submitted, stored } = engine(on, { 'list:S1': listOf(['task', 'Fix login']) })
   await start($)
   const ui = await $.ui.mount(PANE)
+  await ui.press({ key: 'open-1' })
   await ui.press({ key: 'do-1' })
   await clock.settle()
   expect(submitted).toEqual(['Work on T1 now: Fix login'])
@@ -339,6 +344,7 @@ test('Discuss fills an empty box with the German draft', OWNED, async ($, on) =>
   const { box } = engine(on, { 'list:S1': listOf(['task', 'Fix login']) }, 'de_DE.UTF-8')
   await start($)
   const ui = await $.ui.mount(PANE)
+  await ui.press({ key: 'open-1' })
   await ui.press({ key: 'discuss-1' })
   expect(box.text).toBe('Zu Punkt T1 (Fix login): ')
   await ui.unmount()
@@ -349,6 +355,7 @@ test('Discuss appends to a box that has text', OWNED, async ($, on) => {
   await start($)
   box.text = 'Also:'
   const ui = await $.ui.mount(PANE)
+  await ui.press({ key: 'open-1' })
   await ui.press({ key: 'discuss-1' })
   expect(box.text).toBe('Also:\nAbout item N1 (Port 3000): ')
   await ui.unmount()
@@ -358,10 +365,12 @@ test('↑ on T2 makes it T1', OWNED, async ($, on) => {
   const { stored } = engine(on, { 'list:S1': listOf(['task', 'a'], ['task', 'b']) })
   await start($)
   const ui = await $.ui.mount(PANE)
+  await ui.press({ key: 'open-1' })
   expect(await ui.find({ key: 'up-1' })).toBeUndefined()
+  await ui.press({ key: 'open-2' })
   await ui.press({ key: 'up-2' })
   expect((stored['list:S1'] as TodoList).entries.map(e => e.text)).toEqual(['b', 'a'])
-  expect((await texts(ui)).includes('T1 b')).toBe(true)
+  expect((await texts(ui)).filter(text => text === 'a' || text === 'b')).toEqual(['b', 'a'])
   await ui.unmount()
 })
 
@@ -389,8 +398,8 @@ test('the input adds a note when the switch says note', OWNED, async ($, on) => 
   const { stored } = engine(on)
   await start($)
   const ui = await $.ui.mount(PANE)
-  await ui.press({ key: 'kind' })
-  await ui.input({ key: 'new', text: 'Uses port 3000' })
+  await ui.press({ key: 'kind-note' })
+  await ui.input({ key: 'new-0', text: 'Uses port 3000' })
   expect((stored['list:S1'] as TodoList).entries).toEqual([{ id: 1, kind: 'note', text: 'Uses port 3000', owner: 'user' }])
   await ui.unmount()
 })
@@ -399,20 +408,34 @@ test('Edit swaps the row for an input and saves the new text', OWNED, async ($, 
   const { stored } = engine(on, { 'list:S1': listOf(['task', 'old']) })
   await start($)
   const ui = await $.ui.mount(PANE)
+  await ui.press({ key: 'open-1' })
   await ui.press({ key: 'edit-1' })
   await ui.input({ key: 'text-1', text: 'new' })
   expect((stored['list:S1'] as TodoList).entries[0]?.text).toBe('new')
   await ui.unmount()
 })
 
-test('a narrow pane puts row actions behind one button', OWNED, async ($, on) => {
-  engine(on, { 'list:S1': listOf(['task', 'a']) })
+test('a row shows its actions only once opened, one row at a time', OWNED, async ($, on) => {
+  engine(on, { 'list:S1': listOf(['task', 'a'], ['task', 'b']) })
   await start($)
-  const ui = await $.ui.mount({ ...PANE, props: { ...PANE.props, bodyColumns: 30 } })
+  const ui = await $.ui.mount(PANE)
   expect(await ui.find({ key: 'do-1' })).toBeUndefined()
   expect(await ui.find({ key: 'done-1' })).toBeDefined()
-  await ui.press({ key: 'menu-1' })
+  await ui.press({ key: 'open-1' })
   expect(await ui.find({ key: 'do-1' })).toBeDefined()
+  await ui.press({ key: 'open-2' })
+  expect(await ui.find({ key: 'do-1' })).toBeUndefined()
+  expect(await ui.find({ key: 'do-2' })).toBeDefined()
+  await ui.unmount()
+})
+
+test('the add field empties after an add', OWNED, async ($, on) => {
+  engine(on)
+  await start($)
+  const ui = await $.ui.mount(PANE)
+  await ui.input({ key: 'new-0', text: 'first' })
+  expect(await ui.find({ key: 'new-0' })).toBeUndefined()
+  expect((await ui.find({ key: 'new-1' }))?.props.value).toBeUndefined()
   await ui.unmount()
 })
 
@@ -420,7 +443,9 @@ test('the trash restores and empties', OWNED, async ($, on) => {
   const { stored } = engine(on, { 'list:S1': listOf(['task', 'a'], ['task', 'b']) })
   await start($)
   const ui = await $.ui.mount(PANE)
+  await ui.press({ key: 'open-1' })
   await ui.press({ key: 'rm-1' })
+  await ui.press({ key: 'open-2' })
   await ui.press({ key: 'rm-2' })
   await ui.press({ key: 'fold-trash' })
   await ui.press({ key: 'restore-2' })
@@ -436,7 +461,10 @@ test('the segment stays one line for an entry stored before cleaning', OWNED, as
   const { clock, toasts } = engine(on, { 'list:S1': list })
   await start($)
   await clock.settle()
-  expect(last(toasts)).toBe('1 open · two lines')
+  expect(last(toasts)).toBe('1 open')
+  const ui = await $.ui.mount(PANE)
+  expect((await texts(ui)).includes('two lines')).toBe(true)
+  await ui.unmount()
 })
 
 const answered = ($: Engine, answer: string) =>
@@ -517,6 +545,7 @@ test('after a /resume whose id moves late, a press and a prompt follow to the ne
   chat.id = 'S2'
   await submit($)
   expect(contexts.at(-1)?.[0]?.includes('Other')).toBe(true)
+  await ui.press({ key: 'open-1' })
   await ui.press({ key: 'later-1' })
   expect((stored['list:S1'] as TodoList).entries.map(e => [e.text, e.isDeferred])).toEqual([['Fix login', undefined]])
   expect((stored['list:S2'] as TodoList).entries.map(e => e.text)).toEqual(['Other'])
@@ -555,6 +584,7 @@ test('a pane press acts on the entry shown, after Claude moved the numbers', OWN
   const { stored } = engine(on, { 'list:S1': listOf(['task', 'a'], ['task', 'b']) })
   await start($)
   const ui = await $.ui.mount(PANE)
+  await ui.press({ key: 'open-1' })
   await todo($, { action: 'move', id: 2, to: 1 })
   await ui.press({ key: 'rm-1' })
   expect((stored['list:S1'] as TodoList).entries.map(e => e.text)).toEqual(['b'])
@@ -601,4 +631,49 @@ test('the band does not say all done while tasks wait for later', OWNED, async (
   await start($)
   await clock.settle()
   expect(last(toasts)).toBe('1 later')
+})
+
+test('the segment reads as the other mods: an icon, a figure and its dim label for tasks and for notes', OWNED, async ($, on) => {
+  const { clock, toasts } = engine(on, { 'list:S1': listOf(['task', 'Fix login'], ['task', 'b'], ['note', 'n']) })
+  await start($)
+  await clock.settle()
+  const segment = segments(toasts).at(-1)
+  expect(segment?.text).toBe('2 open · 1 note')
+  expect(segment?.rich).toEqual([
+    { text: '✓', icon: 'tasks' },
+    { text: ' 2' },
+    { text: ' open', tone: 'dim' },
+    { text: '\u2003' },
+    { text: '✎', icon: 'note' },
+    { text: ' 1' },
+    { text: ' note', tone: 'dim' },
+  ])
+  expect(segment?.compact?.text).toBe('✓2 · ✎1')
+  expect(segment?.card).toBeUndefined()
+})
+
+test('a list of notes alone counts its notes', OWNED, async ($, on) => {
+  const { clock, toasts } = engine(on, { 'list:S1': listOf(['note', 'n']) })
+  await start($)
+  await clock.settle()
+  expect(last(toasts)).toBe('1 note')
+})
+
+test('the band and the Mods card open the pane and bring it forward, also when it is open', OWNED, async ($, on) => {
+  const { focused, toasts } = engine(on, { 'list:S1': listOf(['task', 'a']) })
+  await start($)
+  await run($, 'todo', 'show')
+  await run($, 'todo', 'show')
+  expect(focused).toEqual([true, true])
+  expect(segments(toasts).at(-1)?.button).toEqual({ label: 'Todo', command: 'todo', args: 'show', isOnText: true })
+})
+
+test('an empty list keeps the Mods card: a pane-only segment with the way to the pane and the settings', OWNED, async ($, on) => {
+  const { clock, toasts } = engine(on)
+  await start($)
+  await clock.settle()
+  const segment = segments(toasts).at(-1)
+  expect(segment?.isPaneOnly).toBe(true)
+  expect(segment?.button).toEqual({ label: 'Todo', command: 'todo', args: 'show', isOnText: true })
+  expect(segment?.settings?.rows.map(row => row.key)).toEqual(['detect', 'model'])
 })

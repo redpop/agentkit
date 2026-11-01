@@ -21,11 +21,9 @@ const PENDING = { plugin: 'ak-todo', key: 'pending' } as const
 const PANE_CLOSED = { plugin: 'ak-todo', key: 'isPaneClosed' } as const
 const PANE_OPEN = { plugin: 'ak-todo', key: 'isPaneOpen' } as const
 const VIEW = { plugin: 'ak-todo', key: 'view' } as const
-const VIEW_START: { editing?: number; kind: Kind; open: string[]; menu?: number } = { kind: 'task', open: [] }
-// Below this many columns a row's actions sit behind one button.
-const NARROW = 40
-// The owner marks: a fixed colour on the desktop app, where theme keys may draw grey.
-const OWNER_COLOURS = { desktop: { user: '#4889cd', claude: '#d97757' }, other: { user: 'permission', claude: 'claude' } } as const
+const VIEW_START: { editing?: number; kind: Kind; open: string[]; menu?: number; added?: number } = { kind: 'task', open: [] }
+// Claude's mark on its own entries: a fixed colour on the desktop app, where theme keys may draw grey.
+const CLAUDE_COLOUR = { desktop: '#d97757', other: 'claude' } as const
 // The change lines kept for Claude between two prompts.
 const MAX_PENDING = 20
 
@@ -60,7 +58,8 @@ async function follow($: EngineInterface): Promise<string> {
 async function openPane($: EngineInterface, isAsked: boolean): Promise<void> {
   const { value: isClosed = false } = await $.state.get(PANE_CLOSED)
   if (!isAsked && isClosed) return
-  const { isPlaced } = await $.ui.open({ id: 'ak-todo', title: texts(await languageFor($)).title })
+  // Asked for, the pane comes to the front too; opened on its own, it leaves the keys where they are.
+  const { isPlaced } = await $.ui.open({ id: 'ak-todo', title: texts(await languageFor($)).title, ...(isAsked ? { focus: true as const } : {}) })
   // A pane no surface placed is not open: the next /todo opens it rather than closing it.
   await $.state.set(PANE_OPEN, isPlaced)
   if (isAsked) await $.state.set(PANE_CLOSED, false)
@@ -112,7 +111,7 @@ function refIn(list: TodoList, id: number): string | undefined {
 }
 
 /** The segment for the held list. */
-async function segmentNow($: EngineInterface): Promise<Segment | undefined> {
+async function segmentNow($: EngineInterface): Promise<Segment> {
   return segmentOf(await listOf($), await languageFor($), await loadSettings($))
 }
 
@@ -165,6 +164,12 @@ async function runCommand($: EngineInterface, cmd: Cmd): Promise<string> {
   await follow($)
   if (cmd.kind === 'toggle') {
     await togglePane($)
+
+    return ''
+  }
+  // The band's segment and the button in the Mods card: open the pane and go there, never close it.
+  if (cmd.kind === 'show') {
+    await openPane($, true)
 
     return ''
   }
@@ -337,7 +342,7 @@ export const register: Register = on => {
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
     if (isSwitched) return next(e)
     const segment = await segmentNow($)
-    if (!segment) return next(e)
+    if (segment.isPaneOnly === true) return next(e)
     const { Text } = $.ui.resolve(e)
 
     return <Text>{segment.text}</Text>
@@ -355,7 +360,8 @@ export const register: Register = on => {
         publish(() => $.mods.isOn({ name: NAME }), async () => $.mods.segment(await segmentNow($))).catch(() => {})
       })
 
-      return { text }
+      // `/todo` alone opens or closes the pane: nothing to say beside it.
+      return text === '' ? {} : { text }
     })
   }
 
@@ -430,7 +436,8 @@ export const register: Register = on => {
     return next(e)
   }).catch(($, e, next) => next(e))
 
-  on('ui.render', { component: 'Pane', requestId: NAME }, async ($, e) => {
+  on('ui.render', { component: 'Pane', requestId: NAME }, async ($, e, next) => {
+    if (await isOff(() => $.mods.isOn({ name: NAME }))) return next(e)
     const elements = $.ui.resolve(e)
     const { Box, Text, Button } = elements
     // A surface without a text field edits and adds through /todo and /note.
@@ -439,8 +446,8 @@ export const register: Register = on => {
     const list = await listOf($)
     const view = await viewOf($)
     const { tasks, notes } = numbered(list)
-    const isNarrow = e.props.bodyColumns < NARROW
-    const colours = e.surface === 'desktop' ? OWNER_COLOURS.desktop : OWNER_COLOURS.other
+    const isTerminal = e.surface === 'terminal'
+    const claude = e.surface === 'desktop' ? CLAUDE_COLOUR.desktop : CLAUDE_COLOUR.other
     const republish = () => {
       publish(() => $.mods.isOn({ name: NAME }), async () => $.mods.segment(await segmentNow($))).catch(() => {})
     }
@@ -451,86 +458,147 @@ export const register: Register = on => {
     const done = tasks.filter(n => n.entry.status === 'done')
     const later = tasks.filter(n => n.entry.status !== 'done' && n.entry.isDeferred === true)
 
-    // One entry: its mark and text (or the field that edits it), then its actions; `group` is
-    // the run of rows the arrows move within.
+    // As the Mods pane groups a mod: on a surface that draws pictures a faint surface of its own,
+    // rounded and edged by a hairline; the terminal parts by space.
+    const card = isTerminal
+      ? { marginBottom: 1 }
+      : { marginBottom: 1, paddingX: 1, paddingY: 1, borderStyle: 'round', borderColor: 'rgba(127,127,127,0.22)', backgroundColor: 'rgba(127,127,127,0.06)' }
+
+    // One entry. Closed it is one quiet line: the check for a task, the text, a Claude mark, the
+    // number the commands take, and the triangle that opens it. Open (one row at a time, as the
+    // Mods pane's cards) it sits on a card with its actions: the frequent ones framed, moving as
+    // arrows, deleting last and apart.
     const row = ({ ref, entry }: Numbered, group: Numbered[]) => {
       const id = entry.id
       const at = group.findIndex(n => n.entry.id === id)
       const isTask = entry.kind === 'task'
       const isDone = entry.status === 'done'
-      const actions = [
-        ...(at > 0 ? [<Button key={`up-${id}`} label="↑" plain onPress={onEntry(id, now => ({ kind: 'move', ref: now, to: Number(now.slice(1)) - 1 }))} />] : []),
-        ...(at >= 0 && at < group.length - 1 ? [<Button key={`down-${id}`} label="↓" plain onPress={onEntry(id, now => ({ kind: 'move', ref: now, to: Number(now.slice(1)) + 1 }))} />] : []),
-        ...(isTask && !isDone && entry.isDeferred !== true ? [<Button key={`do-${id}`} label={t.doNow} plain onPress={() => void doNow($, id, republish)} />] : []),
-        <Button key={`discuss-${id}`} label={t.discuss} plain onPress={() => void discuss($, ref, entry.text)} />,
-        ...(isTask && !isDone ? [<Button key={`later-${id}`} label={entry.isDeferred ? t.backLabel : t.laterLabel} plain onPress={onEntry(id, now => ({ kind: 'later', ref: now }))} />] : []),
-        ...(Input ? [<Button key={`edit-${id}`} label={t.edit} plain onPress={() => void setView($, { editing: id })} />] : []),
-        <Button key={`rm-${id}`} label={t.remove} plain dimColor onPress={onEntry(id, now => ({ kind: 'rm', ref: now }))} />,
-      ]
-      const isMenuOpen = !isNarrow || view.menu === id
+      const isOpen = view.menu === id
+      const isEditing = isOpen && view.editing === id && Input !== undefined
 
       return (
-        <Box flexDirection="column">
-          <Box flexDirection="row" columnGap={1}>
-            {isTask && <Button key={`${isDone ? 'undo' : 'done'}-${id}`} label={isDone ? '☑' : '☐'} plain onPress={onEntry(id, now => ({ kind: isDone ? 'undo' : 'done', ref: now }))} />}
-            <Text color={colours[entry.owner]}>●</Text>
-            {view.editing === id && Input ? (
-              <Input key={`text-${id}`} value={entry.text} submitLabel={t.save} onSubmit={(value: string) => void pressEntry($, id, now => ({ kind: 'edit', ref: now, text: value }), republish).then(() => setView($, { editing: undefined }))} />
-            ) : (
-              <Text dimColor={isDone}>{`${ref} ${clean(entry.text)}`}</Text>
+        <Box key={`row-${id}`} flexDirection="column" {...(isOpen ? card : { marginBottom: isTerminal ? 0 : 'xs' })}>
+          <Box flexDirection="row" alignItems="center" columnGap={1}>
+            {isTask && (
+              <Button key={`${isDone ? 'undo' : 'done'}-${id}`} label={isDone ? '☑' : '☐'} plain dimColor={isDone} onPress={onEntry(id, now => ({ kind: isDone ? 'undo' : 'done', ref: now }))} />
             )}
-            {isNarrow && <Button key={`menu-${id}`} label="⋯" plain onPress={() => void setView($, { menu: view.menu === id ? undefined : id })} />}
+            <Box flexGrow={1} flexShrink={1}>
+              {isEditing && Input ? (
+                <Input key={`text-${id}`} value={entry.text} submitLabel={t.save} autoFocus onSubmit={(value: string) => void pressEntry($, id, now => ({ kind: 'edit', ref: now, text: value }), republish).then(() => setView($, { editing: undefined }))} />
+              ) : (
+                <Text dimColor={isDone} strikethrough={isDone}>
+                  {clean(entry.text)}
+                </Text>
+              )}
+            </Box>
+            {entry.owner === 'claude' && (
+              <Text size="caption" color={claude}>
+                Claude
+              </Text>
+            )}
+            <Text size="caption" dimColor tabular>
+              {ref}
+            </Text>
+            <Button key={`open-${id}`} label={isOpen ? '▼' : '▶\uFE0E'} plain dimColor onPress={() => void setView($, { menu: isOpen ? undefined : id, editing: undefined })} />
           </Box>
-          {isMenuOpen && (
-            <Box flexDirection="row" columnGap={2} flexWrap="wrap">
-              {actions}
+          {isOpen && (
+            <Box flexDirection="row" flexWrap="wrap" alignItems="center" columnGap={1} rowGap={1} marginTop={1}>
+              {isTask && !isDone && entry.isDeferred !== true && <Button key={`do-${id}`} label={t.doNow} variant="primary" onPress={() => void doNow($, id, republish)} />}
+              <Button key={`discuss-${id}`} label={t.discuss} onPress={() => void discuss($, ref, entry.text)} />
+              {isTask && !isDone && (
+                <Button key={`later-${id}`} label={entry.isDeferred ? t.backLabel : t.laterLabel} onPress={onEntry(id, now => ({ kind: 'later', ref: now }))} />
+              )}
+              {Input && !isEditing && <Button key={`edit-${id}`} label={t.edit} onPress={() => void setView($, { editing: id })} />}
+              {at > 0 && <Button key={`up-${id}`} label="↑" plain onPress={onEntry(id, now => ({ kind: 'move', ref: now, to: Number(now.slice(1)) - 1 }))} />}
+              {at >= 0 && at < group.length - 1 && (
+                <Button key={`down-${id}`} label="↓" plain onPress={onEntry(id, now => ({ kind: 'move', ref: now, to: Number(now.slice(1)) + 1 }))} />
+              )}
+              <Box flexGrow={1} />
+              <Button key={`rm-${id}`} label={t.remove} plain onPress={onEntry(id, now => ({ kind: 'rm', ref: now }))} />
             </Box>
           )}
         </Box>
       )
     }
+    // A section's head: its name and how many it holds, small and dim beside it.
+    const head = (title: string, count: string) => (
+      <Box flexDirection="row" alignItems="center" columnGap={1} marginBottom="xs">
+        <Text bold>{title}</Text>
+        <Text size="caption" dimColor>
+          {count}
+        </Text>
+      </Box>
+    )
     const fold = (name: string, label: string, rows: Numbered[]) =>
       rows.length === 0 ? null : (
-        <Box flexDirection="column">
-          <Button key={`fold-${name}`} label={`${view.open.includes(name) ? '▼' : '▶︎'} ${label}`} plain dimColor onPress={() => void toggleFold($, name)} />
-          {view.open.includes(name) && rows.map(n => row(n, rows))}
+        <Box key={`fold-box-${name}`} flexDirection="column" marginTop="xs">
+          <Button key={`fold-${name}`} label={`${view.open.includes(name) ? '▼' : '▶\uFE0E'} ${label}`} plain dimColor onPress={() => void toggleFold($, name)} />
+          {view.open.includes(name) && <Box flexDirection="column" marginTop="xs">{rows.map(n => row(n, rows))}</Box>}
         </Box>
       )
+    const isNote = view.kind === 'note'
+    const added = view.added ?? 0
 
     return (
-      <Box flexDirection="column" gap={1}>
-        {tasks.length + notes.length === 0 && <Text dimColor>{t.nothingYet}</Text>}
+      <Box flexDirection="column">
+        {/* Capture first: what the pane is for. The kind as two choices side by side, the picked
+            one framed; the selection beside them; the field under them, emptied after each add. */}
+        <Box flexDirection="column" {...card} marginBottom={2}>
+          <Box flexDirection="row" alignItems="center" columnGap={1}>
+            <Button key="kind-task" label={t.kindTask} plain={isNote ? true : undefined} dimColor={isNote} onPress={() => void setView($, { kind: 'task' })} />
+            <Button key="kind-note" label={t.kindNote} plain={isNote ? undefined : true} dimColor={!isNote} onPress={() => void setView($, { kind: 'note' })} />
+            <Box flexGrow={1} />
+            <Button key="take-sel" label={t.takeSelection} plain onPress={command({ kind: 'sel', entry: view.kind })} />
+          </Box>
+          {Input && (
+            <Box marginTop={1}>
+              <Input
+                key={`new-${added}`}
+                placeholder={isNote ? t.notePlaceholder : t.taskPlaceholder}
+                submitLabel={t.add}
+                onSubmit={(value: string) => void pressCommand($, { kind: 'add', entry: view.kind, text: value }, republish).then(() => setView($, { added: added + 1 }))}
+              />
+            </Box>
+          )}
+        </Box>
+        {tasks.length + notes.length === 0 && (
+          <Text size="caption" dimColor>
+            {t.nothingYet}
+          </Text>
+        )}
         {tasks.length > 0 && (
-          <Box flexDirection="column">
-            <Text bold>{t.tasks}</Text>
+          <Box flexDirection="column" marginBottom={2}>
+            {head(t.tasks, t.open(active.length))}
             {active.map(n => row(n, active))}
             {fold('done', t.doneFold(done.length), done)}
             {fold('later', t.laterFold(later.length), later)}
           </Box>
         )}
         {notes.length > 0 && (
-          <Box flexDirection="column">
-            <Text bold>{t.notesHeader}</Text>
+          <Box flexDirection="column" marginBottom={2}>
+            {head(t.notesHeader, String(notes.length))}
             {notes.map(n => row(n, notes))}
           </Box>
         )}
-        <Box flexDirection="column">
-          <Box flexDirection="row" columnGap={1}>
-            <Button key="kind" label={view.kind === 'note' ? t.kindNote : t.kindTask} onPress={() => void setView($, { kind: view.kind === 'note' ? 'task' : 'note' })} />
-            <Button key="take-sel" label={t.takeSelection} plain onPress={command({ kind: 'sel', entry: view.kind })} />
-          </Box>
-          {Input && <Input key="new" placeholder={t.newPlaceholder} submitLabel={t.add} onSubmit={(value: string) => void pressCommand($, { kind: 'add', entry: view.kind, text: value }, republish)} />}
-        </Box>
+        {/* The trash is a footnote to the pane: small and dim until opened. */}
         {list.trash.length > 0 && (
           <Box flexDirection="column">
-            <Button key="fold-trash" label={`${view.open.includes('trash') ? '▼' : '▶︎'} ${t.trashFold(list.trash.length)}`} plain dimColor onPress={() => void toggleFold($, 'trash')} />
-            {view.open.includes('trash') && list.trash.map((entry: Entry, i) => (
-              <Box flexDirection="row" columnGap={1}>
-                <Text dimColor>{`${i + 1}. ${clean(entry.text)}`}</Text>
-                <Button key={`restore-${i + 1}`} label={t.restore} plain onPress={command({ kind: 'restore', index: i + 1 })} />
+            <Button key="fold-trash" label={`${view.open.includes('trash') ? '▼' : '▶\uFE0E'} ${t.trashFold(list.trash.length)}`} plain dimColor onPress={() => void toggleFold($, 'trash')} />
+            {view.open.includes('trash') && (
+              <Box flexDirection="column" marginTop="xs">
+                {list.trash.map((entry: Entry, i) => (
+                  <Box key={`trash-${i + 1}`} flexDirection="row" alignItems="center" columnGap={1}>
+                    <Box flexGrow={1} flexShrink={1}>
+                      <Text dimColor>{clean(entry.text)}</Text>
+                    </Box>
+                    <Button key={`restore-${i + 1}`} label={t.restore} plain onPress={command({ kind: 'restore', index: i + 1 })} />
+                  </Box>
+                ))}
+                <Box marginTop="xs">
+                  <Button key="empty-trash" label={t.emptyTrash} plain dimColor onPress={() => void clearTrash($).then(republish)} />
+                </Box>
               </Box>
-            ))}
-            {view.open.includes('trash') && <Button key="empty-trash" label={t.emptyTrash} plain dimColor onPress={() => void clearTrash($).then(republish)} />}
+            )}
           </Box>
         )}
       </Box>

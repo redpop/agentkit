@@ -45,10 +45,16 @@ opens only when you ask again, for the rest of the conversation.
 ## Band
 
 One segment in the band that [`ak-mods`](../ak-mods/switcher.md) draws above the prompt, once the
-list has an entry: the number of open tasks and the first of them, and the number of notes, for
-example `3 open · Fix login · 2 notes`. A press on the text opens the pane. With no open task it
-reads how many wait for later (`1 later`), or `all done`. Without `ak-mods` (or when it refuses the
-mod, or a publish fails) the mod draws the same text in a band of its own, never both.
+list has an entry. It reads like the other mods' segments: for the tasks a checked-list icon, a
+figure and its label in dim beside it, and for the notes a note icon the same way, for example
+`5 open  4 notes`. With no open task the task figure counts what waits for later (`1 later`), then
+what is done. When the band is short of room the segment keeps the icons and the figures. The
+terminal draws `5 open · 4 notes`, short of room `✓5 · ✎4`. A press on the text opens the pane,
+which shows the rest; the mod's card in the Mods pane holds the **Todo** button, which opens the
+pane and brings it forward, and the two detection settings. With an empty list the band shows
+nothing, and the card still holds both.
+Without `ak-mods` (or when it refuses the mod, or a publish fails) the mod draws the same text in a
+band of its own, never both.
 
 ## Commands
 

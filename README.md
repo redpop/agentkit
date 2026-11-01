@@ -21,7 +21,7 @@ Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/
 | [**ak-security**](#ak-security--security-guidelines) | 3 | — | OWASP security guidelines, LLM security, Semgrep static analysis |
 | [**ak-session-id**](#ak-session-id--copy-the-session-id) | — | — | Mod: `/session-id` copies this session's id for another session's agent; its band segment shows the id's end with a copy button |
 | [**ak-showcase**](#ak-showcase--style-guide-for-mods) | — | — | Mod: a style guide pane with every element, prop and variant a mod can draw, the code under each sample, dummy controls that trigger nothing |
-| [**ak-todo**](#ak-todo--tasks-and-notes-for-the-session) | — | — | Mod: tasks and notes for one session that you and Claude both keep, in a pane and one band segment (`3 open · Fix login`); add with `/todo`, `/note` or from selected chat text without interrupting Claude, and the list comes back when you reopen the session |
+| [**ak-todo**](#ak-todo--tasks-and-notes-for-the-session) | — | — | Mod: tasks and notes for one session that you and Claude both keep, in a pane and one band segment (`5 open · 4 notes`); add with `/todo`, `/note` or from selected chat text without interrupting Claude, and the list comes back when you reopen the session |
 | [**ak-usage**](#ak-usage--context-and-rate-limit-at-a-glance) | — | — | Mod: one compact band segment with the context fill and the 5-hour limit as bars (`ctx ▬▬▬▬▬  5h ▬▬▬▬▬`, the empty cells dim) |
 | [**ak-writing**](#ak-writing--prose-quality) | 2 | — | Remove AI-slop patterns from German and English prose: docs, commits, emails, blog posts, slides; clear German technical docs loosely based on ASD-STE100 |
 

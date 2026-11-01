@@ -1,8 +1,8 @@
 # ak-todo
 
-Tasks and notes for one session that you and Claude both keep. A mod: a pane beside the chat and
-one segment in the shared band above the prompt (`3 open · Fix login`). Needs `ak-mods`, which
-installs with it, switches the mod on or off per chat and draws the band.
+Tasks and notes for one session that you and Claude both keep. A mod: a pane beside the chat and one
+segment in the shared band above the prompt (`5 open  4 notes`, each with its icon). Needs
+`ak-mods`, which installs with it, switches the mod on or off per chat and draws the band.
 
 Requires Claude Code 2.1.309 or later (hooks-module support).
 

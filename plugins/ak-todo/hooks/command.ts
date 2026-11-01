@@ -6,6 +6,7 @@ import type { Changed, Entry, Failure, Kind, TodoList } from './list'
 /** What `/todo` or `/note` was asked to do. */
 export type Cmd =
   | { kind: 'toggle' }
+  | { kind: 'show' }
   | { kind: 'add'; entry: Kind; text: string }
   | { kind: 'sel'; entry: Kind }
   | { kind: 'done' | 'undo' | 'rm' | 'later'; ref: string }
@@ -45,6 +46,7 @@ export const parseCommand = (command: 'todo' | 'note', args: string): Cmd => {
   if (rest.length === 0) {
     if (sub === 'sel') return { kind: 'sel', entry }
     if (sub === 'trash') return { kind: 'trash' }
+    if (sub === 'show') return { kind: 'show' }
   }
   // A subcommand with its arguments in place but a number that names nothing answers so, and adds
   // nothing: `/todo done 0`.
@@ -74,7 +76,7 @@ const refOf = (list: TodoList, entry: Entry): string => {
 }
 
 /**
- * Applies a command that changes the list. `toggle`, `sel`, `trash`, `ask`, `detect`, `model` and
+ * Applies a command that changes the list. `toggle`, `show`, `sel`, `trash`, `ask`, `detect`, `model` and
  * `bad-model` are the
  * caller's: they come back with the list unchanged and no reply.
  */

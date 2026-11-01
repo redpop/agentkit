@@ -25,8 +25,11 @@ declare module 'claude-code' {
       isPaneClosed: boolean
       /** Whether the pane is open. */
       isPaneOpen: boolean
-      /** The pane's own view: the row being edited, the kind a new entry gets, the open folds, the row whose menu is open. */
-      view: { editing?: number; kind: Kind; open: string[]; menu?: number }
+      /**
+       * The pane's own view: the row being edited, the kind a new entry gets, the open folds, the
+       * open row, and how many were added (the add field's key, so it empties after each).
+       */
+      view: { editing?: number; kind: Kind; open: string[]; menu?: number; added?: number }
     }
   }
 }
