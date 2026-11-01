@@ -6,13 +6,13 @@ This file provides guidance to AI agents (Claude Code, Warp AI, etc.) when worki
 
 ## Project overview
 
-Claude Code plugin marketplace (`ak-marketplace`) with 17 independently installable plugins, 26 skills, 8 agents, a mod switcher with six mods,
+Claude Code plugin marketplace (`ak-marketplace`) with 18 independently installable plugins, 26 skills, 8 agents, a mod switcher with seven mods,
 and domain knowledge bases. Built on the official Claude Code Plugin Architecture.
 
 ## Dev environment
 
-No build step required — the codebase is Markdown, JSON, and shell scripts, plus six TSX
-hooks modules (`ak-mods`, `ak-keepwarm`, `ak-session-id`, `ak-usage`, `ak-ci`, `ak-pause`, `ak-showcase`) that Claude Code loads directly.
+No build step required — the codebase is Markdown, JSON, and shell scripts, plus eight TSX
+hooks modules (`ak-mods`, `ak-keepwarm`, `ak-session-id`, `ak-usage`, `ak-ci`, `ak-pause`, `ak-showcase`, `ak-todo`) that Claude Code loads directly.
 
 CI (`.github/workflows/check.yml`) runs the markdown, JSON and shell checks below on pull requests
 and pushes to `main`; it lints only the changed Markdown under `plugins/`. The plugin validate/test
@@ -67,6 +67,8 @@ claude plugin validate plugins/ak-pause
 claude plugin test plugins/ak-pause
 claude plugin validate plugins/ak-showcase
 claude plugin test plugins/ak-showcase
+claude plugin validate plugins/ak-todo
+claude plugin test plugins/ak-todo
 ```
 
 The third command loads the test-only fixture mod with `ak-mods` absent and proves it fails
@@ -104,10 +106,13 @@ P=$R/plugins/ak-pause
 echo "{\"compilerOptions\":{$O},\"include\":[\"$T/fx\",\"$P/hooks\",\"$P/tests\"]}" > "$T/pause.json"
 W=$R/plugins/ak-showcase
 echo "{\"compilerOptions\":{$O},\"include\":[\"$T/fx\",\"$W/hooks\",\"$W/types\",\"$W/tests\"]}" > "$T/showcase.json"
+D=$R/plugins/ak-todo
+echo "{\"compilerOptions\":{$O},\"include\":[\"$T/fx\",\"$D/hooks\",\"$D/types\",\"$D/tests\"]}" > "$T/todo.json"
 npx -y -p typescript@5 tsc -p "$T/mods.json" && npx -y -p typescript@5 tsc -p "$T/fixture.json" &&
   npx -y -p typescript@5 tsc -p "$T/keepwarm.json" && npx -y -p typescript@5 tsc -p "$T/session-id.json" &&
   npx -y -p typescript@5 tsc -p "$T/usage.json" && npx -y -p typescript@5 tsc -p "$T/ci.json" &&
-  npx -y -p typescript@5 tsc -p "$T/pause.json" && npx -y -p typescript@5 tsc -p "$T/showcase.json"
+  npx -y -p typescript@5 tsc -p "$T/pause.json" && npx -y -p typescript@5 tsc -p "$T/showcase.json" &&
+  npx -y -p typescript@5 tsc -p "$T/todo.json"
 )
 ```
 
@@ -148,6 +153,7 @@ plugins/{plugin-name}/
 | `ak-keepwarm` | - | - | hooks module (TSX), tests/, LICENSE (upstream MIT) |
 | `ak-session-id` | - | - | hooks module (TSX), tests/ |
 | `ak-showcase` | - | - | hooks module (TSX), types/, tests/ |
+| `ak-todo` | - | - | hooks module (TSX), types/, tests/ |
 | `ak-usage` | - | - | hooks module (TSX), tests/ |
 | `ak-ci` | - | - | hooks module (TSX), tests/ |
 | `ak-pause` | - | - | hooks module (TSX), tests/ |
@@ -230,7 +236,7 @@ Rules for `git log`, not review criteria for diffs.
   in the body.
 
 Versions stay synchronized across `marketplace.json` and all `plugin.json` files (currently
-`1.67.7`) — that one **is** checkable in a diff. The one exception is the test-only harness
+`1.68.0`) — that one **is** checkable in a diff. The one exception is the test-only harness
 `plugins/ak-mods/tests/fixture`, which stays at `0.0.0`.
 
 ## Task completion workflow

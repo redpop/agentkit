@@ -45,12 +45,12 @@ reset and that the order applies to every chat ends the pane, in the details' si
 
 ## Order
 
-The band and the pane show the mods in one order, the same in every chat. Until a mod is moved it
-is AgentKit's default: Usage, Keepwarm, Pause, CI, Session-ID. A move is stored at once, shared
-by every chat like the standard marks: a new chat starts with it, and a chat open meanwhile shows it
-the next time its band or pane redraws. Whoever moves last wins. A mod the order does not name, one
-from outside the default, comes last, sorted by title. A mod that is uninstalled keeps its place in
-the stored order and takes it again once it is back.
+The band and the pane show the mods in one order, the same in every chat. Until a mod is moved it is
+AgentKit's default: Usage, Keepwarm, Pause, CI, Session-ID, Showcase, Todo. A move is stored at
+once, shared by every chat like the standard marks: a new chat starts with it, and a chat open
+meanwhile shows it the next time its band or pane redraws. Whoever moves last wins. A mod the order
+does not name, one from outside the default, comes last, sorted by title. A mod that is uninstalled
+keeps its place in the stored order and takes it again once it is back.
 
 ## Band
 

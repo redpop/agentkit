@@ -4,14 +4,14 @@ Reference documentation for all AgentKit components — skills, agents, hooks, a
 
 ## Overview
 
-AgentKit provides 17 plugins with specialized skills, agents, hooks, and mods for Claude Code.
+AgentKit provides 18 plugins with specialized skills, agents, hooks, and mods for Claude Code.
 
 | Category | Count | Description |
 |----------|-------|-------------|
 | [Skills](skills/) | 26 | Slash commands invoked by the user |
 | [Agents](agents/) | 8 | Specialized sub-agents for autonomous tasks |
-| [Hooks](hooks/) | 8 plugins | Automated actions on tool events |
-| [Mods](mods/) | 5 plugins | Interface changes that the Mods pane switches on or off per chat |
+| [Hooks](hooks/) | 10 plugins | Automated actions on tool events |
+| [Mods](mods/) | 8 plugins | Interface changes that the Mods pane switches on or off per chat |
 
 ## Plugins
 
@@ -32,5 +32,6 @@ AgentKit provides 17 plugins with specialized skills, agents, hooks, and mods fo
 | ak-security | Security guidelines | 3 | — | — |
 | ak-session-id | Session-id mod (copy the id) | — | — | hooks module |
 | ak-showcase | Showcase mod (style guide pane) | — | — | hooks module |
+| ak-todo | Todo mod (session tasks and notes) | — | — | hooks module |
 | ak-usage | Usage mod (context and 5-hour limit) | — | — | hooks module |
 | ak-writing | Prose quality, AI-slop removal, clear German technical docs | 2 | — | — |
