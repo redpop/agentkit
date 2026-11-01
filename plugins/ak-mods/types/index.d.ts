@@ -7,8 +7,8 @@ export type ModsRow = ModsInfo & { isOn: boolean; isStandard: boolean }
 /** A segment's colour: its state, not its mod. `ok` draws in the text colour; only the others colour it. */
 export type ModsTone = 'ok' | 'warn' | 'alert' | 'info' | 'dim'
 
-/** The line icons ak-mods draws: an id (`#`), a copy, a check mark, a clock, a flame. */
-export type ModsIcon = 'id' | 'copy' | 'check' | 'clock' | 'flame'
+/** The line icons ak-mods draws: an id (`#`), a copy, a check mark, a clock, a flame, a checked list, a note. */
+export type ModsIcon = 'id' | 'copy' | 'check' | 'clock' | 'flame' | 'tasks' | 'note'
 
 /**
  * A run of a segment's text in its own tone; without one, in the segment's. In `rich`, a run with a
@@ -73,6 +73,12 @@ export type ModsSegment = {
   tone?: ModsTone
   /** Higher stays visible longer when the band runs out of room; 5 when left out. */
   priority?: number
+  /**
+   * Keeps the whole segment out of the band: the Mods pane alone shows it, with its button,
+   * settings and actions. For a mod with nothing to show at the moment that still offers a way in,
+   * such as an empty list whose pane can be opened.
+   */
+  isPaneOnly?: boolean
   /**
    * `hotkey` is one printable character; any other is left out, and `m` is the band's own.
    * `isPaneOnly` keeps the button out of the band, for an action seldom taken: the Mods pane alone

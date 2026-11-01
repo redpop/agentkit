@@ -48,7 +48,13 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
   const segments = drawable(list, stored)
   const isPictured = e.surface === 'desktop' && 'Svg' in draws
   const hidden =
-    segments.length > 0 && (e.surface === 'terminal' || e.surface === 'desktop') ? layout(segments, width, isPictured).hidden : []
+    segments.length > 0 && (e.surface === 'terminal' || e.surface === 'desktop')
+      ? layout(
+          segments.filter(one => one.isPaneOnly !== true),
+          width,
+          isPictured,
+        ).hidden
+      : []
   const t = texts(await languageFor($))
   const dropped = warning(hidden, new Map(list.map(row => [row.name, row.title])), t)
   // Each row's current segment too, in its band colour: the pane draws on every
@@ -204,7 +210,8 @@ export async function renderPane($: EngineInterface, e: RenderInput<'Pane'>) {
                 publishes again; no handler crosses from one plugin to another. A surface without a
                 picker shows the value. */}
             {isOpen && one?.settings !== undefined && (
-              <Box flexDirection="column" marginTop={1}>
+              // A step of air between the pickers: framed, they would touch one under the other.
+              <Box flexDirection="column" rowGap="md" marginTop={1}>
                 {one.settings.rows.map(setting => {
                   const command = one.settings?.command ?? ''
                   const picked = setting.options.find(option => option.value === setting.value)

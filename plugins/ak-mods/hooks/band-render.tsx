@@ -34,13 +34,16 @@ const partsOf = (parts: unknown, text: string): ModsPart[] | undefined => {
 }
 
 // The line icons, on a 24-unit grid in one stroke: drawn, not glyphs, so they look alike everywhere.
-// Lucide's `hash`, `copy`, `check`, `clock` and `flame` (ISC, see LICENSE-lucide), drawn thinner.
+// Lucide's `hash`, `copy`, `check`, `clock`, `flame`, `list-checks` and `notepad-text` (ISC, see
+// LICENSE-lucide), drawn thinner.
 const ICONS: Record<ModsIcon, string> = {
   id: '<line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/>',
   copy: '<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
   check: '<path d="M20 6 9 17l-5-5"/>',
   clock: '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
   flame: '<path d="M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4"/>',
+  tasks: '<path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/>',
+  note: '<path d="M8 2v4"/><path d="M12 2v4"/><path d="M16 2v4"/><rect width="16" height="18" x="4" y="4" rx="2"/><path d="M8 10h6"/><path d="M8 14h8"/><path d="M8 18h5"/>',
 }
 
 const iconOf = (icon: unknown): ModsIcon | undefined =>
@@ -160,6 +163,7 @@ const checked = (info: ModsInfo, stored: unknown): Segment | undefined => {
     actions: actionsOf(one.actions),
     tone: toneOf(one.tone),
     priority: typeof one.priority === 'number' && Number.isFinite(one.priority) ? one.priority : undefined,
+    isPaneOnly: one.isPaneOnly === true ? true : undefined,
     button:
       typeof button.label === 'string' && typeof button.command === 'string'
         ? {
@@ -447,8 +451,10 @@ export async function renderBand(
   ])
   if ((e.surface !== 'terminal' && e.surface !== 'desktop') || e.props.hasSurvey) return next(e)
 
-  // A pane-only button is the Mods pane's: the band neither draws it nor counts its room.
-  const segments = drawable(list, stored).map(one => (one.button?.isPaneOnly === true ? { ...one, button: undefined } : one))
+  // A pane-only segment or button is the Mods pane's: the band neither draws it nor counts its room.
+  const segments = drawable(list, stored)
+    .filter(one => one.isPaneOnly !== true)
+    .map(one => (one.button?.isPaneOnly === true ? { ...one, button: undefined } : one))
   if (segments.length === 0) return next(e)
 
   // The desktop app draws a segment's rich runs, pictures among them, and a button on its text as
@@ -473,6 +479,9 @@ export async function renderBand(
   // draws there, the space alone parts them, wider than any gap inside a
   // segment, so what belongs together reads as one.
   const separator = (key: string) => <Box key={key} minWidth={1} />
+  // Whether the desktop app draws the segment's text as its button: on its text, or compact with one.
+  const isPressedText = (surface: string, one: (typeof rows)[number][number] | undefined) =>
+    surface === 'desktop' && one !== undefined && (one.button?.isOnText === true || (one.isCompact === true && one.button !== undefined))
   // Every space is a gap of the Box, one cell wide: a surface that draws its
   // buttons with chrome spaces them alike. Buttons draw plain (`1: label`,
   // `m: mods +N`): the widths `layout` counts, with the separator and its two
@@ -487,7 +496,9 @@ export async function renderBand(
       {rows.map((row, index) => (
         <Box key={`band-row-${index}`} flexDirection="row" columnGap={1}>
           {row.flatMap((one, at) => [
-            ...(at > 0 ? [separator(`sep-${one.name}`)] : []),
+            // Beside a segment pressed on its text the desktop app draws a Button, whose chrome is
+            // space enough: a spacer there would part it wider than any two plain segments.
+            ...(at > 0 && !(isPressedText(e.surface, one) || isPressedText(e.surface, row[at - 1])) ? [separator(`sep-${one.name}`)] : []),
             // A segment keeps its width: where the band's count of a row is short by a little, the
             // row runs over its end rather than wrap a segment's text onto a second line.
             <Box key={`segment-${one.name}`} flexDirection="row" columnGap={1} flexShrink={0}>

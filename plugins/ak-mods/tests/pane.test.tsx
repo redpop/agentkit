@@ -633,6 +633,19 @@ test("the row's segment button runs its command", { plugins: MODS }, async ($, o
   await ui.unmount()
 })
 
+test('a pane-only segment shows in its row, with its button', { plugins: MODS }, async ($, on) => {
+  engine(on)
+  await callAs($, 'ak-a', 'declare', { name: 'ak-a', title: 'Alpha', summary: 's', details: 'd' })
+  await callAs($, 'ak-a', 'set', { name: 'ak-a', on: true })
+  await callAs($, 'ak-a', 'segment', { text: 'empty', isPaneOnly: true, button: { label: 'open', command: 'zap' } })
+
+  const ui = await $.ui.mount({ ...PANE, surface: 'desktop' })
+  expect((await ui.find({ key: 'seg-ak-a' }))?.text).toBe('open')
+  // Never in the band, so never counted as dropped from it.
+  expect(await ui.find({ type: 'Text', text: /not fit the band/ })).toBeUndefined()
+  await ui.unmount()
+})
+
 const ACTIONS = [
   { label: 'open', command: 'zap', args: 'now' },
   { label: 'Copy link', command: 'zop' },

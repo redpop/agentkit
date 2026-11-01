@@ -131,6 +131,38 @@ test('one row for two segments parted by space alone', { plugins: [consumer('ak-
   }
 })
 
+test('on the desktop app a segment pressed on its text takes no extra space beside it', { plugins: [consumer('ak-a'), consumer('ak-b'), consumer('ak-c')] }, async ($, on) => {
+  engine(on)
+  await publish($, 'ak-a', 'A', { text: 'alpha' })
+  await publish($, 'ak-b', 'B', { text: 'beta', button: { label: 'open', command: 'fixture-open', isOnText: true } })
+  await publish($, 'ak-c', 'C', { text: 'gamma' })
+
+  // A pressed text is a Button, and its chrome is space enough: no spacer beside it.
+  const desk = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  expect(await desk.find({ key: 'sep-ak-b' })).toBeUndefined()
+  expect(await desk.find({ key: 'sep-ak-c' })).toBeUndefined()
+  await desk.unmount()
+  // The terminal draws no chrome: the spacers stay.
+  const term = await $.ui.mount({ ...BAND, surface: 'terminal' })
+  expect(await term.find({ key: 'sep-ak-b' })).toBeDefined()
+  expect(await term.find({ key: 'sep-ak-c' })).toBeDefined()
+  await term.unmount()
+})
+
+test('a pane-only segment is not drawn in the band', { plugins: [consumer('ak-a'), consumer('ak-b')] }, async ($, on) => {
+  engine(on)
+  await publish($, 'ak-a', 'A', { text: 'shown' })
+  await publish($, 'ak-b', 'B', { text: 'only in the pane', isPaneOnly: true })
+
+  for (const surface of SURFACES) {
+    const ui = await $.ui.mount({ ...BAND, surface })
+    expect(await ui.find({ type: 'Text', text: 'shown' })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: 'only in the pane' })).toBeUndefined()
+    expect(await ui.find({ key: 'sep-ak-b' })).toBeUndefined()
+    await ui.unmount()
+  }
+})
+
 test('second row when too wide, a step below the first', { plugins: [consumer('ak-a'), consumer('ak-b')] }, async ($, on) => {
   engine(on)
   await publish($, 'ak-a', 'A', { text: 'alpha-one' })
@@ -713,6 +745,18 @@ test('on the desktop app an icon run draws as a line icon; an icon ak-mods does 
   expect(icons.map(one => one.props.alt)).toEqual(['id'])
   expect(String(icons[0]?.props.source)).toContain('stroke-linecap="round"')
   expect(await exactly(desk, 'odd')).toBeDefined()
+  await desk.unmount()
+})
+
+test('the tasks and note icons draw as line icons', { plugins: [consumer('ak-a')] }, async ($, on) => {
+  engine(on)
+  await publish($, 'ak-a', 'A', {
+    text: '2 open · 1 note',
+    rich: [{ text: '✓', icon: 'tasks' }, { text: ' 2' }, { text: '  ' }, { text: '✎', icon: 'note' }, { text: ' 1' }],
+  })
+
+  const desk = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  expect((await desk.findAll({ type: 'Svg' })).map(one => one.props.alt)).toEqual(['✓', '✎'])
   await desk.unmount()
 })
 
