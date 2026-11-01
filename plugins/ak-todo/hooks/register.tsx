@@ -535,8 +535,9 @@ export const register: Register = on => {
     const fold = (name: string, label: string, rows: Numbered[]) =>
       rows.length === 0 ? null : (
         <Box key={`fold-box-${name}`} flexDirection="column" marginTop="xs">
-          {/* The name first, the triangle after it, as the Mods pane's cards open. */}
-          <Button key={`fold-${name}`} label={`${label} ${view.open.includes(name) ? '▼' : '▶\uFE0E'}`} plain dimColor onPress={() => void toggleFold($, name)} />
+          {/* The name first, the triangle after it, as the Mods pane's cards open; an en space between
+              them, as a plain one draws too tight beside the glyph. */}
+          <Button key={`fold-${name}`} label={`${label}\u2002${view.open.includes(name) ? '▼' : '▶\uFE0E'}`} plain dimColor onPress={() => void toggleFold($, name)} />
           {view.open.includes(name) && <Box flexDirection="column" marginTop="xs">{rows.map(n => row(n, rows))}</Box>}
         </Box>
       )
@@ -555,8 +556,7 @@ export const register: Register = on => {
             <Button key="take-sel" label={t.takeSelection} plain onPress={command({ kind: 'sel', entry: view.kind })} />
           </Box>
           {Input && (
-            // The field takes the card's whole width, its own submit button at the right end.
-            <Box key="new-field" marginTop={1} width="100%" flexDirection="column" alignItems="stretch">
+            <Box marginTop={1}>
               <Input
                 key={`new-${added}`}
                 placeholder={isNote ? t.notePlaceholder : t.taskPlaceholder}
@@ -588,7 +588,7 @@ export const register: Register = on => {
         {/* The trash is a footnote to the pane: small and dim until opened. */}
         {list.trash.length > 0 && (
           <Box flexDirection="column">
-            <Button key="fold-trash" label={`${t.trashFold(list.trash.length)} ${view.open.includes('trash') ? '▼' : '▶\uFE0E'}`} plain dimColor onPress={() => void toggleFold($, 'trash')} />
+            <Button key="fold-trash" label={`${t.trashFold(list.trash.length)}\u2002${view.open.includes('trash') ? '▼' : '▶\uFE0E'}`} plain dimColor onPress={() => void toggleFold($, 'trash')} />
             {view.open.includes('trash') && (
               <Box flexDirection="column" marginTop="xs">
                 {list.trash.map((entry: Entry, i) => (

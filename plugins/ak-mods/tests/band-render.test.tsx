@@ -179,6 +179,20 @@ test('beside a pressed segment that begins or ends with an icon the spacer stays
   await desk.unmount()
 })
 
+test('a segment with a card is pressed on its plain text: no spacer where that text is its edge, one where a coloured run is', { plugins: [consumer('ak-a'), consumer('ak-b'), consumer('ak-c')] }, async ($, on) => {
+  engine(on)
+  // Plain text at its end: drawn as the Button that opens the card.
+  await publish($, 'ak-a', 'A', { text: '7 min', card: [{ label: 'since', value: '9:00' }] })
+  // A coloured run at its end: it keeps its colour as text, no chrome.
+  await publish($, 'ak-b', 'B', { text: 'warm', tone: 'info', card: [{ label: 'cache', value: 'warm' }] })
+  await publish($, 'ak-c', 'C', { text: 'gamma' })
+
+  const desk = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  expect(await desk.find({ key: 'sep-ak-b' })).toBeUndefined()
+  expect(await desk.find({ key: 'sep-ak-c' })).toBeDefined()
+  await desk.unmount()
+})
+
 test('second row when too wide, a step below the first', { plugins: [consumer('ak-a'), consumer('ak-b')] }, async ($, on) => {
   engine(on)
   await publish($, 'ak-a', 'A', { text: 'alpha-one' })

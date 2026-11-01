@@ -325,8 +325,8 @@ test('the pane lists tasks, folded done and later, and notes', OWNED, async ($, 
   expect(shown.includes('b')).toBe(false)
   expect(shown.includes('n')).toBe(true)
   expect(shown.includes('N1')).toBe(true)
-  expect((await ui.find({ key: 'fold-done' }))?.text).toBe('Done (1) ▶\uFE0E')
-  expect((await ui.find({ key: 'fold-later' }))?.text).toBe('Later (1) ▶\uFE0E')
+  expect((await ui.find({ key: 'fold-done' }))?.text).toBe('Done (1)\u2002▶\uFE0E')
+  expect((await ui.find({ key: 'fold-later' }))?.text).toBe('Later (1)\u2002▶\uFE0E')
   await ui.press({ key: 'fold-done' })
   expect((await texts(ui)).includes('b')).toBe(true)
   await ui.unmount()
@@ -682,15 +682,6 @@ test('an empty list keeps the Mods card: a pane-only segment with the way to the
   expect(segment?.settings?.rows.map(row => row.key)).toEqual(['detect', 'model'])
 })
 
-test('the add field spans the pane, its button at the right end', OWNED, async ($, on) => {
-  engine(on)
-  await start($)
-  const ui = await $.ui.mount(PANE)
-  const field = await ui.find({ key: 'new-field' })
-  expect(field?.props).toMatchObject({ width: '100%', flexDirection: 'column', alignItems: 'stretch' })
-  await ui.unmount()
-})
-
 test('Do now and /todo ask submit as the person\'s own words, without the plugin frame', OWNED, async ($, on) => {
   const { clock, asUser } = engine(on, { 'list:S1': stored1('Fix login') })
   await start($)
@@ -717,6 +708,6 @@ test('the trash fold names itself first, its triangle after, as the Mods pane ca
   engine(on, { 'list:S1': list })
   await start($)
   const ui = await $.ui.mount(PANE)
-  expect((await ui.find({ key: 'fold-trash' }))?.text).toBe('Trash (1) ▶\uFE0E')
+  expect((await ui.find({ key: 'fold-trash' }))?.text).toBe('Trash (1)\u2002▶\uFE0E')
   await ui.unmount()
 })
