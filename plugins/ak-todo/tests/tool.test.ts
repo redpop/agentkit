@@ -67,7 +67,7 @@ test('update defers a task and move reorders', () => {
 })
 
 test('list answers the rendered list', () => {
-  expect(applyTool(withEntries(['task', 'a', 'user']), { action: 'list' }, T)).toEqual({ text: 'Session list (ak-todo) — reference only: start a task only when the user asks; do not interrupt current work for a new entry; add work you set aside as a task with the todo tool:\n[T1 id=1 open, user] a' })
+  expect(applyTool(withEntries(['task', 'a', 'user']), { action: 'list' }, T)).toEqual({ text: 'Session list (ak-todo) — reference only: start a task only when the user asks; do not interrupt current work for a new entry; add work you set aside as a task with the todo tool; when a piece of work is done and tasks are open, name them and ask whether to continue:\n[T1 id=1 open, user] a' })
   expect(applyTool(emptyList(T), { action: 'list' }, T)).toEqual({ text: 'The session list is empty.' })
 })
 

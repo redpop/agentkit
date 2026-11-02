@@ -87,10 +87,11 @@ once.
   and `move`. Claude addresses entries by id. Removing one of your entries is refused with the
   answer that Claude should ask you; adding a text you deleted is refused too.
 - With every prompt the current list goes to Claude as context the transcript does not show, and
-  with it one line per change you made since its last turn. An empty list sends only the rule to add work Claude sets aside. The list
-  is headed as reference only, with the rules that Claude starts a task only when you ask, does
-  not interrupt its work for a new entry and adds work it sets aside as a task; your changes are
-  headed as no request.
+  with it one line per change you made since its last turn. An empty list sends only the rule to add
+  work Claude sets aside. The list is headed as reference only, with the rules that Claude starts a
+  task only when you ask, does not interrupt its work for a new entry, adds work it sets aside as a
+  task and, once a piece of work is done, names the open tasks and asks whether to continue; your
+  changes are headed as no request.
 - A short instruction in the system prompt says how to use the list. Where an organization manages
   Claude Code and does not allow the mod that, the pane, commands and tool still work, and the rules
   in the list's heading still reach Claude.

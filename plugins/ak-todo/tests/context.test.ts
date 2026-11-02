@@ -20,7 +20,7 @@ test('renders ref, id, status and owner per line', () => {
   list = ok(add(list, { kind: 'task', text: 'Later thing', owner: 'claude' }, 1)).list
   list = ok(update(list, 3, { isDeferred: true }, 1)).list
   expect(listContext(list)).toBe(
-    ['Session list (ak-todo) — reference only: start a task only when the user asks; do not interrupt current work for a new entry; add work you set aside as a task with the todo tool:', '[T1 id=1 open, user] Fix login', '[T2 id=3 open, deferred, claude] Later thing', '[N1 id=2 note, claude] Uses port 3000'].join('\n'),
+    ['Session list (ak-todo) — reference only: start a task only when the user asks; do not interrupt current work for a new entry; add work you set aside as a task with the todo tool; when a piece of work is done and tasks are open, name them and ask whether to continue:', '[T1 id=1 open, user] Fix login', '[T2 id=3 open, deferred, claude] Later thing', '[N1 id=2 note, claude] Uses port 3000'].join('\n'),
   )
 })
 

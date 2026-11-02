@@ -26,7 +26,7 @@ export const listContext = (list: TodoList): string | undefined => {
   const { tasks, notes } = numbered(list)
   if (tasks.length + notes.length === 0) return undefined
 
-  return ['Session list (ak-todo) — reference only: start a task only when the user asks; do not interrupt current work for a new entry; add work you set aside as a task with the todo tool:', ...tasks.map(line), ...notes.map(line)].join('\n')
+  return ['Session list (ak-todo) — reference only: start a task only when the user asks; do not interrupt current work for a new entry; add work you set aside as a task with the todo tool; when a piece of work is done and tasks are open, name them and ask whether to continue:', ...tasks.map(line), ...notes.map(line)].join('\n')
 }
 
 /** What an empty list sends instead: the one rule that still applies, as the system prompt may not carry it. */
