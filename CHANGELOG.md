@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.69.1] - 2026-11-02
+
+### 🐛 Fixed
+
+- `ak-todo` — in the pane, the **Claude** mark on Claude's entries sits under the text instead of
+  beside the number, so long entries keep the pane's width.
+- `ak-review` — the `explain-mr` skill passes markdownlint: shorter lines, labelled code fences and
+  no bare angle bracket.
+
 ## [1.69.0] - 2026-11-02
 
 ### ✨ Added

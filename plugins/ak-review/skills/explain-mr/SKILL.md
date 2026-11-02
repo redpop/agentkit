@@ -6,15 +6,16 @@ argument-hint: "[MR/PR URL, !123, #123, or base..head]"
 
 # Explain a Merge Request
 
-Explain a merge request, pull request, or branch diff so that someone afterwards understands **what** was built,
-**how** it is structured, and **why** it was built that way — from the big picture down, not file by file. The
-session is interactive: one point per message, more depth only on request.
+Explain a merge request, pull request, or branch diff so that someone afterwards understands
+**what** was built, **how** it is structured, and **why** it was built that way — from the big
+picture down, not file by file. The session is interactive: one point per message, more depth only
+on request.
 
 "MR" below means a GitLab merge request or a GitHub pull request alike.
 
-This is an explanation, not a review. The messages have the form fixed below, and that form has no room for findings,
-review tasks, or checklists. What step 1 finds about the scope (stacked, title does not match, partner MR) is
-orientation and belongs in the first message.
+This is an explanation, not a review. The messages have the form fixed below, and that form has no
+room for findings, review tasks, or checklists. What step 1 finds about the scope (stacked, title
+does not match, partner MR) is orientation and belongs in the first message.
 
 ## Step 1 — Identify the source and the real scope
 
@@ -25,31 +26,35 @@ orientation and belongs in the first message.
 | Branch or commit range | `git log --format='%h %s%n%b' <base>..<head>`, `git diff --stat <base>...<head>`, `git diff <base>...<head>` |
 | nothing given | current branch against its base (target branch of the open MR, otherwise `main`/`master`/`develop`, whichever exists) |
 
-Take the platform from the URL host or the `git remote`. A bare `123` with both kinds of remote is ambiguous: ask.
-Without `glab` or `gh` installed, or without a login, fall back to local `git` and say so in one line.
+Take the platform from the URL host or the `git remote`. A bare `123` with both kinds of remote is
+ambiguous: ask. Without `glab` or `gh` installed, or without a login, fall back to local `git` and
+say so in one line.
 
 Then check whether the diff really contains only this change:
 
-- Group the commits by ticket key (`[A-Z][A-Z0-9]+-\d+`). Commits that belong to another ticket mean the MR is
-  probably stacked on another one. Find its open MR and determine the commit where the actual change begins.
+- Group the commits by ticket key (`[A-Z][A-Z0-9]+-\d+`). Commits that belong to another ticket mean
+  the MR is probably stacked on another one. Find its open MR and determine the commit where the
+  actual change begins.
 - If the MR title or description does not match the ticket of the commits, note it.
 - If description, commits, or ticket point to a partner MR in another repository, add it as context.
 
 ## Step 2 — Gather context
 
-Fetch what exists and say in one line what is missing. Without ticket and spec, explain from the diff and the commit
-bodies.
+Fetch what exists and say in one line what is missing. Without ticket and spec, explain from the
+diff and the commit bodies.
 
 - **Ticket:** key from branch, MR title, or commits. If a Jira connector is available (tools such as
-  `get_jira_issue`, often to be loaded via `ToolSearch` first), read description, acceptance criteria, subtasks, and
-  comments.
+  `get_jira_issue`, often to be loaded via `ToolSearch` first), read description, acceptance
+  criteria, subtasks, and comments.
 - **Commit bodies:** the best source for the why.
-- **Specs/plans:** in `.docs/`, `docs/`, or files with the ticket key in the name (`grep -ril <KEY>`).
-- **Project rules:** `AGENTS.md`/`CLAUDE.md` — they show what is a convention of its own in this project.
+- **Specs/plans:** in `.docs/`, `docs/`, or files with the ticket key in the name (`grep -ril
+  <KEY>`).
+- **Project rules:** `AGENTS.md`/`CLAUDE.md` — they show what is a convention of its own in this
+  project.
 
-Read silently. For large diffs (roughly 15 files or 1000 lines and up) hand the reading to a subagent. It returns an
-outline draft with only references per point (`file:lines`, commit, spec section, acceptance criterion), no prose.
-Fetch the exact excerpt yourself when you reach the point.
+Read silently. For large diffs (roughly 15 files or 1000 lines and up) hand the reading to a
+subagent. It returns an outline draft with only references per point (`file:lines`, commit, spec
+section, acceptance criterion), no prose. Fetch the exact excerpt yourself when you reach the point.
 
 ## Step 3 — Outline
 
@@ -58,17 +63,18 @@ Fetch the exact excerpt yourself when you reach the point.
 1. **Requirement and purpose** — which problem, for whom, what is different afterwards.
 2. **Core logic and architecture** — the central idea, the data model, how the parts connect.
 3. **Helpers and core functions** — the functions the rest stands on.
-4. **Surroundings** — depending on the MR: persistence/session, state, reset, accessibility, sync with other systems,
-   output (PDF, export).
+4. **Surroundings** — depending on the MR: persistence/session, state, reset, accessibility, sync
+   with other systems, output (PDF, export).
 
-Small MRs merge layers; not every layer needs a point. Tests, docs, formatting, imports, icons, and lockfiles get at
-most one shared line at the end of the outline — unless the MR is about exactly that.
+Small MRs merge layers; not every layer needs a point. Tests, docs, formatting, imports, icons, and
+lockfiles get at most one shared line at the end of the outline — unless the MR is about exactly
+that.
 
 ## Step 4 — The messages
 
 **First message**, in this form:
 
-```
+```text
 **<Ticket key> – <title in plain words>**
 
 <1–2 sentences: problem and solution.>
@@ -88,7 +94,7 @@ Start with 1, or jump to another point?
 
 **Each point message**, in this form:
 
-````
+````markdown
 **<N>. <Title>**
 
 <1–2 sentences: what this part does and how it fits into the whole.>
@@ -110,35 +116,40 @@ Understood? Continue with <N+1> (<title>), or deeper into <specific detail from 
 
 Rules for the slots:
 
-- **The excerpt is mandatory.** Every point shows code. Several places? Show the most important one and name the others
-  with `file:line` in one sentence.
-- **For the requirement point** the excerpt is the quote of the requirement (acceptance criterion, ticket or MR text,
-  commit body) with source instead of code. Without a written requirement, show the place where a user sees the
-  change.
+- **The excerpt is mandatory.** Every point shows code. Several places? Show the most important one
+  and name the others with `file:line` in one sentence.
+- **For the requirement point** the excerpt is the quote of the requirement (acceptance criterion,
+  ticket or MR text, commit body) with source instead of code. Without a written requirement, show
+  the place where a user sees the change.
 - **Prose at most ~150 words** per point message, not counting the code block.
-- **Alternative** only where there was an obvious other way. The reasoning comes from a source (commit body, spec
-  section, ticket comment, code comment) and names it. Without a source it begins with "Probably because …".
-- **Trick** only if at least one applies: a newer language or API feature, a deliberate security aspect (with its
-  purpose, not just "this is hashed"), a non-obvious trick, a convention of this project. Otherwise leave it out.
-- **Closing question as buttons:** If a tool offers answers as buttons, use it instead of the text question. The
-  options are "Continue with <N+1>" and "Deeper: <specific detail>". Own wishes are typed freely. Which tool depends on
-  the surface:
-  - **Claude desktop app** (`mcp__ccd_turn__wrap_up` available): call it **before** writing the message. `recap` is
-    one sentence on the state ("Point 3 of 9: …"), `ask` the closing question, `actions` two answer buttons with
-    `label` and `message`. The point message follows as the last text. The app shortens text that stands before a tool
-    call to a summary, which would drop the code excerpt. So no tool call follows the point message.
+- **Alternative** only where there was an obvious other way. The reasoning comes from a source
+  (commit body, spec section, ticket comment, code comment) and names it. Without a source it begins
+  with "Probably because …".
+- **Trick** only if at least one applies: a newer language or API feature, a deliberate security
+  aspect (with its purpose, not just "this is hashed"), a non-obvious trick, a convention of this
+  project. Otherwise leave it out.
+- **Closing question as buttons:** If a tool offers answers as buttons, use it instead of the text
+  question. The options are "Continue with <N+1>" and "Deeper: `<specific detail>`". Own wishes are
+  typed freely. Which tool depends on the surface:
+  - **Claude desktop app** (`mcp__ccd_turn__wrap_up` available): call it **before** writing the
+    message. `recap` is one sentence on the state ("Point 3 of 9: …"), `ask` the closing question,
+    `actions` two answer buttons with `label` and `message`. The point message follows as the last
+    text. The app shortens text that stands before a tool call to a summary, which would drop the
+    code excerpt. So no tool call follows the point message.
   - **Claude desktop app without `wrap_up`** (tools with the prefix `mcp__ccd_` such as
-    `mcp__ccd_session__mark_chapter`, but no `mcp__ccd_turn__wrap_up`): **no** `AskUserQuestion` and no tool call at
-    all after the point message. The app would shorten the text before it to a summary, and excerpt and prose are
-    gone. The text question from the template stays.
-  - **Terminal** (`AskUserQuestion` available, no `mcp__ccd_` tools): write the message first and call
-    `AskUserQuestion` afterwards, with one question, header "Continue?", and two to three options.
+    `mcp__ccd_session__mark_chapter`, but no `mcp__ccd_turn__wrap_up`): **no** `AskUserQuestion` and
+    no tool call at all after the point message. The app would shorten the text before it to a
+    summary, and excerpt and prose are gone. The text question from the template stays.
+  - **Terminal** (`AskUserQuestion` available, no `mcp__ccd_` tools): write the message first and
+    call `AskUserQuestion` afterwards, with one question, header "Continue?", and two to three
+    options.
   - **No such tool:** the text question from the template stays.
-- **"Deeper"** means: the same point, one detail further down, again in this form. Then back to the outline.
+- **"Deeper"** means: the same point, one detail further down, again in this form. Then back to the
+  outline.
 
 **Last message**, after the last point:
 
-```
+```text
 **Done – the highlights**
 
 - <2–5 points, one line each: what to take away from this MR>
