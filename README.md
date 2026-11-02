@@ -1,6 +1,6 @@
 # AgentKit
 
-Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) — 18 plugins with 26 skills, 8 agents, a mod switcher with keep-warm, session-id, usage, CI, break, showcase and todo mods, and domain knowledge bases for Git workflows, security, React, and more.
+Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) — 18 plugins with 27 skills, 8 agents, a mod switcher with keep-warm, session-id, usage, CI, break, showcase and todo mods, and domain knowledge bases for Git workflows, security, React, and more.
 
 ## Plugins
 
@@ -319,6 +319,7 @@ dimensions, and file validation hooks with markdown formatting.
 | [`/ak-review:delegate`](docs/skills/ak-review/delegate.md) | Generate a self-contained code-review prompt for a foreign agent | `/ak-review:delegate --type uncommitted` |
 | [`/ak-review:advise`](docs/skills/ak-review/advise.md) | Validate a foreign agent's review findings against the code | `/ak-review:advise --in findings.json` |
 | [`/ak-review:explain`](docs/skills/ak-review/explain.md) | Explain a code snippet's purpose, mechanics, and notable patterns | `/ak-review:explain [code snippet]` |
+| [`/ak-review:explain-mr`](docs/skills/ak-review/explain-mr.md) | Walk through a merge request or pull request as an interactive learning unit | `/ak-review:explain-mr [MR/PR URL]` |
 | [`/ak-review:execute`](docs/skills/ak-review/execute.md) | Run delegate → external agent → advise → fix, unattended | `/ak-review:execute --type uncommitted` |
 | [`/ak-review:setup`](docs/skills/ak-review/setup.md) | Show or change the execute skill's tool/model configuration | `/ak-review:setup --show` |
 

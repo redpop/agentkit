@@ -1,11 +1,11 @@
 {
   "name": "ak-review",
   "description": "Quality assurance with CodeRabbit review, guided setup and unattended execution of external-agent reviews, task completion workflow, and file validation hooks",
-  "version": "1.68.9",
+  "version": "1.69.0",
   "author": {
     "name": "redpop",
     "url": "https://github.com/redpop"
   },
   "license": "MIT",
-  "keywords": ["code-review", "coderabbit", "opencode", "delegate", "setup", "explain", "quality", "validation", "workflow", "hooks"]
+  "keywords": ["code-review", "coderabbit", "opencode", "delegate", "setup", "explain", "merge-request", "quality", "validation", "workflow", "hooks"]
 }

@@ -9,6 +9,7 @@ task completion workflow, and file validation hooks.
 |-------|-------------|
 | `coderabbit` | CodeRabbit CLI integration for automated code review |
 | `explain` | Explain a code snippet's purpose, mechanics, and notable patterns |
+| `explain-mr` | Walk through a merge request or pull request as an interactive learning unit |
 | `finalize` | Project-specific task completion workflow |
 
 ## Knowledge
@@ -35,6 +36,7 @@ the plugin defaults otherwise — see
 
 /ak-review:coderabbit
 /ak-review:explain
+/ak-review:explain-mr
 /ak-review:finalize
 
 ## Requirements
