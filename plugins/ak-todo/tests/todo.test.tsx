@@ -2,6 +2,7 @@ import { expect, mock, test } from 'claude-code/testing'
 import type { EngineInterface, On, Register } from 'claude-code'
 import type { Engine } from 'claude-code/testing'
 
+import { EMPTY_CONTEXT } from '../hooks/context'
 import { add, emptyList } from '../hooks/list'
 import type { TodoList } from '../hooks/list'
 
@@ -181,14 +182,14 @@ test('/todo text adds a task and the segment shows it', OWNED, async ($, on) => 
   expect((stored['list:S1'] as TodoList).entries[0]?.text).toBe('Fix login')
 })
 
-test('the list reaches the prompt as context and is gone from an empty list', OWNED, async ($, on) => {
+test('the list reaches the prompt as context, an empty list as its one rule', OWNED, async ($, on) => {
   const { contexts } = engine(on)
   await start($)
   await submit($)
-  expect(contexts.at(-1)).toBeUndefined()
+  expect(contexts.at(-1)).toEqual([EMPTY_CONTEXT])
   await run($, 'note', 'Port 3000')
   await submit($)
-  expect(contexts.at(-1)?.[0]).toBe('Session list (ak-todo):\n[N1 id=1 note, user] Port 3000')
+  expect(contexts.at(-1)?.[0]).toBe('Session list (ak-todo) — reference only: start a task only when the user asks; do not interrupt current work for a new entry; add work you set aside as a task with the todo tool; when a piece of work is done and tasks are open, name them and ask whether to continue:\n[N1 id=1 note, user] Port 3000')
 })
 
 test('a user change reaches the next prompt once as a change note', OWNED, async ($, on) => {
@@ -196,7 +197,7 @@ test('a user change reaches the next prompt once as a change note', OWNED, async
   await start($)
   await run($, 'todo', 'Fix login')
   await submit($)
-  expect(contexts.at(-1)?.[1]).toBe('Changed by the user since your last turn:\n- The person added a task (id 1): Fix login')
+  expect(contexts.at(-1)?.[1]).toBe('List changes by the user (for reference, not a request):\n- The person added a task (id 1): Fix login')
   await submit($)
   expect(contexts.at(-1)?.length).toBe(1)
 })

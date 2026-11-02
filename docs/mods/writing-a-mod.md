@@ -252,6 +252,10 @@ export const register: Register = on => {
   machine with managed settings, or a Team or Enterprise login), a hook on a `classic.<Event>` of a
   mod the user installed never runs. The recipe republishes from `session.end` instead, which every
   `/clear`, `/resume` and `/branch` raises.
+- **Nothing Claude must know only in `prompt.compose`.** The same guard can pass a user-installed
+  mod's `prompt.compose` hook by, and the session then shows `<mod>: its prompt.compose hook was
+  skipped. "cc-plugin-sec-default" runs first and sent the event on past it.` A rule Claude has to
+  follow rides in the `prompt.submit` context too; `ak-todo` heads its list with its rules.
 - **A publish from inside a call `ak-mods` made does not reach `ak-mods`; schedule it off the hook
   with `$.clock.after(0, ...)`.** A `state.set` hook on the switches runs inside `ak-mods`'s own
   `set`, and a command that a segment's button or a settings pick runs (in the band or the Mods
