@@ -7,5 +7,5 @@
     "url": "https://github.com/redpop"
   },
   "license": "MIT",
-  "keywords": ["code-review", "coderabbit", "opencode", "delegate", "setup", "explain", "quality", "validation", "workflow", "hooks"]
+  "keywords": ["code-review", "coderabbit", "opencode", "delegate", "setup", "explain", "merge-request", "quality", "validation", "workflow", "hooks"]
 }

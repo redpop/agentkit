@@ -28,7 +28,7 @@ AgentKit provides 18 plugins with specialized skills, agents, hooks, and mods fo
 | ak-notifications | macOS notifications | — | — | yes |
 | ak-pause | Break mod (time without a break, water) | — | — | hooks module |
 | ak-react | React/Next.js development | 2 | — | — |
-| ak-review | Code quality assurance | 9 | — | yes |
+| ak-review | Code quality assurance | 10 | — | yes |
 | ak-security | Security guidelines | 3 | — | — |
 | ak-session-id | Session-id mod (copy the id) | — | — | hooks module |
 | ak-showcase | Showcase mod (style guide pane) | — | — | hooks module |

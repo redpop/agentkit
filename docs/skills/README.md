@@ -27,6 +27,7 @@ Skills are slash commands that users invoke directly in Claude Code via `/plugin
 | [execute](ak-review/execute.md) | ak-review | Run delegate → external agent → advise → fix unattended |
 | [setup](ak-review/setup.md) | ak-review | Guided configuration for the execute skill |
 | [explain](ak-review/explain.md) | ak-review | Explain a code snippet's purpose, mechanics, and notable patterns |
+| [explain-mr](ak-review/explain-mr.md) | ak-review | Walk through a merge request or pull request as a learning unit |
 | [code-security](ak-security/code-security.md) | ak-security | OWASP security guidelines for 15+ languages |
 | [llm-security](ak-security/llm-security.md) | ak-security | OWASP Top 10 for LLM Applications |
 | [semgrep](ak-security/semgrep.md) | ak-security | Semgrep static analysis scanning |

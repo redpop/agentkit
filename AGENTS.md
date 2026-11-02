@@ -6,7 +6,7 @@ This file provides guidance to AI agents (Claude Code, Warp AI, etc.) when worki
 
 ## Project overview
 
-Claude Code plugin marketplace (`ak-marketplace`) with 18 independently installable plugins, 26 skills, 8 agents, a mod switcher with seven mods,
+Claude Code plugin marketplace (`ak-marketplace`) with 18 independently installable plugins, 27 skills, 8 agents, a mod switcher with seven mods,
 and domain knowledge bases. Built on the official Claude Code Plugin Architecture.
 
 ## Dev environment
