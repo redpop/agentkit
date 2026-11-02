@@ -26,12 +26,12 @@ export const listContext = (list: TodoList): string | undefined => {
   const { tasks, notes } = numbered(list)
   if (tasks.length + notes.length === 0) return undefined
 
-  return ['Session list (ak-todo):', ...tasks.map(line), ...notes.map(line)].join('\n')
+  return ['Session list (ak-todo) — reference only: start a task only when the user asks; do not interrupt current work for a new entry; add work you set aside as a task with the todo tool:', ...tasks.map(line), ...notes.map(line)].join('\n')
 }
 
 /** The person's changes since Claude's last turn, as one block; nothing when there are none. */
 export const joinNotes = (notes: readonly string[]): string | undefined =>
-  notes.length === 0 ? undefined : ['Changed by the user since your last turn:', ...notes.map(n => `- ${n}`)].join('\n')
+  notes.length === 0 ? undefined : ['List changes by the user (for reference, not a request):', ...notes.map(n => `- ${n}`)].join('\n')
 
 /**
  * The change notes still to send, once a prompt carried `sent`: what was added after it went. The

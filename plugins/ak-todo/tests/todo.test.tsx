@@ -188,7 +188,7 @@ test('the list reaches the prompt as context and is gone from an empty list', OW
   expect(contexts.at(-1)).toBeUndefined()
   await run($, 'note', 'Port 3000')
   await submit($)
-  expect(contexts.at(-1)?.[0]).toBe('Session list (ak-todo):\n[N1 id=1 note, user] Port 3000')
+  expect(contexts.at(-1)?.[0]).toBe('Session list (ak-todo) — reference only: start a task only when the user asks; do not interrupt current work for a new entry; add work you set aside as a task with the todo tool:\n[N1 id=1 note, user] Port 3000')
 })
 
 test('a user change reaches the next prompt once as a change note', OWNED, async ($, on) => {
@@ -196,7 +196,7 @@ test('a user change reaches the next prompt once as a change note', OWNED, async
   await start($)
   await run($, 'todo', 'Fix login')
   await submit($)
-  expect(contexts.at(-1)?.[1]).toBe('Changed by the user since your last turn:\n- The person added a task (id 1): Fix login')
+  expect(contexts.at(-1)?.[1]).toBe('List changes by the user (for reference, not a request):\n- The person added a task (id 1): Fix login')
   await submit($)
   expect(contexts.at(-1)?.length).toBe(1)
 })
