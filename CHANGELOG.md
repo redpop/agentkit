@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.68.7] - 2026-11-02
+
+### 🐛 Fixed
+
+- `ak-todo` — the list Claude reads with each prompt is headed as reference only and carries the
+  rules: start a task only when the user asks, do not interrupt current work for a new entry, add
+  work set aside as a task. The person's changes are headed as no request. Where Claude Code's guard
+  `cc-plugin-sec-default` passes the mod's system-prompt instruction by, the list alone read like
+  work to do.
+
 ## [1.68.6] - 2026-11-02
 
 ### 🐛 Fixed
