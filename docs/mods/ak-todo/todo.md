@@ -31,8 +31,8 @@ opens only when you ask again, for the rest of the conversation.
 - **Tasks:** open and running tasks first, then a folded **Later (n)** and a folded **Done (n)**:
   what waits is still to do, so it comes before what is finished. The numbers follow that order.
 - **Notes** below, in their own order.
-- Each row shows its number (`T1`, `N1`), its text and a dot in the owner's colour: one for your
-  entries, one for Claude's.
+- Each row shows its number (`T1`, `N1`) and its text; Claude's entries carry a small **Claude**
+  under the text, so the mark takes none of the text's width.
 - Row actions: ☐/☑ (done, open again), ↑ and ↓, **Do now**, **Discuss**, **Later**/**Back**,
   **Edit** and **Delete**; notes have ↑, ↓, **Discuss**, **Edit** and **Delete**. In a pane narrower
   than 40 columns the actions sit behind one `⋯` button per row.

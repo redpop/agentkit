@@ -468,8 +468,8 @@ export const register: Register = on => {
       ? { marginBottom: 1 }
       : { marginBottom: 1, paddingX: 1, paddingY: 1, borderStyle: 'round', borderColor: 'rgba(127,127,127,0.22)', backgroundColor: 'rgba(127,127,127,0.06)' }
 
-    // One entry. Closed it is one quiet line: the check for a task, the text, a Claude mark, the
-    // number the commands take, and the triangle that opens it. Open (one row at a time, as the
+    // One entry. Closed it is one quiet line: the check for a task, the text with a Claude mark
+    // under it, the number the commands take, and the triangle that opens it. Open (one row at a time, as the
     // Mods pane's cards) it sits on a card with its actions: the frequent ones framed, moving as
     // arrows, deleting last and apart.
     const row = ({ ref, entry }: Numbered, group: Numbered[]) => {
@@ -487,16 +487,17 @@ export const register: Register = on => {
             {isTask && (
               <Button key={`${isDone ? 'undo' : 'done'}-${id}`} label={isDone ? '☑' : '☐'} plain dimColor={isDone} onPress={onEntry(id, now => ({ kind: isDone ? 'undo' : 'done', ref: now }))} />
             )}
-            <Box flexGrow={1} flexShrink={1}>
+            {/* Claude's mark under the text, not beside it: there it took the text's width. */}
+            <Box flexDirection="column" flexGrow={1} flexShrink={1}>
               <Text dimColor={isDone} strikethrough={isDone}>
                 {clean(entry.text)}
               </Text>
+              {entry.owner === 'claude' && (
+                <Text size="caption" color={claude}>
+                  Claude
+                </Text>
+              )}
             </Box>
-            {entry.owner === 'claude' && (
-              <Text size="caption" color={claude}>
-                Claude
-              </Text>
-            )}
             <Text size="caption" dimColor tabular>
               {ref}
             </Text>
