@@ -29,6 +29,9 @@ export const listContext = (list: TodoList): string | undefined => {
   return ['Session list (ak-todo) — reference only: start a task only when the user asks; do not interrupt current work for a new entry; add work you set aside as a task with the todo tool:', ...tasks.map(line), ...notes.map(line)].join('\n')
 }
 
+/** What an empty list sends instead: the one rule that still applies, as the system prompt may not carry it. */
+export const EMPTY_CONTEXT = 'Session list (ak-todo) is empty: add work you set aside as a task with the todo tool.'
+
 /** The person's changes since Claude's last turn, as one block; nothing when there are none. */
 export const joinNotes = (notes: readonly string[]): string | undefined =>
   notes.length === 0 ? undefined : ['List changes by the user (for reference, not a request):', ...notes.map(n => `- ${n}`)].join('\n')

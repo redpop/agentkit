@@ -2,6 +2,7 @@ import { expect, mock, test } from 'claude-code/testing'
 import type { EngineInterface, On, Register } from 'claude-code'
 import type { Engine } from 'claude-code/testing'
 
+import { EMPTY_CONTEXT } from '../hooks/context'
 import { add, emptyList } from '../hooks/list'
 import type { TodoList } from '../hooks/list'
 
@@ -181,11 +182,11 @@ test('/todo text adds a task and the segment shows it', OWNED, async ($, on) => 
   expect((stored['list:S1'] as TodoList).entries[0]?.text).toBe('Fix login')
 })
 
-test('the list reaches the prompt as context and is gone from an empty list', OWNED, async ($, on) => {
+test('the list reaches the prompt as context, an empty list as its one rule', OWNED, async ($, on) => {
   const { contexts } = engine(on)
   await start($)
   await submit($)
-  expect(contexts.at(-1)).toBeUndefined()
+  expect(contexts.at(-1)).toEqual([EMPTY_CONTEXT])
   await run($, 'note', 'Port 3000')
   await submit($)
   expect(contexts.at(-1)?.[0]).toBe('Session list (ak-todo) — reference only: start a task only when the user asks; do not interrupt current work for a new entry; add work you set aside as a task with the todo tool:\n[N1 id=1 note, user] Port 3000')

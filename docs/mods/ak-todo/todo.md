@@ -87,7 +87,7 @@ once.
   and `move`. Claude addresses entries by id. Removing one of your entries is refused with the
   answer that Claude should ask you; adding a text you deleted is refused too.
 - With every prompt the current list goes to Claude as context the transcript does not show, and
-  with it one line per change you made since its last turn. An empty list sends nothing. The list
+  with it one line per change you made since its last turn. An empty list sends only the rule to add work Claude sets aside. The list
   is headed as reference only, with the rules that Claude starts a task only when you ask, does
   not interrupt its work for a new entry and adds work it sets aside as a task; your changes are
   headed as no request.
