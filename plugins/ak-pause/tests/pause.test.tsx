@@ -18,7 +18,9 @@ const running = (minutes: number, now = T): Block => ({
 
 // The engine beneath the plugin: the clock, the store the sessions share (its writes counted, a
 // read that fails on demand), the toasts, the notifications and the system's last input. Without
-// `system.lastInput`, `ioreg` is missing, as on Linux and Windows.
+// `system.lastInput`, `ioreg` is missing, as on Linux and Windows. During `system.sleep` the Mac
+// sleeps and each tick is a dark wake: the idle time stands still, as `ioreg` counts it, and the
+// last wake is now.
 const engine = (on: On, stored: Record<string, unknown> = {}, { isFailing = false } = {}) => {
   const clock = mock.clock(on, { now: T })
   // The texts are German: the strings the spec fixes.
@@ -27,16 +29,25 @@ const engine = (on: On, stored: Record<string, unknown> = {}, { isFailing = fals
   const notes: string[] = []
   const writes: unknown[] = []
   const reads: string[] = []
-  const system: { lastInput?: number; asks: number } = { asks: 0 }
+  const system: { lastInput?: number; sleep?: { from: number; to: number }; asks: number } = { asks: 0 }
+  const ran = (stdout: string) => ({
+    value: { exitCode: 0, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false },
+  })
   on('process.run', (_, e) => {
+    const now = clock.now()
+    const { sleep } = system
+    if (e.argv[0] === 'sysctl') {
+      const woke = sleep === undefined || now < sleep.from ? T - 24 * 60 * MIN : Math.min(now, sleep.to)
+
+      return ran(`{ sec = ${Math.floor(woke / 1000)}, usec = ${(woke % 1000) * 1000} }\n`)
+    }
     if (e.argv[0] !== 'ioreg') throw new Error('unexpected call')
     system.asks += 1
     if (system.lastInput === undefined) throw new Error('spawn ioreg ENOENT')
-    const idleNs = (clock.now() - system.lastInput) * 1_000_000
+    const { lastInput } = system
+    const slept = sleep === undefined ? 0 : Math.max(0, Math.min(now, sleep.to) - Math.max(lastInput, sleep.from))
 
-    return {
-      value: { exitCode: 0, stdout: `"HIDIdleTime" = ${idleNs}\n`, stderr: '', isStdoutTruncated: false, isStderrTruncated: false },
-    }
+    return ran(`"HIDIdleTime" = ${(now - lastInput - slept) * 1_000_000}\n`)
   })
   on('store.get', (_, e) => {
     reads.push(e.key)
@@ -363,6 +374,24 @@ test('a break away from the machine ends the block', OWNED, async ($, on) => {
   await clock.advance(MIN)
   expect(last(toasts)).toBe('1 min am Stück')
   expect((stored.block as Block).day).toMatchObject({ breaks: 1, lastBreak: { at: T, ms: 15 * MIN } })
+})
+
+test("a sleeping Mac's dark wakes are no input, and the break is counted once", OWNED, async ($, on) => {
+  const { clock, toasts, stored, system } = engine(on)
+  system.lastInput = T
+  await start($)
+  await submit($)
+  await clock.advance(2 * MIN)
+  // The lid closes: 40 minutes of sleep, the ticks running only in its dark wakes.
+  system.sleep = { from: T + 2 * MIN, to: T + 42 * MIN }
+  await clock.advance(40 * MIN)
+  expect(last(toasts)).toBe('Pause')
+  expect((stored.block as Block).lastActive).toBe(T)
+  // The lid opens, a key is pressed.
+  system.lastInput = clock.now()
+  await clock.advance(MIN)
+  expect(last(toasts)).toBe('1 min am Stück')
+  expect((stored.block as Block).day).toMatchObject({ breaks: 1, lastBreak: { at: T, ms: 42 * MIN } })
 })
 
 test('no block starts from an input a break back', OWNED, async ($, on) => {

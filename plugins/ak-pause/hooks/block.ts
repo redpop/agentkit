@@ -119,9 +119,18 @@ export function touch(block: Block | undefined, now: number, breakMs = BREAK_MS)
 /**
  * The block after the system's last input at `at`, or undefined when there is nothing to write: an
  * input less than a minute newer than the block's own, or, with no block yet, one a break back.
- * That one would start a block nobody worked in, and its first input would count a break.
+ * That one would start a block nobody worked in, and its first input would count a break. Nor does
+ * an input from before the Mac last woke at `wokeAt`: the idle time stood still while it slept, so
+ * `at` lies late by the sleep, and each dark wake would count a break.
  */
-export function sensed(block: Block | undefined, at: number, now: number, breakMs = BREAK_MS): Block | undefined {
+export function sensed(
+  block: Block | undefined,
+  at: number,
+  now: number,
+  breakMs = BREAK_MS,
+  wokeAt?: number,
+): Block | undefined {
+  if (wokeAt !== undefined && at < wokeAt) return undefined
   if (block === undefined) return now - at >= breakMs ? undefined : touch(undefined, at, breakMs)
 
   return at - block.lastActive < SENSE_STEP_MS ? undefined : touch(block, at, breakMs)

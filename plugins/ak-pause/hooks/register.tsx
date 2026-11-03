@@ -25,7 +25,7 @@ import {
   workedMs,
 } from './block'
 import { languageFor, learnLanguage, texts } from './i18n'
-import { systemIdleMs } from './idle'
+import { systemIdleMs, systemWakeMs } from './idle'
 import type { Segment } from './view'
 import { DRINK, SET, cardOf, notifyText, segmentOf, settingsOf, toastText } from './view'
 
@@ -128,8 +128,8 @@ async function sense($: EngineInterface, pause: Pause): Promise<void> {
     return
   }
   const now = await $.clock.now()
-  const [{ ok, block }, set] = await Promise.all([read($), limits($)])
-  const next = ok ? sensed(block, now - idleMs, now, set.breakMs) : undefined
+  const [{ ok, block }, set, wokeAt] = await Promise.all([read($), limits($), systemWakeMs($)])
+  const next = ok ? sensed(block, now - idleMs, now, set.breakMs, wokeAt) : undefined
   if (next === undefined) return
   pause.lastWrite = now
   await write($, next)
