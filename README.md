@@ -288,7 +288,7 @@ Platform-specific notification hooks for Claude Code.
 
 | Hook | Trigger | Action |
 |------|---------|--------|
-| [Sound alert](docs/hooks/ak-notifications/notification-hooks.md) | Permission prompt | Plays Glass.aiff sound |
+| [Sound alert](docs/hooks/ak-notifications/notification-hooks.md) | Permission prompt | Plays Tink.aiff sound |
 | [Desktop banner](docs/hooks/ak-notifications/notification-hooks.md) | Idle prompt | Shows macOS notification |
 
 ### ak-react — React & Next.js Development
