@@ -13,8 +13,8 @@ notification banner when Claude is idle waiting for input.
 ### Permission Prompt Sound
 
 - **Trigger:** `Notification` event with `permission_prompt` matcher
-- **Action:** Plays the system Glass sound at 50% volume via `afplay`
-- **Requirements:** macOS with `/System/Library/Sounds/Glass.aiff` (built-in)
+- **Action:** Plays the system Tink sound at 50% volume via `afplay`
+- **Requirements:** macOS with `/System/Library/Sounds/Tink.aiff` (built-in)
 
 ### Idle Prompt Banner
 

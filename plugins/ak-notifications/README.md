@@ -6,7 +6,7 @@ Platform-specific notification hooks for Claude Code (macOS).
 
 | Hook | Trigger | Action |
 |------|---------|--------|
-| Sound alert | Permission prompt | Plays Glass.aiff sound |
+| Sound alert | Permission prompt | Plays Tink.aiff sound |
 | Desktop banner | Idle prompt | Shows macOS notification |
 
 ## Requirements
