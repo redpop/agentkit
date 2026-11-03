@@ -1,6 +1,8 @@
 // The system's own idle time: how long ago the person last used the mouse, the keyboard or the
 // trackpad, in any app. macOS answers it through `ioreg` without a permission prompt; Linux and
 // Windows have no such command on every machine, so there the mod sees only the input in Claude.
+// The idle time stands still while the Mac sleeps, so the last wake, from `sysctl`, tells which
+// inputs it dates right.
 
 import type { EngineInterface } from 'claude-code'
 
@@ -8,12 +10,23 @@ const TIMEOUT_MS = 2_000
 const IOREG = ['ioreg', '-r', '-c', 'IOHIDSystem', '-k', 'HIDIdleTime', '-d', '1']
 // ioreg writes the idle time in nanoseconds.
 const IDLE = /"HIDIdleTime" = (\d+)/
+const SYSCTL = ['sysctl', '-n', 'kern.waketime']
+// sysctl writes the wake time as seconds and microseconds since the epoch.
+const WAKE = /\{ sec = (\d+), usec = (\d+) \}/
 
 /** The idle time in `ioreg`'s output, in milliseconds; undefined when it names none. */
 export function parseIdle(stdout: string): number | undefined {
   const match = IDLE.exec(stdout)
 
   return match ? Math.floor(Number(match[1]) / 1_000_000) : undefined
+}
+
+/** The wake time in `sysctl`'s output, in epoch milliseconds; undefined when it names none. */
+export function parseWake(stdout: string): number | undefined {
+  const match = WAKE.exec(stdout)
+  const at = match ? Number(match[1]) * 1_000 + Math.floor(Number(match[2]) / 1_000) : 0
+
+  return at > 0 ? at : undefined
 }
 
 // A function declaration, not an arrow: past an import the hooks loader follows `$` only into those.
@@ -24,6 +37,17 @@ export async function systemIdleMs($: EngineInterface): Promise<number | undefin
     const { exitCode, stdout } = await $.process.run(IOREG, { timeoutMs: TIMEOUT_MS })
 
     return exitCode === 0 ? parseIdle(stdout) : undefined
+  } catch {
+    return undefined
+  }
+}
+
+/** When the Mac last woke, dark wakes included, in epoch milliseconds; undefined where `sysctl` cannot tell. */
+export async function systemWakeMs($: EngineInterface): Promise<number | undefined> {
+  try {
+    const { exitCode, stdout } = await $.process.run(SYSCTL, { timeoutMs: TIMEOUT_MS })
+
+    return exitCode === 0 ? parseWake(stdout) : undefined
   } catch {
     return undefined
   }

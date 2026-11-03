@@ -126,6 +126,10 @@ ten minutes, or the break length you set.
   start. A last input a minute or more newer than the block's moves it on, as an input in Claude
   does. Where `ioreg`
   does not answer, the mod stops asking until the next session.
+- The idle time stands still while the Mac sleeps. An input from before its last wake, which
+  `sysctl` names (`kern.waketime`, dark wakes included), moves nothing: its time would lie late by
+  the sleep, and each dark wake in the night would count a break. Where `sysctl` does not answer,
+  every input counts as before.
 - Ten minutes after the last input, or the break length set, the block is over. The next input
   starts a new one and counts the break; an input on another day starts that day's tally empty.
 - The segment is drawn again every minute while the mod is on, after each input, after `/clear`,

@@ -94,6 +94,16 @@ test("the system's input moves the block on once a minute newer", () => {
   expect(sensed(started, T + 15 * MIN, T + 15 * MIN)).toEqual(touch(started, T + 15 * MIN))
 })
 
+test('an input from before the last wake moves nothing: the idle time stood still while the Mac slept', () => {
+  // The last input at T, then the lid closed; a dark wake at T + 40 min reports a minute of idle
+  // time, as if the input were a minute old.
+  expect(sensed(started, T + 39 * MIN, T + 40 * MIN, undefined, T + 39.5 * MIN)).toBeUndefined()
+  expect(sensed(undefined, T + 39 * MIN, T + 40 * MIN, undefined, T + 39.5 * MIN)).toBeUndefined()
+  // An input after the wake, or the key that woke it, is dated right: the break counted.
+  expect(sensed(started, T + 39.5 * MIN, T + 40 * MIN, undefined, T + 39.5 * MIN)).toEqual(touch(started, T + 39.5 * MIN))
+  expect(sensed(started, T + 39.8 * MIN, T + 40 * MIN, undefined, T + 39.5 * MIN)).toEqual(touch(started, T + 39.8 * MIN))
+})
+
 test('no block starts from an input a break back', () => {
   expect(sensed(undefined, T, T + 10 * MIN)).toBeUndefined()
   expect(sensed(undefined, T, T + 9 * MIN)).toEqual(started)
