@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.69.2] - 2026-11-03
+
+### 🐛 Fixed
+
+- `ak-pause` — a sleeping Mac no longer fills the day with breaks. macOS's idle time stands still
+  during sleep, so each dark wake in the night looked like a fresh input after a break. An input
+  from before the Mac last woke (`kern.waketime`) now moves nothing.
+
 ## [1.69.1] - 2026-11-02
 
 ### 🐛 Fixed
