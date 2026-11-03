@@ -1,7 +1,7 @@
 {
   "name": "ak-todo",
   "description": "Mod: tasks and notes for one session that you and Claude both keep, in a pane and one segment in the shared band, without interrupting Claude's turn",
-  "version": "1.69.2",
+  "version": "1.69.3",
   "author": {
     "name": "redpop",
     "url": "https://github.com/redpop"
