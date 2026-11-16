@@ -1,6 +1,6 @@
 import { expect, test } from 'claude-code/testing'
 
-import { SECTION, joinNotes, listContext, unsent } from '../hooks/context'
+import { joinNotes, listContext, unsent } from '../hooks/context'
 import { add, emptyList, update } from '../hooks/list'
 import type { Changed, Failure } from '../hooks/list'
 
@@ -22,12 +22,6 @@ test('renders ref, id, status and owner per line', () => {
   expect(listContext(list)).toBe(
     ['Session list (ak-todo) — reference only: start a task only when the user asks; do not interrupt current work for a new entry; add work you set aside as a task with the todo tool; when a piece of work is done and tasks are open, name them and ask whether to continue:', '[T1 id=1 open, user] Fix login', '[T2 id=3 open, deferred, claude] Later thing', '[N1 id=2 note, claude] Uses port 3000'].join('\n'),
   )
-})
-
-test('SECTION names the ask-first rule and the no-remove rule', () => {
-  expect(SECTION.includes('ask')).toBe(true)
-  expect(SECTION.includes('Never remove')).toBe(true)
-  expect(SECTION.split(/\s+/).length < 120).toBe(true)
 })
 
 test('joinNotes of nothing is undefined', () => {

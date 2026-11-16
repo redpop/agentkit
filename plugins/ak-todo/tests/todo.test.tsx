@@ -202,12 +202,13 @@ test('a user change reaches the next prompt once as a change note', OWNED, async
   expect(contexts.at(-1)?.length).toBe(1)
 })
 
-test('the system prompt carries the section while on', OWNED, async ($, on) => {
+// A guard of Claude Code passes a mod's system-prompt section by in managed setups: the rules ride
+// with each prompt instead, so the system prompt carries nothing of the mod.
+test('the system prompt carries nothing of the mod', OWNED, async ($, on) => {
   engine(on)
   await start($)
   const { sections } = await compose($)
-  expect(sections.at(-1)?.id).toBe('ak-todo:list')
-  expect(sections.at(-1)?.scope).toBe('session')
+  expect(sections.map(s => s.id)).toEqual(['intro'])
 })
 
 test('the tool adds and the store holds it', OWNED, async ($, on) => {
@@ -269,7 +270,7 @@ test('/todo ask submits the text with the entry quoted', OWNED, async ($, on) =>
   expect(submitted).toEqual(['is this still needed?\n\n> T1 Fix login'])
 })
 
-test('switched off: tool says off, no context, no section, no segment; on again: same list', OWNED, async ($, on) => {
+test('switched off: tool says off, no context, no segment; on again: same list', OWNED, async ($, on) => {
   const { clock, toasts, contexts } = engine(on, { 'list:S1': stored1('Fix login') })
   await start($)
   await clock.settle()
@@ -279,7 +280,6 @@ test('switched off: tool says off, no context, no section, no segment; on again:
   expect(String((await todo($, { action: 'list' })).result).includes('off')).toBe(true)
   await submit($)
   expect(contexts.at(-1)).toBeUndefined()
-  expect((await compose($)).sections.some(s => s.id === 'ak-todo:list')).toBe(false)
   await run($, 'stand-in', 'on')
   await clock.settle()
   expect(last(toasts)).toBe('1 open')

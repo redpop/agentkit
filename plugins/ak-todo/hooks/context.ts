@@ -1,20 +1,6 @@
 import { numbered } from './list'
 import type { Numbered, TodoList } from './list'
 
-/** The id of the system-prompt section. */
-export const SECTION_ID = 'ak-todo:list'
-
-/** The system-prompt instruction: short, as it rides on every request. */
-export const SECTION = [
-  'This session has a list of tasks and notes (ak-todo); it arrives with each prompt, with ids.',
-  'Notes are context to keep in mind.',
-  'When you set something aside, add it as a task with the todo tool.',
-  'Do not interrupt your current work for a new entry.',
-  'When a piece of work is done and tasks are open, name them and ask whether to continue.',
-  'Start a task only when the user asks.',
-  "Never remove the user's entries, and never add again what the user removed.",
-].join(' ')
-
 const line = ({ ref, entry }: Numbered): string => {
   const marks = entry.kind === 'note' ? ['note'] : [entry.status ?? 'open', ...(entry.isDeferred ? ['deferred'] : [])]
 
@@ -29,7 +15,7 @@ export const listContext = (list: TodoList): string | undefined => {
   return ['Session list (ak-todo) — reference only: start a task only when the user asks; do not interrupt current work for a new entry; add work you set aside as a task with the todo tool; when a piece of work is done and tasks are open, name them and ask whether to continue:', ...tasks.map(line), ...notes.map(line)].join('\n')
 }
 
-/** What an empty list sends instead: the one rule that still applies, as the system prompt may not carry it. */
+/** What an empty list sends instead: the one rule that still applies. */
 export const EMPTY_CONTEXT = 'Session list (ak-todo) is empty: add work you set aside as a task with the todo tool.'
 
 /** The person's changes since Claude's last turn, as one block; nothing when there are none. */

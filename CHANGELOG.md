@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.69.4] - 2026-11-16
+
+### 🔄 Changed
+
+- `ak-todo` — no system-prompt section any more. Under a Team or Enterprise login Claude Code's guard
+  `cc-plugin-sec-default` skipped it and said so in the transcript; the rules already reach Claude
+  with every prompt and in the `todo` tool's description, so nothing is lost and the notice is gone.
+
 ## [1.69.3] - 2026-11-03
 
 ### 🐛 Fixed
