@@ -92,10 +92,10 @@ once.
   task only when you ask, does not interrupt its work for a new entry, adds work it sets aside as a
   task and, once a piece of work is done, names the open tasks and asks whether to continue; your
   changes are headed as no request.
-- A short instruction in the system prompt says how to use the list. Where an organization manages
-  Claude Code and does not allow the mod that, the pane, commands and tool still work, and the rules
-  in the list's heading still reach Claude.
-- Switched off in a chat, the tool answers that the mod is off, no list or instruction reaches
+- The mod adds nothing to the system prompt. Claude Code's guard `cc-plugin-sec-default` passes a
+  user-installed mod's system-prompt section by under a Team or Enterprise login, so the rules ride
+  with each prompt and in the tool's description, the same everywhere.
+- Switched off in a chat, the tool answers that the mod is off, no list or rule reaches
   Claude, the pane closes and the segment goes. Switched on again, the same list returns.
 
 ## Detection

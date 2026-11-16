@@ -3,7 +3,7 @@ import type { EngineInterface, Register } from 'claude-code'
 
 import { applyCommand, parseCommand } from './command'
 import type { Applied, Cmd } from './command'
-import { EMPTY_CONTEXT, SECTION, SECTION_ID, joinNotes, listContext, unsent } from './context'
+import { EMPTY_CONTEXT, joinNotes, listContext, unsent } from './context'
 import { DETECT_SYSTEM, detectPrompt, parseDetected } from './detect'
 import { languageFor, learnLanguage, texts } from './i18n'
 import { add, clean, emptyList, emptyTrash, normalise, numbered, resolve, update } from './list'
@@ -381,13 +381,6 @@ export const register: Register = on => {
     if (done.drop === undefined && pending.length > 0) await updateState($, PENDING, value => unsent(value ?? [], pending))
 
     return done
-  }).catch(($, e, next) => next(e))
-
-  on('prompt.compose', async ($, e, next) => {
-    const done = await next(e)
-    if (await isOff(() => $.mods.isOn({ name: NAME }))) return done
-
-    return { sections: [...done.sections, { id: SECTION_ID, text: SECTION, scope: 'session' }] }
   }).catch(($, e, next) => next(e))
 
   on('tool.call', { tool: TOOL_NAME }, async ($, e) => {
