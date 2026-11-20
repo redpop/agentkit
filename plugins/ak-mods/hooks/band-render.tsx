@@ -444,11 +444,16 @@ export async function renderBand(
   next: Next<'ui.render', RenderInput<'AbovePrompt'>>,
 ) {
   // The reads subscribe the drawing: a switch, a declare or a publish redraws
-  // it (the list reads the switches and the declared mods).
-  const [list, { value: stored = {} }] = await Promise.all([
-    $.mods.list(),
-    $.state.get({ plugin: 'ak-mods', key: 'segments' }),
-  ])
+  // it (the list reads the switches and the declared mods). A plugin above
+  // that withholds `$.mods` withholds it from ak-mods too: the band then
+  // passes, and the mods, whose declare fails the same way, draw their own.
+  let read
+  try {
+    read = await Promise.all([$.mods.list(), $.state.get({ plugin: 'ak-mods', key: 'segments' })])
+  } catch {
+    return next(e)
+  }
+  const [list, { value: stored = {} }] = read
   if ((e.surface !== 'terminal' && e.surface !== 'desktop') || e.props.hasSurvey) return next(e)
 
   // A pane-only segment or button is the Mods pane's: the band neither draws it nor counts its room.
