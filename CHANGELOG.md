@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.70.0] - 2026-11-20
+
+### ✨ Added
+
+- `ak-mods` — a `snowflake` line icon for band segments, beside the flame.
+
+### 🔄 Changed
+
+- `ak-keepwarm` — on the desktop app the cache segment shows a flame while the cache holds and a
+  snowflake once it is cold, instead of a ring. The context and rate-limit rings fill with what is
+  used up; the cache ring emptied with the time left, so a full one read as a limit reached.
+
 ## [1.69.5] - 2026-11-20
 
 ### 🐛 Fixed
