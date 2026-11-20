@@ -205,10 +205,10 @@ export const register: Register = on => {
   into runs `{ text, tone? }`, so a label draws dim beside its value; joined they must read as
   `text`, else `text` draws in one run), optional `rich` (the segment as the desktop app draws it,
   in place of `text` and `parts`: runs as in `parts`, and a run with a `ring` from 0 to 100 draws as
-  a ring filled that far, one with an `icon` (`id`, `copy`, `check`, `clock`, `flame`, `tasks` or
-  `note`) as that line icon from ak-mods' own set, its `text` what a reader that cannot see the
-  picture gets; the terminal draws `text`, and the band counts its room by what each draws, a ring
-  or an icon as three cells, a character there as 0.95 of a cell), optional `card` rows `{ label,
+  a ring filled that far, one with an `icon` (`id`, `copy`, `check`, `clock`, `flame`, `snowflake`,
+  `tasks` or `note`) as that line icon from ak-mods' own set, its `text` what a reader that cannot
+  see the picture gets; the terminal draws `text`, and the band counts its room by what each draws,
+  a ring or an icon as three cells, a character there as 0.95 of a cell), optional `card` rows `{ label,
   value }` (the card the Mods pane shows on the desktop app, where a press on the segment's text
   opens its row, its plain runs: a run in a colour stays text so it keeps it, a dim run too unless
   no run is plain, and then it is the press: dim labels in one column beside their values; without

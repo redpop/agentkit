@@ -36,18 +36,21 @@ above the prompt, once the chat has made a request:
 | `◔ 4m  rewrite ≈ $0.42` | Under 5 minutes left, in the warning colour, and what a rewrite of the context would cost |
 | `○ cold 12m  rewrite ≈ $0.42` | The cache expired that long ago; a ping cannot help, and the button is hidden |
 
-On the desktop app the circle is a ring that empties with the time left, beside the time and the
-word `cache`: `◕ 42m cache`. Kept warm, a flame in the info colour stands in its place; cold, the ring is empty.
+On the desktop app a flame stands in the circle's place while the cache holds, beside the time and
+the word `cache`: `🔥 42m cache`, in the info colour while kept warm. Cold, a snowflake takes its
+place. No ring, as the band's other rings fill with what is used up, the context or a rate limit,
+while the cache's time runs the other way.
 Cooling, it says what is at stake: `cache drops in 4m  next message rewrites 200k tokens ≈ $0.80`.
-Cold, it reads as its neighbours do, a value then a dim label: the empty ring, then what the next
+Cold, it reads as its neighbours do, a value then a dim label: the snowflake, then what the next
 message costs, `≈ $0.80 cache`, yellow from $1. How long it has been cold is the pane's.
 A press on the segment's text opens the Mods pane at this mod, which lists the cache's state, its
 lifetime, the context, the rewrite estimate and, once there are some, the pings, rewrites and
 retries.
 
 When the band is short of room, the segment turns compact: kept warm `◆ warm` (the flame and `warm`
-on the desktop app), warm or cooling the ring and the time left (`◕ 42m`), cold the empty ring and
-the rewrite cost (`○ ≈ $0.80`); on the desktop app the dim word `cache` follows either. While the
+on the desktop app), warm or cooling the circle and the time left (`◕ 42m`, on the desktop app the
+flame), cold the empty circle and the rewrite cost (`○ ≈ $0.80`, on the desktop app the snowflake);
+on the desktop app the dim word `cache` follows either. While the
 cache is warm or cooling, the compact text is the **keep warm** button: a press starts the loop,
 with no key. Cold, a press opens the Mods pane: starting the loop then would rewrite the cache at
 once.

@@ -413,19 +413,19 @@ const card = (cache: string) => [
   { label: 'Context', value: '200k tokens' },
   { label: 'Rewrite', value: COST },
 ]
-// The warm segment at a full hour, its rich runs a full ring.
+// The warm segment at a full hour, its rich runs led by a flame.
 const WARM = {
   text: '● 60m',
   rich: [
-    { text: 'cache 60m left', tone: 'ok', ring: 100 },
-    { text: ' 60m', tone: 'ok' },
+    { text: 'cache 60m left', tone: 'ok', icon: 'flame' },
+    { text: '60m', tone: 'ok' },
     { text: ' cache', tone: 'dim' },
   ],
   compact: {
     text: '● 60m',
     rich: [
-      { text: 'cache 60m left', tone: 'ok', ring: 100 },
-      { text: ' 60m', tone: 'ok' },
+      { text: 'cache 60m left', tone: 'ok', icon: 'flame' },
+      { text: '60m', tone: 'ok' },
       { text: ' cache', tone: 'dim' },
     ],
   },
@@ -462,16 +462,16 @@ test('publishes the warn segment with the keepwarm button while cooling', OWNED,
   expect(segments(toasts).at(-1)).toEqual({
     text: `◔ 4m  rewrite ${COST}`,
     rich: [
-      { text: 'cache 4m left', tone: 'warn', ring: 7 },
-      { text: ' cache drops in 4m', tone: 'warn' },
+      { text: 'cache 4m left', tone: 'warn', icon: 'flame' },
+      { text: 'cache drops in 4m', tone: 'warn' },
       { text: '  next message rewrites ', tone: 'dim' },
       { text: `200k tokens ${COST}`, tone: 'warn' },
     ],
     compact: {
       text: '◔ 4m',
       rich: [
-        { text: 'cache 4m left', tone: 'warn', ring: 7 },
-        { text: ' 4m', tone: 'warn' },
+        { text: 'cache 4m left', tone: 'warn', icon: 'flame' },
+        { text: '4m', tone: 'warn' },
         { text: ' cache', tone: 'dim' },
       ],
     },
@@ -505,15 +505,15 @@ test('publishes the cold segment without a button', OWNED, async ($, on) => {
   expect(segments(toasts).at(-1)).toEqual({
     text: `○ cold 12m  rewrite ${COST}`,
     rich: [
-      { text: 'cache cold', tone: 'dim', ring: 0 },
-      { text: ` ${COST}`, tone: 'ok' },
+      { text: 'cache cold', tone: 'dim', icon: 'snowflake' },
+      { text: COST, tone: 'ok' },
       { text: ' cache', tone: 'dim' },
     ],
     compact: {
       text: `○ ${COST}`,
       rich: [
-        { text: 'cache cold', tone: 'dim', ring: 0 },
-        { text: ` ${COST}`, tone: 'ok' },
+        { text: 'cache cold', tone: 'dim', icon: 'snowflake' },
+        { text: COST, tone: 'ok' },
         { text: ' cache', tone: 'dim' },
       ],
     },
@@ -529,7 +529,7 @@ test('the cold segment shows a rewrite from $1 in yellow', OWNED, async ($, on) 
   await startChat($)
   await clock.advance(72 * MIN)
   const cost = segments(toasts).at(-1)?.rich?.[1]
-  expect(cost?.text).toBe(` ≈ ${usd(rewriteCost(600010, 'claude-sonnet-5-5', 60))}`)
+  expect(cost?.text).toBe(`≈ ${usd(rewriteCost(600010, 'claude-sonnet-5-5', 60))}`)
   expect(cost?.tone).toBe('warn')
 })
 
