@@ -420,7 +420,7 @@ test("the band's mods button records the band's width, so the pane warns as the 
     plugin: 'ak-mods',
     component: 'AbovePrompt',
     surface: 'terminal',
-    props: { hasSurvey: false, isWorking: false, maxRows: 10, bodyColumns: 75, scroll: { offset: 0, bodyRows: 9 }, view: {} },
+    props: { hasSurvey: false, isCollapsed: false, isWorking: false, maxRows: 10, bodyColumns: 75, scroll: { offset: 0, bodyRows: 9 }, view: {} },
   })
   expect(await band.find({ key: 'mods-toggle' })).toMatchObject({ text: 'mods +1' })
   await band.press({ key: 'mods-toggle' })

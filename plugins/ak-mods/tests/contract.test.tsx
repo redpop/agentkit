@@ -80,6 +80,7 @@ const BAND = {
   surface: 'terminal',
   props: {
     hasSurvey: false,
+    isCollapsed: false,
     isWorking: false,
     maxRows: 3,
     bodyColumns: 80,
