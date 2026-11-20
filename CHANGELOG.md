@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.69.5] - 2026-11-20
+
+### 🐛 Fixed
+
+- `ak-mods` — the shared band no longer fails when a plugin above withholds `$.mods`: it steps
+  aside and the mods draw their own rows. Claude Code 2.1.322 and later fail a plugin's tests on
+  such a skipped hook, which the fail-open test showed.
+- Mod tests pass the `isCollapsed` prop Claude Code 2.1.326 added to the band above the prompt, so
+  they type-check again.
+
 ## [1.69.4] - 2026-11-16
 
 ### 🔄 Changed
