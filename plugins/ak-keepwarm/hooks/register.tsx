@@ -328,7 +328,7 @@ const drain = (left: number): string => {
 const NOTABLE_USD = 1
 
 // The cache state as the shared band shows it: no segment before the first request. The circle
-// and the time left say it is warm; only cold says so in a word. The rewrite estimate rides along
+// (on the desktop app the flame) and the time left say it is warm; only cold says so in a word. The rewrite estimate rides along
 // only while it matters, as the cache cools or is cold, its label dim.
 const segment = (): Segment => {
   const state = S.isKeepWarm ? 'kept' : cacheState()
@@ -360,8 +360,9 @@ const segment = (): Segment => {
     ...(S.isAlways ? [{ label: t.card.always, value: t.on }] : []),
   ]
   const more = { ...(detail ? { detail } : {}), card }
-  // Where the band draws pictures, the circle is a ring that empties with the time left.
-  const ring = Math.round((Math.max(0, left) / (S.ttlMin * MIN)) * 100)
+  // Where the band draws pictures, the circle is a flame while the cache holds and a snowflake once
+  // it is cold: no ring, as the band's rings fill with what is used up, and the time left is
+  // already the text beside it. A line icon carries its own air, so the next run starts bare.
   if (state === 'kept') {
     return {
       text: `◆ ${t.keptWarm}`,
@@ -390,17 +391,17 @@ const segment = (): Segment => {
     return {
       text: time,
       rich: [
-        { text: t.ringLeft(minutes(left)), tone: 'ok', ring },
-        { text: ` ${minutes(left)}`, tone: 'ok' },
+        { text: t.ringLeft(minutes(left)), tone: 'ok', icon: 'flame' },
+        { text: minutes(left), tone: 'ok' },
         { text: ` ${t.cacheWord}`, tone: 'dim' },
       ],
-      // Short of room: the ring, the time left and the dim word that says whose time it is; the
+      // Short of room: the flame, the time left and the dim word that says whose time it is; the
       // compact text is the keep button.
       compact: {
         text: time,
         rich: [
-          { text: t.ringLeft(minutes(left)), tone: 'ok', ring },
-          { text: ` ${minutes(left)}`, tone: 'ok' },
+          { text: t.ringLeft(minutes(left)), tone: 'ok', icon: 'flame' },
+          { text: minutes(left), tone: 'ok' },
           { text: ` ${t.cacheWord}`, tone: 'dim' },
         ],
       },
@@ -417,8 +418,8 @@ const segment = (): Segment => {
       // The desktop app has the room to say what is at stake: when the cache drops, and what the next
       // message then writes again.
       rich: [
-        { text: t.ringLeft(minutes(left)), tone: 'warn', ring },
-        { text: ` ${t.drops(minutes(left))}`, tone: 'warn' },
+        { text: t.ringLeft(minutes(left)), tone: 'warn', icon: 'flame' },
+        { text: t.drops(minutes(left)), tone: 'warn' },
         // No dot between: the dim tone parts the two, as the terminal's two spaces do.
         { text: `  ${t.nextRewrites} `, tone: 'dim' },
         { text: t.tokensAt(tokens(S.ctx), cost), tone: 'warn' },
@@ -426,8 +427,8 @@ const segment = (): Segment => {
       compact: {
         text: time,
         rich: [
-          { text: t.ringLeft(minutes(left)), tone: 'warn', ring },
-          { text: ` ${minutes(left)}`, tone: 'warn' },
+          { text: t.ringLeft(minutes(left)), tone: 'warn', icon: 'flame' },
+          { text: minutes(left), tone: 'warn' },
           { text: ` ${t.cacheWord}`, tone: 'dim' },
         ],
       },
@@ -444,21 +445,21 @@ const segment = (): Segment => {
 
   return {
     text: `○ ${t.cold} ${minutes(-left)}  ${t.rewrite} ${cost}`,
-    // On the desktop app as its neighbours read, a value then a dim label: the empty ring says cold,
+    // On the desktop app as its neighbours read, a value then a dim label: the snowflake says cold,
     // so the value is what the next message costs, yellow once it is worth noticing. How long it has
     // been cold is the card's.
     rich: [
-      { text: t.ringCold, tone: 'dim', ring: 0 },
+      { text: t.ringCold, tone: 'dim', icon: 'snowflake' },
       // `ok` draws in the text colour, where no tone would take the segment's dim.
-      { text: ` ${cost}`, tone: rewrite >= NOTABLE_USD ? 'warn' : 'ok' },
+      { text: cost, tone: rewrite >= NOTABLE_USD ? 'warn' : 'ok' },
       { text: ` ${t.cacheWord}`, tone: 'dim' },
     ],
-    // Short of room: the empty ring and what the next message costs. No button, as in full.
+    // Short of room: the snowflake and what the next message costs. No button, as in full.
     compact: {
       text: `○ ${cost}`,
       rich: [
-        { text: t.ringCold, tone: 'dim', ring: 0 },
-        { text: ` ${cost}`, tone: rewrite >= NOTABLE_USD ? 'warn' : 'ok' },
+        { text: t.ringCold, tone: 'dim', icon: 'snowflake' },
+        { text: cost, tone: rewrite >= NOTABLE_USD ? 'warn' : 'ok' },
         { text: ` ${t.cacheWord}`, tone: 'dim' },
       ],
     },

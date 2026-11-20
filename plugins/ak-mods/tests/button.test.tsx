@@ -50,7 +50,7 @@ const BAND = {
   plugin: 'ak-mods',
   component: 'AbovePrompt',
   surface: 'terminal',
-  props: { hasSurvey: false, isWorking: false, maxRows: 3, bodyColumns: 80, scroll: { offset: 0, bodyRows: 3 }, view: {} },
+  props: { hasSurvey: false, isCollapsed: false, isWorking: false, maxRows: 3, bodyColumns: 80, scroll: { offset: 0, bodyRows: 3 }, view: {} },
 } as const
 
 test("the pane's button shows the segment its command publishes", { plugins: PLUGINS }, async ($, on) => {

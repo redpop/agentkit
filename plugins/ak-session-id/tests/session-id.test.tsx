@@ -12,6 +12,7 @@ const BAND = {
   surface: 'desktop',
   props: {
     hasSurvey: false,
+    isCollapsed: false,
     isWorking: false,
     maxRows: 3,
     bodyColumns: 80,

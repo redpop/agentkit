@@ -665,7 +665,7 @@ test('without ak-mods the own band shows the segment', async ($, on) => {
     plugin: 'ak-ci',
     component: 'AbovePrompt',
     surface: 'terminal',
-    props: { hasSurvey: false, isWorking: false, maxRows: 3, bodyColumns: 80, scroll: { offset: 0, bodyRows: 3 }, view: {} },
+    props: { hasSurvey: false, isCollapsed: false, isWorking: false, maxRows: 3, bodyColumns: 80, scroll: { offset: 0, bodyRows: 3 }, view: {} },
   })
   expect(await ui.find({ type: 'Text', text: '!12 ✓ 4:51' })).toBeDefined()
   await ui.unmount()
