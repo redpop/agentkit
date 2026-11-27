@@ -35,6 +35,15 @@
       "license": "MIT"
     },
     {
+      "name": "ak-naming",
+      "source": "./plugins/ak-naming",
+      "description": "Find and screen product, app and brand names: domains, companies and apps, EU trade marks, language risks",
+      "version": "1.70.0",
+      "category": "productivity",
+      "keywords": ["naming", "brand", "domains", "trademark"],
+      "license": "MIT"
+    },
+    {
       "name": "ak-improve",
       "source": "./plugins/ak-improve",
       "description": "Code improvement agents for refactoring and performance optimization",

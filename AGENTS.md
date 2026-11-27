@@ -6,7 +6,7 @@ This file provides guidance to AI agents (Claude Code, Warp AI, etc.) when worki
 
 ## Project overview
 
-Claude Code plugin marketplace (`ak-marketplace`) with 18 independently installable plugins, 27 skills, 8 agents, a mod switcher with seven mods,
+Claude Code plugin marketplace (`ak-marketplace`) with 19 independently installable plugins, 28 skills, 8 agents, a mod switcher with seven mods,
 and domain knowledge bases. Built on the official Claude Code Plugin Architecture.
 
 ## Dev environment
@@ -149,6 +149,7 @@ plugins/{plugin-name}/
 | `ak-meta` | 4 | 2 | |
 | `ak-improve` | - | 2 | knowledge/ (1 file) |
 | `ak-knowledge` | 4 | 1 | |
+| `ak-naming` | 1 | - | scripts/ (5 files), knowledge/ (3 files) |
 | `ak-mods` | - | - | hooks module (TSX), types/, LICENSE-lucide (icons, ISC) |
 | `ak-keepwarm` | - | - | hooks module (TSX), tests/, LICENSE (upstream MIT) |
 | `ak-session-id` | - | - | hooks module (TSX), tests/ |
