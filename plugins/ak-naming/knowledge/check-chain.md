@@ -14,8 +14,9 @@ xargs -P 8 -n 1 sh "$K/pre.sh" -t de < names.txt > nx.txt
 ```
 
 Prints each name whose main-market domain (`-t`, default `de`) answers NXDOMAIN. That means
-"probably free", not "free": a domain can be registered without name servers. Confirm every survivor in step 2. A name `dig` cannot resolve
-(SERVFAIL, timeout) goes to stderr as `unresolved`: check it in step 2 instead of dropping it.
+"probably free", not "free": a domain can be registered without name servers. Confirm every
+survivor in step 2. A name `dig` cannot resolve (SERVFAIL, timeout) goes to stderr as
+`unresolved`: check it in step 2 instead of dropping it.
 The only script that may run in parallel, because it asks DNS, not a whois server.
 
 ## 2. Core domains (`chk.sh`)
