@@ -85,20 +85,24 @@ Commands and status codes are in `check-chain.md`.
 5. **Companies, apps, `.com` owner** – `q.py`: North Data, App Store DE and US, the `.com` page
    title. A taken `.com`: whois creation date and name servers show whether it is for sale.
 6. **EU trade marks** – EUIPO eSearch in the browser, with a control search first. A pre-filter
-   only: it misses one-letter neighbours and national marks. No count means "not checked".
+   only: it misses one-letter neighbours and national marks. No count means "not checked". Read
+   the three to five nearest marks in detail: type, limitations, owner, ending family, registration
+   date.
 7. **Neighbours, best 8 candidates** – `neighbors.py` builds 4 to 6 spellings one edit away,
    finds which of their `.de` exist, and reads page title and North Data for those. An active
    company or brand in a related field is a red signal. This catches most of what would otherwise
    fail only in the TMview screenshot.
 8. **Web search** for the exact name: first name, place name, similar app names (search the App
-   Store for neighbour spellings as well).
+   Store for neighbour spellings as well). "Not found" only after Google or Bing in the browser
+   found nothing either; a web search tool alone misses real brands. For finalists, read page 1.
 9. **Language risks** – the checklist in `language-risks.md`, with `wk.py` for Wiktionary.
 10. **National trade marks, every finalist of every round** – the user opens TMview and sends a
     screenshot. Ask for it in the round that names the finalist, not at the end: a favourite that
     fails late costs every round built on it. Give them the link from `check-chain.md`. Agents
     never query TMview.
 11. **Second opinion, optional** – fill `second-opinion.md` for another agent or model. Check
-    every claim it makes before you repeat it.
+    every claim it makes before you repeat it, both ways: back what holds with a source, and call a
+    claim unconfirmed only after a browser search, as in step 8.
 
 **Division of work, for long searches.** A subagent or second model can generate 100 to 200 names
 per round and run steps 1–5, 7 and 8 mechanically, from the brief in `round-brief.md`. The main

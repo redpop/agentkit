@@ -113,6 +113,19 @@ clean.
 https://euipo.europa.eu/eSearch/?d=<number>#details/trademarks/<number>
 ```
 
+**Read the nearest marks in detail.** For the three to five marks closest to a candidate, open the
+details page and name these points in the result, not only the classes:
+
+- **Type:** a figurative mark protects mainly its design; the risk is lower than for a word mark.
+- **Limitations in the list of goods,** such as "all aforementioned goods related to the
+  hospitality industry": classes 9 and 42 on paper, a narrow field in fact.
+- **Owner and strength:** a group that markets the name opposes more readily than a private person.
+  Check with a search engine whether the mark is active in the market.
+- **Ending family:** when a candidate shares four or five final letters with marks in the core
+  classes, search `*<ending>*` as well. A vowel swap that dodges one family easily lands in the
+  next, for example from a figurative mark for restaurant software to a word mark of an industrial
+  group.
+
 **Limits of `stem*`:**
 
 - It finds only marks that contain the stem. Neighbours one letter away are missing. Illustration:
@@ -120,8 +133,12 @@ https://euipo.europa.eu/eSearch/?d=<number>#details/trademarks/<number>
 - National marks are missing (a German mark only at the DPMA).
 - Three-syllable sound names sit in a dense field. Before recommending one, get the TMview
   screenshot (step 10).
-- A mark registered more than five years ago must be in use. A company that has since renamed
-  itself lowers the practical risk, but the mark stays on the register.
+- **Grace period for use, as a timeline.** It runs five years from the registration date
+  ("Registration date" on the details page). After that, an owner who opposes must show genuine use
+  in the five years before the filing date of the new mark, so use up to a rename still counts.
+  Revocation for non-use is possible at the earliest five years after the last use. Illustration:
+  registered 12/2020, company renamed 12/2024 – probably still a basis for opposition until about
+  the end of 2029. A pre-screen, not legal advice.
 
 ## 7. Neighbours (`neighbors.py`)
 
@@ -155,6 +172,35 @@ Search the exact name in quotes. Look for:
 - apps with near spellings (one letter changed, doubled or dropped) – also search the App Store
   for them directly
 
+**"Not found" only after a search engine in the browser.** A web search tool with its own index
+missed, on one day, a brand sold on Japanese marketplaces, an Italian limited company listed only in
+business registers, and a Catalan verb form in a dictionary. Google and Bing in the built-in
+browser answered without a CAPTCHA (2026); read the page with `get_page_text`, and set language and
+country to the main market:
+
+```text
+https://www.google.com/search?q=%22<name>%22&hl=de&gl=de
+https://www.bing.com/search?q=%22<name>%22&setlang=de&cc=DE
+```
+
+A claim counts as unconfirmed only when the browser search shows nothing either. The result names
+the search engine that was checked.
+
+**Read page 1 for every finalist,** at Google and Bing for the main market, not only whether there
+are hits:
+
+- Who owns page 1: profiles of people (a first name), another brand, people-search sites?
+- "Did you mean …" shows the strongest neighbour word. Whoever types the name from memory lands
+  there.
+- Bing shows related words as hits, such as a well-known car model. That reveals a sound
+  association.
+- Google's AI overview shows how Google files the name, for example as a rare first name.
+- When page 1 belongs to people or others, recommend getting the landing page indexed first
+  (Search Console), and posting publicly only after that.
+
+The EU VAT check VIES is no company check: small companies, Italian ones often, are not enabled for
+it and show as INVALID although they exist.
+
 ## 9. Language risks (`wk.py`)
 
 ```bash
@@ -177,8 +223,9 @@ Adjust `offices` to the target countries.
 
 ## Blocked sources
 
-Leave these alone; they block automated access: TMview, Squadhelp, lexigram.gr (verification page),
-greek-language.gr (HTTP 403). For Greek, use Wiktionary or ask the user.
+Leave these alone; they block automated access: TMview, Squadhelp, DuckDuckGo (html.duckduckgo.com,
+bot check), lexigram.gr (verification page), greek-language.gr (HTTP 403). For Greek, use
+Wiktionary or ask the user.
 
 ## Field data
 
@@ -193,6 +240,12 @@ not as a rule:
 | short three-syllable names | about 28 %; `.com` almost always taken or for sale at 2,000–3,000 $ |
 
 The endings `-avia` and `-ivia` are crowded in the EU register.
+
+- **Words of the main-market language with a Romance ending:** about 80 % free `.de` (123 of 154).
+  But the ear splits them into "word + ending", and abroad the reading tips over: `w`, `ei`, `eu`,
+  a silent `h` in Romance languages, false friends in English. The direction hardly pays.
+- **Roots from very small languages** carry strong stories but quickly feel foreign to users. Ask
+  about the sound early.
 
 ## macOS and zsh
 

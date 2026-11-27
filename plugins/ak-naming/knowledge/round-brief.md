@@ -5,7 +5,8 @@ and runs the mechanical checks. The main session keeps EUIPO eSearch, the TMview
 cross-check of language risks and the verdict.
 
 Fill the angle brackets and hand the brief over. Check every finding that comes back before you
-repeat it: a second opinion once invented a trade mark that does not exist.
+repeat it, both ways: a check once dismissed a real brand as invented, because only a web search
+tool had looked for it.
 
 ## Template
 
@@ -46,7 +47,8 @@ Scripts: `<plugin root>/skills/find-name/scripts/`. Work in `<scratchpad>`; `cd`
    domain is free.
 5. `q.py` on the survivors into `rNN-q.txt`.
 6. `wk.py` on the survivors and their stems into `rNN-wk.txt`.
-7. Web search for the best 15: first names, places, near-spelled apps.
+7. Web search for the best 15: first names, places, near-spelled apps. Say which search you used;
+   without a browser search engine, mark "nothing found" as not confirmed.
 8. `neighbors.py` on the best 8 into `rNN-nb.txt`.
 
 ## Rules

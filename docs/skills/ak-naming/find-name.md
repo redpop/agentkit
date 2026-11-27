@@ -36,14 +36,15 @@ later round checks nothing twice.
 5. North Data companies, App Store DE and US, the `.com` page title (`q.py`); for a taken `.com`
    the whois name servers show whether it is for sale
 6. EU trade marks in EUIPO eSearch through a browser tool, with a control search; no count means
-   not checked
+   not checked; the nearest three to five marks read in detail
 7. Neighbours one edit away for the best 8: which `.de` exist, page title, North Data
    (`neighbors.py`)
-8. Web search: first names, places, near-spelled apps
+8. Web search: first names, places, near-spelled apps; "not found" only after Google or Bing in
+   the browser; page 1 read for finalists
 9. Language risks by checklist, with Wiktionary (`wk.py`)
 10. National trade marks: the user sends a TMview screenshot for every finalist, in the round
     that names it
-11. Optional second opinion from another agent, every claim checked afterwards
+11. Optional second opinion from another agent, every claim checked afterwards in both directions
 
 For long searches a subagent can generate 100 to 200 names per round and run the mechanical
 checks from the brief in `knowledge/round-brief.md`; the main session keeps eSearch, TMview, the
