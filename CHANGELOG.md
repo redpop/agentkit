@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.72.0] - 2026-11-27
+
+### ✨ Added
+
+- `ak-naming:find-name` — **a vulgar-substring scan and a neighbour check.** `risk_scan.py` checks
+  a whole candidate list offline against a table of vulgar and derogatory substrings in seven
+  languages, before any network request. `neighbors.py` builds spellings one edit away for the best
+  candidates and shows which of their domains exist, with page title and company register hits:
+  finalists had failed on such neighbours only in the national trade mark screenshot.
+- `ak-naming:find-name` — **a round brief for a subagent** (`knowledge/round-brief.md`), so a long
+  search can hand generation and the mechanical checks to a second agent.
+
+### 🔄 Changed
+
+- `ak-naming:find-name` — **"not found" needs a search engine in the browser.** A web search tool
+  with its own index missed a real brand, a company and a dictionary entry on one day; Google or
+  Bing in the browser showed them. Finalists now also get page 1 of the results read, the three to
+  five nearest EU marks read in detail (type, limitations, owner, ending family, grace period for
+  use), and a TMview screenshot in the round that names them.
+- `ak-naming:find-name` — the second-opinion template carries the search history, rejected names
+  by reason, the favourite to attack and a pre-mortem, and asks for every claim to be checked both
+  ways.
+- CodeRabbit reviews draft pull requests as well.
+
+### 🐛 Fixed
+
+- `ak-naming:find-name` — **the main-market domain is checked for any country TLD,** not only
+  `.de`: `pre.sh` and `chk.sh` take `-t <tld>` and ask the registry IANA lists for it. The
+  candidate-only mode is now `--check <names>`, like every other skill argument.
+
 ## [1.71.0] - 2026-11-27
 
 ### ✨ Added
