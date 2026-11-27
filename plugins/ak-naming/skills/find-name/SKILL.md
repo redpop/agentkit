@@ -19,7 +19,7 @@ round.
 
 `$ARGUMENTS` is free text: a product description, a list of candidates to check, or both.
 
-- Candidates only (`check krevalo, zintora`) – skip to step C for those names.
+- `--check <names>` (`--check krevalo, zintora`) – skip to step C for those names.
 - A description or nothing – start with step A.
 
 ## Rules
@@ -72,10 +72,12 @@ per round, lower-case, one per line, in a file in the scratchpad.
 Run the steps in this order. A name that fails a step leaves the round with a one-sentence reason.
 Commands and status codes are in `check-chain.md`.
 
-1. **DNS pre-filter** – `pre.sh` keeps names whose main-market domain has no DNS record. Only for
-   `.de` in the shipped script; for another TLD adapt the one line or go straight to step 2.
-2. **Core domains** – `chk.sh`: `.de` and `.com` by whois, `get<name>.com` when `.com` is taken,
-   `.app` by RDAP.
+1. **DNS pre-filter** – `pre.sh` keeps names whose main-market domain has no DNS record. `-t <tld>`
+   sets that domain from the brief; the default is `.de`.
+2. **Core domains** – `chk.sh`, with the same `-t <tld>`: the main-market domain and `.com` by
+   whois, `get<name>.com` when `.com` is taken, `.app` by RDAP. A `?` for the main-market domain
+   is not a pass: some registries (`.es`) answer no public whois, so check it at the registry's
+   web search or ask the user before a name becomes a finalist.
 3. **Extra TLDs, finalists only** – `tlds.sh`: `.eu`, `.at`, `.it`, `.ch`, `.io`, `.org`.
 4. **Companies, apps, `.com` owner** – `q.py`: North Data, App Store DE and US, the `.com` page
    title. A taken `.com`: whois creation date and name servers show whether it is for sale.
@@ -104,7 +106,7 @@ Write it in the user's language; the template is English:
 
 | | <benchmark (current favourite)> | <finalist 1> | <finalist 2> | <finalist 3> |
 | --- | --- | --- | --- | --- |
-| .de / .app / .com | | | | |
+| main TLD / .app / .com | | | | |
 | EU marks (eSearch, date) | | | | |
 | Companies, apps | | | | |
 | Language risks | | | | |

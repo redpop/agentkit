@@ -10,18 +10,18 @@ cd "$S" || exit 1
 ## 1. DNS pre-filter (`pre.sh`)
 
 ```bash
-xargs -P 8 -n 1 sh "$K/pre.sh" < names.txt > nx.txt
+xargs -P 8 -n 1 sh "$K/pre.sh" -t de < names.txt > nx.txt
 ```
 
-Prints each name whose `.de` answers NXDOMAIN. That means "probably free", not "free": a domain can
-be registered without name servers. Confirm every survivor in step 2. A name `dig` cannot resolve
+Prints each name whose main-market domain (`-t`, default `de`) answers NXDOMAIN. That means
+"probably free", not "free": a domain can be registered without name servers. Confirm every survivor in step 2. A name `dig` cannot resolve
 (SERVFAIL, timeout) goes to stderr as `unresolved`: check it in step 2 instead of dropping it.
 The only script that may run in parallel, because it asks DNS, not a whois server.
 
 ## 2. Core domains (`chk.sh`)
 
 ```bash
-sh "$K/chk.sh" $(cat nx.txt)
+sh "$K/chk.sh" -t de $(cat nx.txt)
 ```
 
 Output: `krevalo de=free com=free get=- app=404`
@@ -29,9 +29,15 @@ Output: `krevalo de=free com=free get=- app=404`
 | Field | Values |
 | --- | --- |
 | `de` | `free` available, `connect` registered, `redemptionPeriod` deleted but not yet available, `?` no answer |
+| other `-t` TLD | `free`, `taken` (domain record found), `?` no answer, quota, or a reply format the script does not know |
 | `com` | `free` available, `taken` registered, `?` no answer, rate limit or error – check again later |
 | `get` | `get<name>.com`, checked only when `.com` is taken |
 | `app` | RDAP HTTP code: `404` available, `200` registered, other codes unknown |
+
+`-t <tld>` sets the main-market domain; the column is named after it (`fr=free`). For `.de` the
+script asks DENIC, for any other TLD the whois server IANA lists for it. Some registries give no
+public whois (`.es` among them): the column stays `?`, and the domain needs a check at the
+registry's own web search before a name becomes a finalist.
 
 The script waits 1.2 s per name and retries `.app` once after an HTTP 429.
 

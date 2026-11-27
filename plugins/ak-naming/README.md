@@ -39,5 +39,5 @@ access. The skill never registers or buys a domain and never gets around a bot b
 
 # Use the skill
 /ak-naming:find-name budgeting app for couples, Germany and Austria
-/ak-naming:find-name check krevalo, zintora
+/ak-naming:find-name --check krevalo, zintora
 ```

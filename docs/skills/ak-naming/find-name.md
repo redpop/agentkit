@@ -18,18 +18,19 @@ later round checks nothing twice.
 ## Usage
 
 ```text
-/ak-naming:find-name [product description | check <name>, <name>]
+/ak-naming:find-name [product description | --check <name>, <name>]
 ```
 
 | Argument | Effect |
 | ---------- | -------- |
 | description | Start with the brief, then generate and check |
-| `check <names>` | Skip to the check chain for the names given |
+| `--check <names>` | Skip to the check chain for the names given |
 
 ## Check chain
 
-1. DNS pre-filter for the main-market domain (`pre.sh`, parallel)
-2. `.de`, `.com`, `get<name>.com` by whois and `.app` by RDAP (`chk.sh`)
+1. DNS pre-filter for the main-market domain, `-t <tld>` (`pre.sh`, parallel)
+2. The main-market domain (`-t <tld>`, default `.de`) and `.com` by whois, `get<name>.com`, `.app`
+   by RDAP (`chk.sh`)
 3. `.eu`, `.at`, `.it`, `.ch`, `.io`, `.org` for finalists (`tlds.sh`)
 4. North Data companies, App Store DE and US, the `.com` page title (`q.py`); for a taken `.com`
    the whois name servers show whether it is for sale
@@ -57,5 +58,5 @@ rate limits of the whois, RDAP and Wiktionary services.
 
 ```text
 /ak-naming:find-name budgeting app for couples, Germany and Austria
-/ak-naming:find-name check krevalo, zintora
+/ak-naming:find-name --check krevalo, zintora
 ```
