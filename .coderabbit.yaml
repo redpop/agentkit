@@ -33,6 +33,11 @@ reviews:
   # (which tends to feel nitpicky).
   profile: chill
 
+  # Draft PRs get reviewed too, so findings arrive while the branch is still
+  # open for changes rather than only once it is marked ready.
+  auto_review:
+    drafts: true
+
   # For the hosted reviewer, anything excluded here is both noise and money —
   # it bills per reviewed file. Measured 2026-09-19: of 38,032 markdown lines in
   # the repository, the four exclusions below account for 25,894 — 68%, none of
