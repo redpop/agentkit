@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.71.0] - 2026-11-27
+
+### ✨ Added
+
+- `ak-naming` — **new plugin with the `find-name` skill.** It finds names for a product, app,
+  service or brand with you and screens them from cheap to expensive: DNS, whois and RDAP for the
+  domains, North Data and the App Store, EUIPO eSearch for EU trade marks, a web search and a
+  language-risk checklist. Each round ends with at most three finalists next to the current
+  favourite, checked facts kept apart from estimates. A pre-screen, not legal clearance; it never
+  registers a domain and never gets around a bot block.
+
 ## [1.70.1] - 2026-11-25
 
 ### 🐛 Fixed
