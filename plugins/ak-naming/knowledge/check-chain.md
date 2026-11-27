@@ -7,7 +7,18 @@ scratchpad, `$K` is `${CLAUDE_PLUGIN_ROOT}/skills/find-name/scripts`.
 cd "$S" || exit 1
 ```
 
-## 1. DNS pre-filter (`pre.sh`)
+## 1. Vulgar substrings (`risk_scan.py`)
+
+```bash
+PYTHONIOENCODING=utf-8 python3 -I "$K/risk_scan.py" --file names.txt
+```
+
+Offline, so it runs first on the whole list. It reads the substring table in `language-risks.md`
+and prints `name => substring (lang: meaning)` per hit; the count goes to stderr. Add languages with
+`--extra more.tsv` (`substring<TAB>lang<TAB>meaning` per line). A hit is a signal: `fut` inside a
+name is read differently from a name that starts with it. Judge, then keep or reject.
+
+## 2. DNS pre-filter (`pre.sh`)
 
 ```bash
 xargs -P 8 -n 1 sh "$K/pre.sh" -t de < names.txt > nx.txt
@@ -15,11 +26,11 @@ xargs -P 8 -n 1 sh "$K/pre.sh" -t de < names.txt > nx.txt
 
 Prints each name whose main-market domain (`-t`, default `de`) answers NXDOMAIN. That means
 "probably free", not "free": a domain can be registered without name servers. Confirm every
-survivor in step 2. A name `dig` cannot resolve (SERVFAIL, timeout) goes to stderr as
-`unresolved`: check it in step 2 instead of dropping it.
+survivor in step 3. A name `dig` cannot resolve (SERVFAIL, timeout) goes to stderr as
+`unresolved`: check it in step 3 instead of dropping it.
 The only script that may run in parallel, because it asks DNS, not a whois server.
 
-## 2. Core domains (`chk.sh`)
+## 3. Core domains (`chk.sh`)
 
 ```bash
 sh "$K/chk.sh" -t de $(cat nx.txt)
@@ -42,7 +53,7 @@ registry's own web search before a name becomes a finalist.
 
 The script waits 1.2 s per name and retries `.app` once after an HTTP 429.
 
-## 3. Extra TLDs (`tlds.sh`)
+## 4. Extra TLDs (`tlds.sh`)
 
 ```bash
 sh "$K/tlds.sh" krevalo zintora
@@ -51,7 +62,7 @@ sh "$K/tlds.sh" krevalo zintora
 `.eu`, `.at`, `.it` by whois, `.ch`, `.io`, `.org` by RDAP. `free`, `taken`, or `?` for an empty,
 quota or error reply. nic.at has a query quota: finalists only.
 
-## 4. Companies, apps, `.com` owner (`q.py`)
+## 5. Companies, apps, `.com` owner (`q.py`)
 
 ```bash
 PYTHONIOENCODING=utf-8 python3 -I "$K/q.py" krevalo zintora
@@ -69,7 +80,7 @@ name servers. Name servers of AFTERNIC, BRANDBUCKET, SQUADHELP or DAN mean "for 
 readable at `afternic.com/domain/<name>.com` and `brandbucket.com/names/<name>`. Squadhelp blocks
 bots through Cloudflare: do not try.
 
-## 5. EU trade marks: EUIPO eSearch (browser)
+## 6. EU trade marks: EUIPO eSearch (browser)
 
 Works in a browser tool (the built-in browser or Claude in Chrome). Without one, skip and list it as
 open.
@@ -88,10 +99,13 @@ arrives after 20 s or more while designs and owners show at once:
 let m=null,t='';for(let i=0;i<45&&!m;i++){await new Promise(r=>setTimeout(r,1000));t=document.body.innerText;m=t.match(/Trade marks \((\d+)\)/);} const re=/(\d{9}) - ([^\n]+?) \+ info[\s\S]*?Nice Classification\n([^\n]*)\nTrade mark status\n([^\n]*)/g; let r,out=[]; while((r=re.exec(t))&&out.length<40){out.push(r[1]+' '+r[2]+' ['+r[3]+'] '+r[4]);} [location.hash, m?m[1]:'no count', out]
 ```
 
-**Trap: no count is ambiguous.** A stem with zero marks shows `Trade marks` without a number, and so
-does a search that has not finished. Run a **control search** once per session with a stem known to
-have marks (`nvidi`). Only when the control shows a count is a missing count for a candidate read as
-0 hits. When the control shows no count either, click the visible Search button and read again.
+**Trap: no count means "not checked".** A stem with zero marks shows `Trade marks` without a
+number, and so does a search that has not finished – sometimes after more than 30 s, even for a
+stem with many marks. Run a **control search** once per session with a stem known to have marks
+(`nvidi`). Only when the control shows a count in the same session is a missing count for a
+candidate read as 0 hits. When the control shows no count either, click the visible Search button
+and read again; if it still shows none, report eSearch as not checked for that round, never as
+clean.
 
 **Details** – status, expiry date, owner and the full list of goods and services:
 
@@ -105,11 +119,34 @@ https://euipo.europa.eu/eSearch/?d=<number>#details/trademarks/<number>
   `telav*` does not find TELIVO (one vowel different) or ETLAVO (two letters swapped).
 - National marks are missing (a German mark only at the DPMA).
 - Three-syllable sound names sit in a dense field. Before recommending one, get the TMview
-  screenshot (step 8).
+  screenshot (step 10).
 - A mark registered more than five years ago must be in use. A company that has since renamed
   itself lowers the practical risk, but the mark stays on the register.
 
-## 6. Web search
+## 7. Neighbours (`neighbors.py`)
+
+```bash
+PYTHONIOENCODING=utf-8 python3 -I "$K/neighbors.py" krevalo zintora
+```
+
+For the best 8 candidates of a round. Finalists have failed in the TMview screenshot on marks one
+letter away in the core classes 9, 35 and 42 – a vowel swapped, a first consonant swapped, two
+letters transposed – which neither the `stem*` search in eSearch nor any national register in it
+shows. The script builds 4 to 6 such spellings per name (one of each kind first: vowel, similar
+first consonant, ending `-ia`/`-ea`/`-o`/`-a`, transposition), asks DNS for their `.de`, and for
+each existing one prints the page title and North Data's suggestions:
+
+```text
+== krevalo
+  krivalo.de free
+  grevalo.de TAKEN | title=Grevalo – IT-Beratung | ND=[('Grevalo GmbH', 'Köln')]
+```
+
+(Illustration; the names are invented.) An active company or brand in a related field – software,
+consulting, or the user's own classes – is a red signal: name it in the result and ask for the
+TMview screenshot first. A parked domain or a shop page is not.
+
+## 8. Web search
 
 Search the exact name in quotes. Look for:
 
@@ -118,7 +155,7 @@ Search the exact name in quotes. Look for:
 - apps with near spellings (one letter changed, doubled or dropped) – also search the App Store
   for them directly
 
-## 7. Language risks (`wk.py`)
+## 9. Language risks (`wk.py`)
 
 ```bash
 PYTHONIOENCODING=utf-8 python3 -I "$K/wk.py" krevalo kreval
@@ -127,9 +164,10 @@ PYTHONIOENCODING=utf-8 python3 -I "$K/wk.py" krevalo kreval
 Checks the full name and its parts against the English Wiktionary, which covers many languages.
 3 s between words; faster gives HTTP 429. The checklist is in `language-risks.md`.
 
-## 8. National trade marks: TMview (user only)
+## 10. National trade marks: TMview (user only)
 
-TMview blocks automated access. Give the user the link and ask for a screenshot of the hit list:
+TMview blocks automated access. Give the user the link and ask for a screenshot of the hit list,
+for every finalist in the round that names it:
 
 ```text
 https://www.tmdn.org/tmview/#/tmview/results?page=1&pageSize=30&criteria=F&basicSearch=<name>&offices=EM,DE,WO,AT,CH,IT,ES,PT

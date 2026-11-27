@@ -28,17 +28,26 @@ later round checks nothing twice.
 
 ## Check chain
 
-1. DNS pre-filter for the main-market domain, `-t <tld>` (`pre.sh`, parallel)
-2. The main-market domain (`-t <tld>`, default `.de`) and `.com` by whois, `get<name>.com`, `.app`
+1. Vulgar and derogatory substrings per language, offline (`risk_scan.py`)
+2. DNS pre-filter for the main-market domain, `-t <tld>` (`pre.sh`, parallel)
+3. The main-market domain (`-t <tld>`, default `.de`) and `.com` by whois, `get<name>.com`, `.app`
    by RDAP (`chk.sh`)
-3. `.eu`, `.at`, `.it`, `.ch`, `.io`, `.org` for finalists (`tlds.sh`)
-4. North Data companies, App Store DE and US, the `.com` page title (`q.py`); for a taken `.com`
+4. `.eu`, `.at`, `.it`, `.ch`, `.io`, `.org` for finalists (`tlds.sh`)
+5. North Data companies, App Store DE and US, the `.com` page title (`q.py`); for a taken `.com`
    the whois name servers show whether it is for sale
-5. EU trade marks in EUIPO eSearch through a browser tool, with a control search
-6. Web search: first names, places, near-spelled apps
-7. Language risks by checklist, with Wiktionary (`wk.py`)
-8. National trade marks: the user sends a TMview screenshot
-9. Optional second opinion from another agent, every claim checked afterwards
+6. EU trade marks in EUIPO eSearch through a browser tool, with a control search; no count means
+   not checked
+7. Neighbours one edit away for the best 8: which `.de` exist, page title, North Data
+   (`neighbors.py`)
+8. Web search: first names, places, near-spelled apps
+9. Language risks by checklist, with Wiktionary (`wk.py`)
+10. National trade marks: the user sends a TMview screenshot for every finalist, in the round
+    that names it
+11. Optional second opinion from another agent, every claim checked afterwards
+
+For long searches a subagent can generate 100 to 200 names per round and run the mechanical
+checks from the brief in `knowledge/round-brief.md`; the main session keeps eSearch, TMview, the
+language cross-check and the verdict.
 
 ## Scripts
 

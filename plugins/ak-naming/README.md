@@ -8,20 +8,22 @@ rounds, and a result that keeps checked facts apart from estimates.
 
 | Skill | Description |
 | --- | --- |
-| `find-name` | Brief, generate candidates per word field, check them (DNS, whois, RDAP, North Data, App Store, EUIPO eSearch, web, language risks), report at most three finalists against the current favourite |
+| `find-name` | Brief, generate candidates per word field, check them (vulgar substrings, DNS, whois, RDAP, North Data, App Store, EUIPO eSearch, one-edit neighbours, web, language risks), report at most three finalists against the current favourite |
 
 ## Knowledge Base
 
 - **check-chain.md** — every check step with its command, status codes, the eSearch snippet and its
   traps, blocked sources, field data on how many names survive
 - **language-risks.md** — checklist for vulgar forms, false friends, hidden words, reading and
-  dictation traps, first names, brand echoes
+  dictation traps, first names, brand echoes, and a table of vulgar substrings per language
 - **second-opinion.md** — prompt template for a critical second opinion from another agent
+- **round-brief.md** — brief for a subagent that generates and pre-checks 100 to 200 names per round
 
 ## Requirements
 
 - `dig`, `whois` and `curl` for the domain scripts (preinstalled on macOS)
-- python3 3.9 or later, standard library only, for `q.py` and `wk.py`
+- python3 3.9 or later, standard library only, for `q.py`, `wk.py`, `risk_scan.py` and
+  `neighbors.py`
 - a browser tool (built-in browser or Claude in Chrome) for EUIPO eSearch; without one that step is
   reported as open
 

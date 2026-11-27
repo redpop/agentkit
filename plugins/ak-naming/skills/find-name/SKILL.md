@@ -12,7 +12,8 @@ that keeps facts apart from judgement.
 The check chain with every command, status code and browser snippet:
 `${CLAUDE_PLUGIN_ROOT}/knowledge/check-chain.md`. The language-risk checklist:
 `${CLAUDE_PLUGIN_ROOT}/knowledge/language-risks.md`. The second-opinion prompt:
-`${CLAUDE_PLUGIN_ROOT}/knowledge/second-opinion.md`. Read the first two before the first check
+`${CLAUDE_PLUGIN_ROOT}/knowledge/second-opinion.md`. The round brief for a subagent:
+`${CLAUDE_PLUGIN_ROOT}/knowledge/round-brief.md`. Read the first two before the first check
 round.
 
 ## Arguments
@@ -72,24 +73,37 @@ per round, lower-case, one per line, in a file in the scratchpad.
 Run the steps in this order. A name that fails a step leaves the round with a one-sentence reason.
 Commands and status codes are in `check-chain.md`.
 
-1. **DNS pre-filter** – `pre.sh` keeps names whose main-market domain has no DNS record. `-t <tld>`
+1. **Vulgar substrings** – `risk_scan.py` checks the whole list offline against the substring
+   table in `language-risks.md`. A hit is a signal to judge, not an automatic rejection.
+2. **DNS pre-filter** – `pre.sh` keeps names whose main-market domain has no DNS record. `-t <tld>`
    sets that domain from the brief; the default is `.de`.
-2. **Core domains** – `chk.sh`, with the same `-t <tld>`: the main-market domain and `.com` by
+3. **Core domains** – `chk.sh`, with the same `-t <tld>`: the main-market domain and `.com` by
    whois, `get<name>.com` when `.com` is taken, `.app` by RDAP. A `?` for the main-market domain
    is not a pass: some registries (`.es`) answer no public whois, so check it at the registry's
    web search or ask the user before a name becomes a finalist.
-3. **Extra TLDs, finalists only** – `tlds.sh`: `.eu`, `.at`, `.it`, `.ch`, `.io`, `.org`.
-4. **Companies, apps, `.com` owner** – `q.py`: North Data, App Store DE and US, the `.com` page
+4. **Extra TLDs, finalists only** – `tlds.sh`: `.eu`, `.at`, `.it`, `.ch`, `.io`, `.org`.
+5. **Companies, apps, `.com` owner** – `q.py`: North Data, App Store DE and US, the `.com` page
    title. A taken `.com`: whois creation date and name servers show whether it is for sale.
-5. **EU trade marks** – EUIPO eSearch in the browser, with a control search first. A pre-filter
-   only: it misses one-letter neighbours and national marks.
-6. **Web search** for the exact name: first name, place name, similar app names (search the App
+6. **EU trade marks** – EUIPO eSearch in the browser, with a control search first. A pre-filter
+   only: it misses one-letter neighbours and national marks. No count means "not checked".
+7. **Neighbours, best 8 candidates** – `neighbors.py` builds 4 to 6 spellings one edit away,
+   finds which of their `.de` exist, and reads page title and North Data for those. An active
+   company or brand in a related field is a red signal. This catches most of what would otherwise
+   fail only in the TMview screenshot.
+8. **Web search** for the exact name: first name, place name, similar app names (search the App
    Store for neighbour spellings as well).
-7. **Language risks** – the checklist in `language-risks.md`, with `wk.py` for Wiktionary.
-8. **National trade marks, finalists only** – the user opens TMview and sends a screenshot. Give
-   them the link from `check-chain.md`. Agents never query TMview.
-9. **Second opinion, optional** – fill `second-opinion.md` for another agent or model. Check every
-   claim it makes before you repeat it.
+9. **Language risks** – the checklist in `language-risks.md`, with `wk.py` for Wiktionary.
+10. **National trade marks, every finalist of every round** – the user opens TMview and sends a
+    screenshot. Ask for it in the round that names the finalist, not at the end: a favourite that
+    fails late costs every round built on it. Give them the link from `check-chain.md`. Agents
+    never query TMview.
+11. **Second opinion, optional** – fill `second-opinion.md` for another agent or model. Check
+    every claim it makes before you repeat it.
+
+**Division of work, for long searches.** A subagent or second model can generate 100 to 200 names
+per round and run steps 1–5, 7 and 8 mechanically, from the brief in `round-brief.md`. The main
+session keeps eSearch, the TMview request, the cross-check of language risks and the verdict, and
+checks every subagent finding before it repeats it.
 
 Scripts are in `${CLAUDE_PLUGIN_ROOT}/skills/find-name/scripts/`. Work in the scratchpad: `cd` into
 it with `|| exit 1`, so an emptied scratchpad never makes the scripts write into a repository. Run
@@ -115,7 +129,7 @@ Write it in the user's language; the template is English:
 **Rejected:** <name> – <one-sentence reason>; …
 
 **Checked:** <sources and date>. **Estimated only:** <what>.
-**Open:** TMview screenshot for <finalists>.
+**Open:** TMview screenshot for every finalist, with the link from `check-chain.md`.
 
 How do the finalists sound to you?
 ````

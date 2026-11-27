@@ -191,8 +191,9 @@ current favourite, checked facts kept apart from estimates. A pre-screen, not le
 | File | Content |
 | --- | --- |
 | check-chain.md | Every check step with command, status codes, eSearch snippet and traps, blocked sources, field data |
-| language-risks.md | Vulgar forms, false friends, hidden words, reading and dictation traps, first names, brand echoes |
+| language-risks.md | Vulgar forms, false friends, hidden words, reading and dictation traps, first names, brand echoes, vulgar substrings per language |
 | second-opinion.md | Prompt template for a critical second opinion from another agent |
+| round-brief.md | Brief for a subagent that generates and pre-checks 100 to 200 names per round |
 
 ### ak-mods — Mod Switcher
 
