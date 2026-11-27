@@ -1,6 +1,6 @@
 # AgentKit
 
-Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) — 18 plugins with 27 skills, 8 agents, a mod switcher with keep-warm, session-id, usage, CI, break, showcase and todo mods, and domain knowledge bases for Git workflows, security, React, and more.
+Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) — 19 plugins with 28 skills, 8 agents, a mod switcher with keep-warm, session-id, usage, CI, break, showcase and todo mods, and domain knowledge bases for Git workflows, security, React, and more.
 
 ## Plugins
 
@@ -13,6 +13,7 @@ Modular plugin marketplace for [Claude Code](https://docs.anthropic.com/en/docs/
 | [**ak-keepwarm**](#ak-keepwarm--keep-the-prompt-cache-warm) | — | — | Mod: `/keepwarm` pings the prompt cache before it expires; its band segment shows how long it stays warm |
 | [**ak-knowledge**](#ak-knowledge--solution-documentation) | 4 | 1 | Solution docs, knowledge maintenance, AGENTS.md tools |
 | [**ak-meta**](#ak-meta--project-management-tools) | 4 | 2 | Discovery, changelog generation, session handoff for the next AI session, quality assessment, diagrams |
+| [**ak-naming**](#ak-naming--find-and-screen-names) | 1 | — | Find product, app and brand names and screen them: domains, companies and apps, EU trade marks, language risks |
 | [**ak-mods**](#ak-mods--mod-switcher) | — | — | Mods pane: turn AgentKit mods on or off per chat, with standard mods and one global order; one band shared by all mods |
 | [**ak-notifications**](#ak-notifications--macos-notifications) | — | — | macOS sound and banner notifications |
 | [**ak-pause**](#ak-pause--breaks-at-a-glance) | — | — | Mod: one band segment with the time worked without a break, across sessions (`52 min am Stück`), a water hint with a button, and one nudge per block at a quiet moment |
@@ -52,6 +53,7 @@ Install all plugins:
 /plugin install ak-keepwarm@ak-marketplace
 /plugin install ak-knowledge@ak-marketplace
 /plugin install ak-mods@ak-marketplace
+/plugin install ak-naming@ak-marketplace
 /plugin install ak-notifications@ak-marketplace
 /plugin install ak-pause@ak-marketplace
 /plugin install ak-react@ak-marketplace
@@ -170,6 +172,28 @@ assessment, and session handoff so a fresh AI session can continue where the las
 |-------|---------|
 | [quality-assessor](docs/agents/ak-meta/quality-assessor.md) | Expert quality scoring for skills and agents on 4 dimensions |
 | [diagram-creator](docs/agents/ak-meta/diagram-creator.md) | Creates Mermaid diagrams for architecture, flows, ERDs, and interactions |
+
+### ak-naming — Find and Screen Names
+
+Finds names for a product, app, service or brand with you and screens them from cheap to expensive:
+DNS, whois and RDAP for domains, North Data and the App Store, EUIPO eSearch for EU trade marks, a
+web search and a language-risk checklist. Each round ends with at most three finalists next to the
+current favourite, checked facts kept apart from estimates. A pre-screen, not legal clearance.
+
+#### Skills
+
+| Skill | Purpose | Example |
+| --- | --- | --- |
+| [`/ak-naming:find-name`](docs/skills/ak-naming/find-name.md) | Brief, generate candidates, run the check chain, report finalists with sources | `/ak-naming:find-name budgeting app for couples, Germany` |
+
+#### Knowledge
+
+| File | Content |
+| --- | --- |
+| check-chain.md | Every check step with command, status codes, eSearch snippet and traps, blocked sources, field data |
+| language-risks.md | Vulgar forms, false friends, hidden words, reading and dictation traps, first names, brand echoes, vulgar substrings per language |
+| second-opinion.md | Prompt template for a critical second opinion from another agent |
+| round-brief.md | Brief for a subagent that generates and pre-checks 100 to 200 names per round |
 
 ### ak-mods — Mod Switcher
 

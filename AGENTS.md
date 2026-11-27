@@ -6,7 +6,7 @@ This file provides guidance to AI agents (Claude Code, Warp AI, etc.) when worki
 
 ## Project overview
 
-Claude Code plugin marketplace (`ak-marketplace`) with 18 independently installable plugins, 27 skills, 8 agents, a mod switcher with seven mods,
+Claude Code plugin marketplace (`ak-marketplace`) with 19 independently installable plugins, 28 skills, 8 agents, a mod switcher with seven mods,
 and domain knowledge bases. Built on the official Claude Code Plugin Architecture.
 
 ## Dev environment
@@ -149,6 +149,7 @@ plugins/{plugin-name}/
 | `ak-meta` | 4 | 2 | |
 | `ak-improve` | - | 2 | knowledge/ (1 file) |
 | `ak-knowledge` | 4 | 1 | |
+| `ak-naming` | 1 | - | scripts/ (7 files), knowledge/ (4 files) |
 | `ak-mods` | - | - | hooks module (TSX), types/, LICENSE-lucide (icons, ISC) |
 | `ak-keepwarm` | - | - | hooks module (TSX), tests/, LICENSE (upstream MIT) |
 | `ak-session-id` | - | - | hooks module (TSX), tests/ |
@@ -236,7 +237,7 @@ Rules for `git log`, not review criteria for diffs.
   in the body.
 
 Versions stay synchronized across `marketplace.json` and all `plugin.json` files (currently
-`1.70.1`) — that one **is** checkable in a diff. The one exception is the test-only harness
+`1.72.0`) — that one **is** checkable in a diff. The one exception is the test-only harness
 `plugins/ak-mods/tests/fixture`, which stays at `0.0.0`.
 
 ## Task completion workflow

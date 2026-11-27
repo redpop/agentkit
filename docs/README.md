@@ -4,11 +4,11 @@ Reference documentation for all AgentKit components — skills, agents, hooks, a
 
 ## Overview
 
-AgentKit provides 18 plugins with specialized skills, agents, hooks, and mods for Claude Code.
+AgentKit provides 19 plugins with specialized skills, agents, hooks, and mods for Claude Code.
 
 | Category | Count | Description |
 |----------|-------|-------------|
-| [Skills](skills/) | 26 | Slash commands invoked by the user |
+| [Skills](skills/) | 28 | Slash commands invoked by the user |
 | [Agents](agents/) | 8 | Specialized sub-agents for autonomous tasks |
 | [Hooks](hooks/) | 10 plugins | Automated actions on tool events |
 | [Mods](mods/) | 8 plugins | Interface changes that the Mods pane switches on or off per chat |
@@ -24,6 +24,7 @@ AgentKit provides 18 plugins with specialized skills, agents, hooks, and mods fo
 | ak-keepwarm | Keep-warm mod (prompt cache pings) | — | — | hooks module |
 | ak-knowledge | Solution documentation | 4 | 1 | — |
 | ak-meta | Discovery & release management | 4 | 2 | — |
+| ak-naming | Product and brand name finding and screening | 1 | — | — |
 | ak-mods | Mod switcher (Mods pane, shared band) | — | — | hooks module |
 | ak-notifications | macOS notifications | — | — | yes |
 | ak-pause | Break mod (time without a break, water) | — | — | hooks module |
