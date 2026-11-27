@@ -7,6 +7,10 @@ swapped, first consonant swapped for a similar one, ending -ia/-ea/-o/-a swapped
 two letters transposed), asks DNS whether their .de exists, and for each existing
 one reads the page title and North Data's company suggestions.
 
+The labels describe DNS, not registration: "no DNS" (NXDOMAIN) can still be a
+registered domain without name servers, "exists" (a DNS answer) means someone
+holds it. Availability is chk.sh's job.
+
 An active company or brand in a related field (the user's Nice classes) is a red
 signal. Judging that is yours; the script only reports.
 
@@ -119,12 +123,12 @@ def main():
         for v in variants(name, a.max):
             state = de_exists(v)
             if state is False:
-                print(f"  {v}.de free", flush=True)
+                print(f"  {v}.de no DNS", flush=True)
                 continue
             if state is None:
                 print(f"  {v}.de unresolved: check with chk.sh", flush=True)
                 continue
-            print(f"  {v}.de TAKEN | title={title(v)} | ND={north_data(v)}", flush=True)
+            print(f"  {v}.de exists | title={title(v)} | ND={north_data(v)}", flush=True)
             time.sleep(1)
     return 0
 
