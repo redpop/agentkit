@@ -1,7 +1,7 @@
 {
   "name": "ak-naming",
   "description": "Find and screen product, app and brand names: domains by DNS, whois and RDAP, companies and apps, EU trade marks in eSearch, language risks across target languages, with facts kept apart from judgement",
-  "version": "1.72.0",
+  "version": "1.72.1",
   "author": {
     "name": "redpop",
     "url": "https://github.com/redpop"

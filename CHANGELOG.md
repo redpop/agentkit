@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.72.1] - 2026-11-27
+
+### 🐛 Fixed
+
+- `ak-naming:find-name` — `neighbors.py` no longer reports a neighbour domain as `free` from DNS
+  alone: a domain can be registered without name servers. It now prints `no DNS` or `exists`, which
+  is all the neighbour step needs; availability stays with `chk.sh`.
+
 ## [1.72.0] - 2026-11-27
 
 ### ✨ Added

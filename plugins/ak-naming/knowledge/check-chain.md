@@ -155,11 +155,13 @@ each existing one prints the page title and North Data's suggestions:
 
 ```text
 == krevalo
-  krivalo.de free
-  grevalo.de TAKEN | title=Grevalo – IT-Beratung | ND=[('Grevalo GmbH', 'Köln')]
+  krivalo.de no DNS
+  grevalo.de exists | title=Grevalo – IT-Beratung | ND=[('Grevalo GmbH', 'Köln')]
 ```
 
-(Illustration; the names are invented.) An active company or brand in a related field – software,
+(Illustration; the names are invented.) The labels report DNS, not availability: `no DNS` can
+still be registered without name servers. The step asks who holds a neighbour, not whether it is
+free. An active company or brand in a related field – software,
 consulting, or the user's own classes – is a red signal: name it in the result and ask for the
 TMview screenshot first. A parked domain or a shop page is not.
 
